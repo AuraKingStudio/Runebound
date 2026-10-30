@@ -1,5 +1,5 @@
 {
-  "note": "Tutorial unlocks starter NPCs; cleaner screen",
+  "note": "Merchant icon same size as others",
   "board": [
     {
       "id": "R1",
@@ -94,6 +94,10 @@
   ],
   "log": [
     {
+      "t": "Merchant icon normal size",
+      "k": "fix"
+    },
+    {
       "k": "in",
       "t": "4-step tutorial"
     },
@@ -108,10 +112,6 @@
     {
       "k": "in",
       "t": "Ghosts fill with progress"
-    },
-    {
-      "k": "fix",
-      "t": "Archivist <-> Class Master"
     }
   ]
 }
