@@ -1,5 +1,5 @@
 {
-  "note": "Stools moved; Innkeeper at the bar",
+  "note": "Stools under the Innkeeper",
   "board": [
     {
       "id": "R1",
@@ -95,6 +95,13 @@
   "log": [
     {
       "k": "fix",
+      "t": "Stools tucked under Innkeeper",
+      "at": "2026-10-30T14:42:40.146Z",
+      "add": 2,
+      "del": 2
+    },
+    {
+      "k": "fix",
       "t": "Innkeeper stands at the bar",
       "at": "2026-10-30T14:42:13.933Z",
       "add": 3,
@@ -169,20 +176,13 @@
       "at": "2026-10-30T14:39:14.717Z",
       "add": 36,
       "del": 1
-    },
-    {
-      "k": "fix",
-      "t": "Top banners moved higher",
-      "at": "2026-10-30T14:38:56.492Z",
-      "add": 3,
-      "del": 3
     }
   ],
   "stats": {
     "tests": 71,
     "prevTests": 71,
     "failed": 0,
-    "today": 48,
+    "today": 49,
     "spark": [
       0,
       0,
@@ -194,7 +194,7 @@
       0,
       0,
       0,
-      9,
+      10,
       39
     ],
     "lines": [
@@ -208,12 +208,12 @@
       0,
       0,
       0,
-      9500,
+      9506,
       1889
     ],
     "features": 3,
     "open": 9,
-    "at": "2026-10-30T14:42:13.933Z"
+    "at": "2026-10-30T14:42:40.146Z"
   },
-  "ver": "0.5.24"
+  "ver": "0.5.25"
 }

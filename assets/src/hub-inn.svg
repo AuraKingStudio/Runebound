@@ -112,7 +112,7 @@
     <rect x="178" y="84" width="7" height="14" rx="2" fill="#7a2230"/><rect x="200" y="84" width="7" height="14" rx="2" fill="#1d7f78"/>
     <rect x="256" y="84" width="7" height="14" rx="2" fill="#c9a24a"/><rect x="278" y="84" width="7" height="14" rx="2" fill="#4a3a7a"/>
   </g>
-  <g fill="#3d2716" stroke="#1a120a" stroke-width="1.5"><circle cx="188" cy="176" r="7"/><circle cx="228" cy="176" r="7"/><circle cx="268" cy="176" r="7"/></g>
+  <g fill="#3d2716" stroke="#1a120a" stroke-width="1.5"><circle cx="188" cy="168" r="7"/><circle cx="228" cy="168" r="7"/><circle cx="268" cy="168" r="7"/></g>
   </g>
   <!-- TOP-RIGHT BOTTLE WALL: shelf of colored bottles on the inside wall -->
   <g filter="url(#shadow)"><rect x="598" y="116" width="200" height="8" rx="2" fill="url(#wood)" stroke="#2e1d10" stroke-width="1.5"/></g>
