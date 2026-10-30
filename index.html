@@ -707,6 +707,7 @@
     <script>
       const W = 900,
         H = 600,
+        HUB_ART = { x: 550, y: 280, w: 820, h: 550 },
         $ = (i) => document.getElementById(i),
         cv = $("cv"),
         c = cv.getContext("2d");
@@ -1136,8 +1137,7 @@
       let GH = []; /* dash afterimages */
       let RINGS = []; /* level-up shockwaves */
       /* mouse position in game coordinates (for the facing arrow on keyboard + mouse) */
-      /* camera: the world is drawn zoomed in and follows the player. CAM = top-left of the view (world units). */
-      const ZOOM = 1; /* 10% zoom in */
+      /* CAM is the top-left of the world view, in game coordinates. */
       const CAM = { x: 300, y: 10 };
       /* camOff(): back to screen-fixed drawing (HUD, popups). Out: none (changes the canvas transform). */
       const camOff = () => c.setTransform(sc, 0, 0, sc, ox, oy);
@@ -1147,9 +1147,8 @@
         if (e.pointerType != "mouse") return;
         setIn("kb");
         const r = cv.getBoundingClientRect(), d = cv.width / r.width;
-        /* screen pixel -> world position, undoing the camera zoom and offset */
-        MOUSE.x = ((e.clientX - r.left) * d - ox) / sc / ZOOM + CAM.x;
-        MOUSE.y = ((e.clientY - r.top) * d - oy) / sc / ZOOM + CAM.y;
+        MOUSE.x = ((e.clientX - r.left) * d - ox) / sc + CAM.x;
+        MOUSE.y = ((e.clientY - r.top) * d - oy) / sc + CAM.y;
         MOUSE.on = true;
       });
       document.addEventListener("mouseleave", () => (MOUSE.on = false));
@@ -3082,15 +3081,14 @@
 
 
         /* camera target: centered on the player, kept inside the island. Lerp (k) makes it lag slightly behind. */
-        const vw = W / ZOOM,
-          vh = H / ZOOM,
+        const vw = W,
+          vh = H,
           tx = P ? cl(P.x - vw / 2, 0, W - vw) : (W - vw) / 2,
           ty = P ? cl(P.y - vh / 2, 0, H - vh) : (H - vh) / 2;
 
         CAM.x = tx;
         CAM.y = ty;
-        c.scale(1, 1);
-        c.translate(-CAM.x, -CAM.y + 75); /* camera offset: the player is slightly below center, so the player sees more of the world ahead */
+        c.translate(-CAM.x, -CAM.y);
         c.save();
         c.beginPath();
         c.rect(-1000, -1000, 4000, 4000);
@@ -3101,10 +3099,7 @@
           b = S.b;
         if (ar) c.drawImage(IM.arena, 0, 0, W, H);
         else {
-          /* hub: cover-fit the 1920x1080 art over the visible world area (keeps 16:9, no stretching) */
-          const vx = CAM.x - ox / sc / ZOOM, vy = CAM.y - oy / sc / ZOOM, vw = cv.width / sc / ZOOM, vh = cv.height / sc / ZOOM;
-          const k = Math.max(vw / 1920, vh / 1080), dw = 1920 * k, dh = 1080 * k;
-          c.drawImage(IM.hub, vx + (vw - dw) / 2, vy + (vh - dh) / 2, dw, dh);
+          c.drawImage(IM.hub, HUB_ART.x, HUB_ART.y, HUB_ART.w, HUB_ART.h, 0, 0, W, H);
         }
         if (S.sc == "lobby") {
           c.fillStyle = "#0008";
@@ -3337,8 +3332,8 @@
             const tg = [null, ELDER, SHOP, LORE][tut()];
             if (tg) {
               /* arrow position converted from world to screen-fixed units (HUD transform is active here) */
-              const ax = (tg.x - CAM.x) * ZOOM,
-                ay = (tg.y - (tg.r || 20) - 34 + Math.sin(S.tm * 6) * 5 - CAM.y) * ZOOM;
+              const ax = tg.x - CAM.x,
+                ay = tg.y - (tg.r || 20) - 34 + Math.sin(S.tm * 6) * 5 - CAM.y;
               c.fillStyle = "#ffd84a";
               c.beginPath();
               c.moveTo(ax, ay + 10);
