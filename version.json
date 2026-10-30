@@ -1,5 +1,5 @@
 {
-  "note": "Motion vignette while running",
+  "note": "Guild renamed: The Raiders + lore",
   "board": [
     {
       "id": "R1",
@@ -95,6 +95,20 @@
   "log": [
     {
       "k": "in",
+      "t": "The Raiders name + lore",
+      "at": "2026-10-30T14:36:15.941Z",
+      "add": 9,
+      "del": 5
+    },
+    {
+      "k": "fix",
+      "t": "Counter sign renamed",
+      "at": "2026-10-30T14:36:15.941Z",
+      "add": 9,
+      "del": 5
+    },
+    {
+      "k": "in",
       "t": "Speed vignette on the camera",
       "at": "2026-10-30T14:35:24.662Z",
       "add": 7,
@@ -162,27 +176,13 @@
       "at": "2026-10-30T14:31:13.570Z",
       "add": 54,
       "del": 16
-    },
-    {
-      "k": "in",
-      "t": "Leaderboard by raids won",
-      "at": "2026-10-30T14:31:13.570Z",
-      "add": 54,
-      "del": 16
-    },
-    {
-      "k": "in",
-      "t": "Camera follows player (lerp)",
-      "at": "2026-10-30T14:30:35.712Z",
-      "add": 25,
-      "del": 6
     }
   ],
   "stats": {
     "tests": 71,
     "prevTests": 71,
     "failed": 0,
-    "today": 35,
+    "today": 36,
     "spark": [
       0,
       0,
@@ -195,7 +195,7 @@
       0,
       0,
       6,
-      29
+      30
     ],
     "lines": [
       0,
@@ -209,11 +209,11 @@
       0,
       0,
       9394,
-      1584
+      1591
     ],
-    "features": 10,
+    "features": 9,
     "open": 9,
-    "at": "2026-10-30T14:35:24.662Z"
+    "at": "2026-10-30T14:36:15.941Z"
   },
-  "ver": "0.5.11"
+  "ver": "0.5.12"
 }
