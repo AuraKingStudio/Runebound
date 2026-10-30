@@ -1,5 +1,5 @@
 {
-  "note": "Camera: no zoom, fast sticky pan",
+  "note": "Camera: 10% zoom",
   "board": [
     {
       "id": "R1",
@@ -94,6 +94,13 @@
   ],
   "log": [
     {
+      "k": "in",
+      "t": "10% camera zoom",
+      "at": "2026-10-30T14:34:13.097Z",
+      "add": 1,
+      "del": 1
+    },
+    {
       "k": "fix",
       "t": "No zoom, faster sticky camera",
       "at": "2026-10-30T14:33:48.303Z",
@@ -169,20 +176,13 @@
       "at": "2026-10-30T14:28:31.997Z",
       "add": 0,
       "del": 0
-    },
-    {
-      "k": "in",
-      "t": "Quest Board bounties",
-      "at": "2026-10-30T14:28:31.997Z",
-      "add": 0,
-      "del": 0
     }
   ],
   "stats": {
     "tests": 71,
     "prevTests": 71,
     "failed": 0,
-    "today": 32,
+    "today": 33,
     "spark": [
       0,
       0,
@@ -195,7 +195,7 @@
       0,
       0,
       5,
-      27
+      28
     ],
     "lines": [
       0,
@@ -209,11 +209,11 @@
       0,
       0,
       9160,
-      1778
+      1782
     ],
     "features": 9,
     "open": 9,
-    "at": "2026-10-30T14:33:48.303Z"
+    "at": "2026-10-30T14:34:13.097Z"
   },
-  "ver": "0.5.8"
+  "ver": "0.5.9"
 }
