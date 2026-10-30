@@ -1,5 +1,5 @@
 {
-  "note": "Timber frame for depth",
+  "note": "Locked NPCs fully hidden; moved off furniture",
   "board": [
     {
       "id": "R1",
@@ -94,6 +94,20 @@
   ],
   "log": [
     {
+      "k": "fix",
+      "t": "Locked NPCs fully hidden",
+      "at": "2026-10-30T14:41:00.369Z",
+      "add": 4,
+      "del": 4
+    },
+    {
+      "k": "fix",
+      "t": "Locked NPCs moved off furniture",
+      "at": "2026-10-30T14:41:00.369Z",
+      "add": 4,
+      "del": 4
+    },
+    {
       "k": "in",
       "t": "Timber frame + foreground beams",
       "at": "2026-10-30T14:40:44.081Z",
@@ -162,27 +176,13 @@
       "at": "2026-10-30T14:36:43.815Z",
       "add": 2,
       "del": 2
-    },
-    {
-      "k": "out",
-      "t": "Unused hub art files",
-      "at": "2026-10-30T14:36:43.815Z",
-      "add": 2,
-      "del": 2
-    },
-    {
-      "k": "in",
-      "t": "The Raiders name + lore",
-      "at": "2026-10-30T14:36:15.941Z",
-      "add": 9,
-      "del": 5
     }
   ],
   "stats": {
     "tests": 71,
     "prevTests": 71,
     "failed": 0,
-    "today": 44,
+    "today": 45,
     "spark": [
       0,
       0,
@@ -195,7 +195,7 @@
       0,
       0,
       9,
-      35
+      36
     ],
     "lines": [
       0,
@@ -209,11 +209,11 @@
       0,
       0,
       9500,
-      1819
+      1859
     ],
-    "features": 5,
+    "features": 4,
     "open": 9,
-    "at": "2026-10-30T14:40:44.081Z"
+    "at": "2026-10-30T14:41:00.369Z"
   },
-  "ver": "0.5.20"
+  "ver": "0.5.21"
 }
