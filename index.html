@@ -1505,7 +1505,16 @@
         return V.lp;
       }
       /* loreUI(): tells one random tale and uses 1 from the pool; when empty, says when the next one is back. */
+      /* loreBonusTick(): every minute, 25% chance the Archivist opens a 2-minute guaranteed-reward window (V.lbx = end time). */
+      function loreBonusTick() {
+        const now = Date.now();
+        if (V.lbx > now || now < (V.lbn || 0)) return;
+        V.lbn = now + 60e3;
+        if (Math.random() < 0.25) { V.lbx = now + 120e3; save(); }
+      }
       function loreUI() {
+        const bonus = V.lbx > Date.now(); /* guaranteed secret: skips the pool and the 15s gap */
+        if (bonus) { V.lbx = 0; V.lta = 0; V.lp = Math.max(1, lorePool()); }
         if (lorePool() < 1) {
           const s = Math.ceil((LORE_REFILL - (Date.now() - V.lpt)) / 1000), m = Math.floor(s / 60);
           $("dp").innerHTML = `<h2>📜 The Archivist</h2><p>The Archivist closes his ledger. "My voice is spent, traveller. Another tale in ${m ? m + "m " : ""}${s % 60}s."</p><button class="alt" onclick="closeDlg()">Farewell</button>`;
@@ -1521,19 +1530,19 @@
         V.lp--;
         V.lt = (V.lt || 0) + 1;
         const n = V.lt,
-          rare = Math.random() < 0.1, /* ~2 secret pages per 20 tales, each worth a bonus */
+          rare = bonus || Math.random() < 0.1, /* ~2 secret pages per 20 tales; always during a ✦ window */
           pick = loreNext(),
           [kind, text] = TALES[pick],
           tag = { L: "Lore", T: "Tip", E: "Secret" }[kind],
           ms = TALE_MS[n];
         if (ms) V.gold += ms[0];
-        if (rare) V.gold += 50;
+        if (rare) V.gold += bonus ? 100 : 50;
         save();
         sfx(rare || ms ? "win" : "ui", rare ? 1.3 : 1);
         $("dp").innerHTML = `<h2>📜 The Archivist</h2>
           <div class="qtag">${tag}</div>
           <p class="tale ${kind}">${rare ? "✨ " : ""}${text}</p>
-          ${rare ? `<p class="gold">Secret page! +50 gold</p>` : ""}
+          ${rare ? `<p class="gold">Secret page! +${bonus ? 100 : 50} gold</p>` : ""}
           ${ms ? `<div class="qo done">🏆 ${n} tales heard! ${ms[1]} +${ms[0]} gold</div>` : ""}
           <button class="alt" onclick="closeDlg()">Farewell</button>`;
       }
@@ -2060,6 +2069,7 @@
         ],
       };
       function uiUpd() {
+        loreBonusTick();
         const m = P;
         if (!m || S.sc == "lobby") return;
         for (let a = 0; a < 3; a++) {
@@ -2137,6 +2147,7 @@
       const QM = {
         new: { g: "!", c: "#ffd84a", gl: "#ffb300" },
         active: { g: "?", c: "#9aa6b2", gl: "#9aa6b2" },
+        bonus: { g: "✦", c: "#ff7ad9", gl: "#ff3fbf" }, /* Archivist guaranteed-reward window */
         ready: { g: "?", c: "#ffd84a", gl: "#ffb300" },
       };
       function qMark(x, y, st, t, s = 1) {
@@ -2427,7 +2438,7 @@
           c.fill();
           npc(ELDER, V.q >= QUESTS.length ? "" : ["new", "active", "ready"][V.qs]);
           npc(SHOP, "");
-          npc(LORE, V.lt ? "" : "new");
+          npc(LORE, V.lbx > Date.now() ? "bonus" : V.lt ? "" : "new");
         }
         for (const z of S.zo) {
           c.fillStyle = "rgba(90,255,140,.18)";
