@@ -711,6 +711,27 @@
       const upIcon = (u) =>
         `<svg viewBox="-20 -20 40 40" width="46" height="46"><circle r="18" fill="#0b1218" stroke="${u.col}" stroke-width="2"/>` +
         `<g fill="${u.col}" stroke="${u.col}">${u.ic}</g></svg>`;
+      /* ---------- settings (saved per device) ----------
+         shake/dmg: 0|1, fx: 0 low | 1 high, vol: 0..1, lang: "en"|"fr", bind: action -> KeyboardEvent.code (physical key) */
+      const BIND_DEF = { s0: "Space", s1: "KeyQ", s2: "KeyE", int: "KeyF", dash: "ShiftLeft", up: "KeyW", down: "KeyS", left: "KeyA", right: "KeyD", pause: "KeyP" };
+      const SET = { shake: 1, fx: 1, dmg: 1, vol: 0.8, lang: "en", bind: { ...BIND_DEF } };
+      try {
+        const s = JSON.parse(localStorage.getItem("runebound_settings") || "null");
+        if (s) Object.assign(SET, s, { bind: { ...BIND_DEF, ...(s.bind || {}) } });
+      } catch (e) {}
+      const saveSet = () => { try { localStorage.setItem("runebound_settings", JSON.stringify(SET)); } catch (e) {} };
+      /* ---------- translations: lang/<code>.md lines "- key: text". tr(key, english) falls back to English. ---------- */
+      const LANGS = { en: "English", fr: "Français" };
+      let LTX = {};
+      const tr = (k, d) => LTX[k] || d;
+      function loadLang(cb) {
+        LTX = {};
+        if (SET.lang == "en" || typeof fetch != "function") return cb && cb();
+        fetch("lang/" + SET.lang + ".md").then((r) => r.text()).then((md) => {
+          for (const ln of md.split(/\r?\n/)) { const m = ln.match(/^- ([\w.]+):\s*(.+)$/); if (m) LTX[m[1]] = m[2].trim(); }
+          cb && cb();
+        }).catch(() => cb && cb());
+      }
       /* ---------- soft synth sfx (no audio files) ---------- */
       let AC = null;
       const SFX = {
@@ -742,7 +763,7 @@
           o.frequency.setValueAtTime(p[0] * m * (1 + rnd(-0.03, 0.03)), n);
           o.frequency.exponentialRampToValueAtTime(p[1] * m, n + p[4]);
           g.gain.setValueAtTime(0.0001, n);
-          g.gain.exponentialRampToValueAtTime(p[3], n + 0.01);
+          g.gain.exponentialRampToValueAtTime(Math.max(0.0002, p[3] * SET.vol), n + 0.01);
           g.gain.exponentialRampToValueAtTime(0.0001, n + p[4]);
           o.connect(f).connect(g).connect(AC.destination);
           o.start(n);
@@ -754,6 +775,7 @@
         FT = [],
         shk = 0;
       function burst(x, y, col, n = 10, sp = 140) {
+        n = Math.ceil(n * (SET.fx ? 1 : 0.35)); /* low effects setting */
         for (let i = 0; i < n; i++) {
           const a = rnd(0, 6.28),
             s = rnd(0.3, 1) * sp,
@@ -762,10 +784,11 @@
         }
       }
       function ftxt(x, y, t, col) {
+        if (!SET.dmg) return;
         FT.push({ x: x + rnd(-10, 10), y, t, col, l: 0.9 });
       }
       const shake = (v) => {
-        shk = Math.max(shk, v);
+        shk = Math.max(shk, v * SET.shake);
       };
       const QUESTS = [
         {
@@ -1852,8 +1875,10 @@
         PAD.prev = gp.buttons.map((b) => b.pressed);
       }
       function inp() {
-        let x = (kk.d || kk.arrowright ? 1 : 0) - (kk.a || kk.q || kk.arrowleft ? 1 : 0),
-          y = (kk.s || kk.arrowdown ? 1 : 0) - (kk.w || kk.z || kk.arrowup ? 1 : 0);
+        /* kk holds physical key codes, so WASD becomes ZQSD on AZERTY automatically. Arrows always work. */
+        const B = SET.bind;
+        let x = (kk[B.right] || kk.ArrowRight ? 1 : 0) - (kk[B.left] || kk.ArrowLeft ? 1 : 0),
+          y = (kk[B.down] || kk.ArrowDown ? 1 : 0) - (kk[B.up] || kk.ArrowUp ? 1 : 0);
         if (js) {
           x += js.vx;
           y += js.vy;
@@ -1914,6 +1939,7 @@
         if (k == "escape") { if (dlgOpen()) closeDlg(); else if (P) togglePause(); }
         if (k == "p" && P && !dlgOpen()) togglePause();
         kk[k] = 1;
+        kk[e.code] = 1; /* physical key (used for movement binds) */
         if (e.repeat) return;
         if (k == "shift") dash(P);
         if (k == "j" || k == " ") press(0);
@@ -1921,7 +1947,7 @@
         if (k == "l") press(2);
         if (k == "e") inter();
       });
-      addEventListener("keyup", (e) => (kk[e.key.toLowerCase()] = 0));
+      addEventListener("keyup", (e) => { kk[e.key.toLowerCase()] = 0; kk[e.code] = 0; });
       /* skill button colors (tank blue, dps red, healer green) and icons (SVG on a 40x40 box centered at 0,0) */
       const SKC = { tank: "#4da3ff", dps: "#ff5a5a", heal: "#5dff8a" };
       const SKI = {
