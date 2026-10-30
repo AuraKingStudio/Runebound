@@ -1,5 +1,5 @@
 {
-  "note": "Guild: simpler tabs, no placeholders",
+  "note": "Ranks: top 100, 5 per page, refresh, sort",
   "board": [
     {
       "id": "R1",
@@ -94,6 +94,27 @@
   ],
   "log": [
     {
+      "k": "in",
+      "t": "Top 100 ranks",
+      "at": "2026-10-30T14:33:25.079Z",
+      "add": 34,
+      "del": 6
+    },
+    {
+      "k": "in",
+      "t": "Refresh pages of 5",
+      "at": "2026-10-30T14:33:25.079Z",
+      "add": 34,
+      "del": 6
+    },
+    {
+      "k": "in",
+      "t": "Sort by wins or members",
+      "at": "2026-10-30T14:33:25.079Z",
+      "add": 34,
+      "del": 6
+    },
+    {
       "k": "fix",
       "t": "Guild screen simplified",
       "at": "2026-10-30T14:32:50.956Z",
@@ -155,34 +176,13 @@
       "at": "2026-10-30T14:28:31.997Z",
       "add": 0,
       "del": 0
-    },
-    {
-      "k": "fix",
-      "t": "NPC rugs follow NPCs",
-      "at": "2026-10-30T14:28:31.997Z",
-      "add": 0,
-      "del": 0
-    },
-    {
-      "k": "in",
-      "t": "Barkeep + blackjack",
-      "at": "2026-10-30T14:28:09.202Z",
-      "add": 277,
-      "del": 48
-    },
-    {
-      "k": "in",
-      "t": "Quest Board bounties",
-      "at": "2026-10-30T14:28:09.202Z",
-      "add": 277,
-      "del": 48
     }
   ],
   "stats": {
-    "tests": 69,
+    "tests": 71,
     "prevTests": 69,
     "failed": 0,
-    "today": 30,
+    "today": 31,
     "spark": [
       0,
       0,
@@ -195,7 +195,7 @@
       0,
       0,
       5,
-      25
+      26
     ],
     "lines": [
       0,
@@ -209,11 +209,11 @@
       0,
       0,
       9160,
-      1705
+      1738
     ],
-    "features": 9,
+    "features": 10,
     "open": 9,
-    "at": "2026-10-30T14:32:50.956Z"
+    "at": "2026-10-30T14:33:25.079Z"
   },
-  "ver": "0.5.6"
+  "ver": "0.5.7"
 }

@@ -1930,7 +1930,31 @@
         sfx("win");
         guildUI();
       }
-      /* guildUI(): Guild Board. Tabs: JOIN, CREATE, RANKS. Short labels, no placeholders. */
+      /* rankPool(): the top-100 list. 100 rival guilds made once from a fixed seed (same every time), plus yours. Out: array {name, m, wins, you?}. */
+      let RANK_POOL = null;
+      function rankPool() {
+        if (!RANK_POOL) {
+          let seed = 7;
+          const rnd = () => (seed = (seed * 16807) % 2147483647) / 2147483647;
+          const A = ["Iron", "Silver", "Crimson", "Gilded", "Storm", "Shadow", "Ember", "Frost", "Thorn", "Royal"];
+          const B = ["Wolves", "Lanterns", "Oath", "Company", "Shields", "Ravens", "Blades", "Hearth", "Crown", "Vanguard"];
+          RANK_POOL = GUILDS_NPC.map((g) => ({ name: g.name, m: g.m, wins: g.wins }));
+          while (RANK_POOL.length < 100) {
+            const n = RANK_POOL.length;
+            RANK_POOL.push({ name: A[Math.floor(rnd() * A.length)] + " " + B[Math.floor(rnd() * B.length)] + " " + n, m: 2 + Math.floor(rnd() * 9), wins: Math.floor(rnd() * 200) });
+          }
+        }
+        const list = RANK_POOL.slice();
+        if (V.gd && V.gd.name) list.push({ name: V.gd.name, m: (V.gd.m || []).length, wins: V.wins || 0, you: 1 });
+        return list;
+      }
+      /* RANK: current sort ("wins" | "members") and page (0-19, 5 guilds per page). */
+      let RANK = { sort: "wins", page: 0 };
+      /* rankSort(k): sort the ranks by k and go back to page 1. */
+      function rankSort(k) { RANK.sort = k; RANK.page = 0; guildUI(); }
+      /* rankRefresh(): shows the next 5 guilds (wraps after the 20th page). */
+      function rankRefresh() { RANK.page = (RANK.page + 1) % 20; guildUI(); }
+      /* guildUI(): Guild Board. Tabs: JOIN, CREATE, RANKS. */
       function guildUI() {
         const mine = V.gd && V.gd.name, m = (V.gd && V.gd.m) || [];
         const tabs = [["join", "JOIN"], ["create", "CREATE"], ["board", "RANKS"]]
@@ -1945,10 +1969,12 @@
               `<button class="claim" ${m.length >= GUILD_MAX || V.gold < recruitCost() ? "disabled" : ""} onclick="guildRecruit()">RECRUIT · <span class="coin"></span>${recruitCost()}</button>`
             : `<input id="gn" class="nm" maxlength="20" autocomplete="off"><button class="claim" onclick="guildFound()">CREATE</button>`;
         } else {
-          const rows = GUILDS_NPC.map((g) => ({ name: g.name, wins: g.wins }));
-          if (mine) rows.push({ name: mine, wins: V.wins || 0, you: 1 });
-          rows.sort((a, b) => b.wins - a.wins);
-          body = rows.map((r, i) => `<div class="row" ${r.you ? 'style="color:#ffd84a"' : ""}><span>${i + 1}. ${esc(r.name)}</span><b>${r.wins}</b></div>`).join("");
+          const by = RANK.sort;
+          const top = rankPool().sort((a, b) => (by == "wins" ? b.wins - a.wins : b.m - a.m)).slice(0, 100);
+          const shown = top.slice(RANK.page * 5, RANK.page * 5 + 5);
+          body = `<div class="row"><button class="${by == "wins" ? "" : "alt"}" onclick="rankSort('wins')">WINS</button><button class="${by == "members" ? "" : "alt"}" onclick="rankSort('members')">MEMBERS</button><button onclick="rankRefresh()">REFRESH</button></div>` +
+            shown.map((r, i) => `<div class="row" ${r.you ? 'style="color:#ffd84a"' : ""}><span>${RANK.page * 5 + i + 1}. ${esc(r.name)}</span><b>${by == "wins" ? r.wins : r.m}</b></div>`).join("") +
+            `<p class="sm">Top ${top.length} · page ${RANK.page + 1}/20</p>`;
         }
         $("dp").innerHTML = `<h2>🛡 Guild</h2><div class="row">${tabs}</div>${body}<button class="alt" onclick="closeDlg()">Close</button>`;
       }      const esc = (s) => String(s).replace(/[&<>"']/g, (ch) => "&#" + ch.charCodeAt(0) + ";");
