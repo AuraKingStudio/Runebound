@@ -23,6 +23,7 @@
     <filter id="soft"><feGaussianBlur stdDeviation="6"/></filter>
     <filter id="shadow" x="-20%" y="-20%" width="140%" height="160%"><feDropShadow dx="0" dy="4" stdDeviation="3" flood-color="#000" flood-opacity=".55"/></filter>
     <g id="tankard"><path d="M-6-9h12v15q0 3-3 3h-6q-3 0-3-3z" fill="url(#beer)" stroke="#5a3a10" stroke-width="1.2"/><path d="M6-6h3a3 3 0 0 1 0 6h-3" fill="none" stroke="#5a3a10" stroke-width="2"/><path d="M-6-9q6-3 12 0" fill="#fff8e6" stroke="#e8d9b0" stroke-width="1"/></g>
+    <radialGradient id="poolGlow" cx="50%" cy="50%" r="50%"><stop offset="0" stop-color="#e8fffb"/><stop offset=".45" stop-color="#5af0dc"/><stop offset="1" stop-color="#0c4d48" stop-opacity=".2"/></radialGradient>
   </defs>
 
   <!-- ground outside the walls -->
@@ -39,14 +40,14 @@
   <circle cx="450" cy="335" r="118" fill="none" stroke="#3fd6c6" stroke-width="2.5" stroke-dasharray="3 9" opacity=".8"/>
   <path d="M450 285 488 335 450 385 412 335Z" fill="none" stroke="#3fd6c6" stroke-width="2.5" opacity=".75"/>
 
-  <!-- portal -->
+  <!-- magic pool: stone basin with glowing water -->
   <g filter="url(#shadow)">
-    <path d="M384 196V110q0-62 66-62t66 62v86h-22v-84q0-40-44-40t-44 40v84z" fill="#4a4740" stroke="#24221f" stroke-width="3"/>
-    <path d="M394 108q0-48 56-48t56 48" fill="none" stroke="#6e6a60" stroke-width="4"/>
+    <ellipse cx="450" cy="150" rx="78" ry="50" fill="#3b3833" stroke="#1a1816" stroke-width="4"/>
+    <ellipse cx="450" cy="150" rx="66" ry="40" fill="#24221f"/>
+    <path d="M385 150q0-30 65-30t65 30" fill="none" stroke="#5a564e" stroke-width="3"/>
   </g>
-  <path d="M406 196v-84q0-40 44-40t44 40v84z" fill="url(#gate)"/>
-  <ellipse cx="450" cy="140" rx="48" ry="62" fill="#5af0dc" opacity=".25" filter="url(#soft)"/>
-  <ellipse cx="450" cy="200" rx="62" ry="12" fill="none" stroke="#3fd6c6" stroke-width="2" stroke-dasharray="4 6" opacity=".8"/>
+  <ellipse cx="450" cy="150" rx="60" ry="36" fill="url(#poolGlow)"/>
+  <ellipse cx="450" cy="150" rx="40" ry="22" fill="none" stroke="#c8fff4" stroke-width="1.5" opacity=".7"/>
   <!-- THE RAIDERS guild plaque: carved wood, iron brackets and a crest, fitted across the top wall above the portal -->
   <g filter="url(#shadow)">
     <rect x="318" y="60" width="264" height="34" rx="3" fill="url(#wood)" stroke="#2e1d10" stroke-width="3"/>

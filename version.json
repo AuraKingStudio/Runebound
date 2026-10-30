@@ -1,5 +1,5 @@
 {
-  "note": "Bottle shelf on top-left north wall",
+  "note": "Portal is now a magic pool",
   "board": [
     {
       "id": "R1",
@@ -95,6 +95,13 @@
   "log": [
     {
       "k": "in",
+      "t": "Magic pool replaces the portal arch",
+      "at": "2026-10-30T14:43:49.537Z",
+      "add": 8,
+      "del": 7
+    },
+    {
+      "k": "in",
       "t": "Bottle shelf, top-left wall",
       "at": "2026-10-30T14:43:11.929Z",
       "add": 18,
@@ -169,20 +176,13 @@
       "at": "2026-10-30T14:39:35.617Z",
       "add": 6,
       "del": 6
-    },
-    {
-      "k": "in",
-      "t": "Ancient rune ring on portal",
-      "at": "2026-10-30T14:39:14.717Z",
-      "add": 36,
-      "del": 1
     }
   ],
   "stats": {
     "tests": 71,
     "prevTests": 71,
     "failed": 0,
-    "today": 50,
+    "today": 51,
     "spark": [
       0,
       0,
@@ -195,7 +195,7 @@
       0,
       0,
       10,
-      40
+      41
     ],
     "lines": [
       0,
@@ -209,11 +209,11 @@
       0,
       0,
       9506,
-      1893
+      1912
     ],
     "features": 3,
     "open": 9,
-    "at": "2026-10-30T14:43:11.929Z"
+    "at": "2026-10-30T14:43:49.537Z"
   },
-  "ver": "0.5.26"
+  "ver": "0.5.27"
 }
