@@ -446,6 +446,12 @@
         position: fixed; left: 10px; top: 10px; bottom: 10px; z-index: 5; overflow: auto; font-size: 12px; color: #cfe;
         background: #0b1218e6; border: 1px solid #2c3b48; border-radius: 10px; padding: 10px; box-sizing: border-box; user-select: text;
       }
+      #board.top { left: 10px; right: 10px; top: 6px; bottom: auto; padding: 6px 10px; }
+      #board.top .tb { display: none; }
+      #board.top ul { columns: 2; column-gap: 24px; }
+      #board ul { list-style: none; margin: 6px 0 12px; padding: 0; }
+      #board li { padding: 3px 0; border-bottom: 1px solid #1c2832; break-inside: avoid; }
+      #board .lt { color: #8fa3ad; font-size: 10px; margin-right: 4px; }
       #board b { color: #ffd84a; letter-spacing: 1.5px; }
       #board table { width: 100%; border-collapse: collapse; margin-top: 8px; }
       #board th { text-align: left; font-size: 10px; color: #8fa3ad; letter-spacing: 1px; padding: 4px; border-bottom: 1px solid #2c3b48; }
@@ -1738,10 +1744,13 @@
           let el = $("board");
           if (!el) { el = document.createElement("div"); el.id = "board"; document.body.appendChild(el); }
           const st = { todo: "TO DO", wip: "IN PROGRESS", done: "DONE" };
-          el.innerHTML = `<b>BUILD BOARD</b><span class="sm"> · say "do R3"</span>
+          /* recap of the latest code changes (newest first) */
+          const log = (j.log || []).slice(0, 8).map((l) => `<li><span class="lt">${l.at || ""}</span> ${l.t}</li>`).join("");
+          el.innerHTML = `<div class="lg"><b>LATEST CHANGES</b><ul>${log}</ul></div>
+            <div class="tb"><b>BUILD BOARD</b><span class="sm"> · say "do R3"</span>
             <table><tr><th>#</th><th>P</th><th>Task</th><th>State</th></tr>${rows
               .map((r) => `<tr class="${r.s}"><td>${r.id}</td><td class="p${r.p}">P${r.p}</td><td>${r.t}</td><td>${st[r.s] || r.s}</td></tr>`)
-              .join("")}</table>`;
+              .join("")}</table></div>`;
           boardFit();
         }).catch(() => {});
       }
@@ -1749,9 +1758,12 @@
       function boardFit() {
         const el = $("board");
         if (!el) return;
-        const r = cv.getBoundingClientRect(), side = (r.width - W * (sc / Math.min(2, devicePixelRatio || 1))) / 2;
-        el.hidden = side < 230;
-        el.style.width = Math.min(420, side - 20) + "px";
+        /* side bars (wide screens): log + table on the left. Top bar (tall screens): log only, across the top. */
+        const r = cv.getBoundingClientRect(), s = sc / Math.min(2, devicePixelRatio || 1),
+          side = (r.width - W * s) / 2, top = (r.height - H * s) / 2;
+        el.className = side >= 230 ? "side" : top >= 70 ? "top" : "";
+        el.hidden = !el.className;
+        el.style.cssText = el.className == "side" ? `width:${Math.min(420, side - 20)}px` : el.className == "top" ? `height:${top - 12}px` : "";
       }
       addEventListener("resize", boardFit);
       showBoard();
