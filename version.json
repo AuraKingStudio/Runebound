@@ -1,5 +1,5 @@
 {
-  "note": "Camera: 10% zoom",
+  "note": "Hub: mercenary guild counter",
   "board": [
     {
       "id": "R1",
@@ -95,6 +95,13 @@
   "log": [
     {
       "k": "in",
+      "t": "Mercenary Guild counter",
+      "at": "2026-10-30T14:34:54.491Z",
+      "add": 32,
+      "del": 2
+    },
+    {
+      "k": "in",
       "t": "10% camera zoom",
       "at": "2026-10-30T14:34:13.097Z",
       "add": 1,
@@ -169,20 +176,13 @@
       "at": "2026-10-30T14:30:35.712Z",
       "add": 25,
       "del": 6
-    },
-    {
-      "k": "in",
-      "t": "Barkeep + blackjack",
-      "at": "2026-10-30T14:28:31.997Z",
-      "add": 0,
-      "del": 0
     }
   ],
   "stats": {
     "tests": 71,
     "prevTests": 71,
     "failed": 0,
-    "today": 33,
+    "today": 34,
     "spark": [
       0,
       0,
@@ -195,7 +195,7 @@
       0,
       0,
       5,
-      28
+      29
     ],
     "lines": [
       0,
@@ -209,11 +209,11 @@
       0,
       0,
       9160,
-      1782
+      1784
     ],
     "features": 9,
     "open": 9,
-    "at": "2026-10-30T14:34:13.097Z"
+    "at": "2026-10-30T14:34:54.491Z"
   },
-  "ver": "0.5.9"
+  "ver": "0.5.10"
 }
