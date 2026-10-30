@@ -2,7 +2,7 @@
 <html lang="en">
   <head>
     <meta charset="utf-8" />
-    <title>Runebound</title><link rel="icon" type="image/svg+xml" href="assets/icon.svg"><link rel="apple-touch-icon" href="assets/icon.png">
+    <title>Runebound</title><link rel="preconnect" href="https://fonts.gstatic.com" crossorigin><link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Cinzel:wght@600;700;900&display=swap"><link rel="icon" type="image/svg+xml" href="assets/icon.svg"><link rel="apple-touch-icon" href="assets/icon.png">
     <meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover" />
     <style>
       :root {
@@ -510,6 +510,9 @@
       #btns #b0 svg { width: 58px; height: 58px; }
       #btns #b1 { right: 132px; bottom: 30px; }
       #btns #b2 { right: 102px; bottom: 134px; }
+      /* logo font (Cinzel, same as the icon / logo / banner) for headings and big buttons; Georgia if offline */
+      h2, .claim, .qn, #btns #bi, .kh { font-family: "Cinzel", Georgia, serif; }
+      h2 { color: #ffd84a; letter-spacing: 1.5px; }
       /* big gold claim button */
       button.claim {
         display: block; width: 100%; margin: 12px 0 2px; padding: 16px; font-size: 22px; font-weight: bold; letter-spacing: 2px;
@@ -1452,23 +1455,48 @@
       const TALE_ORDER = TALES.map((_, i) => i).sort((a, b) => ((a * 37) % 101) - ((b * 37) % 101));
       /* milestones: talk count -> gold + message */
       const TALE_MS = { 10: [100, "You have the patience of a scholar."], 25: [250, "A quarter of the ledger is yours."], 50: [500, "Half the archive lives in you now."], 100: [1000, "You have heard every tale. The one I never wrote down: the Warden fears being forgotten. So we remember it, every raid."] };
+      /* loreNext(): random tale index, never one of the last 15 heard. Out: index into TALES. */
+      let loreRecent = [];
+      function loreNext() {
+        let i, guard = 0;
+        do i = Math.floor(Math.random() * TALES.length); while (loreRecent.includes(i) && guard++ < 50);
+        loreRecent = [i, ...loreRecent].slice(0, 15);
+        return i;
+      }
+      /* Archivist tale pool: holds up to 20 tales, refills 1 every 3 minutes (saved in V.lp = tales left, V.lpt = last refill time). */
+      const LORE_POOL = 20, LORE_REFILL = 180e3;
+      /* lorePool(): refills the pool for the time that passed. Out: tales available now. */
+      function lorePool() {
+        const now = Date.now();
+        if (V.lp == null || V.lpt == null) { V.lp = LORE_POOL; V.lpt = now; }
+        const n = Math.floor((now - V.lpt) / LORE_REFILL);
+        if (n > 0) { V.lp = Math.min(LORE_POOL, V.lp + n); V.lpt = V.lp >= LORE_POOL ? now : V.lpt + n * LORE_REFILL; }
+        return V.lp;
+      }
+      /* loreUI(): tells one random tale and uses 1 from the pool; when empty, says when the next one is back. */
       function loreUI() {
+        if (lorePool() < 1) {
+          const s = Math.ceil((LORE_REFILL - (Date.now() - V.lpt)) / 1000), m = Math.floor(s / 60);
+          $("dp").innerHTML = `<h2>📜 The Archivist</h2><p>The Archivist closes his ledger. "My voice is spent, traveller. Another tale in ${m ? m + "m " : ""}${s % 60}s."</p><button class="alt" onclick="closeDlg()">Farewell</button>`;
+          return;
+        }
+        V.lp--;
         V.lt = (V.lt || 0) + 1;
         const n = V.lt,
-          rare = Math.random() < 0.02,
-          [kind, text] = TALES[TALE_ORDER[(n - 1) % TALES.length]],
+          rare = Math.random() < 0.1, /* ~2 secret pages per 20 tales, each worth a bonus */
+          pick = loreNext(),
+          [kind, text] = TALES[pick],
           tag = { L: "Lore", T: "Tip", E: "Secret" }[kind],
           ms = TALE_MS[n];
         if (ms) V.gold += ms[0];
-        if (rare) V.gold += 77;
+        if (rare) V.gold += 50;
         save();
         sfx(rare || ms ? "win" : "ui", rare ? 1.3 : 1);
         $("dp").innerHTML = `<h2>📜 The Archivist</h2>
-          <div class="qtag">${tag} · Tale ${Math.min(n, TALES.length)} of ${TALES.length}</div>
+          <div class="qtag">${tag}</div>
           <p class="tale ${kind}">${rare ? "✨ " : ""}${text}</p>
-          ${rare ? `<p class="gold">A golden page! +77 gold</p>` : ""}
+          ${rare ? `<p class="gold">Secret page! +50 gold</p>` : ""}
           ${ms ? `<div class="qo done">🏆 ${n} tales heard! ${ms[1]} +${ms[0]} gold</div>` : ""}
-          <div class="mbar"><i style="width:${Math.min(100, (n / TALES.length) * 100)}%"></i></div>
           <button onclick="loreUI()">Another tale</button><button class="alt" onclick="closeDlg()">Farewell</button>`;
       }
       const qHead = (st, q, tag) =>
@@ -1481,7 +1509,7 @@
         else if (V.qs == 0)
           h +=
             qHead("new", q, "New quest") +
-            `<p>${q.t}</p><div class="qo">${q.o}</div><p class="sm">Reward: <span class="gold"><span class="coin"></span>${q.r}</span></p><button onclick="qAct(1)">Accept quest</button>`;
+            `<p>${q.t}</p><div class="qo">${q.o}</div><p class="sm">Reward: <span class="gold"><span class="coin"></span>${q.r}</span></p><button class="claim" onclick="qAct(1)">ACCEPT QUEST</button>`;
         else if (V.qs == 1)
           h +=
             qHead("active", q, "In progress") +
@@ -1489,7 +1517,7 @@
         else
           h +=
             qHead("ready", q, "Complete") +
-            `<p>Well done! The runes sing your name.</p><div class="qo done">☑ ${q.o}</div><p class="sm">Reward: <span class="gold"><span class="coin"></span>${q.r}</span></p><button onclick="qAct(2)">Turn in quest</button>`;
+            `<p>Well done! The runes sing your name.</p><div class="qo done">☑ ${q.o}</div><p class="sm">Reward: <span class="gold"><span class="coin"></span>${q.r}</span></p><button class="claim" onclick="qAct(2)">CLAIM REWARD</button>`;
         $("dp").innerHTML = h + `<button class="alt" onclick="closeDlg()">Close</button>`;
       }
       function qAct(a) {
@@ -1847,7 +1875,21 @@
          The last device used wins. body[data-in] drives which button hints show (CSS). */
       let INMODE = typeof matchMedia == "function" && matchMedia("(pointer: coarse)").matches ? "touch" : "kb";
       /* hint per slot: skill 1, skill 2, skill 3, interact, dash */
-      const KEYHINT = { kb: ["J", "K", "L", "E", "⇧"], pad: ["A", "X", "Y", "B", "RB"], touch: ["", "", "", "", ""] };
+      const KEYHINT = { kb: ["", "", "", "", ""], pad: ["A", "X", "Y", "B", "RB"], touch: ["", "", "", "", ""] };
+      /* keyLabel(code): In: KeyboardEvent.code. Out: what is printed on that key for this keyboard layout (AZERTY shows A for KeyQ). */
+      let LAYOUT = null;
+      try { navigator.keyboard && navigator.keyboard.getLayoutMap().then((m) => { LAYOUT = m; refreshHints(); }); } catch (e) {}
+      const KEYNAME = { Space: "Space", ShiftLeft: "Shift", ShiftRight: "Shift", ControlLeft: "Ctrl", AltLeft: "Alt", Tab: "Tab", Enter: "Enter", ArrowUp: "↑", ArrowDown: "↓", ArrowLeft: "←", ArrowRight: "→" };
+      function keyLabel(code) {
+        const l = LAYOUT && LAYOUT.get(code);
+        return KEYNAME[code] || (l ? l.toUpperCase() : String(code || "?").replace(/^(Key|Digit)/, ""));
+      }
+      /* refreshHints(): rebuilds the keyboard badges (skill 1-3, interact, dash) from the current binds */
+      function refreshHints() {
+        KEYHINT.kb = ["s0", "s1", "s2", "int", "dash"].map((a) => keyLabel(SET.bind[a]));
+      }
+      refreshHints();
+      let REBIND = null; /* action waiting for a new key in the settings menu, or null */
       function setIn(m) {
         if (INMODE == m) return;
         INMODE = m;
@@ -1931,6 +1973,16 @@
         if (/INPUT|SELECT|TEXTAREA/.test(e.target.tagName)) return;
         const k = e.key.toLowerCase();
         setIn("kb");
+        /* rebinding: the next key pressed becomes the bind (Esc cancels) */
+        if (REBIND) {
+          e.preventDefault();
+          if (e.code != "Escape") SET.bind[REBIND] = e.code;
+          REBIND = null;
+          saveSet();
+          refreshHints();
+          settingsUI();
+          return;
+        }
         if (k == "f2") {
           toggleDev();
           e.preventDefault();
@@ -1941,11 +1993,13 @@
         kk[k] = 1;
         kk[e.code] = 1; /* physical key (used for movement binds) */
         if (e.repeat) return;
-        if (k == "shift") dash(P);
-        if (k == "j" || k == " ") press(0);
-        if (k == "k") press(1);
-        if (k == "l") press(2);
-        if (k == "e") inter();
+        /* actions read from SET.bind (physical keys), so they follow the player's own binds */
+        const B = SET.bind, c0 = e.code;
+        if (c0 == B.dash || (B.dash == "ShiftLeft" && c0 == "ShiftRight")) dash(P);
+        if (c0 == B.s0) { press(0); e.preventDefault(); }
+        if (c0 == B.s1) press(1);
+        if (c0 == B.s2) press(2);
+        if (c0 == B.int) inter();
       });
       addEventListener("keyup", (e) => { kk[e.key.toLowerCase()] = 0; kk[e.code] = 0; });
       /* skill button colors (tank blue, dps red, healer green) and icons (SVG on a 40x40 box centered at 0,0) */

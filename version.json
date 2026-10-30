@@ -1,5 +1,5 @@
 {
-  "note": "Shorter change log",
+  "note": "Archivist: random tales, pool of 20, secrets",
   "board": [
     {
       "id": "R1",
@@ -94,16 +94,16 @@
   ],
   "log": [
     {
-      "at": "15:20",
-      "t": "Shorter change log"
+      "at": "15:40",
+      "t": "Archivist pool + secrets"
     },
     {
-      "at": "15:15",
-      "t": "Settings: shake, effects, volume"
+      "at": "15:35",
+      "t": "Gold quest buttons"
     },
     {
-      "at": "15:05",
-      "t": "ZQSD / WASD by key position"
+      "at": "15:30",
+      "t": "New PC binds Q / E / F"
     }
   ]
 }

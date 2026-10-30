@@ -58,7 +58,7 @@ ok(T.lvlCol(5)!=T.lvlCol(15)&&T.lvlCol(55)==T.lvlCol(99),'xp: tier colors change
 const xq=T.V().xp;T.devResetQ();T.qAct(1);T.V().qs=2;T.qAct(2);ok(T.V().xp==xq+100,'xp: quest turn-in gives 100');
 /* ---- input mode ---- */
 T.setIn('pad');ok(T.inMode()=='pad'&&T.KEYHINT.pad[0]=='A','input: controller mode shows A/X/Y/B');
-T.setIn('kb');ok(T.inMode()=='kb'&&T.KEYHINT.kb.slice(0,4).join('')=='JKLE'&&T.KEYHINT.kb.length==5,'input: keyboard mode shows J/K/L/E + dash key');
+T.setIn('kb');ok(T.inMode()=='kb'&&T.KEYHINT.kb.join(',')=='Space,Q,E,F,Shift','input: keyboard badges follow binds (Space, Q, E, F, Shift)');
 /* ---- dash ---- */
 T.DEV.nocd=0;T.devHub();ctx.document.getElementById('dlg').hidden=true;const dp0={x:T.P().x,y:T.P().y};T.P().dx=1;T.P().dy=0;T.P().dcd=0;T.dash(T.P());for(let i=0;i<10;i++)T.dashStep(T.P(),.02);
 ok(T.P().x>dp0.x+20&&T.P().dcd>0,'dash: moves the player and starts its cooldown');
