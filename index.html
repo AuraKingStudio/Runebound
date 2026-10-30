@@ -1856,15 +1856,8 @@
           g: "M-9-9h13v18h-13zM4-5h3a4 4 0 0 1 0 9h-3M-9-9q0-4 4-4h5q4 0 4 4" },
         QBOARD = { x: 300, y: 240, ir: 110, col: "#ffd84a" },
         GBOARD = { x: 600, y: 240, ir: 110, col: "#5af0dc" };
-      /* boardMark(b, hot): soft pulse over a wall board; a "!" when something can be claimed. */
+      /* boardMark(b, hot): a "!" above a wall board when something can be claimed. */
       function boardMark(b, hot) {
-        const p = 0.5 + 0.5 * Math.sin(S.tm * 3), near = P && dist(P, b) < b.ir;
-        c.save();
-        c.globalAlpha = near ? 0.5 + 0.3 * p : 0.18 + 0.12 * p;
-        c.strokeStyle = b.col;
-        c.lineWidth = 2;
-        c.strokeRect(b.x - 36, b.y - 42, 72, 84);
-        c.restore();
         if (hot) qMark(b.x, b.y - 62, "new", S.tm, 0.8);
       }
 
@@ -2771,7 +2764,7 @@
         if (!q) return;
         const st = ["new", "active", "ready"][V.qs],
           k = QM[st],
-          w = 270,
+          w = Math.min(270, UW - 24),
           x = W - w - 12,
           dn = V.qs == 2;
         c.save();
@@ -3097,10 +3090,9 @@
           b = S.b;
         if (ar) c.drawImage(IM.arena, 0, 0, W, H);
         else {
-          /* hub: cover-fit the 1920x1080 art over the visible world area (keeps 16:9, no stretching) */
-          const vx = CAM.x - ox / sc / ZOOM, vy = CAM.y - oy / sc / ZOOM, vw = cv.width / sc / ZOOM, vh = cv.height / sc / ZOOM;
-          const k = Math.max(vw / 1920, vh / 1080), dw = 1920 * k, dh = 1080 * k;
-          c.drawImage(IM.hub, vx + (vw - dw) / 2, vy + (vh - dh) / 2, dw, dh);
+          /* hub: cover-fit the 1920x1080 art to the fixed world rect (W x H) so it stays locked to NPC/portal coordinates */
+          const k = Math.max(W / 1920, H / 1080), dw = 1920 * k, dh = 1080 * k;
+          c.drawImage(IM.hub, (W - dw) / 2, (H - dh) / 2, dw, dh);
         }
         if (S.sc == "lobby") {
           c.fillStyle = "#0008";
@@ -3173,7 +3165,6 @@
           npc(HERALD, "");
           npc(BARKEEP, "");
           boardMark(QBOARD, bountyReady());
-          boardMark(GBOARD, false);
           npc(LORE, V.lbx > Date.now() ? "bonus" : V.lt ? "" : "new");
         }
         for (const z of S.zo) {
@@ -3324,10 +3315,11 @@
             c.save();
             c.textAlign = "center";
             c.font = 'bold 14px "Cinzel", Georgia';
+            const tx = "TUTORIAL " + (tut() + 1) + "/4 · " + TUT_TXT[tut()];
+            c.font = `bold ${Math.max(8, Math.min(14, (UW - 24) * 14 / c.measureText(tx).width))}px "Cinzel", Georgia`;
             c.lineWidth = 3;
             c.strokeStyle = "#000";
             c.fillStyle = "#ffd84a";
-            const tx = "TUTORIAL " + (tut() + 1) + "/4 · " + TUT_TXT[tut()];
             c.strokeText(tx, 450, 24);
             c.fillText(tx, 450, 24);
             const tg = [null, ELDER, SHOP, LORE][tut()];
