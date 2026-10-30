@@ -1,5 +1,5 @@
 {
-  "note": "Rune-style Close / Farewell buttons",
+  "note": "4 locked NPCs, torches removed, Archivist unlocks",
   "board": [
     {
       "id": "R1",
@@ -94,24 +94,24 @@
   ],
   "log": [
     {
-      "t": "Rune-style Close buttons",
-      "k": "fix"
-    },
-    {
-      "t": "Skills + cooldowns in hub",
+      "t": "4 locked NPCs (tinted)",
       "k": "in"
     },
     {
-      "t": "Portal glow when near",
-      "k": "in"
-    },
-    {
-      "t": "Smaller Enter Arena button",
-      "k": "fix"
-    },
-    {
-      "t": "Big ARMOR text (now +armor)",
+      "t": "Hub torches",
       "k": "out"
+    },
+    {
+      "t": "Archivist reveals NPCs",
+      "k": "in"
+    },
+    {
+      "t": "Enter Arena bottom-middle",
+      "k": "fix"
+    },
+    {
+      "t": "NPC names in their color",
+      "k": "fix"
     }
   ]
 }
