@@ -717,23 +717,38 @@
         rnd = (a, b) => a + Math.random() * (b - a);
       let sc = 1,
         ox = 0,
-        oy = 0;
+        oy = 0,
+        VW = W,
+        VH = H,
+        VLEFT = 0,
+        VTOP = 0,
+        UW = W,
+        UH = H,
+        DPR = 1,
+        SCALE = 1;
       function rs() {
         const d = Math.min(2, (typeof devicePixelRatio != "undefined" && devicePixelRatio) || 1),
           w = cv.clientWidth || innerWidth,
           h = cv.clientHeight || innerHeight;
+        DPR = d;
         cv.width = w * d;
         cv.height = h * d;
-        const s = Math.min(w / W, h / H);
+        const s = Math.max(w / W, h / H);
+        SCALE = s;
         sc = s * d;
         ox = ((w - W * s) / 2) * d;
         oy = ((h - H * s) / 2) * d;
-        /* pin the on-screen buttons to the game frame (not the screen edge) */
+        VW = w / s;
+        VH = h / s;
+        VLEFT = -ox / sc;
+        VTOP = -oy / sc;
+        UW = w;
+        UH = h;
         const bs = $("btns").style;
-        bs.left = (w - W * s) / 2 + "px";
-        bs.top = (h - H * s) / 2 + "px";
-        bs.width = W * s + "px";
-        bs.height = H * s + "px";
+        bs.left = "0px";
+        bs.top = "0px";
+        bs.width = w + "px";
+        bs.height = h + "px";
       }
       addEventListener("resize", rs);
       rs();
@@ -1141,7 +1156,7 @@
       const ZOOM = 1.15,
         CAM = { x: 0, y: 0 };
       /* camOff(): back to screen-fixed drawing (HUD, popups). Out: none (changes the canvas transform). */
-      const camOff = () => c.setTransform(sc, 0, 0, sc, ox, oy);
+      const camOff = () => c.setTransform(DPR, 0, 0, DPR, 0, 0);
       const MOUSE = { x: 0, y: 0, on: false };
       /* listen on the whole window: buttons / joystick zone sit above the canvas and would hide the mouse */
       addEventListener("pointermove", (e) => {
@@ -1856,15 +1871,8 @@
           g: "M-9-9h13v18h-13zM4-5h3a4 4 0 0 1 0 9h-3M-9-9q0-4 4-4h5q4 0 4 4" },
         QBOARD = { x: 300, y: 240, ir: 110, col: "#ffd84a" },
         GBOARD = { x: 600, y: 240, ir: 110, col: "#5af0dc" };
-      /* boardMark(b, hot): soft pulse over a wall board; a "!" when something can be claimed. */
+      /* boardMark(b, hot): show a marker when a bounty can be claimed. */
       function boardMark(b, hot) {
-        const p = 0.5 + 0.5 * Math.sin(S.tm * 3), near = P && dist(P, b) < b.ir;
-        c.save();
-        c.globalAlpha = near ? 0.5 + 0.3 * p : 0.18 + 0.12 * p;
-        c.strokeStyle = b.col;
-        c.lineWidth = 2;
-        c.strokeRect(b.x - 36, b.y - 42, 72, 84);
-        c.restore();
         if (hot) qMark(b.x, b.y - 62, "new", S.tm, 0.8);
       }
 
@@ -2335,8 +2343,8 @@
       cv.addEventListener("pointerdown", (e) => {
         const r = cv.getBoundingClientRect(),
           d = cv.width / r.width,
-          gx = ((e.clientX - r.left) * d - ox) / sc,
-          gy = ((e.clientY - r.top) * d - oy) / sc;
+          gx = ((e.clientX - r.left) * d) / DPR,
+          gy = ((e.clientY - r.top) * d) / DPR;
         if (gx > 4 && gx < 116 && gy > 36 && gy < 80) {
           /* triple-tap the gold coin HUD */ const n = performance.now();
           tt = tt.filter((x) => n - x < 700);
@@ -2772,7 +2780,7 @@
         const st = ["new", "active", "ready"][V.qs],
           k = QM[st],
           w = 270,
-          x = W - w - 12,
+          x = UW - w - 12,
           dn = V.qs == 2;
         c.save();
         c.fillStyle = "#0b1218d9";
@@ -3080,13 +3088,15 @@
         c.imageSmoothingEnabled = true;
         c.imageSmoothingQuality = "high";
 
-        const vw = W / ZOOM,
-          vh = H / ZOOM,
-          tx = P ? cl(P.x - vw / 2, 0, W - vw) : (W - vw) / 2,
-          ty = P ? cl(P.y - vh / 2, 0, H - vh) : (H - vh) / 2,
+        const vw = VW / ZOOM,
+          vh = VH / ZOOM,
+          cx = (VLEFT + VW / 2) / ZOOM,
+          cy = (VTOP + VH / 2) / ZOOM,
+          tx = P ? P.x - cx : (W - vw) / 2,
+          ty = P ? P.y - cy : (H - vh) / 2,
           k = 1 - Math.exp(-dt * 8);
-        CAM.x = cl(CAM.x + (tx - CAM.x) * k, 0, W - vw);
-        CAM.y = cl(CAM.y + (ty - CAM.y) * k, 0, H - vh);
+        CAM.x = cl(CAM.x + (tx - CAM.x) * k, -VLEFT / ZOOM, W - (VLEFT + VW) / ZOOM);
+        CAM.y = cl(CAM.y + (ty - CAM.y) * k, -VTOP / ZOOM, H - (VTOP + VH) / ZOOM);
         c.scale(ZOOM, ZOOM);
         c.translate(-CAM.x, -CAM.y);
 
@@ -3307,11 +3317,12 @@
         camOff(); /* HUD stays fixed on screen */
         /* motion vignette: the screen edges darken more the faster the player runs (spd = 0..1) */
         const spd = P ? Math.min(1, Math.hypot(P.dx, P.dy)) : 0;
-        const vg = c.createRadialGradient(W / 2, H / 2, W * 0.3, W / 2, H / 2, W * 0.62);
+        const vr = Math.max(UW, UH);
+        const vg = c.createRadialGradient(UW / 2, UH / 2, vr * 0.3, UW / 2, UH / 2, vr * 0.62);
         vg.addColorStop(0, "rgba(0,0,0,0)");
         vg.addColorStop(1, `rgba(0,0,0,${0.25 + 0.3 * spd})`);
         c.fillStyle = vg;
-        c.fillRect(0, 0, W, H);
+        c.fillRect(0, 0, UW, UH);
         c.font = "13px Georgia";
         c.textAlign = "left";
         if (P && S.sc != "lobby") {
@@ -3328,13 +3339,13 @@
             c.strokeStyle = "#000";
             c.fillStyle = "#ffd84a";
             const tx = "TUTORIAL " + (tut() + 1) + "/4 · " + TUT_TXT[tut()];
-            c.strokeText(tx, 450, 24);
-            c.fillText(tx, 450, 24);
+            c.strokeText(tx, UW / 2, 24);
+            c.fillText(tx, UW / 2, 24);
             const tg = [null, ELDER, SHOP, LORE][tut()];
             if (tg) {
               /* arrow position converted from world to screen-fixed units (HUD transform is active here) */
-              const ax = (tg.x - CAM.x) * ZOOM,
-                ay = (tg.y - (tg.r || 20) - 34 + Math.sin(S.tm * 6) * 5 - CAM.y) * ZOOM;
+              const ax = ((tg.x - CAM.x) * ZOOM - VLEFT) * SCALE,
+                ay = ((tg.y - (tg.r || 20) - 34 + Math.sin(S.tm * 6) * 5 - CAM.y) * ZOOM - VTOP) * SCALE;
               c.fillStyle = "#ffd84a";
               c.beginPath();
               c.moveTo(ax, ay + 10);
@@ -3361,29 +3372,30 @@
           if (tut() >= 4) qTrack(ar ? 62 : 12);
         }
         if (ar && b) {
-          bar(250, 16, 400, 14, b.hp / b.mh, b.ph == 2 ? "#ff4d8d" : "#a78bff");
+          const bw = Math.min(400, UW - 32);
+          bar((UW - bw) / 2, 16, bw, 14, b.hp / b.mh, b.ph == 2 ? "#ff4d8d" : "#a78bff");
           c.textAlign = "center";
           c.fillStyle = "#fff";
-          c.fillText("Rune Warden  -  Phase " + b.ph + "   " + S.at.toFixed(0) + "s", 450, 46);
+          c.fillText("Rune Warden  -  Phase " + b.ph + "   " + S.at.toFixed(0) + "s", UW / 2, 46);
           if (b.fl > 0) {
             c.font = "bold 34px Georgia";
             c.fillStyle = "#ff4d8d";
-            c.fillText("PHASE 2", 450, 120);
+            c.fillText("PHASE 2", UW / 2, 120);
           }
         }
         if (S.end) {
           c.fillStyle = "#000a";
-          c.fillRect(0, 230, W, 120);
+          c.fillRect(0, UH / 2 - 60, UW, 120);
           c.textAlign = "center";
           c.font = "bold 52px Georgia";
           c.fillStyle = S.end == "win" ? "#7dff9a" : "#ff6070";
-          c.fillText(S.end == "win" ? "VICTORY" : "DEFEAT", 450, 300);
+          c.fillText(S.end == "win" ? "VICTORY" : "DEFEAT", UW / 2, UH / 2 + 10);
           c.font = "15px Georgia";
           c.fillStyle = "#fff";
           c.fillText(
             S.end == "win" ? "+" + coin + " gold  ·  returning to the hub..." : "Returning to the hub...",
-            450,
-            330,
+            UW / 2,
+            UH / 2 + 40,
           );
         }
         if (msgT > 0) {
@@ -3393,8 +3405,8 @@
           c.fillStyle = "#ffd84a";
           c.strokeStyle = "#000";
           c.lineWidth = 3;
-          c.strokeText(msg, 450, 560);
-          c.fillText(msg, 450, 560);
+          c.strokeText(msg, UW / 2, UH - 40);
+          c.fillText(msg, UW / 2, UH - 40);
         }
         c.restore();
       }
