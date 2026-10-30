@@ -1,5 +1,5 @@
 {
-  "note": "Guild inn: bar, blackjack, boards, guild",
+  "note": "Camera follows the player with lag",
   "board": [
     {
       "id": "R1",
@@ -95,6 +95,20 @@
   "log": [
     {
       "k": "in",
+      "t": "Camera follows player (lerp)",
+      "at": "2026-10-30T14:30:35.712Z",
+      "add": 25,
+      "del": 6
+    },
+    {
+      "k": "fix",
+      "t": "HUD stays fixed on screen",
+      "at": "2026-10-30T14:30:35.712Z",
+      "add": 25,
+      "del": 6
+    },
+    {
+      "k": "in",
       "t": "Barkeep + blackjack",
       "at": "2026-10-30T14:28:31.997Z",
       "add": 0,
@@ -162,27 +176,13 @@
       "at": "2026-10-30T14:23:20.614Z",
       "add": 1,
       "del": 1
-    },
-    {
-      "k": "out",
-      "t": "Floating island art",
-      "at": "2026-10-30T14:23:20.614Z",
-      "add": 1,
-      "del": 1
-    },
-    {
-      "k": "in",
-      "t": "NPC rugs + fireplace",
-      "at": "2026-10-30T14:23:20.614Z",
-      "add": 1,
-      "del": 1
     }
   ],
   "stats": {
     "tests": 66,
     "prevTests": 66,
     "failed": 0,
-    "today": 27,
+    "today": 28,
     "spark": [
       0,
       0,
@@ -195,7 +195,7 @@
       0,
       0,
       4,
-      23
+      24
     ],
     "lines": [
       0,
@@ -213,7 +213,7 @@
     ],
     "features": 8,
     "open": 9,
-    "at": "2026-10-30T14:28:31.997Z"
+    "at": "2026-10-30T14:30:35.712Z"
   },
-  "ver": "0.5.3"
+  "ver": "0.5.4"
 }
