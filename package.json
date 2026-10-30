@@ -18,10 +18,12 @@
     "files": [
       "index.html",
       "main.js",
-      "ads-config.js"
+      "ads-config.js",
+      "assets/**"
     ],
     "win": {
-      "target": "portable"
+      "target": "portable",
+      "icon": "assets/icon.png"
     }
   }
 }

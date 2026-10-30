@@ -1,0 +1,25 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 900 220" width="900" height="220">
+  <!-- Runebound logo: emblem + carved gold wordmark. Transparent background. -->
+  <defs>
+    <linearGradient id="gold" x1="0" y1="0" x2="0" y2="1">
+      <stop offset="0" stop-color="#fff1a8"/>
+      <stop offset=".5" stop-color="#ffcf3a"/>
+      <stop offset="1" stop-color="#a86f00"/>
+    </linearGradient>
+    <filter id="glow" x="-20%" y="-50%" width="140%" height="200%">
+      <feGaussianBlur stdDeviation="6" result="b"/>
+      <feFlood flood-color="#3fd6c6" flood-opacity=".55"/>
+      <feComposite in2="b" operator="in" result="g"/>
+      <feMerge><feMergeNode in="g"/><feMergeNode in="SourceGraphic"/></feMerge>
+    </filter>
+  </defs>
+  <g filter="url(#glow)">
+    <!-- emblem -->
+    <path d="M110 20 200 110 110 200 20 110Z" fill="#120d05" stroke="url(#gold)" stroke-width="9" stroke-linejoin="round"/>
+    <path d="M92 66v88M92 68h20c17 0 24 9 24 21s-7 21-24 21H92M109 110l30 44" fill="none" stroke="url(#gold)" stroke-width="12" stroke-linecap="round" stroke-linejoin="round"/>
+    <!-- wordmark -->
+    <text x="232" y="138" font-family="Cinzel, 'Trajan Pro', Georgia, 'Times New Roman', serif" font-weight="700" font-size="92" letter-spacing="10" fill="url(#gold)" stroke="#3a2600" stroke-width="2">RUNEBOUND</text>
+    <path d="M236 162h620" stroke="#3fd6c6" stroke-width="3" stroke-dasharray="2 12" stroke-linecap="round"/>
+  </g>
+  <text x="240" y="196" font-family="Georgia, serif" font-style="italic" font-size="22" letter-spacing="4" fill="#9fe8df">raid as one · bound by runes</text>
+</svg>

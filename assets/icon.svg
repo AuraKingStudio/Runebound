@@ -1,0 +1,30 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 256 256" width="256" height="256">
+  <!-- Runebound app icon: gold rune diamond with an "R" rune on a dark arcane tile -->
+  <defs>
+    <radialGradient id="bg" cx="50%" cy="42%" r="70%">
+      <stop offset="0" stop-color="#1d4a52"/>
+      <stop offset=".55" stop-color="#0f1c26"/>
+      <stop offset="1" stop-color="#070a0f"/>
+    </radialGradient>
+    <linearGradient id="gold" x1="0" y1="0" x2="0" y2="1">
+      <stop offset="0" stop-color="#fff1a8"/>
+      <stop offset=".45" stop-color="#ffcf3a"/>
+      <stop offset="1" stop-color="#b87a00"/>
+    </linearGradient>
+    <filter id="glow" x="-50%" y="-50%" width="200%" height="200%">
+      <feGaussianBlur stdDeviation="7" result="b"/>
+      <feMerge><feMergeNode in="b"/><feMergeNode in="SourceGraphic"/></feMerge>
+    </filter>
+  </defs>
+  <rect width="256" height="256" rx="52" fill="url(#bg)"/>
+  <rect x="5" y="5" width="246" height="246" rx="48" fill="none" stroke="#3fd6c6" stroke-opacity=".45" stroke-width="3"/>
+  <!-- teal rune ring -->
+  <circle cx="128" cy="128" r="92" fill="none" stroke="#3fd6c6" stroke-width="3" stroke-dasharray="4 10" opacity=".7"/>
+  <!-- gold diamond -->
+  <g filter="url(#glow)">
+    <path d="M128 30 214 128 128 226 42 128Z" fill="#120d05" stroke="url(#gold)" stroke-width="10" stroke-linejoin="round"/>
+    <path d="M128 58 188 128 128 198 68 128Z" fill="none" stroke="#ffcf3a" stroke-opacity=".35" stroke-width="3"/>
+    <!-- "R" rune (raidho-like) -->
+    <path d="M108 82v94M108 84h22c18 0 26 10 26 22s-8 22-26 22h-22M126 128l32 48" fill="none" stroke="url(#gold)" stroke-width="13" stroke-linecap="round" stroke-linejoin="round"/>
+  </g>
+</svg>

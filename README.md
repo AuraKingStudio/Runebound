@@ -1,7 +1,12 @@
+![Runebound](assets/banner.png)
+
+**Play in your browser:** https://aurakingstudio.github.io/Runebound/
+
 # Runebound (solo prototype)
 
 - **Quickest:** double-click `index.html` (works offline, everything is embedded).
-- **Desktop app / .exe:** install Node.js, then in this folder run `npm install` and `npm start`.
+- **Windows .exe:** double-click `build-exe.bat` (needs Node.js). The .exe appears in `dist/`.
+- **Desktop app / .exe (manual):** install Node.js, then in this folder run `npm install` and `npm start`.
   For a Windows portable .exe run `npm run dist` (build it on Windows; the file appears in `dist/`).
 - Progress (gold, upgrades, quests) is saved in the browser/app storage.
 - Press **Esc** or **P** (or use Pause) to pause. The optional, compact AdSense slot appears only in this menu.
