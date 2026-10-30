@@ -798,9 +798,10 @@
           FX.push({ x, y, vx: Math.cos(a) * s, vy: Math.sin(a) * s, l, m: l, col, r: rnd(1.5, 3.2) });
         }
       }
-      function ftxt(x, y, t, col) {
+      /* ftxt(x, y, text, color, size = 15): floating text that rises and fades (damage numbers, rewards). */
+      function ftxt(x, y, t, col, sz) {
         if (!SET.dmg) return;
-        FT.push({ x: x + rnd(-10, 10), y, t, col, l: 0.9 });
+        FT.push({ x: x + rnd(-10, 10), y, t, col, sz, l: 0.9 });
       }
       const shake = (v) => {
         shk = Math.max(shk, v * SET.shake);
@@ -1030,7 +1031,7 @@
         p.dvy = (y / l) * (D.d / D.t);
         p.ds = D.t;
         p.dcd = DEV.nocd ? 0 : D.cd * cdm() * (bless("swift") ? 0.5 : 1);
-        if (D.ar) { p.ar = D.ar; ftxt(p.x, p.y - 30, "ARMOR", "#4da3ff"); }
+        if (D.ar) { p.ar = D.ar; ftxt(p.x, p.y - 30, "+armor", "#cfe6ff", 11); }
         if (D.inv) p.inv = D.inv;
         if (D.hl) heal(p, D.hl);
         burst(p.x, p.y, SKC[p.cls], 10, 90);
@@ -2421,7 +2422,15 @@
           c.stroke();
         }
         c.restore();
-        bar(-14, -PR - 12, 28, 4, p.hp / p.mh, "#48e07a");
+        /* health bar turns white while armored (tank dash); thin strip above = armor time left */
+        bar(-14, -PR - 12, 28, 4, p.hp / p.mh, p.ar > 0 ? "#eef6ff" : "#48e07a");
+        if (p.ar > 0) {
+          c.fillStyle = "#ffffff";
+          c.shadowColor = "#cfe6ff";
+          c.shadowBlur = 6;
+          c.fillRect(-14, -PR - 15, 28 * cl(p.ar / DASH.tank.ar, 0, 1), 2);
+          c.shadowBlur = 0;
+        }
         if (p === P) {
           /* level badge on the left: grows with level, tier color, pops on level-up */
           const L = lvlInfo().L,
@@ -2629,6 +2638,7 @@
           f.l -= dt;
           f.y -= 38 * dt;
           c.globalAlpha = cl(f.l * 2, 0, 1);
+          c.font = `bold ${f.sz || 15}px Georgia`;
           c.fillStyle = f.col;
           c.strokeText(f.t, f.x, f.y);
           c.fillText(f.t, f.x, f.y);
