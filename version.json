@@ -1,5 +1,5 @@
 {
-  "note": "Hub: Raiders sign over portal, desk removed",
+  "note": "Hub: skill buttons small and faded",
   "board": [
     {
       "id": "R1",
@@ -95,6 +95,13 @@
   "log": [
     {
       "k": "fix",
+      "t": "Skill buttons faded in hub",
+      "at": "2026-10-30T14:38:39.967Z",
+      "add": 73,
+      "del": 123
+    },
+    {
+      "k": "fix",
       "t": "Raiders sign moved over portal",
       "at": "2026-10-30T14:37:15.662Z",
       "add": 4,
@@ -169,20 +176,13 @@
       "at": "2026-10-30T14:33:25.079Z",
       "add": 34,
       "del": 6
-    },
-    {
-      "k": "in",
-      "t": "Refresh pages of 5",
-      "at": "2026-10-30T14:33:25.079Z",
-      "add": 34,
-      "del": 6
     }
   ],
   "stats": {
     "tests": 71,
     "prevTests": 71,
     "failed": 0,
-    "today": 38,
+    "today": 39,
     "spark": [
       0,
       0,
@@ -194,7 +194,7 @@
       0,
       0,
       0,
-      7,
+      8,
       31
     ],
     "lines": [
@@ -208,12 +208,12 @@
       0,
       0,
       0,
-      9442,
-      1561
+      9464,
+      1598
     ],
-    "features": 7,
+    "features": 6,
     "open": 9,
-    "at": "2026-10-30T14:37:15.662Z"
+    "at": "2026-10-30T14:38:39.967Z"
   },
-  "ver": "0.5.14"
+  "ver": "0.5.15"
 }
