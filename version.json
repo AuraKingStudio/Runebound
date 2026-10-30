@@ -1,5 +1,5 @@
 {
-  "note": "Feed: version, candles, curves",
+  "note": "Hub is now a guild inn",
   "board": [
     {
       "id": "R1",
@@ -95,6 +95,27 @@
   "log": [
     {
       "k": "in",
+      "t": "Guild inn hub art",
+      "at": "2026-10-30T14:23:20.614Z",
+      "add": 1,
+      "del": 1
+    },
+    {
+      "k": "out",
+      "t": "Floating island art",
+      "at": "2026-10-30T14:23:20.614Z",
+      "add": 1,
+      "del": 1
+    },
+    {
+      "k": "in",
+      "t": "NPC rugs + fireplace",
+      "at": "2026-10-30T14:23:20.614Z",
+      "add": 1,
+      "del": 1
+    },
+    {
+      "k": "in",
       "t": "Version tracking",
       "at": "2026-10-30T14:20:02.270Z",
       "add": 49,
@@ -126,7 +147,7 @@
     "tests": 60,
     "prevTests": 60,
     "failed": 0,
-    "today": 24,
+    "today": 25,
     "spark": [
       0,
       0,
@@ -139,7 +160,7 @@
       0,
       0,
       3,
-      21
+      22
     ],
     "lines": [
       0,
@@ -153,11 +174,11 @@
       0,
       0,
       9014,
-      1205
+      1258
     ],
-    "features": 4,
+    "features": 6,
     "open": 9,
-    "at": "2026-10-30T14:20:02.270Z"
+    "at": "2026-10-30T14:23:20.614Z"
   },
-  "ver": "0.5.0"
+  "ver": "0.5.1"
 }
