@@ -1,5 +1,5 @@
 {
-  "note": "Stools under the Innkeeper",
+  "note": "Bottle shelf on top-left north wall",
   "board": [
     {
       "id": "R1",
@@ -94,6 +94,13 @@
   ],
   "log": [
     {
+      "k": "in",
+      "t": "Bottle shelf, top-left wall",
+      "at": "2026-10-30T14:43:11.929Z",
+      "add": 18,
+      "del": 1
+    },
+    {
       "k": "fix",
       "t": "Stools tucked under Innkeeper",
       "at": "2026-10-30T14:42:40.146Z",
@@ -169,20 +176,13 @@
       "at": "2026-10-30T14:39:14.717Z",
       "add": 36,
       "del": 1
-    },
-    {
-      "k": "in",
-      "t": "Orbiting motes and pulse",
-      "at": "2026-10-30T14:39:14.717Z",
-      "add": 36,
-      "del": 1
     }
   ],
   "stats": {
     "tests": 71,
     "prevTests": 71,
     "failed": 0,
-    "today": 49,
+    "today": 50,
     "spark": [
       0,
       0,
@@ -195,7 +195,7 @@
       0,
       0,
       10,
-      39
+      40
     ],
     "lines": [
       0,
@@ -209,11 +209,11 @@
       0,
       0,
       9506,
-      1889
+      1893
     ],
     "features": 3,
     "open": 9,
-    "at": "2026-10-30T14:42:40.146Z"
+    "at": "2026-10-30T14:43:11.929Z"
   },
-  "ver": "0.5.25"
+  "ver": "0.5.26"
 }

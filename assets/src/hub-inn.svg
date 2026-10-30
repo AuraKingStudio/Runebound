@@ -131,6 +131,23 @@
     <rect x="773" y="92" width="4" height="9" fill="#2a2420"/><rect x="771" y="100" width="9" height="16" rx="2" fill="#b8731a" stroke="#1a120a" stroke-width="1"/><rect x="773" y="104" width="2" height="6" fill="#fff8"/>
     
   </g>
+  <!-- TOP-LEFT NORTH WALL: bottle shelf -->
+  <g filter="url(#shadow)"><rect x="132" y="116" width="200" height="8" rx="2" fill="url(#wood)" stroke="#2e1d10" stroke-width="1.5"/></g>
+  <g>
+    <rect x="142" y="92" width="4" height="9" fill="#2a2420"/><rect x="140" y="100" width="9" height="16" rx="2" fill="#7a2230" stroke="#1a120a" stroke-width="1"/><rect x="142" y="104" width="2" height="6" fill="#fff8"/>
+    <rect x="157" y="92" width="4" height="9" fill="#2a2420"/><rect x="155" y="100" width="9" height="16" rx="2" fill="#1d7f78" stroke="#1a120a" stroke-width="1"/><rect x="157" y="104" width="2" height="6" fill="#fff8"/>
+    <rect x="172" y="92" width="4" height="9" fill="#2a2420"/><rect x="170" y="100" width="9" height="16" rx="2" fill="#c9a24a" stroke="#1a120a" stroke-width="1"/><rect x="172" y="104" width="2" height="6" fill="#fff8"/>
+    <rect x="187" y="92" width="4" height="9" fill="#2a2420"/><rect x="185" y="100" width="9" height="16" rx="2" fill="#4a3a7a" stroke="#1a120a" stroke-width="1"/><rect x="187" y="104" width="2" height="6" fill="#fff8"/>
+    <rect x="202" y="92" width="4" height="9" fill="#2a2420"/><rect x="200" y="100" width="9" height="16" rx="2" fill="#2e5c3a" stroke="#1a120a" stroke-width="1"/><rect x="202" y="104" width="2" height="6" fill="#fff8"/>
+    <rect x="217" y="92" width="4" height="9" fill="#2a2420"/><rect x="215" y="100" width="9" height="16" rx="2" fill="#b8731a" stroke="#1a120a" stroke-width="1"/><rect x="217" y="104" width="2" height="6" fill="#fff8"/>
+    <rect x="232" y="92" width="4" height="9" fill="#2a2420"/><rect x="230" y="100" width="9" height="16" rx="2" fill="#5a7a2a" stroke="#1a120a" stroke-width="1"/><rect x="232" y="104" width="2" height="6" fill="#fff8"/>
+    <rect x="247" y="92" width="4" height="9" fill="#2a2420"/><rect x="245" y="100" width="9" height="16" rx="2" fill="#8a3b7a" stroke="#1a120a" stroke-width="1"/><rect x="247" y="104" width="2" height="6" fill="#fff8"/>
+    <rect x="262" y="92" width="4" height="9" fill="#2a2420"/><rect x="260" y="100" width="9" height="16" rx="2" fill="#7a2230" stroke="#1a120a" stroke-width="1"/><rect x="262" y="104" width="2" height="6" fill="#fff8"/>
+    <rect x="277" y="92" width="4" height="9" fill="#2a2420"/><rect x="275" y="100" width="9" height="16" rx="2" fill="#c9a24a" stroke="#1a120a" stroke-width="1"/><rect x="277" y="104" width="2" height="6" fill="#fff8"/>
+    <rect x="292" y="92" width="4" height="9" fill="#2a2420"/><rect x="290" y="100" width="9" height="16" rx="2" fill="#1d7f78" stroke="#1a120a" stroke-width="1"/><rect x="292" y="104" width="2" height="6" fill="#fff8"/>
+    <rect x="307" y="92" width="4" height="9" fill="#2a2420"/><rect x="305" y="100" width="9" height="16" rx="2" fill="#b8731a" stroke="#1a120a" stroke-width="1"/><rect x="307" y="104" width="2" height="6" fill="#fff8"/>
+    
+  </g>
   <!-- timber frame, back layer (2x4 beams along the walls) -->
   <g fill="url(#wood)" stroke="#2e1d10" stroke-width="2" filter="url(#shadow)">
     <rect x="86" y="96" width="728" height="10"/>
