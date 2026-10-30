@@ -1,5 +1,5 @@
 {
-  "note": "Merchant icon same size as others",
+  "note": "Build board is now a live crypto-style feed",
   "board": [
     {
       "id": "R1",
@@ -94,6 +94,21 @@
   ],
   "log": [
     {
+      "k": "in",
+      "t": "Live news ticker",
+      "at": "2026-10-30T14:16:17.045Z"
+    },
+    {
+      "k": "in",
+      "t": "Tests / commits chips",
+      "at": "2026-10-30T14:16:17.045Z"
+    },
+    {
+      "k": "in",
+      "t": "12h activity graph",
+      "at": "2026-10-30T14:16:17.045Z"
+    },
+    {
       "t": "Merchant icon normal size",
       "k": "fix"
     },
@@ -113,5 +128,27 @@
       "k": "in",
       "t": "Ghosts fill with progress"
     }
-  ]
+  ],
+  "stats": {
+    "tests": 60,
+    "prevTests": 60,
+    "failed": 0,
+    "today": 23,
+    "spark": [
+      0,
+      0,
+      0,
+      0,
+      0,
+      0,
+      0,
+      0,
+      0,
+      0,
+      1,
+      22
+    ],
+    "open": 9,
+    "at": "2026-10-30T14:16:17.045Z"
+  }
 }

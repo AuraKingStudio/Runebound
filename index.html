@@ -451,6 +451,25 @@
       #board.top ul { columns: 2; column-gap: 24px; }
       #board ul { list-style: none; margin: 6px 0 12px; padding: 0; }
       #board li { padding: 3px 0; border-bottom: 1px solid #1c2832; break-inside: avoid; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+      /* crypto-news build feed */
+      #board .live { font: bold 12px "Cinzel", Georgia; color: #ff6070; letter-spacing: 2px; display: flex; align-items: center; gap: 6px; }
+      #board .dot { width: 8px; height: 8px; border-radius: 50%; background: #ff3b4e; box-shadow: 0 0 8px #ff3b4e; animation: livePulse 1.2s ease-in-out infinite; }
+      @keyframes livePulse { 50% { opacity: 0.3; transform: scale(0.7); } }
+      #board .ticker { overflow: hidden; white-space: nowrap; margin: 8px -10px; padding: 5px 0; background: #05080c; border-block: 1px solid #1c2832; }
+      #board .tkr { display: inline-block; animation: tickerMove 28s linear infinite; }
+      #board .tk { margin-right: 26px; font-size: 11px; }
+      #board .tk i { color: #8fa3ad; font-style: normal; font-size: 9px; margin-left: 6px; }
+      @keyframes tickerMove { to { transform: translateX(-50%); } }
+      #board .chips { display: grid; grid-template-columns: repeat(3, 1fr); gap: 6px; margin: 6px 0; }
+      #board .chip { background: #0f1a22; border: 1px solid #1c2832; border-radius: 6px; padding: 5px 6px; }
+      #board .chip span { display: block; font-size: 8px; color: #8fa3ad; letter-spacing: 1px; }
+      #board .chip b { font: bold 18px Georgia; color: #e6f1ef; font-variant-numeric: tabular-nums; }
+      #board .chip em { font-style: normal; font-size: 10px; margin-left: 4px; color: #8fa3ad; }
+      #board .chip em.up { color: #7dff9a; } #board .chip em.down { color: #ff6070; }
+      #board .spark { margin: 6px 0 4px; }
+      #board .spark span { font-size: 8px; color: #8fa3ad; letter-spacing: 1px; }
+      #board .spark svg { display: block; width: 100%; height: 34px; }
+      #board.top .chips, #board.top .spark, #board.top .ticker { display: none; }
       #board .tag { display: inline-block; min-width: 40px; font: bold 9px/16px Georgia, serif; text-align: center; border-radius: 4px; margin-right: 6px; letter-spacing: 0.5px; }
       #board .tag.in { background: #1f5c34; color: #7dff9a; }
       #board .tag.out { background: #5c1f26; color: #ff8a94; }
@@ -2090,7 +2109,21 @@
           const st = { todo: "TO DO", wip: "IN PROGRESS", done: "DONE" };
           /* recap of the latest code changes (newest first) */
           const log = (j.log || []).slice(0, 5).map((l) => `<li><span class="tag ${l.k || "in"}">${{ in: "+ IN", out: "− OUT", fix: "~ FIX" }[l.k || "in"]}</span> ${l.t}</li>`) /* k: in | out | fix */.join("");
-          el.innerHTML = `<div class="lg"><b>LATEST CHANGES</b><ul>${log}</ul></div>
+          /* crypto-news style header: LIVE ticker, stat chips, commits-per-hour sparkline (numbers from tools/board.js) */
+          const sx = j.stats || {}, dT = (sx.tests || 0) - (sx.prevTests || sx.tests || 0),
+            ago = (iso) => { const m = Math.round((Date.now() - Date.parse(iso)) / 60e3); return !iso || isNaN(m) ? "" : m < 1 ? "now" : m < 60 ? m + "m" : Math.round(m / 60) + "h"; },
+            tick = (j.log || []).slice(0, 8).map((l) => `<span class="tk"><span class="tag ${l.k || "in"}">${(l.k || "in").toUpperCase()}</span>${l.t}<i>${ago(l.at)}</i></span>`).join(""),
+            sp = sx.spark || [], mx = Math.max(1, ...sp),
+            pts = sp.map((v, i) => `${(i / Math.max(1, sp.length - 1)) * 100},${28 - (v / mx) * 24}`).join(" ");
+          el.innerHTML = `<div class="live"><span class="dot"></span>LIVE<span class="sm"> · build feed</span></div>
+            <div class="ticker"><div class="tkr">${tick}${tick}</div></div>
+            <div class="chips">
+              <div class="chip"><span>TESTS</span><b>${sx.tests ?? "—"}</b><em class="${dT > 0 ? "up" : dT < 0 ? "down" : ""}">${dT > 0 ? "▲" + dT : dT < 0 ? "▼" + -dT : "■ 0"}</em></div>
+              <div class="chip"><span>COMMITS TODAY</span><b>${sx.today ?? "—"}</b></div>
+              <div class="chip"><span>OPEN TASKS</span><b>${sx.open ?? rows.length}</b></div>
+            </div>
+            ${sp.length ? `<div class="spark"><span>ACTIVITY · 12H</span><svg viewBox="0 0 100 30" preserveAspectRatio="none"><polyline points="0,30 ${pts} 100,30" fill="#7dff9a22" stroke="none"/><polyline points="${pts}" fill="none" stroke="#7dff9a" stroke-width="1.5" vector-effect="non-scaling-stroke"/></svg></div>` : ""}
+            <div class="lg"><b>LATEST CHANGES</b><ul>${log}</ul></div>
             <div class="tb"><b>BUILD BOARD</b><span class="sm"> · say "do R3"</span>
             <table><tr><th>#</th><th>P</th><th>Task</th><th>State</th></tr>${rows
               .map((r) => `<tr class="${r.s}"><td>${r.id}</td><td class="p${r.p}">P${r.p}</td><td>${r.t}</td><td>${st[r.s] || r.s}</td></tr>`)
@@ -2111,6 +2144,7 @@
       }
       addEventListener("resize", boardFit);
       showBoard();
+      if (IS_LOCAL) setInterval(showBoard, 30e3); /* live feed refresh */
       /* popMsg(text, z = size multiplier, ms = time on screen) */
       function popMsg(t, z = 1, ms = 2000) {
         const d = document.createElement("div");
