@@ -1511,6 +1511,13 @@
           $("dp").innerHTML = `<h2>📜 The Archivist</h2><p>The Archivist closes his ledger. "My voice is spent, traveller. Another tale in ${m ? m + "m " : ""}${s % 60}s."</p><button class="alt" onclick="closeDlg()">Farewell</button>`;
           return;
         }
+        /* anti-spam: at least 15s between tales (one per conversation, no repeat button) */
+        const wait = Math.ceil((15e3 - (Date.now() - (V.lta || 0))) / 1000);
+        if (wait > 0) {
+          $("dp").innerHTML = `<h2>📜 The Archivist</h2><p>The Archivist is still catching his breath. Ask again in ${wait}s.</p><button class="alt" onclick="closeDlg()">Farewell</button>`;
+          return;
+        }
+        V.lta = Date.now();
         V.lp--;
         V.lt = (V.lt || 0) + 1;
         const n = V.lt,
@@ -1528,7 +1535,7 @@
           <p class="tale ${kind}">${rare ? "✨ " : ""}${text}</p>
           ${rare ? `<p class="gold">Secret page! +50 gold</p>` : ""}
           ${ms ? `<div class="qo done">🏆 ${n} tales heard! ${ms[1]} +${ms[0]} gold</div>` : ""}
-          <button onclick="loreUI()">Another tale</button><button class="alt" onclick="closeDlg()">Farewell</button>`;
+          <button class="alt" onclick="closeDlg()">Farewell</button>`;
       }
       const qHead = (st, q, tag) =>
         `<div class="qh"><span class="qm ${st}"><b>${QM[st].g}</b></span><div><div class="qtag">${tag}</div><div class="qn">${q.n}</div></div></div>`;

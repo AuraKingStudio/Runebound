@@ -1,5 +1,5 @@
 {
-  "note": "Rune-style Listen button, Archivist pool + secrets, boss tips",
+  "note": "Archivist: one tale per talk, 15s gap",
   "board": [
     {
       "id": "R1",
@@ -94,16 +94,16 @@
   ],
   "log": [
     {
+      "t": "Archivist anti-spam",
+      "at": "15:58"
+    },
+    {
       "t": "Rune-style Listen button",
       "at": "15:50"
     },
     {
       "t": "Archivist pool + secrets",
       "at": "15:45"
-    },
-    {
-      "t": "Boss weakness tips",
-      "at": "15:40"
     }
   ]
 }
