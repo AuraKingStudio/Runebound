@@ -1,5 +1,5 @@
 {
-  "note": "Portal open from start; junk assets removed",
+  "note": "Hub: Raiders sign over portal, desk removed",
   "board": [
     {
       "id": "R1",
@@ -94,6 +94,20 @@
   ],
   "log": [
     {
+      "k": "fix",
+      "t": "Raiders sign moved over portal",
+      "at": "2026-10-30T14:37:15.662Z",
+      "add": 4,
+      "del": 55
+    },
+    {
+      "k": "out",
+      "t": "Long desk removed",
+      "at": "2026-10-30T14:37:15.662Z",
+      "add": 4,
+      "del": 55
+    },
+    {
       "k": "in",
       "t": "Portal open from the start",
       "at": "2026-10-30T14:36:43.815Z",
@@ -162,27 +176,13 @@
       "at": "2026-10-30T14:33:25.079Z",
       "add": 34,
       "del": 6
-    },
-    {
-      "k": "in",
-      "t": "Sort by wins or members",
-      "at": "2026-10-30T14:33:25.079Z",
-      "add": 34,
-      "del": 6
-    },
-    {
-      "k": "fix",
-      "t": "Guild screen simplified",
-      "at": "2026-10-30T14:32:50.956Z",
-      "add": 12,
-      "del": 21
     }
   ],
   "stats": {
     "tests": 71,
     "prevTests": 71,
     "failed": 0,
-    "today": 37,
+    "today": 38,
     "spark": [
       0,
       0,
@@ -195,7 +195,7 @@
       0,
       0,
       7,
-      30
+      31
     ],
     "lines": [
       0,
@@ -209,11 +209,11 @@
       0,
       0,
       9442,
-      1557
+      1561
     ],
-    "features": 8,
+    "features": 7,
     "open": 9,
-    "at": "2026-10-30T14:36:43.815Z"
+    "at": "2026-10-30T14:37:15.662Z"
   },
-  "ver": "0.5.13"
+  "ver": "0.5.14"
 }
