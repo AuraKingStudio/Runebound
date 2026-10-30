@@ -1,5 +1,5 @@
 {
-  "note": "Guild Board: Join / Create / Leaderboard tabs",
+  "note": "Guild: simpler tabs, no placeholders",
   "board": [
     {
       "id": "R1",
@@ -94,6 +94,13 @@
   ],
   "log": [
     {
+      "k": "fix",
+      "t": "Guild screen simplified",
+      "at": "2026-10-30T14:32:50.956Z",
+      "add": 12,
+      "del": 21
+    },
+    {
       "k": "in",
       "t": "Guild Board 3 tabs",
       "at": "2026-10-30T14:31:13.570Z",
@@ -169,20 +176,13 @@
       "at": "2026-10-30T14:28:09.202Z",
       "add": 277,
       "del": 48
-    },
-    {
-      "k": "in",
-      "t": "Guild Board + recruits",
-      "at": "2026-10-30T14:28:09.202Z",
-      "add": 277,
-      "del": 48
     }
   ],
   "stats": {
     "tests": 69,
-    "prevTests": 66,
+    "prevTests": 69,
     "failed": 0,
-    "today": 29,
+    "today": 30,
     "spark": [
       0,
       0,
@@ -194,7 +194,7 @@
       0,
       0,
       0,
-      4,
+      5,
       25
     ],
     "lines": [
@@ -208,12 +208,12 @@
       0,
       0,
       0,
-      9080,
-      1715
+      9160,
+      1705
     ],
-    "features": 10,
+    "features": 9,
     "open": 9,
-    "at": "2026-10-30T14:31:13.570Z"
+    "at": "2026-10-30T14:32:50.956Z"
   },
-  "ver": "0.5.5"
+  "ver": "0.5.6"
 }
