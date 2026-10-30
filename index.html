@@ -450,7 +450,7 @@
       #board.top .tb { display: none; }
       #board.top ul { columns: 2; column-gap: 24px; }
       #board ul { list-style: none; margin: 6px 0 12px; padding: 0; }
-      #board li { padding: 3px 0; border-bottom: 1px solid #1c2832; break-inside: avoid; }
+      #board li { padding: 3px 0; border-bottom: 1px solid #1c2832; break-inside: avoid; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
       #board .lt { color: #8fa3ad; font-size: 10px; margin-right: 4px; }
       #board b { color: #ffd84a; letter-spacing: 1.5px; }
       #board table { width: 100%; border-collapse: collapse; margin-top: 8px; }
@@ -1763,12 +1763,12 @@
       function showBoard() {
         if (!IS_LOCAL || typeof fetch != "function") return;
         fetch("version.json?" + Date.now()).then((r) => r.json()).then((j) => {
-          const rows = (j.board || []).slice().sort((a, b) => (a.s == "done") - (b.s == "done") || a.p - b.p);
+          const rows = (j.board || []).filter((r) => r.s != "done").sort((a, b) => a.p - b.p).slice(0, 6); /* open tasks only */
           let el = $("board");
           if (!el) { el = document.createElement("div"); el.id = "board"; document.body.appendChild(el); }
           const st = { todo: "TO DO", wip: "IN PROGRESS", done: "DONE" };
           /* recap of the latest code changes (newest first) */
-          const log = (j.log || []).slice(0, 8).map((l) => `<li><span class="lt">${l.at || ""}</span> ${l.t}</li>`).join("");
+          const log = (j.log || []).slice(0, 3).map((l) => `<li><span class="lt">${l.at || ""}</span> ${l.t}</li>`).join("");
           el.innerHTML = `<div class="lg"><b>LATEST CHANGES</b><ul>${log}</ul></div>
             <div class="tb"><b>BUILD BOARD</b><span class="sm"> · say "do R3"</span>
             <table><tr><th>#</th><th>P</th><th>Task</th><th>State</th></tr>${rows

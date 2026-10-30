@@ -1,5 +1,5 @@
 {
-  "note": "Settings groundwork: shake, effects, volume, damage numbers, key binds",
+  "note": "Shorter change log",
   "board": [
     {
       "id": "R1",
@@ -94,36 +94,16 @@
   ],
   "log": [
     {
-      "t": "Latest-changes recap in the black margin (top on tall screens, side on wide)",
-      "at": "15:05"
+      "at": "15:20",
+      "t": "Shorter change log"
     },
     {
-      "t": "Arrow + dash follow the mouse over the whole screen",
-      "at": "14:55"
+      "at": "15:15",
+      "t": "Settings: shake, effects, volume"
     },
     {
-      "t": "Build board with priorities in the side margin (local only)",
-      "at": "14:55"
-    },
-    {
-      "t": "Update banner: reason only, smaller, 10s, shown once",
-      "at": "14:45"
-    },
-    {
-      "t": "Player token in NPC style, level badge, level-up shockwave",
-      "at": "14:40"
-    },
-    {
-      "t": "Dash for all classes: tank armor, DPS dodge, healer heal",
-      "at": "14:30"
-    },
-    {
-      "t": "Keyboard / touch / controller auto-detect + key badges",
-      "at": "14:20"
-    },
-    {
-      "t": "Icon, logo, banner; GitHub Pages live; auto push",
-      "at": "14:10"
+      "at": "15:05",
+      "t": "ZQSD / WASD by key position"
     }
   ]
 }
