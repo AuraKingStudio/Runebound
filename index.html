@@ -667,10 +667,10 @@
       const PORTAL = { x: 450, y: 150 },
         /* NPCs. g = emblem path (SVG path syntax, drawn on a 40x40 box centered at 0,0), gs = stroke instead of fill */
         /* Elder: wizard hat (wide brim + bent cone) */
-        ELDER = { x: 250, y: 300, ic: "🧙", nm: "Elder Jack", col: "#b48cff",
+        ELDER = { x: 250, y: 300, ic: "🧙", nm: "The Elder", col: "#b48cff",
           g: "M-14 9q14 6 28 0q-2 4-14 5q-12-1-14-5zM-9 8L-1-12q3-5 9-3q-4 1-5 4L9 8q-9 3-18 0z" },
         /* Merchant: round coin bag with a tied neck and a coin mark */
-        SHOP = { x: 450, y: 468, r: 30, gz: 1.45, ic: "💰", nm: "Merchant", col: "#ffcf4d",
+        SHOP = { x: 450, y: 468, r: 30, gz: 1.45, ic: "💰", nm: "The Merchant", col: "#ffcf4d",
           g: "M-3-8q-6 3-10 10q-3 10 7 11h12q10-1 7-11q-4-7-10-10zM-3-9l-4-5q7 2 14 0l-4 5zM-1 0h4a2 2 0 0 1 0 4h-2a2 2 0 0 0 0 4h4" },
         LORE = { x: 650, y: 300, ic: "📜", nm: "The Archivist", col: "#5ad7ff", gs: 1,
           /* Archivist: rolled scroll with text lines */
@@ -936,8 +936,51 @@
           n: 0,
         };
       }
+      /* ---------- dash (all classes, different flavors) ----------
+         d = distance, t = duration (s), cd = cooldown (s). ar = armor seconds (half damage), inv = dodge seconds, hl = self-heal */
+      const DASH = {
+        tank: { d: 60, t: 0.14, cd: 5, ar: 2.5 },
+        dps: { d: 150, t: 0.13, cd: 3, inv: 0.35 },
+        heal: { d: 105, t: 0.15, cd: 4, hl: 20 },
+      };
+      const DIRV = { d: [0, 1], u: [0, -1], r: [1, 0], l: [-1, 0] };
+      /* dash(p): In: player. Out: starts a dash toward the move input (or facing), applies the class bonus. */
+      function dash(p) {
+        if (!p || p.hp <= 0 || (p.dcd || 0) > 0 || dlgOpen() || S.sc == "lobby" || S.end) return;
+        const D = DASH[p.cls];
+        let x = p.dx, y = p.dy;
+        if (!x && !y) [x, y] = DIRV[p.f || "d"];
+        const l = Math.hypot(x, y) || 1;
+        p.dvx = (x / l) * (D.d / D.t);
+        p.dvy = (y / l) * (D.d / D.t);
+        p.ds = D.t;
+        p.dcd = DEV.nocd ? 0 : D.cd * cdm();
+        if (D.ar) { p.ar = D.ar; ftxt(p.x, p.y - 30, "ARMOR", "#4da3ff"); }
+        if (D.inv) p.inv = D.inv;
+        if (D.hl) heal(p, D.hl);
+        burst(p.x, p.y, SKC[p.cls], 10, 90);
+        sfx("shot", 0.55);
+        shake(0.05);
+      }
+      /* dashStep(p, dt): moves a dashing player, ticks dash timers. Returns true while the dash is moving the player. */
+      function dashStep(p, dt) {
+        p.dcd = Math.max(0, (p.dcd || 0) - dt);
+        p.ar = Math.max(0, (p.ar || 0) - dt);
+        p.inv = Math.max(0, (p.inv || 0) - dt);
+        if (!(p.ds > 0)) return false;
+        p.ds -= dt;
+        p.x += p.dvx * dt;
+        p.y += p.dvy * dt;
+        clampW(p);
+        if (p.cls == "heal") burst(p.x, p.y, "#5dff8a", 2, 30); /* healer leaves a green trail */
+        GH.push({ x: p.x, y: p.y, cls: p.cls, f: p.f || "d", l: 0.18 }); /* afterimage */
+        return true;
+      }
+      let GH = []; /* dash afterimages */
       function hurt(p, d) {
         if (DEV.god) return;
+        if (p.inv > 0) { ftxt(p.x, p.y - 24, "DODGE", "#ff9f43"); return; }
+        if (p.ar > 0) d *= 0.5;
         p.hp = Math.max(0, p.hp - d);
         ftxt(p.x, p.y - 24, "-" + Math.round(d), "#ff6070");
         burst(p.x, p.y, "#ff6070", 8, 110);
@@ -1138,9 +1181,13 @@
             P.dx = v.x;
             P.dy = v.y;
           } else P.dx = P.dy = 0;
-          P.x += P.dx * k.sp * spm() * dt;
-          P.y += P.dy * k.sp * spm() * dt;
-          clampW(P);
+          /* facing snaps instantly to the dominant move direction */
+          if (P.dx || P.dy) P.f = Math.abs(P.dx) > Math.abs(P.dy) ? (P.dx > 0 ? "r" : "l") : P.dy > 0 ? "d" : "u";
+          if (!dashStep(P, dt)) {
+            P.x += P.dx * k.sp * spm() * dt;
+            P.y += P.dy * k.sp * spm() * dt;
+            clampW(P);
+          }
           for (let i = 0; i < 3; i++) P.cd[i] = Math.max(0, P.cd[i] - dt);
         }
         if (S.sc == "arena") arena(dt);
@@ -1243,8 +1290,8 @@
         ["L", "The Mendhands carried no blades. Their weapon was the simple refusal to let a friend fall."],
         ["L", "When the three orders fought as one, the Warden bled for the first time in a thousand years. That night was named the First Raid."],
         ["L", "A raid is not many heroes in one place. It is one hero with many hands."],
-        ["L", "The portal was torn open by Elder Jack's master. The cost was his sight and half his years."],
-        ["L", "Elder Jack does not speak of his master. If you listen at dusk, you may hear him whisper the name 'Orrin'."],
+        ["L", "The portal was torn open by the Elder's master. The cost was his sight and half his years."],
+        ["L", "The Elder does not speak of his master. If you listen at dusk, you may hear him whisper the name 'Orrin'."],
         ["L", "The Merchant came through the portal on the third night of the siege, carrying a pack heavier than a mule. He has never said from where."],
         ["L", "Gold in Runebound is minted from Warden shards. Every coin you spend once tried to kill someone."],
         ["L", "The hub was a battlefield once. Look at the stones: the scorch marks are older than the town."],
@@ -1362,7 +1409,7 @@
         `<div class="qh"><span class="qm ${st}"><b>${QM[st].g}</b></span><div><div class="qtag">${tag}</div><div class="qn">${q.n}</div></div></div>`;
       function elderUI() {
         const q = QUESTS[V.q];
-        let h = `<h2>🧙 Elder Jack</h2>`;
+        let h = `<h2>🧙 The Elder</h2>`;
         if (!q)
           h += `<p>You have completed every quest I had. The hub is safe, hero. Keep hunting the Warden for gold.</p>`;
         else if (V.qs == 0)
@@ -1397,7 +1444,7 @@
       function shopUI() {
         const total = UPG.reduce((a, u) => a + V.up[u.k], 0),
           all = UPG.length * MAXL;
-        let h = `<h2>💰 Merchant</h2><div class="purse"><span class="coin"></span><b id="pg">${V.gold}</b></div>
+        let h = `<h2>💰 The Merchant</h2><div class="purse"><span class="coin"></span><b id="pg">${V.gold}</b></div>
           <div class="mast"><span class="sm">Rune Mastery ${total}/${all}</span><div class="mbar"><i style="width:${(total / all) * 100}%"></i></div></div>`;
         for (const u of UPG) {
           const l = V.up[u.k],
@@ -1625,12 +1672,18 @@
         try { snap = JSON.parse(localStorage.getItem(HOT_KEY) || "null"); localStorage.removeItem(HOT_KEY); } catch (e) {}
         if (!snap || Date.now() - snap.at > 30000) return false;
         /* any recent reload = code changed: always show the banner */
-        setTimeout(() => popMsg("✨ Code updated", 3), 50);
+        setTimeout(showUpdate, 50);
         if (!snap.S || !snap.S.ps || !snap.S.ps[0]) return false;
         selK = snap.S.ps[0].cls; $("cls").dataset.k = selK;
         start(); S = snap.S; P = S.ps[0];
         closeDlg(); /* don't re-show the daily popup on every save */
         return true;
+      }
+      /* showUpdate(): "Code updated" banner + the reason, read from version.json ({"note": "..."}) next to index.html */
+      function showUpdate() {
+        const done = (n) => popMsg("✨ Updated" + (n ? ": " + n : ""), 1.5);
+        if (typeof fetch != "function") return done("");
+        fetch("version.json?" + Date.now()).then((r) => r.json()).then((j) => done(String(j.note || "").slice(0, 90))).catch(() => done(""));
       }
       /* popMsg(text): small animated banner at the top of the screen for ~2s. */
       function popMsg(t, z = 1) {
@@ -1688,7 +1741,8 @@
       /* ---------- input mode: keyboard / touch / controller ----------
          The last device used wins. body[data-in] drives which button hints show (CSS). */
       let INMODE = typeof matchMedia == "function" && matchMedia("(pointer: coarse)").matches ? "touch" : "kb";
-      const KEYHINT = { kb: ["J", "K", "L", "E"], pad: ["A", "X", "Y", "B"], touch: ["", "", "", ""] };
+      /* hint per slot: skill 1, skill 2, skill 3, interact, dash */
+      const KEYHINT = { kb: ["J", "K", "L", "E", "⇧"], pad: ["A", "X", "Y", "B", "RB"], touch: ["", "", "", "", ""] };
       function setIn(m) {
         if (INMODE == m) return;
         INMODE = m;
@@ -1711,6 +1765,7 @@
         if (edge(2)) press(1);
         if (edge(3)) press(2);
         if (edge(1)) dlgOpen() ? closeDlg() : inter();
+        if (edge(5) || edge(4)) dash(P); /* RB / LB */
         if (edge(9) && P) togglePause();
         PAD.prev = gp.buttons.map((b) => b.pressed);
       }
@@ -1778,6 +1833,7 @@
         if (k == "p" && P && !dlgOpen()) togglePause();
         kk[k] = 1;
         if (e.repeat) return;
+        if (k == "shift") dash(P);
         if (k == "j" || k == " ") press(0);
         if (k == "k") press(1);
         if (k == "l") press(2);
@@ -1960,7 +2016,7 @@
         c.textAlign = "left";
         c.font = "12px Georgia";
         c.fillStyle = dn ? "#7dff9a" : "#cfe";
-        c.fillText(V.qs == 0 ? "Talk to Elder Jack" : dn ? "Return to Elder Jack" : q.o, x + 58, y + 40);
+        c.fillText(V.qs == 0 ? "Talk to the Elder" : dn ? "Return to the Elder" : q.o, x + 58, y + 40);
         c.restore();
       }
       function npc(n, mark) {
