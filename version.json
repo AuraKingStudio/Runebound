@@ -1,5 +1,5 @@
 {
-  "note": "Hub skill icons tighter",
+  "note": "Skill levels 1-5 (shop), bottles on north wall",
   "board": [
     {
       "id": "R1",
@@ -94,6 +94,27 @@
   ],
   "log": [
     {
+      "k": "in",
+      "t": "Skill levels 1-5 bought in shop",
+      "at": "2026-10-30T14:46:07.637Z",
+      "add": 29,
+      "del": 2
+    },
+    {
+      "k": "in",
+      "t": "Each level adds 15% damage",
+      "at": "2026-10-30T14:46:07.637Z",
+      "add": 29,
+      "del": 2
+    },
+    {
+      "k": "fix",
+      "t": "Bottle shelf hung on north wall",
+      "at": "2026-10-30T14:46:07.637Z",
+      "add": 29,
+      "del": 2
+    },
+    {
       "k": "fix",
       "t": "Tighter hub skill icons",
       "at": "2026-10-30T14:44:33.532Z",
@@ -155,34 +176,13 @@
       "at": "2026-10-30T14:41:20.490Z",
       "add": 10,
       "del": 8
-    },
-    {
-      "k": "fix",
-      "t": "Locked NPCs fully hidden",
-      "at": "2026-10-30T14:41:00.369Z",
-      "add": 4,
-      "del": 4
-    },
-    {
-      "k": "fix",
-      "t": "Locked NPCs moved off furniture",
-      "at": "2026-10-30T14:41:00.369Z",
-      "add": 4,
-      "del": 4
-    },
-    {
-      "k": "in",
-      "t": "Timber frame + foreground beams",
-      "at": "2026-10-30T14:40:44.081Z",
-      "add": 39,
-      "del": 1
     }
   ],
   "stats": {
     "tests": 71,
     "prevTests": 71,
     "failed": 0,
-    "today": 53,
+    "today": 54,
     "spark": [
       0,
       0,
@@ -194,7 +194,7 @@
       0,
       0,
       0,
-      11,
+      12,
       42
     ],
     "lines": [
@@ -208,12 +208,12 @@
       0,
       0,
       0,
-      9592,
-      1845
+      9633,
+      1808
     ],
-    "features": 3,
+    "features": 4,
     "open": 9,
-    "at": "2026-10-30T14:44:33.532Z"
+    "at": "2026-10-30T14:46:07.637Z"
   },
-  "ver": "0.5.29"
+  "ver": "0.5.30"
 }
