@@ -1138,6 +1138,8 @@
       let GH = []; /* dash afterimages */
       let RINGS = []; /* level-up shockwaves */
       /* mouse position in game coordinates (for the facing arrow on keyboard + mouse) */
+      const ZOOM = 1.15,
+        CAM = { x: 0, y: 0 };
       /* camOff(): back to screen-fixed drawing (HUD, popups). Out: none (changes the canvas transform). */
       const camOff = () => c.setTransform(sc, 0, 0, sc, ox, oy);
       const MOUSE = { x: 0, y: 0, on: false };
@@ -1146,8 +1148,8 @@
         if (e.pointerType != "mouse") return;
         setIn("kb");
         const r = cv.getBoundingClientRect(), d = cv.width / r.width;
-        MOUSE.x = ((e.clientX - r.left) * d - ox) / sc;
-        MOUSE.y = ((e.clientY - r.top) * d - oy) / sc;
+        MOUSE.x = ((e.clientX - r.left) * d - ox) / sc / ZOOM + CAM.x;
+        MOUSE.y = ((e.clientY - r.top) * d - oy) / sc / ZOOM + CAM.y;
         MOUSE.on = true;
       });
       document.addEventListener("mouseleave", () => (MOUSE.on = false));
@@ -3078,6 +3080,15 @@
         c.imageSmoothingEnabled = true;
         c.imageSmoothingQuality = "high";
 
+        const vw = W / ZOOM,
+          vh = H / ZOOM,
+          tx = P ? cl(P.x - vw / 2, 0, W - vw) : (W - vw) / 2,
+          ty = P ? cl(P.y - vh / 2, 0, H - vh) : (H - vh) / 2,
+          k = 1 - Math.exp(-dt * 8);
+        CAM.x = cl(CAM.x + (tx - CAM.x) * k, 0, W - vw);
+        CAM.y = cl(CAM.y + (ty - CAM.y) * k, 0, H - vh);
+        c.scale(ZOOM, ZOOM);
+        c.translate(-CAM.x, -CAM.y);
 
         c.save();
         c.beginPath();
@@ -3322,8 +3333,8 @@
             const tg = [null, ELDER, SHOP, LORE][tut()];
             if (tg) {
               /* arrow position converted from world to screen-fixed units (HUD transform is active here) */
-              const ax = tg.x,
-                ay = tg.y - (tg.r || 20) - 34 + Math.sin(S.tm * 6) * 5;
+              const ax = (tg.x - CAM.x) * ZOOM,
+                ay = (tg.y - (tg.r || 20) - 34 + Math.sin(S.tm * 6) * 5 - CAM.y) * ZOOM;
               c.fillStyle = "#ffd84a";
               c.beginPath();
               c.moveTo(ax, ay + 10);
