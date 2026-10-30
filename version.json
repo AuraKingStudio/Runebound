@@ -1,1 +1,20 @@
-{ "note": "Smaller player, level badge, level-up shockwave, arrow follows mouse" }
+{
+  "note": "Arrow + dash follow the mouse everywhere; build board in the side margin",
+  "board": [
+    { "id": "R1", "p": 1, "t": "Arrow follows the mouse everywhere", "s": "done" },
+    { "id": "R2", "p": 1, "t": "Touch dash button (on-screen)", "s": "todo" },
+    { "id": "R11", "p": 1, "t": "Dash toward the mouse (keyboard); move dir on pad / phone", "s": "done" },
+    { "id": "R3", "p": 1, "t": "New hub drawn in code for 10 players (removes torch)", "s": "todo" },
+    { "id": "R4", "p": 2, "t": "Portal animation + reusable VFX library", "s": "todo" },
+    { "id": "R5", "p": 2, "t": "Lore on the boss and the portal", "s": "todo" },
+    { "id": "R6", "p": 2, "t": "Particle caps for 100-player raids", "s": "todo" },
+    { "id": "R7", "p": 2, "t": "Comments on older functions (input / output / what)", "s": "wip" },
+    { "id": "R8", "p": 3, "t": "Python server + thin JS client (multiplayer, bots)", "s": "todo" },
+    { "id": "R9", "p": 3, "t": "Work folder for loose files (zips, backup, patch)", "s": "todo" },
+    { "id": "R10", "p": 3, "t": "Test build-exe.bat end to end", "s": "todo" },
+    { "id": "D1", "p": 1, "t": "Player token, level badge, level-up shockwave", "s": "done" },
+    { "id": "D2", "p": 1, "t": "Dash for all classes (Shift / RB)", "s": "done" },
+    { "id": "D3", "p": 1, "t": "Keyboard / touch / controller auto-detect", "s": "done" },
+    { "id": "D4", "p": 2, "t": "Icon, logo, banner + GitHub Pages + auto push", "s": "done" }
+  ]
+}

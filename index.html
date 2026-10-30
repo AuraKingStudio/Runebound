@@ -441,6 +441,19 @@
         background-color: #24404a;
         text-shadow: 0 1px 2px #000;
       }
+      /* dev build board in the left black margin */
+      #board {
+        position: fixed; left: 10px; top: 10px; bottom: 10px; z-index: 5; overflow: auto; font-size: 12px; color: #cfe;
+        background: #0b1218e6; border: 1px solid #2c3b48; border-radius: 10px; padding: 10px; box-sizing: border-box; user-select: text;
+      }
+      #board b { color: #ffd84a; letter-spacing: 1.5px; }
+      #board table { width: 100%; border-collapse: collapse; margin-top: 8px; }
+      #board th { text-align: left; font-size: 10px; color: #8fa3ad; letter-spacing: 1px; padding: 4px; border-bottom: 1px solid #2c3b48; }
+      #board td { padding: 5px 4px; border-bottom: 1px solid #1c2832; vertical-align: top; }
+      #board td:first-child { color: #ffd84a; font-weight: bold; white-space: nowrap; }
+      #board .p1 { color: #ff6070; font-weight: bold; } #board .p2 { color: #ffb84a; } #board .p3 { color: #8fa3ad; }
+      #board tr.wip td:last-child { color: #ffb84a; } #board tr.done { opacity: 0.45; } #board tr.done td:last-child { color: #7dff9a; }
+      #board td:last-child { white-space: nowrap; font-size: 10px; }
       /* key / controller hint badges (hidden on touch) */
       .kh {
         position: absolute; top: -6px; right: -6px; min-width: 22px; height: 22px; padding: 0 4px; box-sizing: border-box;
@@ -957,7 +970,9 @@
       function dash(p) {
         if (!p || p.hp <= 0 || (p.dcd || 0) > 0 || dlgOpen() || S.sc == "lobby" || S.end) return;
         const D = DASH[p.cls];
+        /* keyboard + mouse: dash toward the cursor. Controller / touch: toward the move input, else facing. */
         let x = p.dx, y = p.dy;
+        if (p === P && INMODE == "kb" && MOUSE.on) { x = MOUSE.x - p.x; y = MOUSE.y - p.y; }
         if (!x && !y) [x, y] = DIRV[p.f || "d"];
         const l = Math.hypot(x, y) || 1;
         p.dvx = (x / l) * (D.d / D.t);
@@ -989,14 +1004,16 @@
       let RINGS = []; /* level-up shockwaves */
       /* mouse position in game coordinates (for the facing arrow on keyboard + mouse) */
       const MOUSE = { x: 0, y: 0, on: false };
-      cv.addEventListener("pointermove", (e) => {
+      /* listen on the whole window: buttons / joystick zone sit above the canvas and would hide the mouse */
+      addEventListener("pointermove", (e) => {
         if (e.pointerType != "mouse") return;
+        setIn("kb");
         const r = cv.getBoundingClientRect(), d = cv.width / r.width;
         MOUSE.x = ((e.clientX - r.left) * d - ox) / sc;
         MOUSE.y = ((e.clientY - r.top) * d - oy) / sc;
         MOUSE.on = true;
       });
-      cv.addEventListener("pointerleave", () => (MOUSE.on = false));
+      document.addEventListener("mouseleave", () => (MOUSE.on = false));
       function hurt(p, d) {
         if (DEV.god) return;
         if (p.inv > 0) { ftxt(p.x, p.y - 24, "DODGE", "#ff9f43"); return; }
@@ -1711,6 +1728,33 @@
         fetch("version.json?" + Date.now()).then((r) => r.json()).then((j) => done(String(j.note || "").slice(0, 90))).catch(() => done(""));
       }
       /* popMsg(text): small animated banner at the top of the screen for ~2s. */
+      /* ---------- dev build board (local only) ----------
+         Shows version.json "board" as a priority table in the empty side margin. In: [{id, p: 1-3, t: text, s: "todo"|"wip"|"done"}] */
+      const IS_LOCAL = typeof location != "undefined" && /^(localhost|127\.0\.0\.1|)$/.test(location.hostname);
+      function showBoard() {
+        if (!IS_LOCAL || typeof fetch != "function") return;
+        fetch("version.json?" + Date.now()).then((r) => r.json()).then((j) => {
+          const rows = (j.board || []).slice().sort((a, b) => (a.s == "done") - (b.s == "done") || a.p - b.p);
+          let el = $("board");
+          if (!el) { el = document.createElement("div"); el.id = "board"; document.body.appendChild(el); }
+          const st = { todo: "TO DO", wip: "IN PROGRESS", done: "DONE" };
+          el.innerHTML = `<b>BUILD BOARD</b><span class="sm"> · say "do R3"</span>
+            <table><tr><th>#</th><th>P</th><th>Task</th><th>State</th></tr>${rows
+              .map((r) => `<tr class="${r.s}"><td>${r.id}</td><td class="p${r.p}">P${r.p}</td><td>${r.t}</td><td>${st[r.s] || r.s}</td></tr>`)
+              .join("")}</table>`;
+          boardFit();
+        }).catch(() => {});
+      }
+      /* boardFit(): place the board in the widest black margin; hide it if there is no room */
+      function boardFit() {
+        const el = $("board");
+        if (!el) return;
+        const r = cv.getBoundingClientRect(), side = (r.width - W * (sc / Math.min(2, devicePixelRatio || 1))) / 2;
+        el.hidden = side < 230;
+        el.style.width = Math.min(420, side - 20) + "px";
+      }
+      addEventListener("resize", boardFit);
+      showBoard();
       /* popMsg(text, z = size multiplier, ms = time on screen) */
       function popMsg(t, z = 1, ms = 2000) {
         const d = document.createElement("div");
