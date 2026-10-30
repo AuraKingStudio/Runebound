@@ -707,6 +707,7 @@
     <script>
       const W = 900,
         H = 600,
+        /* Crop the full-size background to the room used by the game world. */
         HUB_ART = { x: 550, y: 280, w: 820, h: 550 },
         $ = (i) => document.getElementById(i),
         cv = $("cv"),
@@ -1137,8 +1138,6 @@
       let GH = []; /* dash afterimages */
       let RINGS = []; /* level-up shockwaves */
       /* mouse position in game coordinates (for the facing arrow on keyboard + mouse) */
-      /* CAM is the top-left of the world view, in game coordinates. */
-      const CAM = { x: 300, y: 10 };
       /* camOff(): back to screen-fixed drawing (HUD, popups). Out: none (changes the canvas transform). */
       const camOff = () => c.setTransform(sc, 0, 0, sc, ox, oy);
       const MOUSE = { x: 0, y: 0, on: false };
@@ -1147,8 +1146,8 @@
         if (e.pointerType != "mouse") return;
         setIn("kb");
         const r = cv.getBoundingClientRect(), d = cv.width / r.width;
-        MOUSE.x = ((e.clientX - r.left) * d - ox) / sc + CAM.x;
-        MOUSE.y = ((e.clientY - r.top) * d - oy) / sc + CAM.y;
+        MOUSE.x = ((e.clientX - r.left) * d - ox) / sc;
+        MOUSE.y = ((e.clientY - r.top) * d - oy) / sc;
         MOUSE.on = true;
       });
       document.addEventListener("mouseleave", () => (MOUSE.on = false));
@@ -3080,15 +3079,6 @@
         c.imageSmoothingQuality = "high";
 
 
-        /* camera target: centered on the player, kept inside the island. Lerp (k) makes it lag slightly behind. */
-        const vw = W,
-          vh = H,
-          tx = P ? cl(P.x - vw / 2, 0, W - vw) : (W - vw) / 2,
-          ty = P ? cl(P.y - vh / 2, 0, H - vh) : (H - vh) / 2;
-
-        CAM.x = tx;
-        CAM.y = ty;
-        c.translate(-CAM.x, -CAM.y);
         c.save();
         c.beginPath();
         c.rect(-1000, -1000, 4000, 4000);
@@ -3332,8 +3322,8 @@
             const tg = [null, ELDER, SHOP, LORE][tut()];
             if (tg) {
               /* arrow position converted from world to screen-fixed units (HUD transform is active here) */
-              const ax = tg.x - CAM.x,
-                ay = tg.y - (tg.r || 20) - 34 + Math.sin(S.tm * 6) * 5 - CAM.y;
+              const ax = tg.x,
+                ay = tg.y - (tg.r || 20) - 34 + Math.sin(S.tm * 6) * 5;
               c.fillStyle = "#ffd84a";
               c.beginPath();
               c.moveTo(ax, ay + 10);
