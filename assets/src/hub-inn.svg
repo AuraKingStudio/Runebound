@@ -106,6 +106,7 @@
     <rect x="380" y="528" width="140" height="16" rx="3" fill="url(#wood)" stroke="#2e1d10" stroke-width="2"/>
   </g>
 
+  <g transform="translate(-20,-36)">
   <!-- TOP-LEFT NORTH WALL: bottle shelf -->
   <g filter="url(#shadow)"><rect x="132" y="116" width="200" height="8" rx="2" fill="url(#wood)" stroke="#2e1d10" stroke-width="1.5"/></g>
   <g>
@@ -122,6 +123,7 @@
     <rect x="292" y="92" width="4" height="9" fill="#2a2420"/><rect x="290" y="100" width="9" height="16" rx="2" fill="#1d7f78" stroke="#1a120a" stroke-width="1"/><rect x="292" y="104" width="2" height="6" fill="#fff8"/>
     <rect x="307" y="92" width="4" height="9" fill="#2a2420"/><rect x="305" y="100" width="9" height="16" rx="2" fill="#b8731a" stroke="#1a120a" stroke-width="1"/><rect x="307" y="104" width="2" height="6" fill="#fff8"/>
     
+  </g>
   </g>
   <!-- timber frame, back layer (2x4 beams along the walls) -->
   <g fill="url(#wood)" stroke="#2e1d10" stroke-width="2" filter="url(#shadow)">

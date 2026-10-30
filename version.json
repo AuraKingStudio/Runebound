@@ -1,5 +1,5 @@
 {
-  "note": "Hub art 1920x1080 (16:9) for PC",
+  "note": "Bottles moved onto the stone north wall",
   "board": [
     {
       "id": "R1",
@@ -95,6 +95,13 @@
   "log": [
     {
       "k": "fix",
+      "t": "Bottle shelf on stone wall",
+      "at": "2026-10-30T14:48:47.274Z",
+      "add": 3,
+      "del": 1
+    },
+    {
+      "k": "fix",
       "t": "Hub art 16:9, cover-fit",
       "at": "2026-10-30T14:47:37.352Z",
       "add": 12,
@@ -169,20 +176,13 @@
       "at": "2026-10-30T14:42:13.933Z",
       "add": 3,
       "del": 3
-    },
-    {
-      "k": "fix",
-      "t": "Bar in front of bottles",
-      "at": "2026-10-30T14:41:43.975Z",
-      "add": 3,
-      "del": 1
     }
   ],
   "stats": {
     "tests": 71,
     "prevTests": 71,
     "failed": 0,
-    "today": 56,
+    "today": 57,
     "spark": [
       0,
       0,
@@ -194,7 +194,7 @@
       0,
       0,
       0,
-      12,
+      13,
       44
     ],
     "lines": [
@@ -208,12 +208,12 @@
       0,
       0,
       0,
-      9633,
-      1868
+      9642,
+      1878
     ],
     "features": 4,
     "open": 9,
-    "at": "2026-10-30T14:47:37.352Z"
+    "at": "2026-10-30T14:48:47.274Z"
   },
-  "ver": "0.5.32"
+  "ver": "0.5.33"
 }
