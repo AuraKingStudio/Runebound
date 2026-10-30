@@ -96,6 +96,34 @@
     {
       "k": "in",
       "t": "Barkeep + blackjack",
+      "at": "2026-10-30T14:28:31.997Z",
+      "add": 0,
+      "del": 0
+    },
+    {
+      "k": "in",
+      "t": "Quest Board bounties",
+      "at": "2026-10-30T14:28:31.997Z",
+      "add": 0,
+      "del": 0
+    },
+    {
+      "k": "in",
+      "t": "Guild Board + recruits",
+      "at": "2026-10-30T14:28:31.997Z",
+      "add": 0,
+      "del": 0
+    },
+    {
+      "k": "fix",
+      "t": "NPC rugs follow NPCs",
+      "at": "2026-10-30T14:28:31.997Z",
+      "add": 0,
+      "del": 0
+    },
+    {
+      "k": "in",
+      "t": "Barkeep + blackjack",
       "at": "2026-10-30T14:28:09.202Z",
       "add": 277,
       "del": 48
@@ -148,41 +176,13 @@
       "at": "2026-10-30T14:23:20.614Z",
       "add": 1,
       "del": 1
-    },
-    {
-      "k": "in",
-      "t": "Version tracking",
-      "at": "2026-10-30T14:20:02.270Z",
-      "add": 49,
-      "del": 6
-    },
-    {
-      "k": "in",
-      "t": "Change-size candles",
-      "at": "2026-10-30T14:20:02.270Z",
-      "add": 49,
-      "del": 6
-    },
-    {
-      "k": "in",
-      "t": "Lines-changed curve",
-      "at": "2026-10-30T14:20:02.270Z",
-      "add": 49,
-      "del": 6
-    },
-    {
-      "k": "in",
-      "t": "Features chip",
-      "at": "2026-10-30T14:20:02.270Z",
-      "add": 49,
-      "del": 6
     }
   ],
   "stats": {
     "tests": 66,
-    "prevTests": 60,
+    "prevTests": 66,
     "failed": 0,
-    "today": 26,
+    "today": 27,
     "spark": [
       0,
       0,
@@ -195,7 +195,7 @@
       0,
       0,
       4,
-      22
+      23
     ],
     "lines": [
       0,
@@ -209,11 +209,11 @@
       0,
       0,
       9080,
-      1359
+      1684
     ],
-    "features": 9,
+    "features": 8,
     "open": 9,
-    "at": "2026-10-30T14:28:09.202Z"
+    "at": "2026-10-30T14:28:31.997Z"
   },
-  "ver": "0.5.2"
+  "ver": "0.5.3"
 }
