@@ -1,0 +1,27 @@
+{
+  "name": "runebound",
+  "version": "1.0.0",
+  "description": "Runebound solo prototype",
+  "main": "main.js",
+  "scripts": {
+    "start": "electron .",
+    "dev": "live-server --port=8080 --no-browser --ignore=node_modules,dist",
+    "dist": "electron-builder --win portable"
+  },
+  "devDependencies": {
+    "electron": "^31.0.0",
+    "electron-builder": "^24.13.3",
+    "live-server": "^1.2.2"
+  },
+  "build": {
+    "appId": "io.runebound.game",
+    "files": [
+      "index.html",
+      "main.js",
+      "ads-config.js"
+    ],
+    "win": {
+      "target": "portable"
+    }
+  }
+}
