@@ -1,5 +1,5 @@
 {
-  "note": "Hub: skill buttons small and faded",
+  "note": "Top banners raised",
   "board": [
     {
       "id": "R1",
@@ -95,6 +95,13 @@
   "log": [
     {
       "k": "fix",
+      "t": "Top banners moved higher",
+      "at": "2026-10-30T14:38:56.492Z",
+      "add": 3,
+      "del": 3
+    },
+    {
+      "k": "fix",
       "t": "Skill buttons faded in hub",
       "at": "2026-10-30T14:38:39.967Z",
       "add": 73,
@@ -169,20 +176,13 @@
       "at": "2026-10-30T14:33:48.303Z",
       "add": 2,
       "del": 2
-    },
-    {
-      "k": "in",
-      "t": "Top 100 ranks",
-      "at": "2026-10-30T14:33:25.079Z",
-      "add": 34,
-      "del": 6
     }
   ],
   "stats": {
     "tests": 71,
     "prevTests": 71,
     "failed": 0,
-    "today": 39,
+    "today": 40,
     "spark": [
       0,
       0,
@@ -195,7 +195,7 @@
       0,
       0,
       8,
-      31
+      32
     ],
     "lines": [
       0,
@@ -209,11 +209,11 @@
       0,
       0,
       9464,
-      1598
+      1794
     ],
-    "features": 6,
+    "features": 5,
     "open": 9,
-    "at": "2026-10-30T14:38:39.967Z"
+    "at": "2026-10-30T14:38:56.492Z"
   },
-  "ver": "0.5.15"
+  "ver": "0.5.16"
 }
