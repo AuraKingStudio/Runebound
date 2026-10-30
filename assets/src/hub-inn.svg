@@ -47,12 +47,15 @@
   <path d="M406 196v-84q0-40 44-40t44 40v84z" fill="url(#gate)"/>
   <ellipse cx="450" cy="140" rx="48" ry="62" fill="#5af0dc" opacity=".25" filter="url(#soft)"/>
   <ellipse cx="450" cy="200" rx="62" ry="12" fill="none" stroke="#3fd6c6" stroke-width="2" stroke-dasharray="4 6" opacity=".8"/>
-  <!-- Raiders sign on top of the portal -->
+  <!-- THE RAIDERS guild plaque: carved wood, iron brackets and a crest, fitted across the top wall above the portal -->
   <g filter="url(#shadow)">
-    <rect x="330" y="56" width="240" height="30" rx="4" fill="#3b2a1a" stroke="#c99a3a" stroke-width="2.5"/>
-    <text x="450" y="77" text-anchor="middle" font-family="Georgia, serif" font-weight="700" font-size="13" letter-spacing="3" fill="#ffd84a">THE RAIDERS</text>
+    <rect x="318" y="60" width="264" height="34" rx="3" fill="url(#wood)" stroke="#2e1d10" stroke-width="3"/>
+    <rect x="322" y="64" width="256" height="26" rx="2" fill="none" stroke="#c99a3a" stroke-width="1.5" opacity=".8"/>
+    <path d="M318 60l-10 6v22l10 6M582 60l10 6v22l-10 6" fill="#55595e" stroke="#2a2c2f" stroke-width="2"/>
+    <circle cx="332" cy="77" r="3" fill="#c99a3a"/><circle cx="568" cy="77" r="3" fill="#c99a3a"/>
+    <path d="M424 56l26 0 0 10-13 6-13-6z" fill="#7a2230" stroke="#c99a3a" stroke-width="1.5"/>
+    <text x="450" y="81" text-anchor="middle" font-family="Georgia, serif" font-weight="700" font-size="14" letter-spacing="3" fill="#ffd84a">THE RAIDERS</text>
   </g>
-
   <!-- BEER BANNERS: tankard crests on the walls -->
   <g transform="translate(0,-12)"><g filter="url(#shadow)">
     <path d="M250 60h34v58l-17-11-17 11z" fill="url(#banner)" stroke="#c99a3a" stroke-width="2"/>

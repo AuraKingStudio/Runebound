@@ -1,5 +1,5 @@
 {
-  "note": "Locked NPCs fully hidden; moved off furniture",
+  "note": "Raiders plaque fitted to the wall; locked NPC ghost removed",
   "board": [
     {
       "id": "R1",
@@ -95,6 +95,20 @@
   "log": [
     {
       "k": "fix",
+      "t": "Raiders guild plaque on wall",
+      "at": "2026-10-30T14:41:20.490Z",
+      "add": 10,
+      "del": 8
+    },
+    {
+      "k": "fix",
+      "t": "Locked NPCs fully hidden",
+      "at": "2026-10-30T14:41:20.490Z",
+      "add": 10,
+      "del": 8
+    },
+    {
+      "k": "fix",
       "t": "Locked NPCs fully hidden",
       "at": "2026-10-30T14:41:00.369Z",
       "add": 4,
@@ -162,27 +176,13 @@
       "at": "2026-10-30T14:37:15.662Z",
       "add": 4,
       "del": 55
-    },
-    {
-      "k": "out",
-      "t": "Long desk removed",
-      "at": "2026-10-30T14:37:15.662Z",
-      "add": 4,
-      "del": 55
-    },
-    {
-      "k": "in",
-      "t": "Portal open from the start",
-      "at": "2026-10-30T14:36:43.815Z",
-      "add": 2,
-      "del": 2
     }
   ],
   "stats": {
     "tests": 71,
     "prevTests": 71,
     "failed": 0,
-    "today": 45,
+    "today": 46,
     "spark": [
       0,
       0,
@@ -195,7 +195,7 @@
       0,
       0,
       9,
-      36
+      37
     ],
     "lines": [
       0,
@@ -209,11 +209,11 @@
       0,
       0,
       9500,
-      1859
+      1867
     ],
-    "features": 4,
+    "features": 3,
     "open": 9,
-    "at": "2026-10-30T14:41:00.369Z"
+    "at": "2026-10-30T14:41:20.490Z"
   },
-  "ver": "0.5.21"
+  "ver": "0.5.22"
 }
