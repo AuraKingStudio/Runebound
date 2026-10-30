@@ -1,5 +1,5 @@
 {
-  "note": "Archivist bonus marker: guaranteed reward",
+  "note": "Archivist rewards: gold, XP, blessings, upgrades",
   "board": [
     {
       "id": "R1",
@@ -94,16 +94,16 @@
   ],
   "log": [
     {
-      "t": "Archivist bonus marker",
-      "at": "16:05"
+      "at": "16:15",
+      "t": "Reload keeps shop open"
     },
     {
-      "t": "Archivist anti-spam",
-      "at": "15:58"
+      "at": "16:12",
+      "t": "Varied Archivist rewards"
     },
     {
-      "t": "Rune-style Listen button",
-      "at": "15:50"
+      "at": "16:05",
+      "t": "Archivist bonus marker"
     }
   ]
 }

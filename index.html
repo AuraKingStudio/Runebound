@@ -839,6 +839,10 @@
           V.title = Math.max(0, +s.title | 0); /* equipped title index */
           V.name = typeof s.name == "string" ? s.name.slice(0, 16) : "";
           V.xp = Math.max(0, +s.xp | 0);
+          /* Archivist state: pool (lp, lpt), last tale time (lta), bonus window (lbx, lbn), blessing (bl), title flag (af) */
+          for (const k of ["lp", "lpt", "lta", "lbx", "lbn"]) if (typeof s[k] == "number") V[k] = s[k];
+          V.bl = ["might", "stone", "swift"].includes(s.bl) ? s.bl : null;
+          V.af = s.af ? 1 : 0;
         }
       } catch (e) {}
       /* ---------- titles: n = text, col = color, ok() = unlocked?, how = unlock hint ---------- */
@@ -852,6 +856,7 @@
         { n: "Faithful", col: "#ffd84a", ok: () => (V.ds || 0) >= 7, how: "Reach a 7-day login streak" },
         { n: "Moneybags", col: "#ffd84a", ok: () => V.gold >= 1000, how: "Hold 1000 gold at once" },
         { n: "Fully Runed", col: "#ff9f43", ok: () => UPG.every((u) => V.up[u.k] >= MAXL), how: "Max every upgrade" },
+        { n: "Archivist's Friend", col: "#ff7ad9", ok: () => !!V.af, how: "A rare secret page from the Archivist" },
       ];
       if (!TITLES[V.title || 0]) V.title = 0;
       const myTitle = () => (TITLES[V.title || 0].ok() ? TITLES[V.title || 0] : TITLES[0]);
@@ -918,8 +923,10 @@
           localStorage.setItem("runebound1", JSON.stringify(V));
         } catch (e) {}
       };
-      const dm = () => 1 + 0.12 * V.up.dmg,
-        hpm = () => 1 + 0.15 * V.up.vit,
+      /* blessing from the Archivist (V.bl = "might" | "stone" | "swift"), lasts until the next raid ends */
+      const bless = (k) => V.bl == k;
+      const dm = () => (1 + 0.12 * V.up.dmg) * (bless("might") ? 1.25 : 1),
+        hpm = () => (1 + 0.15 * V.up.vit) * (bless("stone") ? 1.3 : 1),
         spm = () => 1 + 0.06 * V.up.spd,
         cdm = () => 1 - 0.08 * V.up.cdr;
       /* ---------- simulation (runs locally) ---------- */
@@ -1022,7 +1029,7 @@
         p.dvx = (x / l) * (D.d / D.t);
         p.dvy = (y / l) * (D.d / D.t);
         p.ds = D.t;
-        p.dcd = DEV.nocd ? 0 : D.cd * cdm();
+        p.dcd = DEV.nocd ? 0 : D.cd * cdm() * (bless("swift") ? 0.5 : 1);
         if (D.ar) { p.ar = D.ar; ftxt(p.x, p.y - 30, "ARMOR", "#4da3ff"); }
         if (D.inv) p.inv = D.inv;
         if (D.hl) heal(p, D.hl);
@@ -1078,6 +1085,7 @@
         }
       }
       function win() {
+        V.bl = null; /* blessings last one raid */
         S.end = "win";
         S.res = 5;
         const g = 60 + (S.at < 90 ? 20 : 0);
@@ -1240,6 +1248,7 @@
           S.end = "lose";
           S.res = 5;
           gainXP(30, "raid");
+          V.bl = null; /* blessings last one raid */
           sfx("lose");
           shake(0.5);
         }
@@ -1316,9 +1325,12 @@
       /* ---------- NPC dialogs ---------- */
       const dlgOpen = () => !$("dlg").hidden;
       function closeDlg() {
+        CUR_DLG = "";
         $("dlg").hidden = true;
       }
+      let CUR_DLG = ""; /* which NPC menu is open ("elder" | "shop" | "lore"), kept across hot reloads */
       function openDlg(w) {
+        CUR_DLG = w;
         $("dlg").hidden = false;
         w == "elder" ? elderUI() : w == "lore" ? loreUI() : shopUI();
       }
@@ -1505,6 +1517,35 @@
         return V.lp;
       }
       /* loreUI(): tells one random tale and uses 1 from the pool; when empty, says when the next one is back. */
+      /* Archivist secret-page rewards. w = weight (chance), big = only offered weight during a ✦ window.
+         Each give() applies the reward and returns the text shown in the dialog. */
+      const LORE_REW = [
+        { w: 30, big: 15, give: (b) => { const g = Math.round(rnd(50, b ? 150 : 100)); V.gold += g; return `💰 +${g} gold`; } },
+        { w: 25, big: 15, give: (b) => { const x = Math.round(rnd(60, b ? 150 : 100)); gainXP(x, "lore"); return `✨ +${x} XP`; } },
+        { w: 12, big: 18, give: () => { V.bl = "might"; return "⚔ Blessing of Might: +25% damage next raid"; } },
+        { w: 12, big: 18, give: () => { V.bl = "stone"; return "🛡 Blessing of Stone: +30% max HP next raid"; } },
+        { w: 12, big: 18, give: () => { V.bl = "swift"; return "💨 Swift Blessing: dash cooldown halved next raid"; } },
+        { w: 6, big: 12, give: () => {
+            const open = UPG.filter((u) => V.up[u.k] < MAXL);
+            if (!open.length) { V.gold += 150; return "💰 +150 gold (all runes maxed)"; }
+            const u = open[Math.floor(Math.random() * open.length)];
+            V.up[u.k]++;
+            if (P) { P.mh = Math.round(CL[P.cls].hp * hpm()); P.hp = Math.min(P.hp, P.mh); }
+            return `⬆ Free upgrade: ${u.n} Lv ${V.up[u.k]}`;
+          } },
+        { w: 3, big: 6, give: () => {
+            if (V.af) { V.gold += 120; return "💰 +120 gold"; }
+            V.af = 1;
+            return "🏷 New title unlocked: Archivist's Friend";
+          } },
+      ];
+      /* loreReward(big): rolls one reward from LORE_REW (better odds when big). Out: text describing it. */
+      function loreReward(big) {
+        const wt = (r) => (big ? r.big : r.w);
+        let roll = Math.random() * LORE_REW.reduce((a, r) => a + wt(r), 0);
+        for (const r of LORE_REW) { roll -= wt(r); if (roll <= 0) { const s = r.give(big); save(); return s; } }
+        return LORE_REW[0].give(big);
+      }
       /* loreBonusTick(): every minute, 25% chance the Archivist opens a 2-minute guaranteed-reward window (V.lbx = end time). */
       function loreBonusTick() {
         const now = Date.now();
@@ -1536,13 +1577,13 @@
           tag = { L: "Lore", T: "Tip", E: "Secret" }[kind],
           ms = TALE_MS[n];
         if (ms) V.gold += ms[0];
-        if (rare) V.gold += bonus ? 100 : 50;
+        const rw = rare ? loreReward(bonus) : "";
         save();
         sfx(rare || ms ? "win" : "ui", rare ? 1.3 : 1);
         $("dp").innerHTML = `<h2>📜 The Archivist</h2>
           <div class="qtag">${tag}</div>
           <p class="tale ${kind}">${rare ? "✨ " : ""}${text}</p>
-          ${rare ? `<p class="gold">Secret page! +${bonus ? 100 : 50} gold</p>` : ""}
+          ${rare ? `<div class="qo done">✦ Secret page! ${rw}</div>` : ""}
           ${ms ? `<div class="qo done">🏆 ${n} tales heard! ${ms[1]} +${ms[0]} gold</div>` : ""}
           <button class="alt" onclick="closeDlg()">Farewell</button>`;
       }
@@ -1806,7 +1847,7 @@
       const HOT_KEY = "runebound_hot";
       addEventListener("beforeunload", () => {
         /* localStorage (not sessionStorage): VS Code's preview iframe can drop sessionStorage on reload */
-        try { localStorage.setItem(HOT_KEY, JSON.stringify({ S: P && S.sc != "lobby" ? S : null, at: Date.now() })); } catch (e) {}
+        try { localStorage.setItem(HOT_KEY, JSON.stringify({ S: P && S.sc != "lobby" ? S : null, dlg: dlgOpen() ? CUR_DLG : "", at: Date.now() })); } catch (e) {}
       });
       function hotRestore() {
         let snap = null;
@@ -1818,6 +1859,7 @@
         selK = snap.S.ps[0].cls; $("cls").dataset.k = selK;
         start(); S = snap.S; P = S.ps[0];
         closeDlg(); /* don't re-show the daily popup on every save */
+        if (["elder", "shop", "lore"].includes(snap.dlg) && snap.dlg != "lore") openDlg(snap.dlg); /* reopen the menu you had open (not lore: it would use a tale) */
         return true;
       }
       /* showUpdate(): "Code updated" banner + the reason, read from version.json ({"note": "..."}) next to index.html */
@@ -2574,6 +2616,18 @@
           c.fillText(CL[P.cls].n + "  " + Math.ceil(P.hp) + "/" + P.mh, 14, 24);
           bar(14, 28, 120, 7, P.hp / P.mh, "#48e07a");
           coinHUD(12, 44, V.gold);
+          /* active Archivist blessing, right of the gold counter */
+          if (V.bl) {
+            const BL = { might: ["⚔ Might", "#ff7a5c"], stone: ["🛡 Stone", "#4da3ff"], swift: ["💨 Swift", "#5ad7ff"] }[V.bl];
+            c.save();
+            c.font = "bold 12px Georgia";
+            c.textAlign = "left";
+            c.textBaseline = "middle";
+            c.globalAlpha = 0.75 + 0.25 * Math.sin(S.tm * 3);
+            c.fillStyle = BL[1];
+            c.fillText(BL[0] + " blessing", 116, 59);
+            c.restore();
+          }
           qTrack(ar ? 62 : 12);
         }
         if (ar && b) {
