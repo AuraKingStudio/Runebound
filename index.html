@@ -3232,6 +3232,13 @@
         c.restore();
         FT = FT.filter((f) => f.l > 0);
         camOff(); /* HUD stays fixed on screen */
+        /* motion vignette: the screen edges darken more the faster the player runs (spd = 0..1) */
+        const spd = P ? Math.min(1, Math.hypot(P.dx, P.dy)) : 0;
+        const vg = c.createRadialGradient(W / 2, H / 2, W * 0.3, W / 2, H / 2, W * 0.62);
+        vg.addColorStop(0, "rgba(0,0,0,0)");
+        vg.addColorStop(1, `rgba(0,0,0,${0.25 + 0.3 * spd})`);
+        c.fillStyle = vg;
+        c.fillRect(0, 0, W, H);
         c.font = "13px Georgia";
         c.textAlign = "left";
         if (P && S.sc != "lobby") {
