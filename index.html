@@ -757,26 +757,26 @@
       const PORTAL = { x: 450, y: 150, ir: 120 },
         /* NPCs. g = emblem path (SVG path syntax, drawn on a 40x40 box centered at 0,0), gs = stroke instead of fill */
         /* Elder: wizard hat (wide brim + bent cone) */
-        ELDER = { tu: 1, x: 128, y: 385, ic: "🧙", nm: "The Elder", col: "#b48cff",
+        ELDER = { tu: 1, x: 145, y: 345, ic: "🧙", nm: "The Elder", col: "#b48cff",
           g: "M-14 9q14 6 28 0q-2 4-14 5q-12-1-14-5zM-9 8L-1-12q3-5 9-3q-4 1-5 4L9 8q-9 3-18 0z" },
         /* Merchant: round coin bag with a tied neck and a coin mark */
-        SHOP = { tu: 2, x: 450, y: 500, ic: "💰", nm: "The Merchant", col: "#ffcf4d",
+        SHOP = { tu: 2, x: 450, y: 525, ic: "💰", nm: "The Merchant", col: "#ffcf4d",
           g: "M-3-8q-6 3-10 10q-3 10 7 11h12q10-1 7-11q-4-7-10-10zM-3-9l-4-5q7 2 14 0l-4 5zM-1 0h4a2 2 0 0 1 0 4h-2a2 2 0 0 0 0 4h4" },
-        LORE = { tu: 3, x: 186, y: 446, ic: "📜", nm: "The Archivist", col: "#5ad7ff", gs: 1,
+        LORE = { tu: 3, x: 230, y: 475, ic: "📜", nm: "The Archivist", col: "#5ad7ff", gs: 1,
           /* Archivist: rolled scroll with text lines */
           g: "M-10-13h20a3 3 0 0 1 0 6h-20a3 3 0 0 1 0-6M-8-7v13M8-7v13M-10 6h20a3 3 0 0 1 0 6h-20a3 3 0 0 1 0-6M-4-3h8M-4 1h6" },
         /* the 4 NPCs standing where the old torches were */
         /* Class Master (green): three class orbs */
-        CLASSN = { lk: "class", x: 640, y: 300, ic: "⚔", nm: "The Class Master", col: "#5dff8a",
+        CLASSN = { lk: "class", x: 755, y: 355, ic: "⚔", nm: "The Class Master", col: "#5dff8a",
           g: "M-4-6a4 4 0 1 0 8 0a4 4 0 1 0-8 0zM-11 5a4 4 0 1 0 8 0a4 4 0 1 0-8 0zM3 5a4 4 0 1 0 8 0a4 4 0 1 0-8 0z" },
         /* The Maiden (rose): a rose bloom */
-        MAIDEN = { lk: "maiden", x: 615, y: 470, ic: "🌹", nm: "The Maiden", col: "#ff8fc8",
+        MAIDEN = { lk: "maiden", x: 635, y: 500, ic: "🌹", nm: "The Maiden", col: "#ff8fc8",
           g: "M0-11c5 0 8 4 6 8 4 0 5 5 1 7-1 4-6 5-7 2-1 3-6 2-7-2-4-2-3-7 1-7-2-4 1-8 6-8z" },
         /* The Smith (orange): an anvil */
-        SMITH = { lk: "smith", x: 250, y: 500, ic: "🔨", nm: "The Smith", col: "#ff9f43",
+        SMITH = { lk: "smith", x: 265, y: 500, ic: "🔨", nm: "The Smith", col: "#ff9f43",
           g: "M-12-6h20q4 0 4 4h-6v4l4 6h-18l4-6v-4h-6q-2 0-2-4z" },
         /* The Herald (silver): a banner */
-        HERALD = { lk: "herald", x: 640, y: 205, ic: "📯", nm: "The Herald", col: "#cfe6ff",
+        HERALD = { lk: "herald", x: 690, y: 220, ic: "📯", nm: "The Herald", col: "#cfe6ff",
           g: "M-8-12v24h2.5v-10h12l-3-5 3-5h-12v-4z" };
       /* ---------- progress (saved) ---------- */
       /* upgrades. k = save key, b = base cost (cost = b * next level), pl = % per level, ic = SVG icon, col = card color */
@@ -1852,7 +1852,7 @@
       }
       /* ---------- The Barkeep (bar, right wall) + the two wall boards ---------- */
       /* Barkeep: a mug. Shown after the tutorial (tu: 4). Boards: no disc, bigger reach (ir). */
-      const BARKEEP = { tu: 4, x: 668, y: 186, ic: "🍺", nm: "The Barkeep", col: "#ffb347",
+      const BARKEEP = { tu: 4, x: 190, y: 205, ic: "🍺", nm: "The Barkeep", col: "#ffb347",
           g: "M-9-9h13v18h-13zM4-5h3a4 4 0 0 1 0 9h-3M-9-9q0-4 4-4h5q4 0 4 4" },
         QBOARD = { x: 300, y: 240, ir: 110, col: "#ffd84a" },
         GBOARD = { x: 600, y: 240, ir: 110, col: "#5af0dc" };
@@ -3111,12 +3111,9 @@
           c.fillRect(0, 0, W, H);
         }
         if (S.sc == "hub") {
-          /* ancient portal (drawn in code): turning rune ring, orbiting motes, slow pulse. Runes are Elder Futhark letters. */
-          const pulse = 0.85 + 0.15 * Math.sin(S.tm * 2.2);
+          /* Ancient portal: static rune ring. Runes are Elder Futhark letters. */
           c.save();
           c.translate(PORTAL.x, PORTAL.y - 8);
-          c.globalAlpha = pulse;
-          c.rotate(S.tm * 0.4);
           c.strokeStyle = "rgba(90,240,220,0.7)";
           c.lineWidth = 2;
           c.setLineDash([10, 8]);
@@ -3138,30 +3135,21 @@
             c.restore();
           }
           c.restore();
-          for (let i = 0; i < 4; i++) {
-            const a = S.tm * (1.2 + i * 0.3) + i * 1.7, r = 60 + Math.sin(S.tm * 2 + i) * 6;
-            c.fillStyle = "#c8fff4";
-            c.globalAlpha = 0.8;
-            c.beginPath();
-            c.arc(PORTAL.x + Math.cos(a) * r, PORTAL.y - 8 + Math.sin(a) * r * 0.8, 2.2, 0, 6.3);
-            c.fill();
-          }
-          c.globalAlpha = 1;          /* portal highlight when the player can enter: soft glow + rising sparks */
+          c.globalAlpha = 1;
+          /* Static highlight when the player can enter. */
           if (nearby() == "portal") {
-            const k = 0.5 + 0.5 * Math.sin(S.tm * 6), gl = c.createRadialGradient(PORTAL.x, PORTAL.y - 6, 4, PORTAL.x, PORTAL.y - 6, 80);
-            gl.addColorStop(0, `rgba(120,255,235,${0.35 + 0.25 * k})`);
+            const gl = c.createRadialGradient(PORTAL.x, PORTAL.y - 6, 4, PORTAL.x, PORTAL.y - 6, 80);
+            gl.addColorStop(0, "rgba(120,255,235,.48)");
             gl.addColorStop(1, "rgba(60,220,200,0)");
             c.fillStyle = gl;
             c.beginPath();
             c.ellipse(PORTAL.x, PORTAL.y - 6, 80, 60, 0, 0, 6.3);
             c.fill();
-            if (Math.random() < 0.3) burst(PORTAL.x + rnd(-30, 30), PORTAL.y + rnd(-10, 14), "#7dffe9", 1, 40);
           }
-          const g = 0.5 + 0.5 * Math.sin(S.tm * 3);
-          c.strokeStyle = `rgba(90,255,230,${0.4 + 0.4 * g})`;
+          c.strokeStyle = "rgba(90,255,230,.6)";
           c.lineWidth = 3;
           c.beginPath();
-          c.ellipse(PORTAL.x, PORTAL.y - 6, 32 + 4 * g, 22 + 3 * g, 0, 0, 6.3);
+          c.ellipse(PORTAL.x, PORTAL.y - 6, 34, 24, 0, 0, 6.3);
           c.stroke();
           c.fillStyle = "rgba(60,220,200,.18)";
           c.fill();
