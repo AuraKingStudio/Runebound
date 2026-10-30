@@ -1,5 +1,5 @@
 {
-  "note": "Hub is now a guild inn",
+  "note": "Guild inn: bar, blackjack, boards, guild",
   "board": [
     {
       "id": "R1",
@@ -95,6 +95,41 @@
   "log": [
     {
       "k": "in",
+      "t": "Barkeep + blackjack",
+      "at": "2026-10-30T14:28:09.202Z",
+      "add": 277,
+      "del": 48
+    },
+    {
+      "k": "in",
+      "t": "Quest Board bounties",
+      "at": "2026-10-30T14:28:09.202Z",
+      "add": 277,
+      "del": 48
+    },
+    {
+      "k": "in",
+      "t": "Guild Board + recruits",
+      "at": "2026-10-30T14:28:09.202Z",
+      "add": 277,
+      "del": 48
+    },
+    {
+      "k": "fix",
+      "t": "NPC rugs follow NPCs",
+      "at": "2026-10-30T14:28:09.202Z",
+      "add": 277,
+      "del": 48
+    },
+    {
+      "k": "fix",
+      "t": "Inn-style NPC layout",
+      "at": "2026-10-30T14:28:09.202Z",
+      "add": 277,
+      "del": 48
+    },
+    {
+      "k": "in",
       "t": "Guild inn hub art",
       "at": "2026-10-30T14:23:20.614Z",
       "add": 1,
@@ -144,10 +179,10 @@
     }
   ],
   "stats": {
-    "tests": 60,
+    "tests": 66,
     "prevTests": 60,
     "failed": 0,
-    "today": 25,
+    "today": 26,
     "spark": [
       0,
       0,
@@ -159,7 +194,7 @@
       0,
       0,
       0,
-      3,
+      4,
       22
     ],
     "lines": [
@@ -173,12 +208,12 @@
       0,
       0,
       0,
-      9014,
-      1258
+      9080,
+      1359
     ],
-    "features": 6,
+    "features": 9,
     "open": 9,
-    "at": "2026-10-30T14:23:20.614Z"
+    "at": "2026-10-30T14:28:09.202Z"
   },
-  "ver": "0.5.1"
+  "ver": "0.5.2"
 }

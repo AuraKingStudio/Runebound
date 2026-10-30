@@ -7,7 +7,7 @@ const store={};
 const ctx={document:doc,window:{},innerWidth:900,innerHeight:600,performance:{now:()=>0},requestAnimationFrame(){},addEventListener(){},localStorage:{getItem:k=>store[k]||null,setItem:(k,v)=>store[k]=v,removeItem:k=>delete store[k]},Image:function(){this.complete=false},location:{search:''},console,setTimeout:f=>0,Math,JSON,Object,Array,Date,Number,parseInt,isNaN};
 ctx.window=ctx;vm.createContext(ctx);
 vm.runInContext(SRC+`
-;globalThis.devMin=devMin;globalThis.devFs=devFs;globalThis.T={V:()=>V,P:()=>P,S:()=>S,start,devAdd,devUp,devUI,devCls,devHeal,devWipe,devResetQ,devArena,devBoss,devHub,DEV,hurt,act,step,pauseGame,resumeGame,isPaused:()=>paused,QUESTS,UPG,toggleDev,buy,shopUI,qAct,togglePause,dailyCheck,saveName,lvlInfo,gainXP,lvlCol,loreReward,isUnl,tutNext,dm,dash,dashStep,setIn,padPoll,inMode:()=>INMODE,KEYHINT,FX:()=>FX,FT:()=>FT,shk:()=>shk,els:null};`,ctx);
+;globalThis.devMin=devMin;globalThis.devFs=devFs;globalThis.T={V:()=>V,P:()=>P,S:()=>S,start,devAdd,devUp,devUI,devCls,devHeal,devWipe,devResetQ,devArena,devBoss,devHub,DEV,hurt,act,step,pauseGame,resumeGame,isPaused:()=>paused,QUESTS,UPG,toggleDev,buy,shopUI,qAct,togglePause,dailyCheck,saveName,lvlInfo,gainXP,lvlCol,loreReward,isUnl,tutNext,bjVal,bjDeal,guildFound,guildRecruit,gBonus,bountyDay,bountyAdd,bountyClaim,dm,dash,dashStep,setIn,padPoll,inMode:()=>INMODE,KEYHINT,FX:()=>FX,FT:()=>FT,shk:()=>shk,els:null};`,ctx);
 const T=ctx.T;let f=0;const ok=(c,m)=>{console.log((c?'PASS ':'FAIL ')+m);if(!c)f++};
 T.start();ok(T.S().sc=='hub','start -> hub');
 ctx.document.getElementById('dlg').hidden=true;const pausedAt=T.S().tm;T.pauseGame();T.step(.1);ok(T.isPaused()&&T.S().tm===pausedAt,'pause freezes the game');T.resumeGame();ok(!T.isPaused(),'resume re-enables play');
@@ -58,6 +58,13 @@ ok(T.lvlCol(5)!=T.lvlCol(15)&&T.lvlCol(55)==T.lvlCol(99),'xp: tier colors change
 const xq=T.V().xp;T.devResetQ();T.qAct(1);T.V().qs=2;T.qAct(2);ok(T.V().xp==xq+100,'xp: quest turn-in gives 100');
 /* ---- hub skills ---- */
 T.DEV.nocd=0;T.devHub();T.P().cd=[0,0,0];T.act(T.P(),1);ok(T.S().sc=='hub'&&T.P().cd[1]>0,'hub: skills play and start their cooldown');T.P().cd=[0,0,0];
+/* ---- blackjack, guild, bounties ---- */
+ok(T.bjVal([1,13])==21&&T.bjVal([1,1,9])==21&&T.bjVal([10,10,5])==25,'blackjack: hand values (aces 11 or 1)');
+T.V().gold=100;T.bjDeal(50);ok([50,100,175].includes(T.V().gold),'blackjack: betting takes the stake (or settles a natural 21)');
+T.V().gd=null;T.guildFound('Rune Riders');ok(T.V().gd&&T.V().gd.name=='Rune Riders','guild: found a guild');
+T.V().gold=1000;T.guildRecruit();T.guildRecruit();ok(T.V().gd.m.length==2&&T.V().gold==700&&Math.abs(T.gBonus()-0.06)<1e-9,'guild: recruits cost 100, 200 and give +3% each');
+T.V().bo=null;const bo=T.bountyDay();ok(bo.ids.length==3,'bounties: 3 rolled per day');
+const bid=bo.ids[0],need={raid:1,dash:15,tale:3,buy:1,skill:30,bj:1}[bid];for(let i=0;i<need;i++)T.bountyAdd(bid);const gB=T.V().gold;T.bountyClaim(bid);ok(T.V().bo.done[bid]&&T.V().gold>gB,'bounties: complete + claim pays out');
 /* ---- tutorial ---- */
 T.V().tut=0;T.tutNext(0);ok(T.V().tut==1,'tutorial: walking reveals the Elder (step 2)');T.tutNext(2);ok(T.V().tut==1,'tutorial: steps cannot be skipped');T.tutNext(1);T.tutNext(2);T.tutNext(3);ok(T.V().tut==4,'tutorial: Elder -> Merchant -> Archivist -> portal open');
 /* ---- NPC unlocks ---- */
