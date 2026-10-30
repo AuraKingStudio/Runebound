@@ -1,4 +1,4 @@
-<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 900 600" width="900" height="600">
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="-510 -240 1920 1080" width="1920" height="1080">
   <!-- Runebound hub: cozy guild inn. 900x600 game space. Portal top center. -->
   <defs>
     <pattern id="planks" width="120" height="44" patternUnits="userSpaceOnUse">
@@ -27,7 +27,7 @@
   </defs>
 
   <!-- ground outside the walls -->
-  <rect width="900" height="600" fill="url(#grass)"/>
+  <rect x="-700" y="-400" width="2300" height="1500" fill="url(#grass)"/>
   <!-- walls -->
   <rect x="58" y="58" width="784" height="530" rx="14" fill="url(#stone)" stroke="#1a1816" stroke-width="3"/>
   <rect x="86" y="86" width="728" height="474" fill="url(#planks)"/>
@@ -123,7 +123,6 @@
     <rect x="307" y="92" width="4" height="9" fill="#2a2420"/><rect x="305" y="100" width="9" height="16" rx="2" fill="#b8731a" stroke="#1a120a" stroke-width="1"/><rect x="307" y="104" width="2" height="6" fill="#fff8"/>
     
   </g>
-  </g>
   <!-- timber frame, back layer (2x4 beams along the walls) -->
   <g fill="url(#wood)" stroke="#2e1d10" stroke-width="2" filter="url(#shadow)">
     <rect x="86" y="96" width="728" height="10"/>
@@ -140,5 +139,5 @@
   </g>
   <!-- warm light pools -->
   <g filter="url(#soft)" opacity=".5"><circle cx="160" cy="370" r="60" fill="#ffb35c" opacity=".25"/><circle cx="740" cy="400" r="50" fill="#ffb35c" opacity=".2"/></g>
-  <rect width="900" height="600" fill="url(#vig)"/>
+  <rect x="-700" y="-400" width="2300" height="1500" fill="url(#vig)"/>
 </svg>

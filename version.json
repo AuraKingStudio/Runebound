@@ -1,5 +1,5 @@
 {
-  "note": "Only the top-left bottle wall remains",
+  "note": "Hub art 1920x1080 (16:9) for PC",
   "board": [
     {
       "id": "R1",
@@ -94,6 +94,13 @@
   ],
   "log": [
     {
+      "k": "fix",
+      "t": "Hub art 16:9, cover-fit",
+      "at": "2026-10-30T14:47:37.352Z",
+      "add": 12,
+      "del": 7
+    },
+    {
       "k": "out",
       "t": "Other bottle walls and bar removed",
       "at": "2026-10-30T14:46:34.685Z",
@@ -169,20 +176,13 @@
       "at": "2026-10-30T14:41:43.975Z",
       "add": 3,
       "del": 1
-    },
-    {
-      "k": "fix",
-      "t": "Raiders guild plaque on wall",
-      "at": "2026-10-30T14:41:20.490Z",
-      "add": 10,
-      "del": 8
     }
   ],
   "stats": {
     "tests": 71,
     "prevTests": 71,
     "failed": 0,
-    "today": 55,
+    "today": 56,
     "spark": [
       0,
       0,
@@ -195,7 +195,7 @@
       0,
       0,
       12,
-      43
+      44
     ],
     "lines": [
       0,
@@ -209,11 +209,11 @@
       0,
       0,
       9633,
-      1839
+      1868
     ],
     "features": 4,
     "open": 9,
-    "at": "2026-10-30T14:46:34.685Z"
+    "at": "2026-10-30T14:47:37.352Z"
   },
-  "ver": "0.5.31"
+  "ver": "0.5.32"
 }
