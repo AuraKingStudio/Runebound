@@ -1,5 +1,5 @@
 {
-  "note": "Portal is now a magic pool",
+  "note": "Clean up: locked NPC code",
   "board": [
     {
       "id": "R1",
@@ -94,6 +94,13 @@
   ],
   "log": [
     {
+      "k": "out",
+      "t": "Unused ghost helper removed",
+      "at": "2026-10-30T14:44:06.980Z",
+      "add": 1,
+      "del": 3
+    },
+    {
       "k": "in",
       "t": "Magic pool replaces the portal arch",
       "at": "2026-10-30T14:43:49.537Z",
@@ -169,20 +176,13 @@
       "at": "2026-10-30T14:39:50.001Z",
       "add": 3,
       "del": 3
-    },
-    {
-      "k": "fix",
-      "t": "Boards moved close and easy to reach",
-      "at": "2026-10-30T14:39:35.617Z",
-      "add": 6,
-      "del": 6
     }
   ],
   "stats": {
     "tests": 71,
     "prevTests": 71,
     "failed": 0,
-    "today": 51,
+    "today": 52,
     "spark": [
       0,
       0,
@@ -195,7 +195,7 @@
       0,
       0,
       10,
-      41
+      42
     ],
     "lines": [
       0,
@@ -209,11 +209,11 @@
       0,
       0,
       9506,
-      1912
+      1927
     ],
     "features": 3,
     "open": 9,
-    "at": "2026-10-30T14:43:49.537Z"
+    "at": "2026-10-30T14:44:06.980Z"
   },
-  "ver": "0.5.27"
+  "ver": "0.5.28"
 }

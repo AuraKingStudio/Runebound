@@ -2794,11 +2794,9 @@
         return "#" + [0, 1, 2].map((i) => Math.round(p(a, i) * (1 - t) + p(b, i) * t).toString(16).padStart(2, "0")).join("");
       }
       /* npcHidden(n): true while an NPC is still locked (tutorial step or Archivist unlock). */
-      /* npcProg(n): 0..1 progress toward unlocking a locked NPC (tales heard / target). Class Master and tutorial NPCs: 0. */
-      const npcProg = (n) => (n.lk && UNLOCK_AT[n.lk] ? Math.min(1, (V.lt || 0) / UNLOCK_AT[n.lk]) : 0);
       const npcHidden = (n) => (n.lk && !isUnl(n.lk)) || (n.tu && tut() < n.tu);
       function npc(n, mark) {
-        /* locked NPCs: invisible at 0 progress, then a faint ghost that strengthens as their requirement fills */        if (npcHidden(n)) return; /* locked: fully hidden */
+        if (npcHidden(n)) return; /* locked NPCs are fully hidden: no sprite, no ghost */
         const ghost = 0;
         if (ghost) {
           /* locked: keep the NPC's own emblem but greyed, name hidden, padlock badge drawn below */
