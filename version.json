@@ -1,5 +1,5 @@
 {
-  "note": "Clean up: locked NPC code",
+  "note": "Hub skill icons tighter",
   "board": [
     {
       "id": "R1",
@@ -94,6 +94,13 @@
   ],
   "log": [
     {
+      "k": "fix",
+      "t": "Tighter hub skill icons",
+      "at": "2026-10-30T14:44:33.532Z",
+      "add": 2,
+      "del": 2
+    },
+    {
       "k": "out",
       "t": "Unused ghost helper removed",
       "at": "2026-10-30T14:44:06.980Z",
@@ -169,20 +176,13 @@
       "at": "2026-10-30T14:40:44.081Z",
       "add": 39,
       "del": 1
-    },
-    {
-      "k": "fix",
-      "t": "NPCs placed by furniture",
-      "at": "2026-10-30T14:39:50.001Z",
-      "add": 3,
-      "del": 3
     }
   ],
   "stats": {
     "tests": 71,
     "prevTests": 71,
     "failed": 0,
-    "today": 52,
+    "today": 53,
     "spark": [
       0,
       0,
@@ -194,7 +194,7 @@
       0,
       0,
       0,
-      10,
+      11,
       42
     ],
     "lines": [
@@ -208,12 +208,12 @@
       0,
       0,
       0,
-      9506,
-      1927
+      9592,
+      1845
     ],
     "features": 3,
     "open": 9,
-    "at": "2026-10-30T14:44:06.980Z"
+    "at": "2026-10-30T14:44:33.532Z"
   },
-  "ver": "0.5.28"
+  "ver": "0.5.29"
 }
