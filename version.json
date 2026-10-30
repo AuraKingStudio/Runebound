@@ -1,5 +1,5 @@
 {
-  "note": "Bar moved in front of the bottle wall",
+  "note": "Stools moved; Innkeeper at the bar",
   "board": [
     {
       "id": "R1",
@@ -95,6 +95,13 @@
   "log": [
     {
       "k": "fix",
+      "t": "Innkeeper stands at the bar",
+      "at": "2026-10-30T14:42:13.933Z",
+      "add": 3,
+      "del": 3
+    },
+    {
+      "k": "fix",
       "t": "Bar in front of bottles",
       "at": "2026-10-30T14:41:43.975Z",
       "add": 3,
@@ -169,20 +176,13 @@
       "at": "2026-10-30T14:38:56.492Z",
       "add": 3,
       "del": 3
-    },
-    {
-      "k": "fix",
-      "t": "Skill buttons faded in hub",
-      "at": "2026-10-30T14:38:39.967Z",
-      "add": 73,
-      "del": 123
     }
   ],
   "stats": {
     "tests": 71,
     "prevTests": 71,
     "failed": 0,
-    "today": 47,
+    "today": 48,
     "spark": [
       0,
       0,
@@ -195,7 +195,7 @@
       0,
       0,
       9,
-      38
+      39
     ],
     "lines": [
       0,
@@ -209,11 +209,11 @@
       0,
       0,
       9500,
-      1885
+      1889
     ],
     "features": 3,
     "open": 9,
-    "at": "2026-10-30T14:41:43.975Z"
+    "at": "2026-10-30T14:42:13.933Z"
   },
-  "ver": "0.5.23"
+  "ver": "0.5.24"
 }
