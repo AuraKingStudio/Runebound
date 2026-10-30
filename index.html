@@ -723,17 +723,17 @@
       const PORTAL = { x: 450, y: 150 },
         /* NPCs. g = emblem path (SVG path syntax, drawn on a 40x40 box centered at 0,0), gs = stroke instead of fill */
         /* Elder: wizard hat (wide brim + bent cone) */
-        ELDER = { x: 250, y: 300, ic: "🧙", nm: "The Elder", col: "#b48cff",
+        ELDER = { tu: 1, x: 250, y: 300, ic: "🧙", nm: "The Elder", col: "#b48cff",
           g: "M-14 9q14 6 28 0q-2 4-14 5q-12-1-14-5zM-9 8L-1-12q3-5 9-3q-4 1-5 4L9 8q-9 3-18 0z" },
         /* Merchant: round coin bag with a tied neck and a coin mark */
-        SHOP = { x: 450, y: 468, r: 30, gz: 1.45, ic: "💰", nm: "The Merchant", col: "#ffcf4d",
+        SHOP = { tu: 2, x: 450, y: 468, r: 30, gz: 1.45, ic: "💰", nm: "The Merchant", col: "#ffcf4d",
           g: "M-3-8q-6 3-10 10q-3 10 7 11h12q10-1 7-11q-4-7-10-10zM-3-9l-4-5q7 2 14 0l-4 5zM-1 0h4a2 2 0 0 1 0 4h-2a2 2 0 0 0 0 4h4" },
-        LORE = { x: 650, y: 300, ic: "📜", nm: "The Archivist", col: "#5ad7ff", gs: 1,
+        LORE = { tu: 3, x: 310, y: 413, ic: "📜", nm: "The Archivist", col: "#5ad7ff", gs: 1,
           /* Archivist: rolled scroll with text lines */
           g: "M-10-13h20a3 3 0 0 1 0 6h-20a3 3 0 0 1 0-6M-8-7v13M8-7v13M-10 6h20a3 3 0 0 1 0 6h-20a3 3 0 0 1 0-6M-4-3h8M-4 1h6" },
         /* the 4 NPCs standing where the old torches were */
         /* Class Master (green): three class orbs */
-        CLASSN = { lk: "class", x: 310, y: 413, ic: "⚔", nm: "The Class Master", col: "#5dff8a",
+        CLASSN = { lk: "class", x: 650, y: 300, ic: "⚔", nm: "The Class Master", col: "#5dff8a",
           g: "M-4-6a4 4 0 1 0 8 0a4 4 0 1 0-8 0zM-11 5a4 4 0 1 0 8 0a4 4 0 1 0-8 0zM3 5a4 4 0 1 0 8 0a4 4 0 1 0-8 0z" },
         /* The Maiden (rose): a rose bloom */
         MAIDEN = { lk: "maiden", x: 588, y: 413, ic: "🌹", nm: "The Maiden", col: "#ff8fc8",
@@ -876,12 +876,14 @@
           V.name = typeof s.name == "string" ? s.name.slice(0, 16) : "";
           V.xp = Math.max(0, +s.xp | 0);
           /* Archivist state: pool (lp, lpt), last tale time (lta), bonus window (lbx, lbn), blessing (bl), title flag (af) */
-          for (const k of ["lp", "lpt", "lta", "lbx", "lbn"]) if (typeof s[k] == "number") V[k] = s[k];
+          for (const k of ["lp", "lpt", "lta", "lbx", "lbn", "cr"]) if (typeof s[k] == "number") V[k] = s[k];
           V.bl = ["might", "stone", "swift"].includes(s.bl) ? s.bl : null;
           V.af = s.af ? 1 : 0;
           /* new NPCs: class choice, Maiden day, raid records */
           V.cls = CL[s.cls] ? s.cls : "";
           V.mb = typeof s.mb == "string" ? s.mb : "";
+          /* tutorial step 0-4 (4 = done). Old saves with progress skip it. */
+          V.tut = typeof s.tut == "number" ? s.tut : s.xp || s.q || s.lt ? 4 : 0;
           V.ul = s.ul && typeof s.ul == "object" ? { class: !!s.ul.class, maiden: !!s.ul.maiden, smith: !!s.ul.smith, herald: !!s.ul.herald } : {};
           for (const k of ["wins", "loss", "best"]) if (typeof s[k] == "number") V[k] = s[k];
         }
@@ -1318,6 +1320,23 @@
       const resumeGame = () => { paused = false; msgT = 0; };
       const togglePause = () => (paused ? resumeGame() : pauseGame());
 
+      /* ---------- tutorial: reveals the starter NPCs one by one ----------
+         0 move -> Elder, 1 talk to Elder -> Merchant, 2 open shop -> Archivist, 3 listen -> portal, 4 done */
+      const tut = () => (V.tut == null ? 0 : V.tut);
+      const TUT_TXT = ["Move with WASD, the joystick or the stick", "Talk to the Elder", "Visit the Merchant", "Listen to the Archivist", ""];
+      let tutWalk = 0;
+      /* tutNext(from): if the player is on step "from", go to the next step and reveal the next NPC. */
+      function tutNext(from) {
+        if (tut() != from) return;
+        V.tut = from + 1;
+        save();
+        const n = [ELDER, SHOP, LORE, PORTAL][from];
+        n._rv = S.tm; /* slow fade-in */
+        burst(n.x, n.y, n.col || "#5af0dc", 40, 220);
+        RINGS.push({ x: n.x, y: n.y, col: n.col || "#5af0dc", t: 0 });
+        sfx("win", 1.1);
+        popMsg(V.tut >= 4 ? "🌀 Tutorial complete! The portal is open." : "✨ " + TUT_TXT[V.tut], 1.1, 3500);
+      }
       /* step(dt): advance the whole game by dt seconds. In: dt (s). Out: mutates S, P. */
       function step(dt) {
         if (paused) return;
@@ -1332,6 +1351,7 @@
           } else P.dx = P.dy = 0;
           /* facing snaps instantly to the dominant move direction */
           if (P.dx || P.dy) P.f = Math.abs(P.dx) > Math.abs(P.dy) ? (P.dx > 0 ? "r" : "l") : P.dy > 0 ? "d" : "u";
+          if ((P.dx || P.dy) && tut() == 0 && (tutWalk += dt) > 0.8) tutNext(0); /* tutorial step 1: walk a bit */
           if (!dashStep(P, dt)) {
             P.x += P.dx * k.sp * spm() * dt;
             P.y += P.dy * k.sp * spm() * dt;
@@ -1357,13 +1377,13 @@
           ["herald", HERALD],
           ["portal", PORTAL],
         ])
-          if (dist(P, n[1]) < (n[0] == "portal" ? 90 : 75)) return n[0];
+          if (!npcHidden(n[1]) && dist(P, n[1]) < (n[0] == "portal" ? 90 : 75)) return n[0];
         return null;
       }
       function inter() {
         const n = nearby();
         if (!n || dlgOpen()) return;
-        if (n == "portal") toArena();
+        if (n == "portal") { if (tut() < 4) { toast("Finish the tutorial to open the portal"); return; } toArena(); }
         else openDlg(n);
       }
       function start() {
@@ -1395,6 +1415,8 @@
       function openDlg(w) {
         CUR_DLG = w;
         $("dlg").hidden = false;
+        const tn = { elder: ELDER, shop: SHOP, lore: LORE }[w];
+        if (tn && tut() < tn.tu) return lockedUI("tut");
         const ln = { class: CLASSN, maiden: MAIDEN, smith: SMITH, herald: HERALD }[w];
         if (ln && !isUnl(ln.lk)) return lockedUI(ln.lk);
         ({ elder: elderUI, lore: loreUI, shop: shopUI, class: classUI, maiden: maidenUI, smith: smithUI, herald: heraldUI }[w] || shopUI)();
@@ -1620,6 +1642,7 @@
         if (Math.random() < 0.25) { V.lbx = now + 120e3; save(); }
       }
       function loreUI() {
+        tutNext(3);
         const bonus = V.lbx > Date.now(); /* guaranteed secret: skips the pool and the 15s gap */
         if (bonus) { V.lbx = 0; V.lta = 0; V.lp = Math.max(1, lorePool()); }
         if (lorePool() < 1) {
@@ -1645,7 +1668,7 @@
         if (ms) V.gold += ms[0];
         const rw = rare ? loreReward(bonus) : "";
         /* Class Master: pure luck, 1 in 100 per tale (guaranteed by tale 300 so nobody is stuck) */
-        const cm = !isUnl("class") && (Math.random() < 0.01 || V.lt >= 300) ? unlockNpc("class") : "";
+        const cm = !isUnl("class") && classRoll() ? unlockNpc("class") : "";
         save();
         sfx(rare || ms ? "win" : "ui", rare ? 1.3 : 1);
         $("dp").innerHTML = `<h2>📜 The Archivist</h2>
@@ -1667,14 +1690,24 @@
         V.ul[k] = true;
         save();
         const n = { class: CLASSN, maiden: MAIDEN, smith: SMITH, herald: HERALD }[k];
+        n._rv = S.tm; /* slow fade-in */
         burst(n.x, n.y, n.col, 50, 260);
         RINGS.push({ x: n.x, y: n.y, col: n.col, t: 0 });
         RINGS.push({ x: n.x, y: n.y, col: "#fff", t: -0.15 });
         setTimeout(() => popMsg("🔓 " + n.nm + " has arrived in the hub!", 1.2, 4000), 300);
         return `🔓 The Archivist whispers a name… <b style="color:${n.col}">${n.nm}</b> joins the hub!`;
       }
+      /* classRoll(): Class Master luck. At most one 1-in-100 roll per 30 minutes (V.cr = last roll time); guaranteed by tale 300. */
+      function classRoll() {
+        if ((V.lt || 0) >= 300) return true;
+        if (Date.now() - (V.cr || 0) < 30 * 60e3) return false;
+        V.cr = Date.now();
+        save();
+        return Math.random() < 0.01;
+      }
       /* lockedUI(): what a still-hidden NPC says. */
       function lockedUI(k) {
+        if (k == "tut") { $("dp").innerHTML = `<h2>❓ ???</h2><p>A figure waits in the mist.</p><p class="sm">Follow the tutorial at the top of the screen.</p><button class="alt" onclick="closeDlg()">Farewell</button>`; return; }
         const need = UNLOCK_AT[k] || 0;
         $("dp").innerHTML = `<h2>❓ ???</h2><p>A hooded figure turns away. "Not yet, traveller."</p><p class="sm">Hint: the Archivist knows who this is. Listen to his tales.${need ? ` (${Math.min(V.lt || 0, need)}/${need} tales)` : ""}</p><button class="alt" onclick="closeDlg()">Farewell</button>`;
       }
@@ -1759,6 +1792,7 @@
       const qHead = (st, q, tag) =>
         `<div class="qh"><span class="qm ${st}"><b>${QM[st].g}</b></span><div><div class="qtag">${tag}</div><div class="qn">${q.n}</div></div></div>`;
       function elderUI() {
+        tutNext(1);
         const q = QUESTS[V.q];
         let h = `<h2>🧙 The Elder</h2>`;
         if (!q)
@@ -1793,6 +1827,7 @@
       /* shop screen. In: V.gold, V.up. justBought = key of the card to flash after a purchase. */
       let justBought = "";
       function shopUI() {
+        tutNext(2);
         const total = UPG.reduce((a, u) => a + V.up[u.k], 0),
           all = UPG.length * MAXL;
         let h = `<h2>💰 The Merchant</h2><div class="purse"><span class="coin"></span><b id="pg">${V.gold}</b></div>
@@ -2280,6 +2315,7 @@
         ],
       };
       function uiUpd() {
+        $("bt").hidden = tut() < 4; /* Titles button appears after the tutorial */
         loreBonusTick();
         const m = P;
         if (!m || S.sc == "lobby") return;
@@ -2449,8 +2485,15 @@
         const p = (h, i) => parseInt(h.slice(1 + i * 2, 3 + i * 2), 16);
         return "#" + [0, 1, 2].map((i) => Math.round(p(a, i) * (1 - t) + p(b, i) * t).toString(16).padStart(2, "0")).join("");
       }
+      /* npcHidden(n): true while an NPC is still locked (tutorial step or Archivist unlock). */
+      /* npcProg(n): 0..1 progress toward unlocking a locked NPC (tales heard / target). Class Master and tutorial NPCs: 0. */
+      const npcProg = (n) => (n.lk && UNLOCK_AT[n.lk] ? Math.min(1, (V.lt || 0) / UNLOCK_AT[n.lk]) : 0);
+      const npcHidden = (n) => (n.lk && !isUnl(n.lk)) || (n.tu && tut() < n.tu);
       function npc(n, mark) {
-        if (n.lk && !isUnl(n.lk)) {
+        /* locked NPCs: invisible at 0 progress, then a faint ghost that strengthens as their requirement fills */
+        let ghost = 0;
+        if (npcHidden(n)) { ghost = npcProg(n); if (ghost <= 0) return; }
+        if (ghost) {
           /* locked: keep the NPC's own emblem but greyed, name hidden, padlock badge drawn below */
           n.p2 = n.p2 || new Path2D(n.g);
           LOCK_P2 = LOCK_P2 || new Path2D(LOCK_G);
@@ -2458,8 +2501,11 @@
           mark = "";
         }
         /* no floating: NPCs stand still and "breathe" (tiny scale pulse) so they read as grounded */
+        /* reveal: fade in + rise over 1.5s after the NPC is unlocked (n._rv = reveal time) */
+        const fa = n._rv != null ? cl((S.tm - n._rv) / 1.5, 0, 1) : 1;
+        c.globalAlpha = fa * (ghost ? 0.12 + 0.5 * ghost : 1);
         const t = S.tm,
-          bob = 0,
+          bob = (1 - fa) * 14,
           br = 1 + Math.sin(t * 1.6 + n.x) * 0.025;
         if (mark && mark != "active") {
           const p = 0.5 + 0.5 * Math.sin(t * 3);
@@ -2521,7 +2567,10 @@
         c.restore();
         c.textAlign = "center";
         /* NPC names: logo font, tinted with the NPC's color (players use plain white Georgia) */
-        c.font = 'bold 12px "Cinzel", Georgia';
+        /* name only when the player is close (less clutter), small */
+        const near = P && dist(P, n) < 140;
+        c.globalAlpha = near ? 1 : 0;
+        c.font = 'bold 10px "Cinzel", Georgia';
         c.fillStyle = n.col;
         c.strokeStyle = "#000";
         c.lineWidth = 3;
@@ -2866,6 +2915,31 @@
           c.fillText(CL[P.cls].n + "  " + Math.ceil(P.hp) + "/" + P.mh, 14, 24);
           bar(14, 28, 120, 7, P.hp / P.mh, "#48e07a");
           coinHUD(12, 44, V.gold);
+          /* tutorial: step text at the top + bouncing arrow over the next target */
+          if (S.sc == "hub" && tut() < 4) {
+            c.save();
+            c.textAlign = "center";
+            c.font = 'bold 14px "Cinzel", Georgia';
+            c.lineWidth = 3;
+            c.strokeStyle = "#000";
+            c.fillStyle = "#ffd84a";
+            const tx = "TUTORIAL " + (tut() + 1) + "/4 · " + TUT_TXT[tut()];
+            c.strokeText(tx, 450, 24);
+            c.fillText(tx, 450, 24);
+            const tg = [null, ELDER, SHOP, LORE][tut()];
+            if (tg) {
+              const ay = tg.y - (tg.r || 20) - 34 + Math.sin(S.tm * 6) * 5;
+              c.fillStyle = "#ffd84a";
+              c.beginPath();
+              c.moveTo(tg.x, ay + 10);
+              c.lineTo(tg.x - 9, ay - 4);
+              c.lineTo(tg.x + 9, ay - 4);
+              c.closePath();
+              c.fill();
+              c.stroke();
+            }
+            c.restore();
+          }
           /* active Archivist blessing, right of the gold counter */
           if (V.bl) {
             const BL = { might: ["⚔ Might", "#ff7a5c"], stone: ["🛡 Stone", "#4da3ff"], swift: ["💨 Swift", "#5ad7ff"] }[V.bl];
@@ -2878,7 +2952,7 @@
             c.fillText(BL[0] + " blessing", 116, 59);
             c.restore();
           }
-          qTrack(ar ? 62 : 12);
+          if (tut() >= 4) qTrack(ar ? 62 : 12);
         }
         if (ar && b) {
           bar(250, 16, 400, 14, b.hp / b.mh, b.ph == 2 ? "#ff4d8d" : "#a78bff");

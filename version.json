@@ -1,5 +1,5 @@
 {
-  "note": "Class Master: 1% luck per tale",
+  "note": "Tutorial unlocks starter NPCs; cleaner screen",
   "board": [
     {
       "id": "R1",
@@ -94,24 +94,24 @@
   ],
   "log": [
     {
-      "t": "Class Master: luck per tale",
-      "k": "fix"
+      "k": "in",
+      "t": "4-step tutorial"
     },
     {
-      "t": "4 locked NPCs (tinted)",
-      "k": "in"
+      "k": "fix",
+      "t": "NPC names only when near"
     },
     {
-      "t": "Hub torches",
-      "k": "out"
+      "k": "out",
+      "t": "Locked NPC clutter"
     },
     {
-      "t": "Archivist reveals NPCs",
-      "k": "in"
+      "k": "in",
+      "t": "Ghosts fill with progress"
     },
     {
-      "t": "Enter Arena bottom-middle",
-      "k": "fix"
+      "k": "fix",
+      "t": "Archivist <-> Class Master"
     }
   ]
 }
