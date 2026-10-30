@@ -7,7 +7,7 @@ const store={};
 const ctx={document:doc,window:{},innerWidth:900,innerHeight:600,performance:{now:()=>0},requestAnimationFrame(){},addEventListener(){},localStorage:{getItem:k=>store[k]||null,setItem:(k,v)=>store[k]=v,removeItem:k=>delete store[k]},Image:function(){this.complete=false},location:{search:''},console,setTimeout:f=>0,Math,JSON,Object,Array,Date,Number,parseInt,isNaN};
 ctx.window=ctx;vm.createContext(ctx);
 vm.runInContext(SRC+`
-;globalThis.devMin=devMin;globalThis.devFs=devFs;globalThis.T={V:()=>V,P:()=>P,S:()=>S,start,devAdd,devUp,devUI,devCls,devHeal,devWipe,devResetQ,devArena,devBoss,devHub,DEV,hurt,act,step,pauseGame,resumeGame,isPaused:()=>paused,QUESTS,UPG,toggleDev,buy,shopUI,qAct,togglePause,dailyCheck,saveName,lvlInfo,gainXP,lvlCol,FX:()=>FX,FT:()=>FT,shk:()=>shk,els:null};`,ctx);
+;globalThis.devMin=devMin;globalThis.devFs=devFs;globalThis.T={V:()=>V,P:()=>P,S:()=>S,start,devAdd,devUp,devUI,devCls,devHeal,devWipe,devResetQ,devArena,devBoss,devHub,DEV,hurt,act,step,pauseGame,resumeGame,isPaused:()=>paused,QUESTS,UPG,toggleDev,buy,shopUI,qAct,togglePause,dailyCheck,saveName,lvlInfo,gainXP,lvlCol,setIn,padPoll,inMode:()=>INMODE,KEYHINT,FX:()=>FX,FT:()=>FT,shk:()=>shk,els:null};`,ctx);
 const T=ctx.T;let f=0;const ok=(c,m)=>{console.log((c?'PASS ':'FAIL ')+m);if(!c)f++};
 T.start();ok(T.S().sc=='hub','start -> hub');
 ctx.document.getElementById('dlg').hidden=true;const pausedAt=T.S().tm;T.pauseGame();T.step(.1);ok(T.isPaused()&&T.S().tm===pausedAt,'pause freezes the game');T.resumeGame();ok(!T.isPaused(),'resume re-enables play');
@@ -56,5 +56,9 @@ T.V().xp=0;ok(T.lvlInfo().L==1,'xp: start at level 1');
 T.gainXP(140);ok(T.lvlInfo().L==2&&T.lvlInfo().cur==0,'xp: 140 xp -> level 2');
 ok(T.lvlCol(5)!=T.lvlCol(15)&&T.lvlCol(55)==T.lvlCol(99),'xp: tier colors change every 10 levels, cap at 50+');
 const xq=T.V().xp;T.devResetQ();T.qAct(1);T.V().qs=2;T.qAct(2);ok(T.V().xp==xq+100,'xp: quest turn-in gives 100');
+/* ---- input mode ---- */
+T.setIn('pad');ok(T.inMode()=='pad'&&T.KEYHINT.pad[0]=='A','input: controller mode shows A/X/Y/B');
+T.setIn('kb');ok(T.inMode()=='kb'&&T.KEYHINT.kb.join('')=='JKLE','input: keyboard mode shows J/K/L/E');
+T.padPoll();ok(true,'input: no controller connected is safe');
 T.togglePause();ok(T.isPaused(),'P toggles pause on');T.togglePause();ok(!T.isPaused(),'P toggles pause off');
 console.log(f?f+' FAILED':'ALL PASSED');process.exit(f?1:0);

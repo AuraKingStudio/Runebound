@@ -441,6 +441,20 @@
         background-color: #24404a;
         text-shadow: 0 1px 2px #000;
       }
+      /* key / controller hint badges (hidden on touch) */
+      .kh {
+        position: absolute; top: -6px; right: -6px; min-width: 22px; height: 22px; padding: 0 4px; box-sizing: border-box;
+        display: grid; place-items: center; border-radius: 6px; font: bold 13px/1 Georgia, serif; color: #fff;
+        background: #0b1218; border: 2px solid #ffffffaa; box-shadow: 0 2px 0 #000a; pointer-events: none;
+      }
+      .kh:empty { display: none; }
+      #btns #bi .kh { position: relative; top: auto; right: auto; display: inline-grid; margin-left: 8px; vertical-align: 2px; color: #fff; text-shadow: none; }
+      /* controller: round face-button colors (Xbox layout) */
+      body[data-in="pad"] .kh { border-radius: 50%; border-color: #fff; }
+      body[data-in="pad"] .kh.k0 { background: #2fa84f; }
+      body[data-in="pad"] .kh.k1 { background: #2f6fd8; }
+      body[data-in="pad"] .kh.k2 { background: #e0b100; }
+      body[data-in="pad"] .kh.k3 { background: #d63b3b; }
       /* skill buttons: rune-stone discs. --sc = class color, --p = cooldown left (0-100%) */
       #btns .sk {
         width: 74px; height: 74px; padding: 0; border-radius: 50%;
@@ -1671,6 +1685,35 @@
       addEventListener("blur", () => {
         js && je({ pointerId: js.id });
       });
+      /* ---------- input mode: keyboard / touch / controller ----------
+         The last device used wins. body[data-in] drives which button hints show (CSS). */
+      let INMODE = typeof matchMedia == "function" && matchMedia("(pointer: coarse)").matches ? "touch" : "kb";
+      const KEYHINT = { kb: ["J", "K", "L", "E"], pad: ["A", "X", "Y", "B"], touch: ["", "", "", ""] };
+      function setIn(m) {
+        if (INMODE == m) return;
+        INMODE = m;
+        if (document.body.dataset) document.body.dataset.in = m;
+      }
+      if (document.body.dataset) document.body.dataset.in = INMODE;
+      addEventListener("pointerdown", (e) => setIn(e.pointerType == "touch" || e.pointerType == "pen" ? "touch" : "kb"), true);
+      /* controller: left stick / d-pad move. A = skill 1, X = skill 2, Y = skill 3, B = interact / close, Start = pause */
+      const PAD = { x: 0, y: 0, prev: [] };
+      function padPoll() {
+        const gp = typeof navigator != "undefined" && navigator.getGamepads ? [...navigator.getGamepads()].find((g) => g && g.connected) : null;
+        if (!gp) { PAD.x = PAD.y = 0; return; }
+        const dz = (v) => (Math.abs(v) < 0.25 ? 0 : v),
+          bt = (i) => !!(gp.buttons[i] && gp.buttons[i].pressed),
+          edge = (i) => bt(i) && !PAD.prev[i];
+        PAD.x = dz(gp.axes[0] || 0) + (bt(15) ? 1 : 0) - (bt(14) ? 1 : 0);
+        PAD.y = dz(gp.axes[1] || 0) + (bt(13) ? 1 : 0) - (bt(12) ? 1 : 0);
+        if (PAD.x || PAD.y || gp.buttons.some((b) => b.pressed)) setIn("pad");
+        if (edge(0)) press(0);
+        if (edge(2)) press(1);
+        if (edge(3)) press(2);
+        if (edge(1)) dlgOpen() ? closeDlg() : inter();
+        if (edge(9) && P) togglePause();
+        PAD.prev = gp.buttons.map((b) => b.pressed);
+      }
       function inp() {
         let x = (kk.d || kk.arrowright ? 1 : 0) - (kk.a || kk.q || kk.arrowleft ? 1 : 0),
           y = (kk.s || kk.arrowdown ? 1 : 0) - (kk.w || kk.z || kk.arrowup ? 1 : 0);
@@ -1678,6 +1721,8 @@
           x += js.vx;
           y += js.vy;
         }
+        x += PAD.x;
+        y += PAD.y;
         const l = Math.hypot(x, y);
         if (l > 1) {
           x /= l;
@@ -1723,6 +1768,7 @@
       addEventListener("keydown", (e) => {
         if (/INPUT|SELECT|TEXTAREA/.test(e.target.tagName)) return;
         const k = e.key.toLowerCase();
+        setIn("kb");
         if (k == "f2") {
           toggleDev();
           e.preventDefault();
@@ -1769,8 +1815,11 @@
             b.dataset.cls = m.cls;
             b.className = "sk";
             b.style.setProperty("--sc", SKC[m.cls]);
-            b.innerHTML = `<svg viewBox="-20 -20 40 40" fill="currentColor" stroke="currentColor" stroke-linecap="round" stroke-linejoin="round">${SKI[m.cls][a]}</svg><span class="cdv"></span><span class="cdn"></span><span class="sn">${SK[m.cls][a]}</span>`;
+            b.innerHTML = `<svg viewBox="-20 -20 40 40" fill="currentColor" stroke="currentColor" stroke-linecap="round" stroke-linejoin="round">${SKI[m.cls][a]}</svg><span class="cdv"></span><span class="cdn"></span><span class="sn">${SK[m.cls][a]}</span><span class="kh k${a}"></span>`;
           }
+          /* key hint badge follows the active input device */
+          const kh = b.querySelector(".kh"), ht = KEYHINT[INMODE][a];
+          if (kh && kh.textContent != ht) kh.textContent = ht;
           const on = cd > 0.05;
           if (b._on && !on) { b.classList.remove("rd"); void b.offsetWidth; b.classList.add("rd"); } /* ready flash */
           b._on = on;
@@ -1782,8 +1831,12 @@
         }
         const n = nearby();
         $("bi").hidden = !n || dlgOpen();
-        if (n)
-          $("bi").textContent = n == "portal" ? "ENTER ARENA" : n == "elder" ? "TALK" : n == "lore" ? "LISTEN" : "SHOP";
+        if (n) {
+          const lb = n == "portal" ? "ENTER ARENA" : n == "elder" ? "TALK" : n == "lore" ? "LISTEN" : "SHOP",
+            ht = KEYHINT[INMODE][3],
+            h = lb + (ht ? ` <span class="kh k3">${ht}</span>` : "");
+          if ($("bi")._h != h) { $("bi")._h = h; $("bi").innerHTML = h; } /* only touch the DOM when it changes */
+        }
       }
       /* ---------- rendering ---------- */
       function bar(x, y, w, h, v, col) {
@@ -2215,6 +2268,7 @@
       function loop(now) {
         const dt = Math.min(0.05, (now - last) / 1000);
         last = now;
+        padPoll();
         step(dt);
         uiUpd();
         draw(dt);
