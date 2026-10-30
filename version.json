@@ -1,5 +1,5 @@
 {
-  "note": "NPCs placed by furniture: Elder by fire, Archivist by sofa, Barkeep at bar",
+  "note": "Timber frame for depth",
   "board": [
     {
       "id": "R1",
@@ -94,6 +94,13 @@
   ],
   "log": [
     {
+      "k": "in",
+      "t": "Timber frame + foreground beams",
+      "at": "2026-10-30T14:40:44.081Z",
+      "add": 39,
+      "del": 1
+    },
+    {
       "k": "fix",
       "t": "NPCs placed by furniture",
       "at": "2026-10-30T14:39:50.001Z",
@@ -169,20 +176,13 @@
       "at": "2026-10-30T14:36:15.941Z",
       "add": 9,
       "del": 5
-    },
-    {
-      "k": "fix",
-      "t": "Counter sign renamed",
-      "at": "2026-10-30T14:36:15.941Z",
-      "add": 9,
-      "del": 5
     }
   ],
   "stats": {
     "tests": 71,
     "prevTests": 71,
     "failed": 0,
-    "today": 43,
+    "today": 44,
     "spark": [
       0,
       0,
@@ -194,7 +194,7 @@
       0,
       0,
       0,
-      8,
+      9,
       35
     ],
     "lines": [
@@ -208,12 +208,12 @@
       0,
       0,
       0,
-      9464,
-      1849
+      9500,
+      1819
     ],
-    "features": 4,
+    "features": 5,
     "open": 9,
-    "at": "2026-10-30T14:39:50.001Z"
+    "at": "2026-10-30T14:40:44.081Z"
   },
-  "ver": "0.5.19"
+  "ver": "0.5.20"
 }
