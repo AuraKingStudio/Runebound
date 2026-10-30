@@ -1,5 +1,5 @@
 {
-  "note": "Build board is now a live crypto-style feed",
+  "note": "Feed: version, candles, curves",
   "board": [
     {
       "id": "R1",
@@ -95,45 +95,38 @@
   "log": [
     {
       "k": "in",
-      "t": "Live news ticker",
-      "at": "2026-10-30T14:16:17.045Z"
+      "t": "Version tracking",
+      "at": "2026-10-30T14:20:02.270Z",
+      "add": 49,
+      "del": 6
     },
     {
       "k": "in",
-      "t": "Tests / commits chips",
-      "at": "2026-10-30T14:16:17.045Z"
+      "t": "Change-size candles",
+      "at": "2026-10-30T14:20:02.270Z",
+      "add": 49,
+      "del": 6
     },
     {
       "k": "in",
-      "t": "12h activity graph",
-      "at": "2026-10-30T14:16:17.045Z"
-    },
-    {
-      "t": "Merchant icon normal size",
-      "k": "fix"
-    },
-    {
-      "k": "in",
-      "t": "4-step tutorial"
-    },
-    {
-      "k": "fix",
-      "t": "NPC names only when near"
-    },
-    {
-      "k": "out",
-      "t": "Locked NPC clutter"
+      "t": "Lines-changed curve",
+      "at": "2026-10-30T14:20:02.270Z",
+      "add": 49,
+      "del": 6
     },
     {
       "k": "in",
-      "t": "Ghosts fill with progress"
+      "t": "Features chip",
+      "at": "2026-10-30T14:20:02.270Z",
+      "add": 49,
+      "del": 6
     }
   ],
   "stats": {
     "tests": 60,
     "prevTests": 60,
     "failed": 0,
-    "today": 23,
+    "today": 24,
     "spark": [
       0,
       0,
@@ -145,10 +138,26 @@
       0,
       0,
       0,
-      1,
-      22
+      3,
+      21
     ],
+    "lines": [
+      0,
+      0,
+      0,
+      0,
+      0,
+      0,
+      0,
+      0,
+      0,
+      0,
+      9014,
+      1205
+    ],
+    "features": 4,
     "open": 9,
-    "at": "2026-10-30T14:16:17.045Z"
-  }
+    "at": "2026-10-30T14:20:02.270Z"
+  },
+  "ver": "0.5.0"
 }

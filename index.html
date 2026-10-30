@@ -460,7 +460,14 @@
       #board .tk { margin-right: 26px; font-size: 11px; }
       #board .tk i { color: #8fa3ad; font-style: normal; font-size: 9px; margin-left: 6px; }
       @keyframes tickerMove { to { transform: translateX(-50%); } }
-      #board .chips { display: grid; grid-template-columns: repeat(3, 1fr); gap: 6px; margin: 6px 0; }
+      #board .chips { display: grid; grid-template-columns: repeat(2, 1fr); gap: 6px; margin: 6px 0; }
+      #board .ver { margin-left: auto; color: #ffd84a; font-size: 12px; letter-spacing: 1px; }
+      #board .vnote { font-size: 11px; color: #cfe; margin-top: 3px; }
+      #board .cdl { display: flex; align-items: center; gap: 2px; margin-top: 3px; height: 6px; }
+      #board .cdl i { display: block; height: 6px; border-radius: 1px; min-width: 2px; }
+      #board .cdl .ca { background: #7dff9a; } #board .cdl .cd { background: #ff6070; }
+      #board .cdl em { font-style: normal; font-size: 9px; color: #8fa3ad; margin-left: 4px; white-space: nowrap; }
+      #board li { white-space: normal !important; }
       #board .chip { background: #0f1a22; border: 1px solid #1c2832; border-radius: 6px; padding: 5px 6px; }
       #board .chip span { display: block; font-size: 8px; color: #8fa3ad; letter-spacing: 1px; }
       #board .chip b { font: bold 18px Georgia; color: #e6f1ef; font-variant-numeric: tabular-nums; }
@@ -2108,21 +2115,32 @@
           if (!el) { el = document.createElement("div"); el.id = "board"; document.body.appendChild(el); }
           const st = { todo: "TO DO", wip: "IN PROGRESS", done: "DONE" };
           /* recap of the latest code changes (newest first) */
-          const log = (j.log || []).slice(0, 5).map((l) => `<li><span class="tag ${l.k || "in"}">${{ in: "+ IN", out: "− OUT", fix: "~ FIX" }[l.k || "in"]}</span> ${l.t}</li>`) /* k: in | out | fix */.join("");
+          /* each change: tag + text + a candle bar sized by lines added (green) / removed (red) */
+          const cmax = Math.max(1, ...(j.log || []).map((l) => (l.add || 0) + (l.del || 0)));
+          const log = (j.log || []).slice(0, 5).map((l) => {
+            const a = l.add || 0, d = l.del || 0, wa = (Math.sqrt(a) / Math.sqrt(cmax)) * 100, wd = (Math.sqrt(d) / Math.sqrt(cmax)) * 100;
+            return `<li><span class="tag ${l.k || "in"}">${{ in: "+ IN", out: "− OUT", fix: "~ FIX" }[l.k || "in"]}</span> ${l.t}${a + d ? `<span class="cdl"><i class="ca" style="width:${wa}%"></i><i class="cd" style="width:${wd}%"></i><em>+${a} −${d}</em></span>` : ""}</li>`;
+          }).join("");
+          /* smooth curve (bezier) through the lines-changed-per-hour series */
+          const ls = sx.lines || [], lm = Math.max(1, ...ls),
+            lp = ls.map((v, i) => [(i / Math.max(1, ls.length - 1)) * 100, 28 - (v / lm) * 24]),
+            curve = lp.reduce((acc, p, i) => (i ? acc + ` C ${(lp[i - 1][0] + p[0]) / 2},${lp[i - 1][1]} ${(lp[i - 1][0] + p[0]) / 2},${p[1]} ${p[0]},${p[1]}` : `M ${p[0]},${p[1]}`), "");
           /* crypto-news style header: LIVE ticker, stat chips, commits-per-hour sparkline (numbers from tools/board.js) */
           const sx = j.stats || {}, dT = (sx.tests || 0) - (sx.prevTests || sx.tests || 0),
             ago = (iso) => { const m = Math.round((Date.now() - Date.parse(iso)) / 60e3); return !iso || isNaN(m) ? "" : m < 1 ? "now" : m < 60 ? m + "m" : Math.round(m / 60) + "h"; },
             tick = (j.log || []).slice(0, 8).map((l) => `<span class="tk"><span class="tag ${l.k || "in"}">${(l.k || "in").toUpperCase()}</span>${l.t}<i>${ago(l.at)}</i></span>`).join(""),
             sp = sx.spark || [], mx = Math.max(1, ...sp),
             pts = sp.map((v, i) => `${(i / Math.max(1, sp.length - 1)) * 100},${28 - (v / mx) * 24}`).join(" ");
-          el.innerHTML = `<div class="live"><span class="dot"></span>LIVE<span class="sm"> · build feed</span></div>
+          el.innerHTML = `<div class="live"><span class="dot"></span>LIVE<span class="ver">v${j.ver || "0.5.0"}</span></div><div class="vnote">${j.note || ""}</div>
             <div class="ticker"><div class="tkr">${tick}${tick}</div></div>
             <div class="chips">
               <div class="chip"><span>TESTS</span><b>${sx.tests ?? "—"}</b><em class="${dT > 0 ? "up" : dT < 0 ? "down" : ""}">${dT > 0 ? "▲" + dT : dT < 0 ? "▼" + -dT : "■ 0"}</em></div>
               <div class="chip"><span>COMMITS TODAY</span><b>${sx.today ?? "—"}</b></div>
               <div class="chip"><span>OPEN TASKS</span><b>${sx.open ?? rows.length}</b></div>
+              <div class="chip"><span>FEATURES</span><b>${sx.features ?? 0}</b><em class="up">IN</em></div>
             </div>
             ${sp.length ? `<div class="spark"><span>ACTIVITY · 12H</span><svg viewBox="0 0 100 30" preserveAspectRatio="none"><polyline points="0,30 ${pts} 100,30" fill="#7dff9a22" stroke="none"/><polyline points="${pts}" fill="none" stroke="#7dff9a" stroke-width="1.5" vector-effect="non-scaling-stroke"/></svg></div>` : ""}
+            ${ls.length ? `<div class="spark"><span>LINES CHANGED · 12H · peak ${lm}</span><svg viewBox="0 0 100 30" preserveAspectRatio="none"><path d="${curve} L 100,30 L 0,30 Z" fill="#5ad7ff22"/><path d="${curve}" fill="none" stroke="#5ad7ff" stroke-width="1.5" vector-effect="non-scaling-stroke"/></svg></div>` : ""}
             <div class="lg"><b>LATEST CHANGES</b><ul>${log}</ul></div>
             <div class="tb"><b>BUILD BOARD</b><span class="sm"> · say "do R3"</span>
             <table><tr><th>#</th><th>P</th><th>Task</th><th>State</th></tr>${rows
