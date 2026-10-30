@@ -451,7 +451,10 @@
       #board.top ul { columns: 2; column-gap: 24px; }
       #board ul { list-style: none; margin: 6px 0 12px; padding: 0; }
       #board li { padding: 3px 0; border-bottom: 1px solid #1c2832; break-inside: avoid; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
-      #board .lt { color: #8fa3ad; font-size: 10px; margin-right: 4px; }
+      #board .tag { display: inline-block; min-width: 40px; font: bold 9px/16px Georgia, serif; text-align: center; border-radius: 4px; margin-right: 6px; letter-spacing: 0.5px; }
+      #board .tag.in { background: #1f5c34; color: #7dff9a; }
+      #board .tag.out { background: #5c1f26; color: #ff8a94; }
+      #board .tag.fix { background: #5c4a1f; color: #ffd84a; }
       #board b { color: #ffd84a; letter-spacing: 1.5px; }
       #board table { width: 100%; border-collapse: collapse; margin-top: 8px; }
       #board th { text-align: left; font-size: 10px; color: #8fa3ad; letter-spacing: 1px; padding: 4px; border-bottom: 1px solid #2c3b48; }
@@ -570,6 +573,8 @@
         animation: biPop 0.25s cubic-bezier(0.2, 1.6, 0.4, 1) both, biGlow 1.4s ease-in-out 0.25s infinite;
         overflow: hidden;
       }
+      /* smaller interact button for the portal */
+      #btns #bi.small { height: 46px; min-width: 120px; font-size: 13px; padding: 0 22px; }
       /* dark inner plate of the interact button (inset 2.5px = gold outline width) */
       #btns #bi::before {
         content: ""; position: absolute; inset: 2.5px; z-index: -1;
@@ -1126,7 +1131,22 @@
           a = Math.atan2(b.y - p.y, b.x - p.x);
         S.pr.push({ x: p.x, y: p.y, vx: Math.cos(a) * 360, vy: Math.sin(a) * 360, d, l: 2, c: p.cls });
       }
+      /* hubSkill(p, a): practice move in the hub. Plays skill a's effect (no damage) and starts its cooldown. */
+      function hubSkill(p, a) {
+        const col = SKC[p.cls],
+          fx = [
+            /* skill 1: quick flash in front of the player */
+            () => { const [fx0, fy0] = DIRV[p.f || "d"]; burst(p.x + fx0 * 20, p.y + fy0 * 20, col, 10, 120); sfx("hit"); },
+            /* skill 2: bigger shockwave */
+            () => { RINGS.push({ x: p.x, y: p.y, col, t: 0 }); burst(p.x, p.y, col, 18, 180); shake(0.08); sfx("slam", 1.6); },
+            /* skill 3: signature burst + floating skill name */
+            () => { RINGS.push({ x: p.x, y: p.y, col: "#fff", t: 0 }); RINGS.push({ x: p.x, y: p.y, col, t: -0.12 }); burst(p.x, p.y, col, 26, 220); ftxt(p.x, p.y - 30, SK[p.cls][2], col, 12); sfx("heal"); },
+          ];
+        fx[a]();
+        if (!DEV.nocd) p.cd[a] = CL[p.cls].cd[a] * cdm();
+      }
       function act(p, a) {
+        if (S.sc == "hub" && p.hp > 0 && p.cd[a] <= 0) return hubSkill(p, a);
         if (S.sc != "arena" || S.end || p.hp <= 0 || p.cd[a] > 0) return;
         const b = S.b,
           d = dist(p, b);
@@ -1886,7 +1906,7 @@
           if (!el) { el = document.createElement("div"); el.id = "board"; document.body.appendChild(el); }
           const st = { todo: "TO DO", wip: "IN PROGRESS", done: "DONE" };
           /* recap of the latest code changes (newest first) */
-          const log = (j.log || []).slice(0, 3).map((l) => `<li><span class="lt">${l.at || ""}</span> ${l.t}</li>`).join("");
+          const log = (j.log || []).slice(0, 5).map((l) => `<li><span class="tag ${l.k || "in"}">${{ in: "+ IN", out: "− OUT", fix: "~ FIX" }[l.k || "in"]}</span> ${l.t}</li>`) /* k: in | out | fix */.join("");
           el.innerHTML = `<div class="lg"><b>LATEST CHANGES</b><ul>${log}</ul></div>
             <div class="tb"><b>BUILD BOARD</b><span class="sm"> · say "do R3"</span>
             <table><tr><th>#</th><th>P</th><th>Task</th><th>State</th></tr>${rows
@@ -2144,7 +2164,7 @@
           const lb = n == "portal" ? "ENTER ARENA" : n == "elder" ? "TALK" : n == "lore" ? "LISTEN" : "SHOP",
             ht = KEYHINT[INMODE][3],
             h = lb + (ht ? ` <span class="kh k3">${ht}</span>` : "");
-          if ($("bi")._h != h) { $("bi")._h = h; $("bi").innerHTML = h; } /* only touch the DOM when it changes */
+          if ($("bi")._h != h) { $("bi")._h = h; $("bi").innerHTML = h; $("bi").classList.toggle("small", n == "portal"); } /* only touch the DOM when it changes */
         }
       }
       /* ---------- rendering ---------- */
@@ -2505,6 +2525,17 @@
           c.fillRect(0, 0, W, H);
         }
         if (S.sc == "hub") {
+          /* portal highlight when the player can enter: soft glow + rising sparks */
+          if (nearby() == "portal") {
+            const k = 0.5 + 0.5 * Math.sin(S.tm * 6), gl = c.createRadialGradient(PORTAL.x, PORTAL.y - 6, 4, PORTAL.x, PORTAL.y - 6, 80);
+            gl.addColorStop(0, `rgba(120,255,235,${0.35 + 0.25 * k})`);
+            gl.addColorStop(1, "rgba(60,220,200,0)");
+            c.fillStyle = gl;
+            c.beginPath();
+            c.ellipse(PORTAL.x, PORTAL.y - 6, 80, 60, 0, 0, 6.3);
+            c.fill();
+            if (Math.random() < 0.3) burst(PORTAL.x + rnd(-30, 30), PORTAL.y + rnd(-10, 14), "#7dffe9", 1, 40);
+          }
           const g = 0.5 + 0.5 * Math.sin(S.tm * 3);
           c.strokeStyle = `rgba(90,255,230,${0.4 + 0.4 * g})`;
           c.lineWidth = 3;

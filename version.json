@@ -1,5 +1,5 @@
 {
-  "note": "Tank dash: small +armor, white shield bar",
+  "note": "Hub skills with cooldowns, portal glow, colored change log",
   "board": [
     {
       "id": "R1",
@@ -94,16 +94,24 @@
   ],
   "log": [
     {
+      "t": "Skills + cooldowns in hub",
+      "k": "in"
+    },
+    {
+      "t": "Portal glow when near",
+      "k": "in"
+    },
+    {
+      "t": "Smaller Enter Arena button",
+      "k": "fix"
+    },
+    {
+      "t": "Big ARMOR text (now +armor)",
+      "k": "out"
+    },
+    {
       "t": "White armor health bar",
-      "at": "16:28"
-    },
-    {
-      "at": "16:22",
-      "t": "Faster + livelier movement"
-    },
-    {
-      "at": "16:15",
-      "t": "Reload keeps shop open"
+      "k": "in"
     }
   ]
 }

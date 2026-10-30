@@ -56,6 +56,8 @@ T.V().xp=0;ok(T.lvlInfo().L==1,'xp: start at level 1');
 T.gainXP(140);ok(T.lvlInfo().L==2&&T.lvlInfo().cur==0,'xp: 140 xp -> level 2');
 ok(T.lvlCol(5)!=T.lvlCol(15)&&T.lvlCol(55)==T.lvlCol(99),'xp: tier colors change every 10 levels, cap at 50+');
 const xq=T.V().xp;T.devResetQ();T.qAct(1);T.V().qs=2;T.qAct(2);ok(T.V().xp==xq+100,'xp: quest turn-in gives 100');
+/* ---- hub skills ---- */
+T.DEV.nocd=0;T.devHub();T.P().cd=[0,0,0];T.act(T.P(),1);ok(T.S().sc=='hub'&&T.P().cd[1]>0,'hub: skills play and start their cooldown');T.P().cd=[0,0,0];
 /* ---- Archivist rewards ---- */
 {const seen=new Set();for(let i=0;i<300;i++){const s=T.loreReward(i%2==0);seen.add(s.split(' ')[0]);}
 ok(seen.size>=5,'lore: secret pages give varied rewards ('+[...seen].join(' ')+')');}
