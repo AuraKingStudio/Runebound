@@ -1,5 +1,5 @@
 {
-  "note": "Raiders plaque fitted to the wall; locked NPC ghost removed",
+  "note": "Bar moved in front of the bottle wall",
   "board": [
     {
       "id": "R1",
@@ -95,6 +95,13 @@
   "log": [
     {
       "k": "fix",
+      "t": "Bar in front of bottles",
+      "at": "2026-10-30T14:41:43.975Z",
+      "add": 3,
+      "del": 1
+    },
+    {
+      "k": "fix",
       "t": "Raiders guild plaque on wall",
       "at": "2026-10-30T14:41:20.490Z",
       "add": 10,
@@ -169,20 +176,13 @@
       "at": "2026-10-30T14:38:39.967Z",
       "add": 73,
       "del": 123
-    },
-    {
-      "k": "fix",
-      "t": "Raiders sign moved over portal",
-      "at": "2026-10-30T14:37:15.662Z",
-      "add": 4,
-      "del": 55
     }
   ],
   "stats": {
     "tests": 71,
     "prevTests": 71,
     "failed": 0,
-    "today": 46,
+    "today": 47,
     "spark": [
       0,
       0,
@@ -195,7 +195,7 @@
       0,
       0,
       9,
-      37
+      38
     ],
     "lines": [
       0,
@@ -209,11 +209,11 @@
       0,
       0,
       9500,
-      1867
+      1885
     ],
     "features": 3,
     "open": 9,
-    "at": "2026-10-30T14:41:20.490Z"
+    "at": "2026-10-30T14:41:43.975Z"
   },
-  "ver": "0.5.22"
+  "ver": "0.5.23"
 }
