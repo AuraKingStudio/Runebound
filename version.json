@@ -1,5 +1,5 @@
 {
-  "note": "Guild renamed: The Raiders + lore",
+  "note": "Portal open from start; junk assets removed",
   "board": [
     {
       "id": "R1",
@@ -95,6 +95,20 @@
   "log": [
     {
       "k": "in",
+      "t": "Portal open from the start",
+      "at": "2026-10-30T14:36:43.815Z",
+      "add": 2,
+      "del": 2
+    },
+    {
+      "k": "out",
+      "t": "Unused hub art files",
+      "at": "2026-10-30T14:36:43.815Z",
+      "add": 2,
+      "del": 2
+    },
+    {
+      "k": "in",
       "t": "The Raiders name + lore",
       "at": "2026-10-30T14:36:15.941Z",
       "add": 9,
@@ -162,27 +176,13 @@
       "at": "2026-10-30T14:32:50.956Z",
       "add": 12,
       "del": 21
-    },
-    {
-      "k": "in",
-      "t": "Guild Board 3 tabs",
-      "at": "2026-10-30T14:31:13.570Z",
-      "add": 54,
-      "del": 16
-    },
-    {
-      "k": "in",
-      "t": "Join existing guilds",
-      "at": "2026-10-30T14:31:13.570Z",
-      "add": 54,
-      "del": 16
     }
   ],
   "stats": {
     "tests": 71,
     "prevTests": 71,
     "failed": 0,
-    "today": 36,
+    "today": 37,
     "spark": [
       0,
       0,
@@ -194,7 +194,7 @@
       0,
       0,
       0,
-      6,
+      7,
       30
     ],
     "lines": [
@@ -208,12 +208,12 @@
       0,
       0,
       0,
-      9394,
-      1591
+      9442,
+      1557
     ],
-    "features": 9,
+    "features": 8,
     "open": 9,
-    "at": "2026-10-30T14:36:15.941Z"
+    "at": "2026-10-30T14:36:43.815Z"
   },
-  "ver": "0.5.12"
+  "ver": "0.5.13"
 }

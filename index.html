@@ -749,7 +749,7 @@
       };
       /* hub plaza: ellipse center + radii. Sized for ~10 players, 3 NPC daises and the portal arch at the top. */
       const HUB = { x: 450, y: 335, rx: 335, ry: 205 };
-      const PORTAL = { x: 450, y: 150 },
+      const PORTAL = { x: 450, y: 150, ir: 120 },
         /* NPCs. g = emblem path (SVG path syntax, drawn on a 40x40 box centered at 0,0), gs = stroke instead of fill */
         /* Elder: wizard hat (wide brim + bent cone) */
         ELDER = { tu: 1, x: 155, y: 370, ic: "🧙", nm: "The Elder", col: "#b48cff",
@@ -1427,7 +1427,7 @@
       function inter() {
         const n = nearby();
         if (!n || dlgOpen()) return;
-        if (n == "portal") { if (tut() < 4) { toast("Finish the tutorial to open the portal"); return; } toArena(); }
+        if (n == "portal") toArena(); /* portal is open from the start */
         else openDlg(n);
       }
       function start() {
