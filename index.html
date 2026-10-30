@@ -840,10 +840,19 @@
         if (P) ftxt(P.x, P.y - 44, "+" + n + " XP", "#9fe8ff");
         const after = lvlInfo().L;
         if (after > before) {
-          popMsg("⬆ Level " + after + "!" + (Math.floor(after / 10) > Math.floor(before / 10) ? " New rank color!" : ""));
-          if (P) { burst(P.x, P.y, lvlCol(after), 40, 220); burst(P.x, P.y, "#fff", 12, 140); }
-          sfx("win", 1.2);
-          shake(0.25);
+          const rankUp = Math.floor(after / 10) > Math.floor(before / 10);
+          popMsg("⬆ Level " + after + "!" + (rankUp ? " New rank color!" : ""), rankUp ? 1.6 : 1.2);
+          if (P) {
+            P.lvp = 0.35; /* badge pop */
+            burst(P.x, P.y, lvlCol(after), rankUp ? 80 : 40, rankUp ? 300 : 220);
+            burst(P.x, P.y, "#fff", 14, 140);
+            RINGS.push({ x: P.x, y: P.y, col: lvlCol(after), t: 0 }); /* expanding shockwave */
+            if (rankUp) RINGS.push({ x: P.x, y: P.y, col: "#fff", t: -0.15 });
+          }
+          /* rising arpeggio: 3 notes, higher on a rank-up */
+          [1, 1.26, 1.5].forEach((m, i) => setTimeout(() => sfx("coin", m * (rankUp ? 1.3 : 1)), i * 90));
+          setTimeout(() => sfx("win", 1.2), 280);
+          shake(rankUp ? 0.4 : 0.25);
         }
       }
       for (const u of UPG) V.up[u.k] = cl(+V.up[u.k] | 0, 0, MAXL);
@@ -977,6 +986,17 @@
         return true;
       }
       let GH = []; /* dash afterimages */
+      let RINGS = []; /* level-up shockwaves */
+      /* mouse position in game coordinates (for the facing arrow on keyboard + mouse) */
+      const MOUSE = { x: 0, y: 0, on: false };
+      cv.addEventListener("pointermove", (e) => {
+        if (e.pointerType != "mouse") return;
+        const r = cv.getBoundingClientRect(), d = cv.width / r.width;
+        MOUSE.x = ((e.clientX - r.left) * d - ox) / sc;
+        MOUSE.y = ((e.clientY - r.top) * d - oy) / sc;
+        MOUSE.on = true;
+      });
+      cv.addEventListener("pointerleave", () => (MOUSE.on = false));
       function hurt(p, d) {
         if (DEV.god) return;
         if (p.inv > 0) { ftxt(p.x, p.y - 24, "DODGE", "#ff9f43"); return; }
@@ -1681,12 +1701,18 @@
       }
       /* showUpdate(): "Code updated" banner + the reason, read from version.json ({"note": "..."}) next to index.html */
       function showUpdate() {
-        const done = (n) => popMsg("✨ Updated" + (n ? ": " + n : ""), 1.5);
+        /* just the reason, small, 10s. Shown once per note: reloads with the same note don't replay it. */
+        const done = (n) => {
+          const key = "runebound_last_note";
+          try { if (n && localStorage.getItem(key) === n) return; if (n) localStorage.setItem(key, n); } catch (e) {}
+          popMsg("✨ " + (n || "Code updated"), 0.9, 10000);
+        };
         if (typeof fetch != "function") return done("");
         fetch("version.json?" + Date.now()).then((r) => r.json()).then((j) => done(String(j.note || "").slice(0, 90))).catch(() => done(""));
       }
       /* popMsg(text): small animated banner at the top of the screen for ~2s. */
-      function popMsg(t, z = 1) {
+      /* popMsg(text, z = size multiplier, ms = time on screen) */
+      function popMsg(t, z = 1, ms = 2000) {
         const d = document.createElement("div");
         d.textContent = t;
         d.style.cssText = "position:fixed;top:14px;left:50%;z-index:50;transform:translateX(-50%);padding:" + 8 * z + "px " + 18 * z + "px;border-radius:" + 20 * z + "px;white-space:nowrap;" +
@@ -1694,7 +1720,7 @@
           "box-shadow:0 0 18px #3fd6c688;transition:opacity .4s,transform .4s;opacity:0;pointer-events:none";
         document.body.appendChild(d);
         requestAnimationFrame(() => { d.style.opacity = 1; d.style.transform = "translateX(-50%) translateY(4px)"; });
-        setTimeout(() => { d.style.opacity = 0; setTimeout(() => d.remove(), 450); }, 2000);
+        setTimeout(() => { d.style.opacity = 0; setTimeout(() => d.remove(), 450); }, ms);
       }
       if (!hotRestore() && (AUTOSTART || /[?&]auto\b/.test(location.search))) start();
       /* ---------- input ---------- */
@@ -2077,6 +2103,118 @@
         c.restore();
         if (mark) qMark(n.x, n.y - R - 24, mark, t);
       }
+      /* ---------- player token (same emblem style as NPCs, smaller) ----------
+         PR = body radius. Emblem per class, facing arrow on the ring, level badge on the left. */
+      const PR = 11;
+      const PEMB = {
+        tank: new (typeof Path2D == "function" ? Path2D : Object)("M0-10l8 3v5c0 7-4 9-8 11-4-2-8-4-8-11v-5z"),
+        dps: new (typeof Path2D == "function" ? Path2D : Object)("M-1.6-11h3.2v13h-3.2zM-6 2h12v2.6h-12zM-1.3 4.6h2.6v6h-2.6z"),
+        heal: new (typeof Path2D == "function" ? Path2D : Object)("M-2.6-9h5.2v6.4h6.4v5.2h-6.4v6.4h-5.2v-6.4h-6.4v-5.2h6.4z"),
+      };
+      const FACE_A = { r: 0, d: Math.PI / 2, l: Math.PI, u: -Math.PI / 2 };
+      function drawPlayer(p, dt) {
+        const col = SKC[p.cls],
+          moving = Math.hypot(p.dx, p.dy) > 0.1,
+          bob = moving ? -Math.abs(Math.sin(S.tm * 14)) * 2 : 0;
+        p.lvp = Math.max(0, (p.lvp || 0) - dt); /* level-up pop timer */
+        c.save();
+        c.translate(p.x, p.y);
+        c.globalAlpha = p.hp <= 0 ? 0.35 : p.inv > 0 ? 0.55 + 0.45 * Math.sin(S.tm * 60) : 1;
+        /* ground shadow */
+        c.fillStyle = "#0008";
+        c.beginPath();
+        c.ellipse(0, PR + 2, PR * 0.9, 4, 0, 0, 6.3);
+        c.fill();
+        c.save();
+        c.translate(0, bob);
+        /* body disc */
+        const bg = c.createRadialGradient(0, -4, 1, 0, 0, PR + 1);
+        bg.addColorStop(0, "#1c2a36");
+        bg.addColorStop(1, "#0b1218");
+        c.fillStyle = bg;
+        c.strokeStyle = col;
+        c.lineWidth = 2.5;
+        c.shadowColor = col;
+        c.shadowBlur = 8;
+        c.beginPath();
+        c.arc(0, 0, PR, 0, 6.3);
+        c.fill();
+        c.stroke();
+        c.shadowBlur = 0;
+        /* facing arrow: snaps to the move direction */
+        c.save();
+        /* keyboard + mouse: point at the cursor; touch / controller: snap to the move direction */
+        c.rotate(p === P && INMODE == "kb" && MOUSE.on ? Math.atan2(MOUSE.y - p.y, MOUSE.x - p.x) : FACE_A[p.f || "d"]);
+        c.fillStyle = col;
+        c.beginPath();
+        c.moveTo(PR + 6, 0);
+        c.lineTo(PR + 1, -4);
+        c.lineTo(PR + 1, 4);
+        c.closePath();
+        c.fill();
+        c.restore();
+        /* class emblem */
+        c.fillStyle = col;
+        c.save();
+        c.scale(0.82, 0.82);
+        c.fill(PEMB[p.cls]);
+        c.restore();
+        /* tank armor from dash: blue shield ring */
+        if (p.ar > 0) {
+          c.strokeStyle = `rgba(77,163,255,${0.4 + 0.3 * Math.sin(S.tm * 10)})`;
+          c.lineWidth = 3;
+          c.beginPath();
+          c.arc(0, 0, PR + 5, 0, 6.3);
+          c.stroke();
+        }
+        c.restore();
+        bar(-14, -PR - 12, 28, 4, p.hp / p.mh, "#48e07a");
+        if (p === P) {
+          /* level badge on the left: grows with level, tier color, pops on level-up */
+          const L = lvlInfo().L,
+            lc = lvlCol(L),
+            br = 7 + Math.min(6, L * 0.12),
+            pop = 1 + p.lvp * 1.2;
+          c.save();
+          c.translate(-PR - br - 4, 0);
+          c.scale(pop, pop);
+          c.shadowColor = lc;
+          c.shadowBlur = L >= 10 ? 10 + 4 * Math.sin(S.tm * 4) : 4;
+          c.fillStyle = "#0b1218";
+          c.strokeStyle = lc;
+          c.lineWidth = 2;
+          c.beginPath(); /* diamond rune badge */
+          c.moveTo(0, -br - 2);
+          c.lineTo(br + 2, 0);
+          c.lineTo(0, br + 2);
+          c.lineTo(-br - 2, 0);
+          c.closePath();
+          c.fill();
+          c.stroke();
+          c.shadowBlur = 0;
+          c.fillStyle = lc;
+          c.font = `bold ${Math.round(br * 1.15)}px Georgia`;
+          c.textAlign = "center";
+          c.textBaseline = "middle";
+          c.fillText(L, 0, 1);
+          c.restore();
+          /* name + equipped title */
+          const tl = myTitle();
+          c.textBaseline = "alphabetic";
+          c.textAlign = "center";
+          c.lineWidth = 3;
+          c.strokeStyle = "#000";
+          c.font = "bold 12px Georgia";
+          c.fillStyle = "#fff";
+          c.strokeText(pname(), 0, PR + 17);
+          c.fillText(pname(), 0, PR + 17);
+          c.font = "italic 10px Georgia";
+          c.fillStyle = tl.col;
+          c.strokeText(tl.n, 0, PR + 29);
+          c.fillText(tl.n, 0, PR + 29);
+        }
+        c.restore();
+      }
       function draw(dt) {
         c.setTransform(1, 0, 0, 1, 0, 0);
         c.fillStyle = "#05070a";
@@ -2187,61 +2325,32 @@
           c.fill();
           c.shadowBlur = 0;
         }
-        for (const p of S.ps) {
-          const col = CL[p.cls].col;
-          c.save();
-          c.translate(p.x, p.y);
-          c.globalAlpha = p.hp > 0 ? 1 : 0.35;
-          c.fillStyle = "#0b1218";
-          c.beginPath();
-          c.arc(0, 0, 17, 0, 6.3);
-          c.fill();
-          if (p.cls == "tank" && IM.tank.complete) {
-            c.save();
-            c.beginPath();
-            c.arc(0, 0, 15, 0, 6.3);
-            c.clip();
-            c.drawImage(IM.tank, -17, -17, 34, 34);
-            c.restore();
-          } else {
-            c.fillStyle = col;
-            c.beginPath();
-            c.arc(0, 0, 14, 0, 6.3);
-            c.fill();
-            c.fillStyle = "#000a";
-            c.font = "bold 15px Georgia";
-            c.textAlign = "center";
-            c.fillText(p.cls == "dps" ? "D" : "H", 0, 5);
-          }
-          c.strokeStyle = "#fff";
+        /* dash afterimages: fading rings in the class color */
+        for (const g of GH) {
+          g.l -= dt;
+          c.globalAlpha = Math.max(0, g.l / 0.18) * 0.5;
+          c.strokeStyle = SKC[g.cls];
           c.lineWidth = 2.5;
           c.beginPath();
-          c.arc(0, 0, 17, 0, 6.3);
+          c.arc(g.x, g.y, PR, 0, 6.3);
           c.stroke();
-          bar(-16, -30, 32, 5, p.hp / p.mh, "#48e07a");
-          if (p === P) {
-            /* equipped title under the player */
-            /* "[12] Name" (level in its tier color) and the equipped title under it */
-            const tl = myTitle(), L = lvlInfo().L, lv = L + " ", nm = pname();
-            c.lineWidth = 3;
-            c.strokeStyle = "#000";
-            c.font = "bold 12px Georgia";
-            const wl = c.measureText(lv).width, wn = c.measureText(nm).width, x0 = -(wl + wn) / 2;
-            c.textAlign = "left";
-            c.fillStyle = lvlCol(L);
-            c.strokeText(lv, x0, 32);
-            c.fillText(lv, x0, 32);
-            c.fillStyle = "#fff";
-            c.strokeText(nm, x0 + wl, 32);
-            c.fillText(nm, x0 + wl, 32);
-            c.font = "italic 10px Georgia";
-            c.textAlign = "center";
-            c.fillStyle = tl.col;
-            c.strokeText(tl.n, 0, 44);
-            c.fillText(tl.n, 0, 44);
-          }
-          c.restore();
         }
+        c.globalAlpha = 1;
+        GH = GH.filter((g) => g.l > 0);
+        /* level-up shockwave rings */
+        for (const r of RINGS) {
+          r.t += dt;
+          if (r.t < 0) continue;
+          c.globalAlpha = Math.max(0, 1 - r.t / 0.6);
+          c.strokeStyle = r.col;
+          c.lineWidth = 4 * (1 - r.t / 0.6) + 1;
+          c.beginPath();
+          c.arc(r.x, r.y, 10 + r.t * 160, 0, 6.3);
+          c.stroke();
+        }
+        c.globalAlpha = 1;
+        RINGS = RINGS.filter((r) => r.t < 0.6);
+        for (const p of S.ps) drawPlayer(p, dt);
         c.save();
         c.globalCompositeOperation = "lighter";
         for (const p of FX) {

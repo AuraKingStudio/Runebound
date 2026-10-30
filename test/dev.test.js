@@ -7,7 +7,7 @@ const store={};
 const ctx={document:doc,window:{},innerWidth:900,innerHeight:600,performance:{now:()=>0},requestAnimationFrame(){},addEventListener(){},localStorage:{getItem:k=>store[k]||null,setItem:(k,v)=>store[k]=v,removeItem:k=>delete store[k]},Image:function(){this.complete=false},location:{search:''},console,setTimeout:f=>0,Math,JSON,Object,Array,Date,Number,parseInt,isNaN};
 ctx.window=ctx;vm.createContext(ctx);
 vm.runInContext(SRC+`
-;globalThis.devMin=devMin;globalThis.devFs=devFs;globalThis.T={V:()=>V,P:()=>P,S:()=>S,start,devAdd,devUp,devUI,devCls,devHeal,devWipe,devResetQ,devArena,devBoss,devHub,DEV,hurt,act,step,pauseGame,resumeGame,isPaused:()=>paused,QUESTS,UPG,toggleDev,buy,shopUI,qAct,togglePause,dailyCheck,saveName,lvlInfo,gainXP,lvlCol,setIn,padPoll,inMode:()=>INMODE,KEYHINT,FX:()=>FX,FT:()=>FT,shk:()=>shk,els:null};`,ctx);
+;globalThis.devMin=devMin;globalThis.devFs=devFs;globalThis.T={V:()=>V,P:()=>P,S:()=>S,start,devAdd,devUp,devUI,devCls,devHeal,devWipe,devResetQ,devArena,devBoss,devHub,DEV,hurt,act,step,pauseGame,resumeGame,isPaused:()=>paused,QUESTS,UPG,toggleDev,buy,shopUI,qAct,togglePause,dailyCheck,saveName,lvlInfo,gainXP,lvlCol,dash,dashStep,setIn,padPoll,inMode:()=>INMODE,KEYHINT,FX:()=>FX,FT:()=>FT,shk:()=>shk,els:null};`,ctx);
 const T=ctx.T;let f=0;const ok=(c,m)=>{console.log((c?'PASS ':'FAIL ')+m);if(!c)f++};
 T.start();ok(T.S().sc=='hub','start -> hub');
 ctx.document.getElementById('dlg').hidden=true;const pausedAt=T.S().tm;T.pauseGame();T.step(.1);ok(T.isPaused()&&T.S().tm===pausedAt,'pause freezes the game');T.resumeGame();ok(!T.isPaused(),'resume re-enables play');
@@ -58,7 +58,12 @@ ok(T.lvlCol(5)!=T.lvlCol(15)&&T.lvlCol(55)==T.lvlCol(99),'xp: tier colors change
 const xq=T.V().xp;T.devResetQ();T.qAct(1);T.V().qs=2;T.qAct(2);ok(T.V().xp==xq+100,'xp: quest turn-in gives 100');
 /* ---- input mode ---- */
 T.setIn('pad');ok(T.inMode()=='pad'&&T.KEYHINT.pad[0]=='A','input: controller mode shows A/X/Y/B');
-T.setIn('kb');ok(T.inMode()=='kb'&&T.KEYHINT.kb.join('')=='JKLE','input: keyboard mode shows J/K/L/E');
+T.setIn('kb');ok(T.inMode()=='kb'&&T.KEYHINT.kb.slice(0,4).join('')=='JKLE'&&T.KEYHINT.kb.length==5,'input: keyboard mode shows J/K/L/E + dash key');
+/* ---- dash ---- */
+T.DEV.nocd=0;T.devHub();ctx.document.getElementById('dlg').hidden=true;const dp0={x:T.P().x,y:T.P().y};T.P().dx=1;T.P().dy=0;T.P().dcd=0;T.dash(T.P());for(let i=0;i<10;i++)T.dashStep(T.P(),.02);
+ok(T.P().x>dp0.x+20&&T.P().dcd>0,'dash: moves the player and starts its cooldown');
+T.P().cls='tank';T.P().ar=1;T.P().inv=0;T.DEV.god=0;T.P().hp=100;T.hurt(T.P(),20);ok(T.P().hp==90,'dash: tank armor halves damage');
+T.P().ar=0;T.P().inv=1;T.hurt(T.P(),20);ok(T.P().hp==90,'dash: dps dodge ignores damage');T.P().inv=0;
 T.padPoll();ok(true,'input: no controller connected is safe');
 T.togglePause();ok(T.isPaused(),'P toggles pause on');T.togglePause();ok(!T.isPaused(),'P toggles pause off');
 console.log(f?f+' FAILED':'ALL PASSED');process.exit(f?1:0);
