@@ -754,15 +754,34 @@
       };
       /* hub plaza: ellipse center + radii. Sized for ~10 players, 3 NPC daises and the portal arch at the top. */
       const HUB = { x: 450, y: 335, rx: 335, ry: 205 };
+      /* Reuse plain wall planks from the art to erase the old furniture. */
+      function hubWallPatch(sx, sy, sw, sh, dx, dy) {
+        const k = Math.max(W / IM.hub.width, H / IM.hub.height),
+          ox = (W - IM.hub.width * k) / 2,
+          oy = (H - IM.hub.height * k) / 2;
+        c.drawImage(IM.hub, sx, sy, sw, sh, ox + dx * k, oy + dy * k, sw * k, sh * k);
+      }
+      function clearHubFurniture() {
+        if (!IM.hub.complete || !IM.hub.naturalWidth) return;
+        for (let x = 620; x < 1160; x += 140) hubWallPatch(1180, 300, 140, 40, x, 300);
+        for (const [x, y, w, h] of [
+          [775, 435, 100, 80], [1075, 435, 100, 80],
+          [680, 545, 45, 60], [1195, 645, 45, 60],
+          [1275, 540, 50, 70], [1275, 610, 50, 70], [1275, 680, 50, 70],
+          [575, 655, 100, 50],
+        ]) hubWallPatch(650, 370, w, h, x, y);
+      }
+      /* square wall hitbox for the hub room (world units) */
+      const HUB_ROOM = { x0: 262, x1: 628, y0: 126, y1: 458 };
       const PORTAL = { x: 450, y: 150, ir: 120 },
         /* NPCs. g = emblem path (SVG path syntax, drawn on a 40x40 box centered at 0,0), gs = stroke instead of fill */
         /* Elder: wizard hat (wide brim + bent cone) */
-        ELDER = { tu: 1, x: 128, y: 385, ic: "🧙", nm: "The Elder", col: "#b48cff",
+        ELDER = { tu: 1, x: 300, y: 385, ic: "🧙", nm: "The Elder", col: "#b48cff",
           g: "M-14 9q14 6 28 0q-2 4-14 5q-12-1-14-5zM-9 8L-1-12q3-5 9-3q-4 1-5 4L9 8q-9 3-18 0z" },
         /* Merchant: round coin bag with a tied neck and a coin mark */
-        SHOP = { tu: 2, x: 450, y: 500, ic: "💰", nm: "The Merchant", col: "#ffcf4d",
+        SHOP = { tu: 2, x: 450, y: 430, ic: "💰", nm: "The Merchant", col: "#ffcf4d",
           g: "M-3-8q-6 3-10 10q-3 10 7 11h12q10-1 7-11q-4-7-10-10zM-3-9l-4-5q7 2 14 0l-4 5zM-1 0h4a2 2 0 0 1 0 4h-2a2 2 0 0 0 0 4h4" },
-        LORE = { tu: 3, x: 186, y: 446, ic: "📜", nm: "The Archivist", col: "#5ad7ff", gs: 1,
+        LORE = { tu: 3, x: 275, y: 300, ic: "📜", nm: "The Archivist", col: "#5ad7ff", gs: 1,
           /* Archivist: rolled scroll with text lines */
           g: "M-10-13h20a3 3 0 0 1 0 6h-20a3 3 0 0 1 0-6M-8-7v13M8-7v13M-10 6h20a3 3 0 0 1 0 6h-20a3 3 0 0 1 0-6M-4-3h8M-4 1h6" },
         /* the 4 NPCs standing where the old torches were */
@@ -770,13 +789,13 @@
         CLASSN = { lk: "class", x: 640, y: 300, ic: "⚔", nm: "The Class Master", col: "#5dff8a",
           g: "M-4-6a4 4 0 1 0 8 0a4 4 0 1 0-8 0zM-11 5a4 4 0 1 0 8 0a4 4 0 1 0-8 0zM3 5a4 4 0 1 0 8 0a4 4 0 1 0-8 0z" },
         /* The Maiden (rose): a rose bloom */
-        MAIDEN = { lk: "maiden", x: 615, y: 470, ic: "🌹", nm: "The Maiden", col: "#ff8fc8",
+        MAIDEN = { lk: "maiden", x: 560, y: 320, ic: "🌹", nm: "The Maiden", col: "#ff8fc8",
           g: "M0-11c5 0 8 4 6 8 4 0 5 5 1 7-1 4-6 5-7 2-1 3-6 2-7-2-4-2-3-7 1-7-2-4 1-8 6-8z" },
         /* The Smith (orange): an anvil */
-        SMITH = { lk: "smith", x: 250, y: 500, ic: "🔨", nm: "The Smith", col: "#ff9f43",
+        SMITH = { lk: "smith", x: 270, y: 430, ic: "🔨", nm: "The Smith", col: "#ff9f43",
           g: "M-12-6h20q4 0 4 4h-6v4l4 6h-18l4-6v-4h-6q-2 0-2-4z" },
         /* The Herald (silver): a banner */
-        HERALD = { lk: "herald", x: 640, y: 205, ic: "📯", nm: "The Herald", col: "#cfe6ff",
+        HERALD = { lk: "herald", x: 610, y: 190, ic: "📯", nm: "The Herald", col: "#cfe6ff",
           g: "M-8-12v24h2.5v-10h12l-3-5 3-5h-12v-4z" };
       /* ---------- progress (saved) ---------- */
       /* upgrades. k = save key, b = base cost (cost = b * next level), pl = % per level, ic = SVG icon, col = card color */
@@ -1035,15 +1054,9 @@
             p.y = 312 + (dy / l) * m;
           }
         } else {
-          /* walkable hub plaza = ellipse HUB (inset so players stay on the stones) */
-          const rx = HUB.rx - 22, ry = HUB.ry - 22,
-            dx = (p.x - HUB.x) / rx,
-            dy = (p.y - HUB.y) / ry,
-            l = Math.hypot(dx, dy);
-          if (l > 1) {
-            p.x = HUB.x + (dx / l) * rx;
-            p.y = HUB.y + (dy / l) * ry;
-          }
+          /* walkable hub room = square wall hitbox HUB_ROOM (the drawn room floor, inset by the player radius) */
+          p.x = cl(p.x, HUB_ROOM.x0, HUB_ROOM.x1);
+          p.y = cl(p.y, HUB_ROOM.y0, HUB_ROOM.y1);
         }
       }
       function place(a) {
@@ -1137,7 +1150,7 @@
       let RINGS = []; /* level-up shockwaves */
       /* mouse position in game coordinates (for the facing arrow on keyboard + mouse) */
       /* camera: the world is drawn zoomed in and follows the player. CAM = top-left of the view (world units). */
-      const ZOOM = 1.1; /* 10% zoom in */
+      const ZOOM = 1.45; /* zoomed in */
       const CAM = { x: 300, y: 150 };
       /* camOff(): back to screen-fixed drawing (HUD, popups). Out: none (changes the canvas transform). */
       const camOff = () => c.setTransform(sc, 0, 0, sc, ox, oy);
@@ -1852,14 +1865,12 @@
       }
       /* ---------- The Barkeep (bar, right wall) + the two wall boards ---------- */
       /* Barkeep: a mug. Shown after the tutorial (tu: 4). Boards: no disc, bigger reach (ir). */
-      const BARKEEP = { tu: 4, x: 668, y: 186, ic: "🍺", nm: "The Barkeep", col: "#ffb347",
+      const BARKEEP = { tu: 4, x: 600, y: 370, ic: "🍺", nm: "The Barkeep", col: "#ffb347",
           g: "M-9-9h13v18h-13zM4-5h3a4 4 0 0 1 0 9h-3M-9-9q0-4 4-4h5q4 0 4 4" },
-        QBOARD = { x: 300, y: 240, ir: 110, col: "#ffd84a" },
-        GBOARD = { x: 600, y: 240, ir: 110, col: "#5af0dc" };
-      /* boardMark(b, hot): a "!" above a wall board when something can be claimed. */
-      function boardMark(b, hot) {
-        if (hot) qMark(b.x, b.y - 62, "new", S.tm, 0.8);
-      }
+        QBOARD = { x: 300, y: 240, ir: 110, nm: "Quest", col: "#d6a64b", gs: 1,
+          g: "M-9-10h18v20h-18zM-5-4h5M-5 1h5M-5 6h5M2 4l2 3 5-7" },
+        GBOARD = { x: 600, y: 240, ir: 110, nm: "Guild", col: "#c89b5b", gs: 1,
+          g: "M-6-8a3 3 0 1 0 0-0.1M6-8a3 3 0 1 0 0 0.1M-6-4v12m12-12v12M-6 0l6 4 6-4M-6 8h12" };
 
       /* ---------- Quest Board: main quest + 3 daily bounties ---------- */
       /* bounty: id, text, n = amount needed, g = gold, x = XP */
@@ -2764,7 +2775,7 @@
         if (!q) return;
         const st = ["new", "active", "ready"][V.qs],
           k = QM[st],
-          w = Math.min(270, UW - 24),
+          w = Math.min(270, W - 24),
           x = W - w - 12,
           dn = V.qs == 2;
         c.save();
@@ -3093,6 +3104,7 @@
           /* hub: cover-fit the 1920x1080 art to the fixed world rect (W x H) so it stays locked to NPC/portal coordinates */
           const k = Math.max(W / 1920, H / 1080), dw = 1920 * k, dh = 1080 * k;
           c.drawImage(IM.hub, (W - dw) / 2, (H - dh) / 2, dw, dh);
+          if (S.sc == "hub") clearHubFurniture();
         }
         if (S.sc == "lobby") {
           c.fillStyle = "#0008";
@@ -3164,7 +3176,8 @@
           npc(SMITH, "");
           npc(HERALD, "");
           npc(BARKEEP, "");
-          boardMark(QBOARD, bountyReady());
+          npc(QBOARD, bountyReady() ? "new" : "");
+          npc(GBOARD, "");
           npc(LORE, V.lbx > Date.now() ? "bonus" : V.lt ? "" : "new");
         }
         for (const z of S.zo) {
@@ -3316,7 +3329,6 @@
             c.textAlign = "center";
             c.font = 'bold 14px "Cinzel", Georgia';
             const tx = "TUTORIAL " + (tut() + 1) + "/4 · " + TUT_TXT[tut()];
-            c.font = `bold ${Math.max(8, Math.min(14, (UW - 24) * 14 / c.measureText(tx).width))}px "Cinzel", Georgia`;
             c.lineWidth = 3;
             c.strokeStyle = "#000";
             c.fillStyle = "#ffd84a";
