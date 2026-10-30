@@ -554,15 +554,27 @@
         min-width: 150px;
         height: 62px;
         padding: 0 22px;
-        border-radius: 16px;
-        border: 2px solid #fff3c4;
+        /* quest-marker style: dark rune plate, gold outline + lettering, pointed (diamond) ends */
+        border-radius: 0;
+        border: none;
+        clip-path: polygon(16px 0, calc(100% - 16px) 0, 100% 50%, calc(100% - 16px) 100%, 16px 100%, 0 50%);
         font-size: 17px;
         font-weight: bold;
-        color: #2a1a00;
-        text-shadow: 0 1px 0 #fff8;
-        background: linear-gradient(180deg, #ffe680, #ffc21a 55%, #e09a00);
+        letter-spacing: 2px;
+        color: #ffd84a;
+        text-shadow: 0 0 8px #ffb30099;
+        /* gold plate here; the dark inner plate is ::before (see below), so the outline follows the pointed ends */
+        background: linear-gradient(180deg, #fff1a8, #ffcf3a 50%, #a86f00);
+        padding: 0 30px;
+        isolation: isolate;
         animation: biPop 0.25s cubic-bezier(0.2, 1.6, 0.4, 1) both, biGlow 1.4s ease-in-out 0.25s infinite;
         overflow: hidden;
+      }
+      /* dark inner plate of the interact button (inset 2.5px = gold outline width) */
+      #btns #bi::before {
+        content: ""; position: absolute; inset: 2.5px; z-index: -1;
+        background: radial-gradient(ellipse at 50% 30%, #2a1f0a, #120d05 70%);
+        clip-path: polygon(15px 0, calc(100% - 15px) 0, 100% 50%, calc(100% - 15px) 100%, 15px 100%, 0 50%);
       }
       /* moving shine stripe */
       #btns #bi::after {
@@ -1430,6 +1442,25 @@
         ["T", "Tip: healers, keep the tank alive first. A living tank keeps everyone else alive."],
         ["T", "Tip: the Rune Mastery bar fills as you upgrade. Fill it and see what happens."],
         ["T", "Tip: I have more stories than you have days. Come back and ask again."],
+        /* boss weaknesses */
+        ["T", "Weakness: the Warden cannot move while stunned. Shield Bash, then everyone strike at once."],
+        ["T", "Weakness: after its great circle slam, the Warden rests three heartbeats. That is your window."],
+        ["T", "Weakness: the Warden always strikes where its target stood, not where they stand. Keep moving and it hits stone."],
+        ["T", "Weakness: in its fury the Warden is faster but blinder. Its four runes fall at random; stand still between them."],
+        ["T", "Weakness: a taunted Warden ignores the healer. Tanks, Taunt before your healer starts working."],
+        ["T", "Weakness: the Warden's second heart wakes at half health. Hold your Heavy Shot and Rapid Fire for that moment."],
+        /* combat tips */
+        ["T", "Combat: dash through a red circle, not away from it. The fastest way out is often across."],
+        ["T", "Combat: the tank's dash grants armor. Dash into the slam and take half the hit."],
+        ["T", "Combat: the DPS dash makes you untouchable for a moment. Time it as the rune lands."],
+        ["T", "Combat: the healer's dash heals as it moves. Dash to a friend, then drop your Circle."],
+        ["T", "Combat: on keyboard, your dash follows the mouse. Aim with your cursor, not your feet."],
+        ["T", "Combat: watch the cooldown number on each skill. Pressing early wastes nothing, but waiting late wastes damage."],
+        /* hints */
+        ["T", "Hint: the Archivist hides a secret page in some of his tales. Listen often and your purse grows."],
+        ["T", "Hint: my voice returns every three minutes. A patient listener hears the rarest tales."],
+        ["T", "Hint: your level badge changes color every ten levels. The gold badge is said to scare the Warden."],
+        ["T", "Hint: open Titles to wear a name the runes have granted you. Some are only earned by the stubborn."],
         ["E", "You found a crumpled note: 'If you are reading this, the Merchant owes me 40 gold. -J'"],
         ["E", "The Archivist squints at you. 'You have the face of someone who skips dialogue.' He is right."],
         ["E", "Psst. The Merchant's coin pile? It is painted on. He keeps the real gold in his boots."],

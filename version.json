@@ -1,5 +1,5 @@
 {
-  "note": "Archivist: random tales, pool of 20, secrets",
+  "note": "Rune-style Listen button, Archivist pool + secrets, boss tips",
   "board": [
     {
       "id": "R1",
@@ -94,16 +94,16 @@
   ],
   "log": [
     {
-      "at": "15:40",
-      "t": "Archivist pool + secrets"
+      "t": "Rune-style Listen button",
+      "at": "15:50"
     },
     {
-      "at": "15:35",
-      "t": "Gold quest buttons"
+      "t": "Archivist pool + secrets",
+      "at": "15:45"
     },
     {
-      "at": "15:30",
-      "t": "New PC binds Q / E / F"
+      "t": "Boss weakness tips",
+      "at": "15:40"
     }
   ]
 }
