@@ -1,5 +1,5 @@
 {
-  "note": "Quest + Guild boards moved near the plaza",
+  "note": "NPCs placed by furniture: Elder by fire, Archivist by sofa, Barkeep at bar",
   "board": [
     {
       "id": "R1",
@@ -95,6 +95,13 @@
   "log": [
     {
       "k": "fix",
+      "t": "NPCs placed by furniture",
+      "at": "2026-10-30T14:39:50.001Z",
+      "add": 3,
+      "del": 3
+    },
+    {
+      "k": "fix",
       "t": "Boards moved close and easy to reach",
       "at": "2026-10-30T14:39:35.617Z",
       "add": 6,
@@ -169,20 +176,13 @@
       "at": "2026-10-30T14:36:15.941Z",
       "add": 9,
       "del": 5
-    },
-    {
-      "k": "in",
-      "t": "Speed vignette on the camera",
-      "at": "2026-10-30T14:35:24.662Z",
-      "add": 7,
-      "del": 0
     }
   ],
   "stats": {
     "tests": 71,
     "prevTests": 71,
     "failed": 0,
-    "today": 42,
+    "today": 43,
     "spark": [
       0,
       0,
@@ -195,7 +195,7 @@
       0,
       0,
       8,
-      34
+      35
     ],
     "lines": [
       0,
@@ -209,11 +209,11 @@
       0,
       0,
       9464,
-      1837
+      1849
     ],
-    "features": 5,
+    "features": 4,
     "open": 9,
-    "at": "2026-10-30T14:39:35.617Z"
+    "at": "2026-10-30T14:39:50.001Z"
   },
-  "ver": "0.5.18"
+  "ver": "0.5.19"
 }
