@@ -1598,7 +1598,7 @@
             if (P) { P.mh = Math.round(CL[P.cls].hp * hpm()); P.hp = Math.min(P.hp, P.mh); }
             return `⬆ Free upgrade: ${u.n} Lv ${V.up[u.k]}`;
           } },
-        { w: 9, big: 16, give: () => { const nx = UNLOCK_ORDER.find((k) => !isUnl(k) && (V.lt || 0) >= UNLOCK_AT[k]); return nx ? unlockNpc(nx) : (V.gold += 100, "💰 +100 gold"); } },
+        { w: 9, big: 16, give: () => { const nx = UNLOCK_ORDER.find((k) => k != "class" && !isUnl(k) && (V.lt || 0) >= UNLOCK_AT[k]); return nx ? unlockNpc(nx) : (V.gold += 100, "💰 +100 gold"); } },
         { w: 3, big: 6, give: () => {
             if (V.af) { V.gold += 120; return "💰 +120 gold"; }
             V.af = 1;
@@ -1607,7 +1607,6 @@
       ];
       /* loreReward(big): rolls one reward from LORE_REW (better odds when big). Out: text describing it. */
       function loreReward(big) {
-        if (!isUnl("class")) return unlockNpc("class"); /* first secret page always reveals the Class Master */
         const wt = (r) => (big ? r.big : r.w);
         let roll = Math.random() * LORE_REW.reduce((a, r) => a + wt(r), 0);
         for (const r of LORE_REW) { roll -= wt(r); if (roll <= 0) { const s = r.give(big); save(); return s; } }
@@ -1645,19 +1644,22 @@
           ms = TALE_MS[n];
         if (ms) V.gold += ms[0];
         const rw = rare ? loreReward(bonus) : "";
+        /* Class Master: pure luck, 1 in 100 per tale (guaranteed by tale 300 so nobody is stuck) */
+        const cm = !isUnl("class") && (Math.random() < 0.01 || V.lt >= 300) ? unlockNpc("class") : "";
         save();
         sfx(rare || ms ? "win" : "ui", rare ? 1.3 : 1);
         $("dp").innerHTML = `<h2>📜 The Archivist</h2>
           <div class="qtag">${tag}</div>
           <p class="tale ${kind}">${rare ? "✨ " : ""}${text}</p>
           ${rare ? `<div class="qo done">✦ Secret page! ${rw}</div>` : ""}
+          ${cm ? `<div class="qo done">${cm}</div>` : ""}
           ${ms ? `<div class="qo done">🏆 ${n} tales heard! ${ms[1]} +${ms[0]} gold</div>` : ""}
           <button class="alt" onclick="closeDlg()">Farewell</button>`;
       }
       /* ---------- NPC unlocks (revealed by the Archivist) ---------- */
       const UNLOCK_ORDER = ["class", "maiden", "smith", "herald"];
       /* tales heard before each NPC can be revealed (Class Master: first secret page; the rest are a long grind) */
-      const UNLOCK_AT = { class: 0, maiden: 100, smith: 150, herald: 200 };
+      const UNLOCK_AT = { class: 0, maiden: 100, smith: 150, herald: 200 }; /* class: luck-based in loreUI, not here */
       const isUnl = (k) => !!(V.ul && V.ul[k]);
       /* unlockNpc(k): reveals NPC k with a burst. Out: text for the Archivist dialog. */
       function unlockNpc(k) {

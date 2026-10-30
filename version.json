@@ -1,5 +1,5 @@
 {
-  "note": "4 locked NPCs, torches removed, Archivist unlocks",
+  "note": "Class Master: 1% luck per tale",
   "board": [
     {
       "id": "R1",
@@ -94,6 +94,10 @@
   ],
   "log": [
     {
+      "t": "Class Master: luck per tale",
+      "k": "fix"
+    },
+    {
       "t": "4 locked NPCs (tinted)",
       "k": "in"
     },
@@ -107,10 +111,6 @@
     },
     {
       "t": "Enter Arena bottom-middle",
-      "k": "fix"
-    },
-    {
-      "t": "NPC names in their color",
       "k": "fix"
     }
   ]

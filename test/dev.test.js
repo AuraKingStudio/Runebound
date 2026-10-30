@@ -60,7 +60,7 @@ const xq=T.V().xp;T.devResetQ();T.qAct(1);T.V().qs=2;T.qAct(2);ok(T.V().xp==xq+1
 T.DEV.nocd=0;T.devHub();T.P().cd=[0,0,0];T.act(T.P(),1);ok(T.S().sc=='hub'&&T.P().cd[1]>0,'hub: skills play and start their cooldown');T.P().cd=[0,0,0];
 /* ---- NPC unlocks ---- */
 T.V().ul={};T.V().lt=5;ok(!T.isUnl('class'),'unlock: Class Master starts locked');
-T.loreReward(false);ok(T.isUnl('class'),'unlock: first secret page reveals the Class Master');
+for(let i=0;i<50;i++)T.loreReward(true);ok(!T.isUnl('class'),'unlock: secret pages never unlock the Class Master (luck per tale only)');
 for(let i=0;i<200;i++)T.loreReward(true);ok(!T.isUnl('maiden'),'unlock: Maiden stays locked before 100 tales');
 T.V().lt=100;for(let i=0;i<400&&!T.isUnl('maiden');i++)T.loreReward(true);ok(T.isUnl('maiden')&&!T.isUnl('smith'),'unlock: Maiden at 100 tales, Smith still locked');
 /* ---- Archivist rewards ---- */
