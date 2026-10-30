@@ -3083,7 +3083,42 @@
           c.fillRect(0, 0, W, H);
         }
         if (S.sc == "hub") {
-          /* portal highlight when the player can enter: soft glow + rising sparks */
+          /* ancient portal (drawn in code): turning rune ring, orbiting motes, slow pulse. Runes are Elder Futhark letters. */
+          const pulse = 0.85 + 0.15 * Math.sin(S.tm * 2.2);
+          c.save();
+          c.translate(PORTAL.x, PORTAL.y - 8);
+          c.globalAlpha = pulse;
+          c.rotate(S.tm * 0.4);
+          c.strokeStyle = "rgba(90,240,220,0.7)";
+          c.lineWidth = 2;
+          c.setLineDash([10, 8]);
+          c.beginPath();
+          c.ellipse(0, 0, 70, 52, 0, 0, 6.3);
+          c.stroke();
+          c.setLineDash([]);
+          c.fillStyle = "rgba(160,255,240,0.95)";
+          c.font = "bold 11px Georgia";
+          c.textAlign = "center";
+          c.textBaseline = "middle";
+          const RUNES = "\u16A0\u16A2\u16A6\u16A8\u16B1\u16B2\u16B7\u16B9\u16BA\u16BE\u16C1\u16C3";
+          for (let i = 0; i < 12; i++) {
+            const a = (i / 12) * 6.283;
+            c.save();
+            c.translate(Math.cos(a) * 70, Math.sin(a) * 52);
+            c.rotate(a + Math.PI / 2);
+            c.fillText(RUNES[i], 0, 0);
+            c.restore();
+          }
+          c.restore();
+          for (let i = 0; i < 4; i++) {
+            const a = S.tm * (1.2 + i * 0.3) + i * 1.7, r = 60 + Math.sin(S.tm * 2 + i) * 6;
+            c.fillStyle = "#c8fff4";
+            c.globalAlpha = 0.8;
+            c.beginPath();
+            c.arc(PORTAL.x + Math.cos(a) * r, PORTAL.y - 8 + Math.sin(a) * r * 0.8, 2.2, 0, 6.3);
+            c.fill();
+          }
+          c.globalAlpha = 1;          /* portal highlight when the player can enter: soft glow + rising sparks */
           if (nearby() == "portal") {
             const k = 0.5 + 0.5 * Math.sin(S.tm * 6), gl = c.createRadialGradient(PORTAL.x, PORTAL.y - 6, 4, PORTAL.x, PORTAL.y - 6, 80);
             gl.addColorStop(0, `rgba(120,255,235,${0.35 + 0.25 * k})`);
