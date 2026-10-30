@@ -1,5 +1,5 @@
 {
-  "note": "Ranks: top 100, 5 per page, refresh, sort",
+  "note": "Camera: no zoom, fast sticky pan",
   "board": [
     {
       "id": "R1",
@@ -94,6 +94,13 @@
   ],
   "log": [
     {
+      "k": "fix",
+      "t": "No zoom, faster sticky camera",
+      "at": "2026-10-30T14:33:48.303Z",
+      "add": 2,
+      "del": 2
+    },
+    {
       "k": "in",
       "t": "Top 100 ranks",
       "at": "2026-10-30T14:33:25.079Z",
@@ -169,20 +176,13 @@
       "at": "2026-10-30T14:28:31.997Z",
       "add": 0,
       "del": 0
-    },
-    {
-      "k": "in",
-      "t": "Guild Board + recruits",
-      "at": "2026-10-30T14:28:31.997Z",
-      "add": 0,
-      "del": 0
     }
   ],
   "stats": {
     "tests": 71,
-    "prevTests": 69,
+    "prevTests": 71,
     "failed": 0,
-    "today": 31,
+    "today": 32,
     "spark": [
       0,
       0,
@@ -195,7 +195,7 @@
       0,
       0,
       5,
-      26
+      27
     ],
     "lines": [
       0,
@@ -209,11 +209,11 @@
       0,
       0,
       9160,
-      1738
+      1778
     ],
-    "features": 10,
+    "features": 9,
     "open": 9,
-    "at": "2026-10-30T14:33:25.079Z"
+    "at": "2026-10-30T14:33:48.303Z"
   },
-  "ver": "0.5.7"
+  "ver": "0.5.8"
 }

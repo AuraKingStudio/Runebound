@@ -1131,7 +1131,7 @@
       let RINGS = []; /* level-up shockwaves */
       /* mouse position in game coordinates (for the facing arrow on keyboard + mouse) */
       /* camera: the world is drawn zoomed in and follows the player. CAM = top-left of the view (world units). */
-      const ZOOM = 1.25;
+      const ZOOM = 1; /* no zoom: the whole island stays visible */
       const CAM = { x: 300, y: 150 };
       /* camOff(): back to screen-fixed drawing (HUD, popups). Out: none (changes the canvas transform). */
       const camOff = () => c.setTransform(sc, 0, 0, sc, ox, oy);
@@ -3052,7 +3052,7 @@
           vh = H / ZOOM,
           tx = P ? cl(P.x - vw / 2, 0, W - vw) : (W - vw) / 2,
           ty = P ? cl(P.y - vh / 2, 0, H - vh) : (H - vh) / 2,
-          k = 1 - Math.exp(-dt * 4);
+          k = 1 - Math.exp(-dt * 10); /* fast, sticky follow */
         CAM.x += (tx - CAM.x) * k;
         CAM.y += (ty - CAM.y) * k;
         c.scale(ZOOM, ZOOM);
