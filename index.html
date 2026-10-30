@@ -709,6 +709,20 @@
         H = 600,
         /* Crop the full-size background to the room used by the game world. */
         HUB_ART = { x: 550, y: 280, w: 820, h: 550 },
+        HUB_WALL_PATCHES = [
+          [1180, 300, 140, 40, 620, 300],
+          [1180, 300, 140, 40, 760, 300],
+          [1180, 300, 140, 40, 900, 300],
+          [1180, 300, 140, 40, 1040, 300],
+          [650, 370, 100, 80, 775, 435],
+          [650, 370, 100, 80, 1075, 435],
+          [650, 370, 45, 60, 680, 545],
+          [650, 370, 45, 60, 1195, 645],
+          [650, 370, 50, 70, 1275, 540],
+          [650, 370, 50, 70, 1275, 610],
+          [650, 370, 50, 70, 1275, 680],
+          [650, 370, 100, 50, 575, 655],
+        ],
         $ = (i) => document.getElementById(i),
         cv = $("cv"),
         c = cv.getContext("2d");
@@ -1869,12 +1883,10 @@
       /* Barkeep: a mug. Shown after the tutorial (tu: 4). Boards: no disc, bigger reach (ir). */
       const BARKEEP = { tu: 4, x: 668, y: 186, ic: "🍺", nm: "The Barkeep", col: "#ffb347",
           g: "M-9-9h13v18h-13zM4-5h3a4 4 0 0 1 0 9h-3M-9-9q0-4 4-4h5q4 0 4 4" },
-        QBOARD = { x: 300, y: 240, ir: 110, col: "#ffd84a" },
-        GBOARD = { x: 600, y: 240, ir: 110, col: "#5af0dc" };
-      /* boardMark(b, hot): show a marker when a bounty can be claimed. */
-      function boardMark(b, hot) {
-        if (hot) qMark(b.x, b.y - 62, "new", S.tm, 0.8);
-      }
+        QBOARD = { x: 300, y: 240, ir: 110, nm: "Quest Board", col: "#d6a64b", gs: 1,
+          g: "M-9-10h18v20h-18zM-5-4h5M-5 1h5M-5 6h5M2 4l2 3 5-7" },
+        GBOARD = { x: 600, y: 240, ir: 110, nm: "Guild Board", col: "#c89b5b", gs: 1,
+          g: "M-6-8a3 3 0 1 0 0-0.1M6-8a3 3 0 1 0 0 0.1M-6-4v12m12-12v12M-6 0l6 4 6-4M-6 8h12" };
 
       /* ---------- Quest Board: main quest + 3 daily bounties ---------- */
       /* bounty: id, text, n = amount needed, g = gold, x = XP */
@@ -3111,6 +3123,10 @@
         if (ar) c.drawImage(IM.arena, 0, 0, W, H);
         else {
           c.drawImage(IM.hub, HUB_ART.x, HUB_ART.y, HUB_ART.w, HUB_ART.h, 0, 0, W, H);
+          if (S.sc == "hub") {
+            for (const [sx, sy, sw, sh, dx, dy] of HUB_WALL_PATCHES)
+              c.drawImage(IM.hub, sx, sy, sw, sh, (dx - HUB_ART.x) * W / HUB_ART.w, (dy - HUB_ART.y) * H / HUB_ART.h, sw * W / HUB_ART.w, sh * H / HUB_ART.h);
+          }
         }
         if (S.sc == "lobby") {
           c.fillStyle = "#0008";
@@ -3182,8 +3198,8 @@
           npc(SMITH, "");
           npc(HERALD, "");
           npc(BARKEEP, "");
-          boardMark(QBOARD, bountyReady());
-          boardMark(GBOARD, false);
+          npc(QBOARD, bountyReady() ? "new" : "");
+          npc(GBOARD, "");
           npc(LORE, V.lbx > Date.now() ? "bonus" : V.lt ? "" : "new");
         }
         for (const z of S.zo) {
