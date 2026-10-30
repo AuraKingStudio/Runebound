@@ -1,5 +1,5 @@
 {
-  "note": "Skill levels 1-5 (shop), bottles on north wall",
+  "note": "Only the top-left bottle wall remains",
   "board": [
     {
       "id": "R1",
@@ -94,6 +94,13 @@
   ],
   "log": [
     {
+      "k": "out",
+      "t": "Other bottle walls and bar removed",
+      "at": "2026-10-30T14:46:34.685Z",
+      "add": 1,
+      "del": 28
+    },
+    {
       "k": "in",
       "t": "Skill levels 1-5 bought in shop",
       "at": "2026-10-30T14:46:07.637Z",
@@ -169,20 +176,13 @@
       "at": "2026-10-30T14:41:20.490Z",
       "add": 10,
       "del": 8
-    },
-    {
-      "k": "fix",
-      "t": "Locked NPCs fully hidden",
-      "at": "2026-10-30T14:41:20.490Z",
-      "add": 10,
-      "del": 8
     }
   ],
   "stats": {
     "tests": 71,
     "prevTests": 71,
     "failed": 0,
-    "today": 54,
+    "today": 55,
     "spark": [
       0,
       0,
@@ -195,7 +195,7 @@
       0,
       0,
       12,
-      42
+      43
     ],
     "lines": [
       0,
@@ -209,11 +209,11 @@
       0,
       0,
       9633,
-      1808
+      1839
     ],
     "features": 4,
     "open": 9,
-    "at": "2026-10-30T14:46:07.637Z"
+    "at": "2026-10-30T14:46:34.685Z"
   },
-  "ver": "0.5.30"
+  "ver": "0.5.31"
 }
