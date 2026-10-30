@@ -1,5 +1,5 @@
 {
-  "note": "Archivist rewards: gold, XP, blessings, upgrades",
+  "note": "Faster movement, livelier walk, dash streak",
   "board": [
     {
       "id": "R1",
@@ -94,16 +94,16 @@
   ],
   "log": [
     {
+      "at": "16:22",
+      "t": "Faster + livelier movement"
+    },
+    {
       "at": "16:15",
       "t": "Reload keeps shop open"
     },
     {
       "at": "16:12",
       "t": "Varied Archivist rewards"
-    },
-    {
-      "at": "16:05",
-      "t": "Archivist bonus marker"
     }
   ]
 }
