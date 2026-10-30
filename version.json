@@ -1,5 +1,5 @@
 {
-  "note": "Ancient portal animation",
+  "note": "Quest + Guild boards moved near the plaza",
   "board": [
     {
       "id": "R1",
@@ -94,6 +94,13 @@
   ],
   "log": [
     {
+      "k": "fix",
+      "t": "Boards moved close and easy to reach",
+      "at": "2026-10-30T14:39:35.617Z",
+      "add": 6,
+      "del": 6
+    },
+    {
       "k": "in",
       "t": "Ancient rune ring on portal",
       "at": "2026-10-30T14:39:14.717Z",
@@ -169,20 +176,13 @@
       "at": "2026-10-30T14:35:24.662Z",
       "add": 7,
       "del": 0
-    },
-    {
-      "k": "in",
-      "t": "Mercenary Guild counter",
-      "at": "2026-10-30T14:34:54.491Z",
-      "add": 32,
-      "del": 2
     }
   ],
   "stats": {
     "tests": 71,
     "prevTests": 71,
     "failed": 0,
-    "today": 41,
+    "today": 42,
     "spark": [
       0,
       0,
@@ -195,7 +195,7 @@
       0,
       0,
       8,
-      33
+      34
     ],
     "lines": [
       0,
@@ -209,11 +209,11 @@
       0,
       0,
       9464,
-      1800
+      1837
     ],
-    "features": 6,
+    "features": 5,
     "open": 9,
-    "at": "2026-10-30T14:39:14.717Z"
+    "at": "2026-10-30T14:39:35.617Z"
   },
-  "ver": "0.5.17"
+  "ver": "0.5.18"
 }

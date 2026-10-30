@@ -66,20 +66,20 @@
   <use href="#tankard" transform="translate(705,447) scale(.9)"/>
 
   <!-- quest board (left wall) and guild board (right wall) -->
-  <g filter="url(#shadow)">
+  <g transform="translate(181,79)"><g filter="url(#shadow)">
     <rect x="86" y="122" width="66" height="78" rx="4" fill="url(#wood)" stroke="#2e1d10" stroke-width="3"/>
     <rect x="92" y="130" width="24" height="30" fill="#efe0b4" transform="rotate(-5 104 145)"/>
     <rect x="120" y="128" width="26" height="24" fill="#f4e8c8"/>
     <rect x="96" y="164" width="22" height="28" fill="#e6d29c" transform="rotate(4 107 178)"/>
     <rect x="122" y="158" width="24" height="32" fill="#efe0b4"/>
   </g>
-  <g filter="url(#shadow)">
+  </g><g transform="translate(-181,79)"><g filter="url(#shadow)">
     <rect x="748" y="122" width="66" height="78" rx="4" fill="#3a2a4a" stroke="#c99a3a" stroke-width="3"/>
     <path d="M781 132l18 6v14c0 14-9 20-18 24-9-4-18-10-18-24v-14z" fill="#1d7f78" stroke="#ffd84a" stroke-width="2.5"/>
     <path d="M781 142l7 10-7 10-7-10z" fill="#ffd84a"/>
   </g>
 
-  <!-- fireplace (left wall) + couch beside it -->
+</g>  <!-- fireplace (left wall) + couch beside it -->
   <ellipse cx="96" cy="370" rx="70" ry="80" fill="url(#fire)"/>
   <g filter="url(#shadow)"><rect x="58" y="325" width="40" height="90" fill="#2a2724" stroke="#1a1816" stroke-width="3"/><rect x="66" y="337" width="26" height="66" fill="#140c08"/></g>
   <path d="M74 395q4-22 10-14q2-16 8-6q4 10 0 20z" fill="#ffb347"/><path d="M78 395q3-12 7-8q3 6 0 8z" fill="#fff1a8"/>
