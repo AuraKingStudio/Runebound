@@ -1909,22 +1909,58 @@
       const RECRUITS = ["Bram", "Ysolde", "Corvin", "Hale", "Mirela", "Tobin", "Wren", "Aldric", "Sefa", "Garrick", "Ilsa", "Rook", "Odessa", "Finn", "Morgan"];
       const gBonus = () => Math.min(GUILD_MAX, ((V.gd && V.gd.m) || []).length) * 0.03;
       const recruitCost = () => 100 * (((V.gd && V.gd.m) || []).length + 1);
-      function guildUI() {
-        if (!V.gd || !V.gd.name) {
-          $("dp").innerHTML = `<h2>🛡 Guild Board</h2><p>"Every legend starts with a banner. Name yours."</p>
-            <input id="gn" class="nm" maxlength="20" placeholder="Guild name" autocomplete="off">
-            <button class="claim" onclick="guildFound()">FOUND GUILD</button><button class="alt" onclick="closeDlg()">Close</button>`;
-          return;
-        }
-        const m = V.gd.m || [], full = m.length >= GUILD_MAX, cost = recruitCost(), lvl = 1 + Math.floor(m.length / 3);
-        const list = m.map((r) => `<div class="row"><span><b style="color:${SKC[r.c]}">${r.n}</b> <span class="sm">${CL[r.c].n}</span></span><span class="sm">+3%</span></div>`).join("");
-        $("dp").innerHTML = `<h2>🛡 ${esc(V.gd.name)}</h2>
-          <div class="qo">Guild level <b>${lvl}</b> · ${m.length}/${GUILD_MAX} members · bonus <b style="color:#7dff9a">+${Math.round(gBonus() * 100)}% raid gold & XP</b></div>
-          ${list || `<p class="sm">No members yet. Recruit adventurers to grow your guild.</p>`}
-          <button class="claim" ${full || V.gold < cost ? "disabled" : ""} onclick="guildRecruit()">${full ? "GUILD FULL" : `RECRUIT · <span class="coin"></span>${cost}`}</button>
-          <button class="alt" onclick="closeDlg()">Close</button>`;
+      /* ---------- Guild Board: 3 tabs ----------
+         JOIN = pick an existing guild to join. CREATE = found your own, then recruit (bonus per member).
+         LEADERBOARD = guilds ranked by raids won. GUILDS_NPC are the rival guilds shown in the world. */
+      const GUILDS_NPC = [
+        { name: "Silver Wolves", m: 14, wins: 42 },
+        { name: "Dawn Lanterns", m: 9, wins: 31 },
+        { name: "Ashen Oath", m: 6, wins: 18 },
+        { name: "Mossback Company", m: 3, wins: 7 },
+      ];
+      let GTAB = "join"; /* open tab: "join" | "create" | "board" */
+      /* guildTab(t): switches the Guild Board tab and redraws it. */
+      function guildTab(t) { GTAB = t; guildUI(); }
+      /* guildJoin(name): joins an existing guild (only if you are not in one). */
+      function guildJoin(name) {
+        if (V.gd && V.gd.name) return;
+        V.gd = { name, m: [] };
+        save();
+        if (P) burst(P.x, P.y, "#5af0dc", 30, 200);
+        sfx("win");
+        guildUI();
       }
-      const esc = (s) => String(s).replace(/[&<>"']/g, (ch) => "&#" + ch.charCodeAt(0) + ";");
+      /* guildUI(): draws the Guild Board for the open tab. */
+      function guildUI() {
+        const mine = V.gd && V.gd.name, m = (V.gd && V.gd.m) || [];
+        const tabs = [["join", "JOIN"], ["create", "CREATE"], ["board", "LEADERBOARD"]]
+          .map(([k, l]) => `<button class="${GTAB == k ? "" : "alt"}" onclick="guildTab('${k}')">${l}</button>`).join("");
+        let body = "";
+        if (GTAB == "join") {
+          body = GUILDS_NPC.map((g) => `<div class="up" style="--uc:#5af0dc"><div style="min-width:0;flex:1"><span class="nm">${esc(g.name)}</span>
+              <div class="sm">${g.m} members · ${g.wins} raids won</div></div>
+              <button ${mine ? "disabled" : ""} onclick="guildJoin('${esc(g.name)}')">${mine ? "IN A GUILD" : "JOIN"}</button></div>`).join("");
+        } else if (GTAB == "create") {
+          if (!mine) {
+            body = `<p class="sm">Name your guild. Recruit members to grow it.</p>
+              <input id="gn" class="nm" maxlength="20" placeholder="Guild name" autocomplete="off">
+              <button class="claim" onclick="guildFound()">FOUND GUILD</button>`;
+          } else {
+            const full = m.length >= GUILD_MAX, cost = recruitCost(), lvl = 1 + Math.floor(m.length / 3);
+            const list = m.map((r) => `<div class="row"><span><b style="color:${SKC[r.c]}">${r.n}</b> <span class="sm">${CL[r.c].n}</span></span><span class="sm">+3%</span></div>`).join("");
+            body = `<div class="qo">${esc(mine)} · level <b>${lvl}</b> · ${m.length}/${GUILD_MAX} members · bonus <b style="color:#7dff9a">+${Math.round(gBonus() * 100)}%</b></div>
+              ${list || `<p class="sm">No members yet. Recruit adventurers.</p>`}
+              <button class="claim" ${full || V.gold < cost ? "disabled" : ""} onclick="guildRecruit()">${full ? "GUILD FULL" : `RECRUIT · <span class="coin"></span>${cost}`}</button>`;
+          }
+        } else {
+          /* leaderboard: rival guilds + yours, ranked by raids won */
+          const rows = GUILDS_NPC.map((g) => ({ name: g.name, m: g.m, wins: g.wins }));
+          if (mine) rows.push({ name: mine, m: m.length, wins: V.wins || 0, you: 1 });
+          rows.sort((a, b) => b.wins - a.wins);
+          body = rows.map((r, i) => `<div class="row" style="${r.you ? "color:#ffd84a" : ""}"><span>${i + 1}. <b>${esc(r.name)}</b>${r.you ? " (you)" : ""}</span><span class="sm">${r.m} members · ${r.wins} wins</span></div>`).join("");
+        }
+        $("dp").innerHTML = `<h2>🛡 Guild Board</h2><div class="row">${tabs}</div>${body}<button class="alt" onclick="closeDlg()">Close</button>`;
+      }      const esc = (s) => String(s).replace(/[&<>"']/g, (ch) => "&#" + ch.charCodeAt(0) + ";");
       function guildFound(n) {
         const v = String(n != null ? n : ($("gn") && $("gn").value) || "").replace(/[^\p{L}\p{N} '_-]/gu, "").trim().slice(0, 20);
         if (v.length < 3) { toast("A guild name needs at least 3 letters"); return; }

@@ -1,5 +1,5 @@
 {
-  "note": "Camera follows the player with lag",
+  "note": "Guild Board: Join / Create / Leaderboard tabs",
   "board": [
     {
       "id": "R1",
@@ -95,6 +95,27 @@
   "log": [
     {
       "k": "in",
+      "t": "Guild Board 3 tabs",
+      "at": "2026-10-30T14:31:13.570Z",
+      "add": 54,
+      "del": 16
+    },
+    {
+      "k": "in",
+      "t": "Join existing guilds",
+      "at": "2026-10-30T14:31:13.570Z",
+      "add": 54,
+      "del": 16
+    },
+    {
+      "k": "in",
+      "t": "Leaderboard by raids won",
+      "at": "2026-10-30T14:31:13.570Z",
+      "add": 54,
+      "del": 16
+    },
+    {
+      "k": "in",
       "t": "Camera follows player (lerp)",
       "at": "2026-10-30T14:30:35.712Z",
       "add": 25,
@@ -155,34 +176,13 @@
       "at": "2026-10-30T14:28:09.202Z",
       "add": 277,
       "del": 48
-    },
-    {
-      "k": "fix",
-      "t": "NPC rugs follow NPCs",
-      "at": "2026-10-30T14:28:09.202Z",
-      "add": 277,
-      "del": 48
-    },
-    {
-      "k": "fix",
-      "t": "Inn-style NPC layout",
-      "at": "2026-10-30T14:28:09.202Z",
-      "add": 277,
-      "del": 48
-    },
-    {
-      "k": "in",
-      "t": "Guild inn hub art",
-      "at": "2026-10-30T14:23:20.614Z",
-      "add": 1,
-      "del": 1
     }
   ],
   "stats": {
-    "tests": 66,
+    "tests": 69,
     "prevTests": 66,
     "failed": 0,
-    "today": 28,
+    "today": 29,
     "spark": [
       0,
       0,
@@ -195,7 +195,7 @@
       0,
       0,
       4,
-      24
+      25
     ],
     "lines": [
       0,
@@ -209,11 +209,11 @@
       0,
       0,
       9080,
-      1684
+      1715
     ],
-    "features": 8,
+    "features": 10,
     "open": 9,
-    "at": "2026-10-30T14:30:35.712Z"
+    "at": "2026-10-30T14:31:13.570Z"
   },
-  "ver": "0.5.4"
+  "ver": "0.5.5"
 }
