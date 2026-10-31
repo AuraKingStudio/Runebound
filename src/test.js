@@ -14,7 +14,7 @@ ctx.RBNet=fakeNet;
 ctx.window=ctx;vm.createContext(ctx);
 vm.runInContext(SRC+`
 ;globalThis.devMin=devMin;globalThis.devFs=devFs;globalThis.T={V:()=>V,P:()=>P,S:()=>S,start,devAdd,devUp,devUI,devCls,devHeal,devWipe,devResetQ,devArena,devBoss,devHub,DEV,hurt,act,step,pauseGame,resumeGame,isPaused:()=>paused,QUESTS,UPG,toggleDev,buy,shopUI,qAct,togglePause,dailyCheck,saveName,lvlInfo,gainXP,lvlCol,loreReward,isUnl,tutNext,bjVal,bjDeal,bjHit,bjStand,guildFound,guildRecruit,gBonus,bountyDay,bountyAdd,bountyClaim,guildJoin,guildTab,rankPool,rankRefresh,rankSort,dm,dash,dashStep,setIn,padPoll,inMode:()=>INMODE,KEYHINT,HUBV:()=>HUBV,FURY,furyMul,arena,toArena,HUB_NPCS,BOT_NPC_LV,BARKEEP,CLASSN,SKC,PEMB,hubJoin,hubLeave,hubCount,HUB_MAX,hubVisitStep,botName,botLook,chatSend,COS,cosOwn,cosV,cosBuyGold,cosEquip,shopPay,myEmote,streamPts,crossFrame,bridgeAt,riverNear,clampW,WF,STATUE,PORTAL,SET,keyLabel,EDGE,inIsle,netReceive,netPrepareHub,netStep,FX:()=>FX,FT:()=>FT,shk:()=>shk,els:null};`,ctx);
-const T=ctx.T;let f=0;const ok=(c,m)=>{console.log((c?'PASS ':'FAIL ')+m);if(!c)f++};
+const T=ctx.T,BENCH_ONLY=process.argv.includes('--bench');let f=0;const ok=(c,m)=>{if(!c||!BENCH_ONLY)console.log((c?'PASS ':'FAIL ')+m);if(!c)f++};
 T.start();ok(T.S().sc=='hub','start -> hub');
 ctx.document.getElementById('dlg').hidden=true;const pausedAt=T.S().tm;T.pauseGame();T.step(.1);ok(T.isPaused()&&T.S().tm===pausedAt,'pause freezes the game');T.resumeGame();ok(!T.isPaused(),'resume re-enables play');
 ok(!T.V().name&&T.V().ds===undefined,'first start asks for a name before the daily bonus');
@@ -167,6 +167,10 @@ async function networkTests(){
  class Channel{constructor(){this.readyState='connecting';this.bufferedAmount=0;this.sent=[];}send(v){this.sent.push(v)}close(){this.readyState='closed';this.onclose?.()}}
  class Peer{constructor(config){this.config=config;this.iceGatheringState='complete';this.channels=[];peers.push(this);}createDataChannel(){const ch=new Channel();this.channels.push(ch);return ch;}async createOffer(){return{type:'offer',sdp:'offer-sdp'}}async createAnswer(){return{type:'answer',sdp:'answer-sdp'}}async setLocalDescription(v){this.localDescription=v;}async setRemoteDescription(v){this.remoteDescription=v;if(v.type=='offer')this.ondatachannel?.({channel:new Channel()});}addEventListener(){}removeEventListener(){}close(){this.connectionState='closed';}}
  const createContext=()=>{const c={window:null,RTCPeerConnection:Peer,crypto:require('crypto').webcrypto,TextEncoder,TextDecoder,Uint8Array,Map,Promise,Error,Date,JSON,Array,String,Math,atob,btoa,setTimeout,clearTimeout};c.window=c;vm.createContext(c);vm.runInContext(NETSRC,c);return c;};
+ const linkHub=(search,hostname='aurakingstudio.github.io')=>{const c={window:null,location:{search,hostname},crypto:require('crypto').webcrypto,URL,Map,Error,Date,JSON,Array,String,Math};c.window=c;vm.createContext(c);vm.runInContext(NETSRC,c);return c.RBNet.defaultConfig().signalingUrl;};
+ ok(linkHub('?hub=https://abc-def.trycloudflare.com')=='https://abc-def.trycloudflare.com','network: ?hub= accepts an https Quick Tunnel address');
+ ok(linkHub('?hub=https://evil.example.com')==''&&linkHub('?hub=http://abc.trycloudflare.com')==''&&linkHub('?hub=javascript:alert(1)')=='','network: ?hub= rejects other hosts, http and scripts');
+ ok(linkHub('','localhost')=='http://localhost:8787','network: localhost uses the local hub directory');
  const host=createContext(),h=host.RBNet;let received=0,errors=0;
  h.setHandlers({onMessage:(_id,m)=>{if(m.type=='test')received++;},onError:()=>errors++});
  h.setIceServers([{urls:'stun:example.invalid:3478'}]);
@@ -243,4 +247,119 @@ async function signalingTests(){
   await new Promise(resolve=>server.close(resolve));
  }
 }
-networkTests().then(signalingTests).then(()=>{console.log(f?f+' FAILED':'ALL PASSED');process.exit(f?1:0);}).catch(e=>{console.error(e);process.exit(1);});
+async function rateLimitTests(){
+ /* per-player rate limit behind a Cloudflare Tunnel: real address from cf-connecting-ip, only when trusted */
+ const hit=(port,ip)=>new Promise(r=>http.get({host:'127.0.0.1',port,path:'/health',headers:ip?{'cf-connecting-ip':ip}:{}},res=>{res.resume();r(res.statusCode);}));
+ for(const trust of [true,false]){
+  const {server}=createDirectoryServer({allowedOrigins:[],requestsPerMinute:2,trustCloudflare:trust});
+  await new Promise(r=>server.listen(0,'127.0.0.1',r));const port=server.address().port;
+  const a=[await hit(port,'1.1.1.1'),await hit(port,'1.1.1.1'),await hit(port,'1.1.1.1')],b=await hit(port,'2.2.2.2');
+  server.close();
+  if(trust)ok(a.join()=='200,200,429'&&b==200,'directory: behind the tunnel each player has their own rate limit');
+  else ok(b==429,'directory: cf-connecting-ip is ignored unless the tunnel is trusted');
+ }
+}
+/* ---------- networking benchmark: pick-and-mix scenarios ----------
+   npm test           -> quick set (QUICK below), fails only on clear regressions
+   npm run bench      -> every scenario at 10/20/100 players, printed as a table
+   npm run bench -- --scenario=cheat,chat --players=10,20 --seconds=5
+   A run = a real host (the game script in a VM, fake network) + N-1 simulated guests that behave like the real client:
+   they keep themselves on the walkable map and send at most 15 moves/s, only when something changed, plus a 1 s keep-alive.
+   CPU is the host's networking JS only (no WebRTC crypto, no drawing). wireKBps adds ~60 B/message of WebRTC/UDP overhead.
+   To add a scenario: give it a guest(g, tick) that returns the message a guest sends this tick (or null), and checks(r). */
+const WIRE_OVERHEAD=60;
+const SCENARIOS={
+ idle:{about:'everyone stands still: only keep-alives and the 1 s full refresh',
+  guest:(g,k)=>k.move(g,0,0),
+  checks:(r)=>[[r.stateMsgsPerSec<=1.5,`idle host sends ~1 state/s (${r.stateMsgsPerSec})`]]},
+ walk:{about:'everyone walks in circles at a normal pace',
+  guest:(g,k)=>k.move(g,Math.cos(k.t+g.i)*6,Math.sin(k.t+g.i)*6),
+  checks:(r)=>[[r.honestCorrected<=r.honestMoves*0.05,`walking is not "corrected" (${r.honestCorrected}/${r.honestMoves})`]]},
+ crowd:{about:'30% walk, 70% stand around (a normal hub)',
+  guest:(g,k)=>g.i%10<3?k.move(g,Math.cos(k.t+g.i)*6,Math.sin(k.t+g.i)*6):k.move(g,0,0),
+  checks:(r)=>[[r.honestCorrected<=r.honestMoves*0.05,`crowd is not "corrected" (${r.honestCorrected}/${r.honestMoves})`]]},
+ dash:{about:'walking plus a legal dash every 6 s',
+  guest:(g,k)=>{const dash=k.every(g,6000,'dash');return k.move(g,(dash?DASHD[g.cls]*0.9:6)*Math.cos(g.i),(dash?DASHD[g.cls]*0.9:6)*Math.sin(g.i),dash);},
+  checks:(r)=>[[r.honestCorrected<=r.honestMoves*0.05,`legal dashes are accepted (${r.honestCorrected}/${r.honestMoves} corrected)`]]},
+ cheat:{about:'every 5th guest speed-hacks (+60 px per update); the rest walk',
+  guest:(g,k)=>{g.cheater=g.i%5==0;return k.move(g,g.cheater?60:Math.cos(k.t+g.i)*6,g.cheater?0:Math.sin(k.t+g.i)*6);},
+  checks:(r)=>[[r.cheatCorrected>=r.cheatMoves*0.9,`speed hacks are corrected (${r.cheatCorrected}/${r.cheatMoves})`],
+   [r.honestCorrected<=r.honestMoves*0.05,`honest players are not punished (${r.honestCorrected}/${r.honestMoves})`]]},
+ chat:{about:'walking + everyone chats every 2 s, one spammer every 100 ms',
+  guest:(g,k)=>g.i==0?(k.every(g,100,'chat')?k.chat(g):null):k.every(g,2000,'chat')?k.chat(g):k.move(g,Math.cos(k.t+g.i)*6,Math.sin(k.t+g.i)*6),
+  checks:(r)=>[[r.chatRejected>0,`chat spam is rejected (${r.chatRejected})`],[r.chatAccepted>=r.chatSent-r.chatRejected,`normal chat is accepted and relayed (${r.chatAccepted})`]]},
+ churn:{about:'walking while a guest leaves and a new one joins every 0.5 s',
+  churn:500,guest:(g,k)=>k.move(g,Math.cos(k.t+g.i)*6,Math.sin(k.t+g.i)*6),
+  checks:(r)=>[[r.endPlayers==r.players,`seats stay consistent through joins/leaves (${r.endPlayers}/${r.players})`],[r.churned>0,`players actually churned (${r.churned})`]]},
+};
+const DASHD={tank:60,dps:150,heal:105};
+function runBench({scenario,players:N,seconds:SEC=3}){
+ const sc=SCENARIOS[scenario],c={...ctx};c.window=c;vm.createContext(c);
+ vm.runInContext(SRC.replace('const HUB_MAX = 10;','const HUB_MAX = '+N+';')+';globalThis.B={netReceive,netStep,netPrepareHub,hubVisitStep,devHub,clampW,HUBV:()=>HUBV};',c);
+ const B=c.B,ms=()=>Number(process.hrtime.bigint())/1e6,cpu={recv:0,send:0,smooth:0},FRAME=1000/60;
+ const r={scenario,players:N,honestMoves:0,honestCorrected:0,cheatMoves:0,cheatCorrected:0,chatSent:0,chatAccepted:0,chatRejected:0,churned:0,guestBytes:0,guestMsgs:0};
+ let next=0,seq=0;const guests=new Map();
+ const join=()=>{const i=next++,id='peer-'+i;fakePeers.push(id);
+  B.netReceive(id,{type:'join',profile:{id:'player-bench'+String(i).padStart(4,'0'),name:'P'+i,cls:['tank','dps','heal'][i%3],lv:5,ti:0,spd:1},x:250+(i%20)*20,y:280+Math.floor(i/20)*25});
+  guests.set(id,{id,i,cls:['tank','dps','heal'][i%3],key:'',sentAt:-1e9,timers:{}});};
+ B.devHub();netClock=1000;fakePeers=[];B.netPrepareHub('host');
+ for(let i=1;i<N;i++)join();
+ fakeBroadcast=[];
+ const k={t:0,
+  every:(g,period,name)=>{if(netClock-(g.timers[name]??-1e9)<period)return false;g.timers[name]=netClock;return true;},
+  move:(g,dx,dy,dash=false)=>{const v=B.HUBV().find(o=>o.id==g.id);if(!v)return null;
+   const at={x:v.netX+dx,y:v.netY+dy,hp:1};if(!g.cheater)B.clampW(at);
+   const m={type:'m',x:Math.round(at.x),y:Math.round(at.y),f:3,d:dash?1:0},key=[m.x,m.y,m.d].join();
+   if(netClock-g.sentAt<66||(key==g.key&&netClock-g.sentAt<1000))return null; /* same send rules as the real client */
+   g.key=key;g.sentAt=netClock;return m;},
+  chat:(g)=>({type:'chat',text:'hello from '+g.i}),
+ };
+ for(let frame=0;frame<SEC*60;frame++){
+  netClock+=FRAME;k.t=frame/60;
+  if(sc.churn&&frame>0&&frame%Math.round(sc.churn/FRAME)==0&&guests.size){const old=[...guests.keys()][0];guests.delete(old);fakeNet.disconnect(old);join();r.churned++;}
+  for(const g of guests.values()){
+   const m=sc.guest(g,k);if(!m)continue;
+   if(m.type=='m')m.s=++seq;else m.seq=++seq; /* moves number themselves in s, queries (chat) in seq */
+   const before=fakeBroadcast.length,bytes=JSON.stringify(m).length;r.guestBytes+=bytes;r.guestMsgs++;
+   const t0=ms();B.netReceive(g.id,m);cpu.recv+=ms()-t0;
+   const replies=fakeBroadcast.slice(before).filter(x=>x.id==g.id);
+   if(m.type=='m'){const corrected=replies.some(x=>x.msg.type=='c');if(g.cheater){r.cheatMoves++;if(corrected)r.cheatCorrected++;}else{r.honestMoves++;if(corrected)r.honestCorrected++;}}
+   else if(m.type=='chat'){r.chatSent++;const ack=replies.find(x=>x.msg.type=='ack');if(ack?.msg.ok)r.chatAccepted++;else if(ack)r.chatRejected++;}
+  }
+  if(frame%3==0){const t0=ms();B.netStep();cpu.send+=ms()-t0;}
+  const t0=ms();B.hubVisitStep(FRAME/1000);cpu.smooth+=ms()-t0;
+ }
+ let up=0,upMsgs=0;const states=[];
+ for(const m of fakeBroadcast){const b=JSON.stringify(m.msg).length,n=m.id=='all'?guests.size:1;up+=b*n;upMsgs+=n;if(m.msg.type=='s')states.push(b);}
+ const per=(x)=>+(x/SEC).toFixed(1);
+ Object.assign(r,{endPlayers:B.HUBV().filter(v=>v.netClientId).length+1,
+  cpuMs:+((cpu.recv+cpu.send+cpu.smooth)/SEC).toFixed(2),recvMs:+(cpu.recv/SEC).toFixed(2),sendMs:+(cpu.send/SEC).toFixed(2),smoothMs:+(cpu.smooth/SEC).toFixed(2),
+  upKBps:per(up/1024),wireUpKBps:per((up+upMsgs*WIRE_OVERHEAD)/1024),upMsgsPerSec:Math.round(upMsgs/SEC),
+  downKBps:per(r.guestBytes/1024),wireDownKBps:per((r.guestBytes+r.guestMsgs*WIRE_OVERHEAD)/1024),
+  perGuestUpKBps:+(r.guestBytes/SEC/1024/Math.max(1,N-1)).toFixed(2),
+  stateMsgsPerSec:per(states.length),biggestState:states.length?Math.max(...states):0});
+ fakePeers=[];return r;
+}
+/* shared limits for every run: these catch protocol/CPU regressions whatever the scenario */
+const BASE_CHECKS=(r)=>[[r.endPlayers==r.players,`every player has a seat (${r.endPlayers}/${r.players})`],
+ [r.biggestState<=24+r.players*16,`state stays compact (${r.biggestState} B)`],[r.cpuMs<r.players*5,`host CPU stays light (${r.cpuMs} ms/s)`]];
+const QUICK=[['idle',[10]],['walk',[10,20,100]],['crowd',[20]],['dash',[10]],['cheat',[10]],['chat',[10]],['churn',[10]]];
+async function benchTests(){
+ const arg=(name)=>(process.argv.find(a=>a.startsWith('--'+name+'='))||'').split('=')[1];
+ const names=arg('scenario')?arg('scenario').split(','):BENCH_ONLY?Object.keys(SCENARIOS):null;
+ const sizes=arg('players')?arg('players').split(',').map(Number):[10,20,100],seconds=Number(arg('seconds')||(BENCH_ONLY?5:2));
+ const plan=names?names.flatMap(n=>sizes.map(p=>[n,p])):QUICK.flatMap(([n,ps])=>ps.map(p=>[n,p]));
+ const rows=[];
+ for(const [scenario,players] of plan){
+  if(!SCENARIOS[scenario]){ok(false,`bench: unknown scenario "${scenario}" (have: ${Object.keys(SCENARIOS).join(', ')})`);continue;}
+  const r=runBench({scenario,players,seconds});rows.push(r);
+  for(const [c,label] of [...BASE_CHECKS(r),...SCENARIOS[scenario].checks(r)])ok(c,`bench ${scenario} ${players}p: ${label}`);
+  if(!BENCH_ONLY)console.log('BENCH',JSON.stringify({scenario,players,cpuMs:r.cpuMs,upKBps:r.upKBps,downKBps:r.downKBps,biggestState:r.biggestState}));
+ }
+ if(BENCH_ONLY){
+  for(const [n,s] of Object.entries(SCENARIOS))if(!names||names.includes(n))console.log(`  ${n.padEnd(6)} ${s.about}`);
+  console.table(rows.map(r=>({scenario:r.scenario,players:r.players,'cpu ms/s':r.cpuMs,'host up KB/s':r.upKBps,'host up wire':r.wireUpKBps,'host down KB/s':r.downKBps,
+   'per guest up KB/s':r.perGuestUpKBps,'state msg B':r.biggestState,'states/s':r.stateMsgsPerSec,corrected:`${r.honestCorrected}/${r.honestMoves}`+(r.cheatMoves?` cheat ${r.cheatCorrected}/${r.cheatMoves}`:'')})));
+ }
+}
+(BENCH_ONLY?Promise.resolve():networkTests().then(signalingTests).then(rateLimitTests)).then(benchTests).then(()=>{console.log(f?f+' FAILED':'ALL PASSED');process.exit(f?1:0);}).catch(e=>{console.error(e);process.exit(1);});

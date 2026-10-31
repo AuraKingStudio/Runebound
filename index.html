@@ -1160,6 +1160,16 @@
           for (const [id, peer] of peers) closePeer(id, peer);
         }
 
+        /* hubFromLink(): a test hub can be passed in the link (?hub=https://name.trycloudflare.com) so a temporary tunnel
+           address never has to be baked into the public build. Only https Cloudflare Quick Tunnel addresses are accepted. */
+        function hubFromLink() {
+          const m = /[?&]hub=([^&#]+)/.exec(location.search || "");
+          if (!m) return "";
+          try {
+            const url = new URL(decodeURIComponent(m[1]));
+            return url.protocol === "https:" && /^[a-z0-9-]+\.trycloudflare\.com$/.test(url.hostname) ? url.origin : "";
+          } catch { return ""; }
+        }
         function directoryConfig() {
           return directoryUrl;
         }
@@ -1174,7 +1184,7 @@
           directoryHeartbeat,
           directoryLeave,
           directoryConfig,
-          defaultConfig: () => ({ signalingUrl: NETWORK_CONFIG.signalingUrl || (["localhost", "127.0.0.1"].includes(location.hostname) ? "http://localhost:8787" : ""), iceServers: NETWORK_CONFIG.iceServers.map((server) => ({ ...server })) }),
+          defaultConfig: () => ({ signalingUrl: NETWORK_CONFIG.signalingUrl || hubFromLink() || (["localhost", "127.0.0.1"].includes(location.hostname) ? "http://localhost:8787" : ""), iceServers: NETWORK_CONFIG.iceServers.map((server) => ({ ...server })) }),
           createPeerOffer,
           createPeerAnswer,
           acceptPeerAnswer,
@@ -1772,7 +1782,7 @@
           for (const event of result.events || []) {
             if (event.type == "offer" && NET_ROLE == "host") {
               const profile = netSafeProfile(event.profile);
-              if (!profile || NET_CLIENTS.size >= 9) continue;
+              if (!profile || NET_CLIENTS.size >= HUB_MAX - 1) continue;
               try {
                 const description = await NET.createPeerAnswer(event.peerId, event.description);
                 await NET.directorySend("/api/answer", { peerId: event.peerId, description });
@@ -1887,7 +1897,7 @@
             const profile = netSafeProfile(message.profile);
             const existing = HUBV.find((v) => v.id == id && !v.bot);
             if (existing && profile?.id == existing.netClientId) return netRoster();
-            if (!profile || NET_CLIENTS.size >= 9 || hubCount() >= HUB_MAX ||
+            if (!profile || NET_CLIENTS.size >= HUB_MAX - 1 || hubCount() >= HUB_MAX ||
                 HUBV.some((v) => !v.bot && v.netClientId == profile.id)) {
               NET.send(id, { type: "reject", reason: "This hub is full or the profile is invalid." });
               return NET.disconnect(id);
@@ -4370,7 +4380,7 @@
         V.q = 0;
         V.qs = 0;
         try {
-          localStorage.removeItem("runebound1");
+          localStorage.removeItem(SAVE_KEY);
         } catch (e) {}
         toast("Progress wiped");
         devS();

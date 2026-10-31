@@ -44,6 +44,10 @@ function createDirectoryServer(options = {}) {
   const maxHubs = options.maxHubs ?? MAX_HUBS;
   const maxPlayersPerHub = options.maxPlayersPerHub ?? MAX_PLAYERS_PER_HUB;
   const sessionTtlMs = options.sessionTtlMs ?? SESSION_TTL_MS;
+  const requestsPerMinute = options.requestsPerMinute ?? 3000;
+  /* behind a Cloudflare Tunnel every request comes from the local connector, so the player's real address is in
+     cf-connecting-ip; it is trusted only when enabled AND the request arrives from this machine (the tunnel) */
+  const trustCloudflare = !!options.trustCloudflare;
 
   function getSession(secret) {
     if (typeof secret !== "string" || secret.length !== 48) return null;
@@ -107,13 +111,16 @@ function createDirectoryServer(options = {}) {
     }
 
     const now = Date.now();
-    const ip = req.socket.remoteAddress || "unknown";
+    const socketIp = req.socket.remoteAddress || "unknown", cfIp = req.headers["cf-connecting-ip"];
+    const ip = trustCloudflare && ["127.0.0.1", "::1", "::ffff:127.0.0.1"].includes(socketIp) &&
+      typeof cfIp === "string" && cfIp.length <= 64 ? cfIp : socketIp;
+    if (requestCounts.size > 20000) for (const [key, value] of requestCounts) if (now - value.startedAt >= 60000) requestCounts.delete(key);
     let rate = requestCounts.get(ip);
     if (!rate || now - rate.startedAt >= 60000) {
       rate = { startedAt: now, count: 0 };
       requestCounts.set(ip, rate);
     }
-    if (++rate.count > 3000) return send(res, 429, { error: "Too many signaling requests; retry shortly." });
+    if (++rate.count > requestsPerMinute) return send(res, 429, { error: "Too many signaling requests; retry shortly." });
 
     const url = new URL(req.url, "http://localhost");
     if (req.method === "GET" && url.pathname === "/health") {
@@ -212,7 +219,7 @@ if (require.main === module) {
   const allowedOrigins = (process.env.ALLOWED_ORIGINS || "https://aurakingstudio.github.io,http://localhost:8080,http://127.0.0.1:8080")
     .split(",").map((origin) => origin.trim()).filter(Boolean);
   const port = Number(process.env.PORT || 8787);
-  const { server } = createDirectoryServer({ allowedOrigins });
+  const { server } = createDirectoryServer({ allowedOrigins, trustCloudflare: process.env.TRUST_CLOUDFLARE === "1" });
   server.listen(port, "0.0.0.0", () => console.log(`Runebound signaling directory listening on ${port}`));
 }
 
