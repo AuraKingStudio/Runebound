@@ -4105,6 +4105,18 @@
         ctx.moveTo(e.x, e.y + 8);
         ctx.lineTo(e.x, spill().y + 4);
       }
+      /* BRANCHES: two rivulets leaving the main stream, each running to the rim where a thin fall drops off.
+         dx = where along the rim the thin fall is (relative to the main fall), w = half width. */
+      const BRANCHES = [{ dx: -52, w: 5 }, { dx: 40, w: 4 }];
+      function branchPath(ctx, b) {
+        const e = streamPts()[streamPts().length - 1],
+          sy = (e.y + 8 + spill().y) / 2,
+          tx = e.x + b.dx,
+          ty = edgeLowY(tx) + 3;
+        ctx.beginPath();
+        ctx.moveTo(e.x, sy);
+        ctx.quadraticCurveTo(e.x + b.dx * 0.6, sy + 6, tx, ty);
+      }
       /* outflowGround(g): the stream on the forest floor. Painted before the platform so it starts hidden under the side wall
          and comes out at the wall's foot, the same width as the river. */
       function outflowGround(g) {
@@ -4117,6 +4129,18 @@
         g.strokeStyle = "#5aa7a6";
         g.lineWidth = e.w * 2 - 2;
         g.stroke();
+        g.lineCap = "round";
+        for (const b of BRANCHES) {
+          branchPath(g, b);
+          g.strokeStyle = "#5d8a4a";
+          g.lineWidth = b.w * 2 + 5;
+          g.stroke();
+          branchPath(g, b);
+          g.strokeStyle = "#5aa7a6";
+          g.lineWidth = b.w * 2;
+          g.stroke();
+        }
+        g.lineCap = "butt";
       }
       /* riverEnd(t): the river pours over the stone lip and runs down the platform's curved side wall into the pool below */
       /* rimY(x): y of the platform's front rim at x (where the top surface ends and the side wall begins) */
@@ -4172,6 +4196,12 @@
         c.lineWidth = 1.6;
         outflowPath(c);
         c.stroke();
+        c.lineWidth = 1;
+        c.setLineDash([5, 9]);
+        for (const b of BRANCHES) {
+          branchPath(c, b);
+          c.stroke();
+        }
         c.restore();
         /* off the edge: the river falls straight down off the island in a long ribbon, with two thin falls beside it
            (water seeping out of the rim). Each ribbon fades into mist above the clouds. */
@@ -4179,8 +4209,8 @@
           fb = H + 30,
           FALLS = [
             { x: SP.x, w: e.w - 1, streaks: 7, sp: 70 },
-            { x: SP.x - 52, w: 5, streaks: 2, sp: 60 },
-            { x: SP.x + 40, w: 4, streaks: 2, sp: 55 },
+            { x: SP.x + BRANCHES[0].dx, w: BRANCHES[0].w, streaks: 2, sp: 60 },
+            { x: SP.x + BRANCHES[1].dx, w: BRANCHES[1].w, streaks: 2, sp: 55 },
           ];
         c.save();
         skyClip(c);
