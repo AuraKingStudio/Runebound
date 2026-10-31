@@ -1,6 +1,13 @@
-# Runebound – handoff note for the next agent
+# Runebound – agent instructions
 
-Update this file before every push (owner's rule).
+## Before pushing (owner's rules)
+
+1. Update unit tests (`src/test.js`) for newly coded features.
+2. Update the benchmark (`SCENARIOS` in `src/test.js`) if needed, and run it (`npm run bench`).
+3. Update this file: what has been done, what is upcoming, what is a concern.
+4. Avoid explaining; be concise and precise.
+5. Always generate assets with code (canvas/SVG drawn in `index.html`): code-drawn art is what sells the game. The only image files allowed are `assets/icon.png` and the arena background (`IM.arena`, embedded in `index.html`).
+
 
 ## Project
 
@@ -13,7 +20,7 @@ Runebound is a browser-only (.io-style web) action game with a sky-island hub (N
 | `index.html` | The whole browser game: CSS, embedded art, game logic, WebRTC transport, hub networking. Keep browser code here. |
 | `src/app.js` | The only Node file: the hub directory service (`npm run signaling`); tests `require` it for `createDirectoryServer`. |
 | `src/test.js` | Tests for game, networking, anti-cheat, transport, directory, rate limit + scenario benchmark (`npm test`, `npm run bench`). Parses the `<script>` block of `index.html`. |
-| `assets/icon.png` | Tab icon. Images belong in `assets/`, code in `src/`. |
+| `assets/icon.png` | Tab icon. One of only two allowed image files (with the embedded arena background). Code lives in `src/`. |
 | `package.json` | Scripts only: `npm test`, `npm run bench`, `npm run dev` (live-server on 8080), `npm run signaling`. Only dev dependency: live-server. |
 | `.nojekyll` | Makes GitHub Pages serve files as-is. |
 
@@ -52,6 +59,12 @@ Small raid 3, large raid 6, hub and epic raid **12** (the most the game will eve
   - On `localhost` the game uses `http://localhost:8787` automatically; the public `signalingUrl` stays blank.
   - `?player=N` (localhost only) gives each tab its own save, so two VS Code Simple Browser tabs are two players.
   - Run `npm run signaling` and `npm run dev`.
+
+## Latest (2026-10-31)
+
+- Done: this file renamed from `copilot_recap.md`, owner's pre-push rules added at the top; the unused embedded tank image removed (images now: icon + arena background only).
+- Upcoming: raid combat networking (3/6/12, hitscan, hitboxes) with benchmark scenarios; real-browser and real-phone tests.
+- Concerns: netcode changes since the last real-browser test are covered only by the simulated benchmark.
 
 ## Verified (2026-10-31)
 
