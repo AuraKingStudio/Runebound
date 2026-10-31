@@ -6794,18 +6794,19 @@
               gy = y + Math.sin(a) * Ry * rk,
               lit = Math.max(base + 0.15 * Math.sin(t * 3 + i), Math.max(0, Math.sin(a * 2 - t * 2.4 + off)) ** 3);
             if (lit > 0.1) {
-              g.globalCompositeOperation = "lighter";
-              g.fillStyle = `rgba(90,240,215,${0.35 * lit})`;
+              /* a soft teal tint under a lit glyph (additive light turned into white blobs on the pale stone) */
+              g.fillStyle = `rgba(60,200,180,${0.18 * lit})`;
               g.beginPath();
               g.ellipse(gx, gy, size * 0.8, size * 0.5, 0, 0, 6.3);
               g.fill();
-              g.globalCompositeOperation = "source-over";
             }
             g.save();
             g.translate(gx, gy);
             g.scale(1, Ry / R);
             g.rotate(a + Math.PI / 2);
-            g.fillStyle = `rgba(${Math.round(60 + 140 * lit)},${Math.round(160 + 90 * lit)},${Math.round(148 + 80 * lit)},${0.8 + 0.2 * lit})`;
+            g.fillStyle = base /* inner ring: lighter cyan than the outer band */
+              ? `rgba(${Math.round(120 + 110 * lit)},${Math.round(225 + 30 * lit)},${Math.round(225 + 30 * lit)},1)`
+              : `rgba(${Math.round(50 + 120 * lit)},${Math.round(150 + 90 * lit)},${Math.round(140 + 80 * lit)},${0.85 + 0.15 * lit})`;
             g.fillText(RUNES_HUB[(i + off * 3) % RUNES_HUB.length], 0, 0);
             if (base && lit > 0.6) {
               /* shine: a white-hot core and a twinkle on the brightest glyphs */
