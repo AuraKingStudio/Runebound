@@ -7294,7 +7294,8 @@
       function teleportFx() {
         if (!P || S.sc != "hub") return;
         const { q, R, Ry } = crossFrame(),
-          on = bridgeAt(P),
+          standing = [P, ...HUBV].filter((p) => !p.out && bridgeAt(p)), /* anyone on the crossing lights it up, for everyone */
+          on = standing.length > 0,
           k = S.tp ? Math.min(1, (S.tm - S.tp) / TP_TIME) : 0;
         c.save();
         c.globalCompositeOperation = "lighter";
@@ -7324,9 +7325,11 @@
           const br = 0.5 + 0.5 * Math.sin(S.tm * 3);
           c.strokeStyle = `rgba(160,255,240,${0.35 + 0.3 * br})`;
           c.lineWidth = 2;
-          c.beginPath();
-          c.ellipse(P.x, P.y + 6, 18 + br * 6, 8 + br * 3, 0, 0, 6.3);
-          c.stroke();
+          for (const p of standing) {
+            c.beginPath();
+            c.ellipse(p.x, p.y + 6, 18 + br * 6, 8 + br * 3, 0, 0, 6.3);
+            c.stroke();
+          }
         }
         if (S.tp) tpBeam(P.x, P.y, k, R, Ry);
         for (const v of HUBV) {
