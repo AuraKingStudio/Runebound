@@ -1083,18 +1083,35 @@
         P.cd = [0, 0, 0];
         P.dx = P.dy = 0;
       }
-      /* ---------- hub visitors: up to HUB_MAX players share a hub (you + 9 others) ----------
-         HUBV = the other players. Kept apart from S.ps (the raid party) so arena logic never sees them.
+      /* ---------- hub visitors: HUB_MIN..HUB_MAX people share a hub, counting you ----------
+         HUBV = the other players (real ones and bots). Kept apart from S.ps (the raid party) so arena logic never sees them.
          Network hooks: hubJoin(id, {name, cls, x, y}), hubMove(id, x, y), hubLeave(id).
-         Visitors glide toward their last reported spot (tx, ty), so ~10 updates a second still look smooth. */
-      const HUB_MAX = 10;
-      let HUBV = [];
-      /* HUB_SPAWNS: spawn spots south of the river, spread so arrivals never stack (0 = you) */
+         Visitors glide toward their last reported spot (tx, ty), so ~10 updates a second still look smooth.
+         Bots top the hub up to HUB_MIN. When a real player joins a full hub, a bot "leaves for a raid":
+         it plays the teleport animation (v.out = start time) and disconnects after TP_TIME. */
+      const HUB_MAX = 10,
+        BOT_NAMES = ["Aster", "Bram", "Cyra", "Dain", "Elow", "Fenn", "Gale", "Hollis", "Isk", "Juno", "Kael", "Lark"];
+      let HUBV = [],
+        HUB_MIN = 5, /* ?bots=N raises it to N + 1 for stress tests */
+        botN = 0;
+      /* HUB_SPAWNS: spawn spots south of the river. Arrivals take the free spot farthest from everyone, so nobody stacks. */
       const HUB_SPAWNS = [[450, 440], [400, 450], [500, 450], [355, 430], [545, 430], [425, 485], [475, 485], [310, 455], [590, 455], [450, 515]];
-      function hubJoin(id, o) {
-        if (HUBV.length >= HUB_MAX - 1 || HUBV.some((v) => v.id == id)) return null;
-        const [sx, sy] = HUB_SPAWNS[(HUBV.length + 1) % HUB_SPAWNS.length],
-          v = { id, name: o.name || "Wanderer", cls: CL[o.cls] ? o.cls : "tank", x: o.x ?? sx, y: o.y ?? sy, dx: 0, dy: 0, f: "d", hp: 1, mh: 1 };
+      function spawnSpot() {
+        const near = ([x, y]) => Math.min(1e9, ...[P, ...HUBV].filter(Boolean).map((o) => Math.hypot(o.x - x, o.y - y)));
+        return HUB_SPAWNS.reduce((a, b) => (near(b) > near(a) ? b : a));
+      }
+      /* hubCount(): people in the hub, you included; bots already teleporting out don't count */
+      const hubCount = () => 1 + HUBV.filter((v) => !v.out).length;
+      /* hubJoin(id, o, bot): admit a player. Full hub: a real player bumps a bot (it teleports out), a bot is refused. */
+      function hubJoin(id, o, bot) {
+        if (HUBV.some((v) => v.id == id)) return null;
+        if (hubCount() >= HUB_MAX) {
+          const b = !bot && HUBV.find((v) => v.bot && !v.out);
+          if (!b) return null;
+          botOut(b);
+        }
+        const [sx, sy] = spawnSpot(),
+          v = { id, name: o.name || "Wanderer", cls: CL[o.cls] ? o.cls : "tank", x: o.x ?? sx, y: o.y ?? sy, dx: 0, dy: 0, f: "d", hp: 1, mh: 1, bot: bot ? 1 : 0 };
         v.tx = v.x;
         v.ty = v.y;
         HUBV.push(v);
@@ -1102,7 +1119,7 @@
       }
       function hubMove(id, x, y) {
         const v = HUBV.find((v) => v.id == id);
-        if (v) {
+        if (v && !v.out) {
           v.tx = x;
           v.ty = y;
         }
@@ -1110,10 +1127,33 @@
       function hubLeave(id) {
         HUBV = HUBV.filter((v) => v.id != id);
       }
-      /* hubVisitStep(dt): glide visitors toward their target, keep them on the stones and out of the river, update facing */
+      /* botOut(v): the bot heads off to a raid: stops, rises into a pillar of light, then disconnects */
+      function botOut(v) {
+        v.out = S.tm || 1e-6;
+        v.tx = v.x;
+        v.ty = v.y;
+      }
+      /* fillBots(): add bots until the hub holds HUB_MIN people */
+      function fillBots() {
+        const ks = Object.keys(CL);
+        while (hubCount() < Math.min(HUB_MIN, HUB_MAX)) {
+          const used = HUBV.map((v) => v.name),
+            name = BOT_NAMES.find((n) => !used.includes(n)) || "Wanderer";
+          if (!hubJoin("bot" + botN, { name, cls: ks[botN % ks.length] }, 1)) break;
+          botN++;
+        }
+      }
+      /* hubVisitStep(dt): top up bots, glide visitors toward their target (on the stones, out of the river), update facing,
+         drop bots whose teleport finished */
       function hubVisitStep(dt) {
+        fillBots();
+        HUBV = HUBV.filter((v) => !v.out || S.tm - v.out < TP_TIME);
         const k = 1 - Math.exp(-dt * 12);
         for (const v of HUBV) {
+          if (v.out) {
+            v.dx = v.dy = 0;
+            continue;
+          }
           if (v.bot) botStep(v, dt);
           const mx = (v.tx - v.x) * k,
             my = (v.ty - v.y) * k,
@@ -1127,8 +1167,7 @@
           if (walking) v.f = Math.abs(v.dx) > Math.abs(v.dy) ? (v.dx > 0 ? "r" : "l") : v.dy > 0 ? "d" : "u";
         }
       }
-      /* bots (?bots=N in the url): wander between random spots, standing in for remote players to test a full hub.
-         They report a new target 10 times a second, like a network update would. */
+      /* botStep: wander between random spots. Bots report a new target 10 times a second, like a network update would. */
       function botStep(v, dt) {
         v.wt = (v.wt || 0) - dt;
         if (v.wt > 0) return;
@@ -1147,14 +1186,6 @@
         v.tx = v.x + Math.cos(a) * 15;
         v.ty = v.y + Math.sin(a) * 15;
         v.wt = 0.1;
-      }
-      function addBots(n) {
-        const names = ["Aster", "Bram", "Cyra", "Dain", "Elow", "Fenn", "Gale", "Hollis", "Isk"],
-          ks = Object.keys(CL);
-        for (let i = 0; i < n; i++) {
-          const v = hubJoin("bot" + i, { name: names[i % names.length], cls: ks[i % ks.length] });
-          if (v) v.bot = 1;
-        }
       }
       function toHub() {
         S.sc = "hub";
@@ -2454,7 +2485,7 @@
       });
       if (/[?&]dev\b/.test(location.search)) toggleDev();
       const botsQ = /[?&]bots=(\d+)/.exec(location.search);
-      if (botsQ) addBots(Math.min(+botsQ[1], HUB_MAX - 1));
+      if (botsQ) HUB_MIN = Math.max(HUB_MIN, +botsQ[1] + 1);
       /* dev: skip the class menu and jump straight into the hub. Set to false before release. */
       const AUTOSTART = true;
       /* dev hot-reload: when the page reloads (live-server, F5), keep the current run.
@@ -3091,8 +3122,9 @@
         c.save();
         c.translate(p.x, p.y);
         c.globalAlpha = p.hp <= 0 ? 0.35 : p.inv > 0 ? 0.55 + 0.45 * Math.sin(S.tm * 60) : 1;
-        if (S.tp && p === P) {
-          const k = Math.min(1, (S.tm - S.tp) / TP_TIME);
+        const tp = p === P ? S.tp : p.out;
+        if (tp) {
+          const k = Math.min(1, (S.tm - tp) / TP_TIME);
           c.globalAlpha *= Math.max(0, 1 - Math.max(0, k - 0.45) * 2.2);
           c.translate(0, -k * k * 26); /* rises into the light */
         }
@@ -4690,40 +4722,8 @@
           c.ellipse(P.x, P.y + 6, 18 + br * 6, 8 + br * 3, 0, 0, 6.3);
           c.stroke();
         }
-        if (S.tp) {
-          /* rings rushing in toward the player */
-          for (let i = 0; i < 4; i++) {
-            const p = (k * 2.2 + i / 4) % 1,
-              sc = 1 - p;
-            c.strokeStyle = `rgba(160,255,240,${0.7 * p})`;
-            c.lineWidth = 2.5;
-            c.beginPath();
-            c.ellipse(P.x, P.y + 4, R * sc, Ry * sc, 0, 0, 6.3);
-            c.stroke();
-          }
-          /* pillar of light */
-          const pw = 8 + k * 26,
-            ph = 60 + k * 340,
-            col = c.createLinearGradient(0, P.y - ph, 0, P.y + 6);
-          col.addColorStop(0, "rgba(160,255,240,0)");
-          col.addColorStop(0.6, `rgba(170,255,245,${0.35 + k * 0.4})`);
-          col.addColorStop(1, `rgba(220,255,255,${0.6 + k * 0.3})`);
-          c.fillStyle = col;
-          c.beginPath();
-          c.ellipse(P.x, P.y + 4, pw, pw * 0.5, 0, 0, 6.3);
-          c.fill();
-          c.fillRect(P.x - pw, P.y - ph, pw * 2, ph + 4);
-          /* motes spiraling up around the player */
-          for (let i = 0; i < 18; i++) {
-            const a = S.tm * 6 + i * 0.35,
-              up = ((k * 1.5 + i / 18) % 1) * 110,
-              rr = 26 - up * 0.15;
-            c.fillStyle = `rgba(200,255,250,${0.9 - up / 130})`;
-            c.beginPath();
-            c.arc(P.x + Math.cos(a) * rr, P.y - up + Math.sin(a) * rr * 0.4, 2, 0, 6.3);
-            c.fill();
-          }
-        }
+        if (S.tp) tpBeam(P.x, P.y, k, R, Ry);
+        for (const v of HUBV) if (v.out) tpBeam(v.x, v.y, Math.min(1, (S.tm - v.out) / TP_TIME), R, Ry);
         c.restore();
         /* white flash as the raid loads */
         if (S.tp && k > 0.75) {
@@ -4731,6 +4731,41 @@
           c.fillStyle = `rgba(235,255,252,${(k - 0.75) * 4})`;
           c.fillRect(-W, -H, W * 3, H * 3);
           c.restore();
+        }
+      }
+      /* tpBeam(x, y, k, R, Ry): teleport at (x, y), k = progress 0..1. Rings rush in, a pillar of light grows, motes spiral up. */
+      function tpBeam(x, y, k, R, Ry) {
+        /* rings rushing in toward the player */
+        for (let i = 0; i < 4; i++) {
+          const p = (k * 2.2 + i / 4) % 1,
+            sc = 1 - p;
+          c.strokeStyle = `rgba(160,255,240,${0.7 * p})`;
+          c.lineWidth = 2.5;
+          c.beginPath();
+          c.ellipse(x, y + 4, R * sc, Ry * sc, 0, 0, 6.3);
+          c.stroke();
+        }
+        /* pillar of light */
+        const pw = 8 + k * 26,
+          ph = 60 + k * 340,
+          col = c.createLinearGradient(0, y - ph, 0, y + 6);
+        col.addColorStop(0, "rgba(160,255,240,0)");
+        col.addColorStop(0.6, `rgba(170,255,245,${0.35 + k * 0.4})`);
+        col.addColorStop(1, `rgba(220,255,255,${0.6 + k * 0.3})`);
+        c.fillStyle = col;
+        c.beginPath();
+        c.ellipse(x, y + 4, pw, pw * 0.5, 0, 0, 6.3);
+        c.fill();
+        c.fillRect(x - pw, y - ph, pw * 2, ph + 4);
+        /* motes spiraling up around the player */
+        for (let i = 0; i < 18; i++) {
+          const a = S.tm * 6 + i * 0.35,
+            up = ((k * 1.5 + i / 18) % 1) * 110,
+            rr = 26 - up * 0.15;
+          c.fillStyle = `rgba(200,255,250,${0.9 - up / 130})`;
+          c.beginPath();
+          c.arc(x + Math.cos(a) * rr, y - up + Math.sin(a) * rr * 0.4, 2, 0, 6.3);
+          c.fill();
         }
       }
       const HUB_ANIM = 0.55; /* hub scenery animation speed (1 = original) */
