@@ -3828,7 +3828,6 @@
           }
           c.restore();
         }
-        if (L >= 40) c.scale(1 + 0.05 * Math.sin(t * 3), 1 + 0.05 * Math.sin(t * 3)); /* 40+: gentle heartbeat */
         if (L >= 20) {
           /* 20+: a dashed ring turning around the badge */
           c.save();
@@ -3843,7 +3842,7 @@
           c.restore();
         }
         c.shadowColor = lc;
-        c.shadowBlur = L >= 10 ? 10 + 4 * Math.sin(t * 4) : 4; /* 10+: breathing glow */
+        c.shadowBlur = L >= 40 ? 13 + 7 * Math.sin(t * 3) : L >= 10 ? 10 + 4 * Math.sin(t * 4) : 4; /* 10+: breathing glow, 40+: stronger heartbeat glow (no scaling: scaled text jitters) */
         c.fillStyle = "#0b1218";
         c.strokeStyle = lc;
         c.lineWidth = 2;
