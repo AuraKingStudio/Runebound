@@ -3413,11 +3413,11 @@
       /* the hub is a floating island. Its round edge curves across the top-right; beyond it we look down
          onto a fantasy skyscape: a sea of clouds, floating islands, a crystal citadel and mountains on the horizon.
          EDGE = the jagged rim of the island, following a big ellipse around the hub. */
-      const ISLE = { x: 470, y: 330, rx: 420, ry: 290 };
+      const ISLE = { x: 470, y: 360, rx: 400, ry: 275 };
       /* edgeY(x): y of the island's rim. Right of the top it follows the round curve down the right side;
          to the left it keeps going along the top of the screen, rising gently toward the top-left corner. */
       function edgeY(x) {
-        if (x < ISLE.x) return ISLE.y - ISLE.ry - (ISLE.x - x) * 0.045;
+        if (x < ISLE.x) return ISLE.y - ISLE.ry + (ISLE.x - x) * 0.05; /* left of the top: dips gently toward the waterfall corner */
         const k = (x - ISLE.x) / ISLE.rx;
         return ISLE.y - ISLE.ry * Math.sqrt(Math.max(0, 1 - k * k));
       }
@@ -3629,63 +3629,100 @@
       /* skyClouds(t): a few soft clouds drifting slowly across the open sky, and birds far away */
       /* floatIsle(x, y, s, k): a small floating island at scale s: grassy top, a tree or two, a rocky underside, maybe a waterfall */
       function floatIsle(x, y, s, k) {
-        c.fillStyle = "#8a7a6a";
+        const r = rng(500 + k),
+          bloom = k % 2 == 0;
+        /* soft shadow glow below so it reads as floating */
+        const sg = c.createRadialGradient(x, y + 34 * s, 1, x, y + 34 * s, 22 * s);
+        sg.addColorStop(0, "rgba(120,140,170,.18)");
+        sg.addColorStop(1, "rgba(120,140,170,0)");
+        c.fillStyle = sg;
+        c.fillRect(x - 22 * s, y + 12 * s, 44 * s, 44 * s);
+        /* rocky underside: layered, lit on the left, shaded on the right, tapering to a point */
+        const tip = [x + (r() - 0.5) * 6 * s, y + 34 * s];
+        c.fillStyle = "#9a8670";
         c.beginPath();
-        c.moveTo(x - 20 * s, y);
-        c.lineTo(x - 8 * s, y + 16 * s);
-        c.lineTo(x, y + 28 * s);
-        c.lineTo(x + 7 * s, y + 15 * s);
-        c.lineTo(x + 20 * s, y);
+        c.moveTo(x - 22 * s, y);
+        c.lineTo(x - 15 * s, y + 12 * s);
+        c.lineTo(x - 7 * s, y + 22 * s);
+        c.lineTo(tip[0], tip[1]);
+        c.lineTo(x + 9 * s, y + 18 * s);
+        c.lineTo(x + 18 * s, y + 8 * s);
+        c.lineTo(x + 22 * s, y);
         c.closePath();
         c.fill();
-        c.fillStyle = "#6f6152";
+        c.fillStyle = "#7b6956";
         c.beginPath();
-        c.moveTo(x, y + 28 * s);
-        c.lineTo(x + 7 * s, y + 15 * s);
-        c.lineTo(x + 20 * s, y);
-        c.lineTo(x + 4 * s, y + 4 * s);
+        c.moveTo(tip[0], tip[1]);
+        c.lineTo(x + 9 * s, y + 18 * s);
+        c.lineTo(x + 18 * s, y + 8 * s);
+        c.lineTo(x + 22 * s, y);
+        c.lineTo(x + 3 * s, y + 3 * s);
         c.closePath();
         c.fill();
-        c.fillStyle = "#7fbf5a";
+        c.strokeStyle = "rgba(255,235,210,.25)";
+        c.lineWidth = Math.max(0.6, s);
+        for (const yy of [7, 14]) {
+          c.beginPath();
+          c.moveTo(x - 18 * s, y + yy * s);
+          c.lineTo(x + 14 * s, y + (yy - 1) * s);
+          c.stroke();
+        }
+        /* hanging moss */
+        c.strokeStyle = "#6aa84a";
+        c.lineWidth = Math.max(0.6, 0.9 * s);
+        for (let i = 0; i < 4; i++) {
+          const hx = x + (-14 + i * 9) * s;
+          c.beginPath();
+          c.moveTo(hx, y + 2 * s);
+          c.lineTo(hx + 1 * s, y + (6 + r() * 7) * s);
+          c.stroke();
+        }
+        /* grassy cap with a bright edge */
+        c.fillStyle = "#6fae4a";
         c.beginPath();
-        c.ellipse(x, y, 21 * s, 5 * s, 0, 0, 6.3);
+        c.ellipse(x, y, 23 * s, 6 * s, 0, 0, 6.3);
         c.fill();
-        c.fillStyle = k % 2 ? "#4f8a3a" : "#d9779a";
+        c.fillStyle = "#8fcf63";
         c.beginPath();
-        c.arc(x - 6 * s, y - 6 * s, 6 * s, 0, 6.3);
-        c.arc(x + 4 * s, y - 8 * s, 5 * s, 0, 6.3);
+        c.ellipse(x - 2 * s, y - 1.2 * s, 20 * s, 4.2 * s, 0, 0, 6.3);
         c.fill();
+        /* a little tree (pink blossom or green) with a trunk, and a second smaller bush */
+        c.fillStyle = "#6b4a2e";
+        c.fillRect(x - 7 * s, y - 9 * s, 2.2 * s, 8 * s);
+        const pal = bloom ? ["#c86a8f", "#e98fb0", "#ffc7da"] : ["#3f7a34", "#56a046", "#86cc62"];
+        [[0, 0, 8], [-3, -2, 5.5], [-5, -3.5, 3]].forEach(([dx, dy, rr], i) => {
+          c.fillStyle = pal[i];
+          c.beginPath();
+          c.arc(x - 6 * s + dx * s, y - 13 * s + dy * s, rr * s, 0, 6.3);
+          c.fill();
+        });
+        c.fillStyle = pal[1];
+        c.beginPath();
+        c.arc(x + 8 * s, y - 3 * s, 4 * s, 0, 6.3);
+        c.fill();
+        /* tiny flowers */
+        for (let i = 0; i < 4; i++) {
+          c.fillStyle = ["#ffe27a", "#fff3f8", "#c4a8ff", "#ff9fcf"][i];
+          c.beginPath();
+          c.arc(x + (-12 + i * 7) * s, y + (r() - 0.5) * 3 * s, Math.max(0.7, 1.2 * s), 0, 6.3);
+          c.fill();
+        }
+        /* some carry a little waterfall spilling off the edge into mist */
         if (k % 3 == 0) {
-          c.fillStyle = "rgba(170,225,235,.7)";
-          c.fillRect(x + 12 * s, y + 2 * s, 2.5 * s, 22 * s);
+          const wf = c.createLinearGradient(0, y, 0, y + 30 * s);
+          wf.addColorStop(0, "rgba(150,215,225,.85)");
+          wf.addColorStop(1, "rgba(220,240,248,0)");
+          c.fillStyle = wf;
+          c.fillRect(x + 15 * s, y + 1 * s, 2.6 * s, 30 * s);
+        }
+        /* a faint glowing rune stone on the cap */
+        if (k % 4 == 1) {
+          c.fillStyle = "#7a8794";
+          c.fillRect(x + 2 * s, y - 7 * s, 3 * s, 6 * s);
+          c.fillStyle = "rgba(120,240,225,.9)";
+          c.fillRect(x + 3 * s, y - 6 * s, 1 * s, 3 * s);
         }
       }
-      /* puffCloud(x, y, sz, a, seed): one fluffy cloud made of overlapping puffs, lit from above with a soft lavender shadow below */
-      function puffCloud(x, y, sz, a, seed) {
-        const r = rng(seed),
-          puffs = [];
-        for (let i = 0; i < 6; i++) puffs.push([(i - 2.5) * sz * 0.55 + (r() - 0.5) * sz * 0.3, -Math.sin((i / 5) * Math.PI) * sz * 0.45, sz * (0.38 + r() * 0.22)]);
-        c.fillStyle = `rgba(196,200,230,${a * 0.55})`;
-        for (const [dx, dy, pr] of puffs) {
-          c.beginPath();
-          c.ellipse(x + dx, y + dy + pr * 0.25, pr * 1.15, pr * 0.8, 0, 0, 6.3);
-          c.fill();
-        }
-        c.fillStyle = `rgba(255,255,255,${a})`;
-        for (const [dx, dy, pr] of puffs) {
-          c.beginPath();
-          c.ellipse(x + dx, y + dy, pr * 1.1, pr * 0.75, 0, 0, 6.3);
-          c.fill();
-        }
-        c.fillStyle = `rgba(255,246,232,${a * 0.7})`;
-        for (const [dx, dy, pr] of puffs) {
-          c.beginPath();
-          c.ellipse(x + dx - pr * 0.2, y + dy - pr * 0.3, pr * 0.55, pr * 0.32, 0, 0, 6.3);
-          c.fill();
-        }
-      }
-      /* skyClouds(t): the living far background. Back to front: light rays, slow far clouds along the horizon,
-         rolling light on the sea of clouds, bobbing floating islands, mid clouds drifting past, distant birds. */
       function skyClouds(t) {
         c.save();
         skyClip(c);
@@ -3706,11 +3743,11 @@
         }
         c.globalCompositeOperation = "source-over";
         /* far clouds: big, faint, drifting very slowly along the horizon (they wrap around) */
-        for (let i = 0; i < 7; i++) {
-          const span = W + 240,
-            cx = ((i * 157 + t * (2 + (i % 3))) % span) - 120,
-            cy = horizonY(cx) - 6 + (i % 3) * 7;
-          puffCloud(cx, cy, 34 + (i % 3) * 10, 0.45, 300 + i);
+        for (let i = 0; i < 5; i++) {
+          const span = 420,
+            cx = ((i * 97 + t * (2 + (i % 3))) % span) + 520,
+            cy = horizonY(cx) - 8 + (i % 3) * 6;
+          puffCloud(cx, cy, 26 + (i % 3) * 8, 0.45, 300 + i);
         }
         /* rolling light drifting over the sea of clouds */
         c.globalCompositeOperation = "lighter";
@@ -3733,11 +3770,11 @@
         for (const [ix, iy, is, k] of [[660, 34, 0.45, 1], [760, 96, 0.8, 3], [880, 160, 1.1, 2], [520, 22, 0.35, 4], [860, 60, 0.55, 0], [120, 8, 0.3, 5], [880, 470, 0.9, 6]])
           floatIsle(ix + Math.sin(t * 0.2 + k) * 3, iy + Math.sin(t * 0.5 + k * 1.7) * 2.5 * is, is, k);
         /* mid clouds: closer, crisper, drifting past a little faster */
-        for (let i = 0; i < 5; i++) {
-          const span = W + 200,
-            cx = ((i * 211 + t * (6 + i)) % span) - 100,
-            cy = 60 + i * 95 + Math.sin(t * 0.3 + i) * 4;
-          puffCloud(cx, cy, 16 + (i % 3) * 6, 0.8, 400 + i);
+        for (let i = 0; i < 3; i++) {
+          const span = 360,
+            cx = ((i * 131 + t * (4 + i)) % span) + 580,
+            cy = 18 + i * 22 + Math.sin(t * 0.3 + i) * 3;
+          puffCloud(cx, cy, 12 + (i % 3) * 4, 0.75, 400 + i);
         }
         /* distant birds */
         c.strokeStyle = "rgba(60,70,90,.5)";
