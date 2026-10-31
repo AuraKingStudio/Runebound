@@ -13,7 +13,7 @@ const ctx={document:doc,window:{},innerWidth:900,innerHeight:600,performance:{no
 ctx.RBNet=fakeNet;
 ctx.window=ctx;vm.createContext(ctx);
 vm.runInContext(SRC+`
-;globalThis.devMin=devMin;globalThis.devFs=devFs;globalThis.T={V:()=>V,P:()=>P,S:()=>S,start,devAdd,devUp,devUI,devCls,devHeal,devWipe,devResetQ,devArena,devBoss,devHub,DEV,hurt,act,step,pauseGame,resumeGame,isPaused:()=>paused,QUESTS,UPG,toggleDev,buy,shopUI,qAct,togglePause,dailyCheck,saveName,lvlInfo,gainXP,lvlCol,loreReward,isUnl,tutNext,bjVal,bjDeal,bjHit,bjStand,guildFound,guildRecruit,gBonus,bountyDay,bountyAdd,bountyClaim,guildJoin,guildTab,rankPool,rankRefresh,rankSort,dm,dash,dashStep,setIn,padPoll,inMode:()=>INMODE,KEYHINT,HUBV:()=>HUBV,FURY,furyMul,arena,toArena,HUB_NPCS,BOT_NPC_LV,BARKEEP,CLASSN,SKC,PEMB,hubJoin,hubLeave,hubCount,HUB_MAX,hubVisitStep,botName,botLook,chatSend,COS,cosOwn,cosV,cosBuyGold,cosEquip,shopPay,myEmote,streamPts,crossFrame,bridgeAt,riverNear,clampW,WF,STATUE,PORTAL,SET,keyLabel,EDGE,inIsle,netReceive,netPrepareHub,netStep,netPack,netUnpack,netAudit,auditRules,goldAdd,gainXP,netStats,LEDGER:()=>LEDGER,FX:()=>FX,FT:()=>FT,shk:()=>shk,els:null};`,ctx);
+;globalThis.devMin=devMin;globalThis.devFs=devFs;globalThis.T={V:()=>V,P:()=>P,S:()=>S,start,devAdd,devUp,devUI,devCls,devHeal,devWipe,devResetQ,devArena,devBoss,devHub,DEV,hurt,act,step,pauseGame,resumeGame,isPaused:()=>paused,QUESTS,UPG,toggleDev,buy,shopUI,qAct,togglePause,dailyCheck,saveName,lvlInfo,gainXP,lvlCol,loreReward,isUnl,tutNext,bjVal,bjDeal,bjHit,bjStand,guildFound,guildRecruit,gBonus,bountyDay,bountyAdd,bountyClaim,guildJoin,guildTab,rankPool,rankRefresh,rankSort,dm,dash,dashStep,setIn,padPoll,inMode:()=>INMODE,KEYHINT,HUBV:()=>HUBV,ENGINE,cdMul,RAIDS,BOSSES,raidTeam,raidAI,partyMembers,partyAdd,partyRemove,raidUI,playerUI,partyMessage,bash,taunt,inTele,toArena,PARTY:()=>PARTY,arena,toArena,HUB_NPCS,BOT_NPC_LV,BARKEEP,CLASSN,SKC,PEMB,hubJoin,hubLeave,hubCount,HUB_MAX,hubVisitStep,botName,botLook,chatSend,COS,cosOwn,cosV,cosBuyGold,cosEquip,shopPay,myEmote,streamPts,crossFrame,bridgeAt,riverNear,clampW,WF,STATUE,PORTAL,SET,keyLabel,EDGE,inIsle,netReceive,netPrepareHub,netStep,netPack,netUnpack,netAudit,auditRules,goldAdd,gainXP,netStats,LEDGER:()=>LEDGER,FX:()=>FX,FT:()=>FT,shk:()=>shk,els:null};`,ctx);
 const T=ctx.T,BENCH_ONLY=process.argv.includes('--bench');let f=0;const ok=(c,m)=>{if(!c||!BENCH_ONLY)console.log((c?'PASS ':'FAIL ')+m);if(!c)f++};
 T.start();ok(T.S().sc=='hub','start -> hub');
 ctx.document.getElementById('dlg').hidden=true;const pausedAt=T.S().tm;T.pauseGame();T.step(.1);ok(T.isPaused()&&T.S().tm===pausedAt,'pause freezes the game');T.resumeGame();ok(!T.isPaused(),'resume re-enables play');
@@ -135,7 +135,7 @@ ok(T.EDGE.length>100&&T.inIsle(450,350,0)&&!T.inIsle(5,5,0),'hub: the island is 
 /* ---------- dash and controls ---------- */
 T.P().dcd=0;T.P().dx=1;T.P().dy=0;T.dash(T.P());ok(T.P().dcd>0,'dash: works in the hub and starts its cooldown');
 ok(T.keyLabel('Mouse0')=='MB1','controls: main attack shows as MB1');
-{const d={cls:'dps',fury:0};ok(T.furyMul(d,0)==1,'fury: none at the start of a raid');d.fury=1;ok(Math.abs(T.furyMul(d,0)-(1-T.FURY.atk))<1e-9&&T.furyMul(d,1)<1,'fury: full fury speeds up attacks and skills');ok(T.furyMul({cls:'tank',fury:1},0)==1,'fury: only the DPS has it');}
+{const d={cls:'dps',eng:1};ok(T.cdMul(d,0)==1,'engine: none at the start of a raid');d.eng=3;ok(Math.abs(T.cdMul(d,1)-1/3)<1e-9,'engine: x3 attack speed divides cooldowns by 3');ok(T.cdMul({cls:'tank',eng:3},0)==1,'engine: only the DPS has it');}
 /* ---------- hub networking authority ---------- */
 T.devHub();netClock=1000;fakePeers=['peer-one'];fakeBroadcast=[];T.netPrepareHub('host');
 T.netReceive('peer-one',{type:'join',profile:{id:'player-test1234',name:'Guest',cls:'tank',lv:3,ti:0,spd:1}});
@@ -166,6 +166,62 @@ ok(fakeBroadcast.some(x=>x.msg.type=='ack'&&x.msg.seq==51&&!x.msg.ok),'network h
 fakeBroadcast=[];T.netReceive('peer-one',{type:'emote',e:'not-an-emote',seq:52});
 ok(fakeBroadcast.some(x=>x.msg.type=='ack'&&x.msg.seq==52&&!x.msg.ok),'network hub: host rejects unknown emotes');
 fakePeers=[];T.netPrepareHub('');T.netDisconnect?.();
+/* ---------- raids: party, raid select, bosses, mechanics, role bots ----------
+   raidSim(key, setup): you on autopilot (P.auto) with bots filling the rest; runs the fight at 30 fps for up to 6 min. */
+function raidSim(key,cls,setup){
+ T.devHub();T.V().cls=cls;T.P().cls=cls;T.P().auto=true;T.PARTY().m=[];T.PARTY().lead='me';
+ T.V().up={dmg:0,vit:0,spd:0,cdr:0};T.V().sk={tank:[0,0,0],dps:[0,0,0],heal:[0,0,0]};T.V().xp=0;T.V().bl=null; /* a fresh level-1 raider */
+ T.toArena(key);setup&&setup(T.S());const S=T.S();let ticks=0,minHp=1;
+ while(!S.end&&ticks<30*360){T.step(1/30);ticks++;if(S.ps.some(p=>p.hp<=0))minHp=0;}
+ const r={key,cls,end:S.end,time:S.at,why:S.why,dead:S.ps.filter(p=>p.hp<=0).map(p=>p.cls).join(','),deaths:S.ps.filter(p=>p.hp<=0).length,size:S.ps.length,boss:S.b.def.n,brk:S.b.wk,doomed:S.b.doomed};
+ T.P().auto=false;T.S().res=0.01;T.step(0.02);return r;
+}
+{
+ T.devHub();T.P().cls='dps';
+ const tm=T.raidTeam('small').team;ok(tm.length==3&&['tank','heal','dps'].every(k=>tm.filter(m=>m.cls==k).length==1)&&tm[0].me,'raid: a small raid is you plus bots for the 2 missing roles');
+ const lg=T.raidTeam('large').team;ok(lg.length==6&&['tank','heal','dps'].every(k=>lg.filter(m=>m.cls==k).length==2),'raid: a large raid is 2 tanks, 2 healers, 2 DPS');
+ ok(T.raidTeam('epic').err&&T.RAIDS.epic.locked,'raid: the epic raid is sealed');
+ T.raidUI();const html=ctx.document.getElementById('dp').innerHTML;ok(html.includes('Hollow Seer')&&html.includes('Thornmaw')&&html.includes('class="chains"'),'raid select: small and large bosses, epic in chains');
+ const tanks=[1,2].map(i=>T.hubJoin('rbt'+i,{name:'RbTank'+i,cls:'tank',quiet:1},1));tanks.forEach(v=>T.partyAdd(v.id));
+ ok(T.raidTeam('small').err&&!T.raidTeam('large').err,'party: 2 extra tanks are too many for a small raid, fine for a large one');
+ tanks.forEach(v=>T.partyRemove(v.id));ok(T.PARTY().m.length==0,'party: members can be removed');
+ const bot=T.hubJoin('rbh1',{name:'RbHeal',cls:'heal',quiet:1},1);T.playerUI(bot);ok(ctx.document.getElementById('dp').innerHTML.includes('INVITE TO PARTY'),'party: walking up to a player shows class, level, cosmetics and an invite');
+ T.partyAdd(bot.id);const pm=T.partyMembers();ok(pm.length==2&&pm[1].name==bot.name&&pm[1].cls==bot.cls,'party: a party member joins your raid team');
+ T.partyRemove(bot.id);
+}
+{
+ T.devHub();T.toArena('small');const b=T.S().b,tank=T.S().ps.find(p=>p.cls=='tank');
+ T.taunt(tank);ok(b.tt>0&&b.tg==tank.id,'tank: Taunt holds the boss');
+ b.weak=3;tank.x=b.x;tank.y=b.y+30;T.bash(tank);ok(b.brk>0&&b.stun>=4&&b.weak==0,'tank: Shield Bash in the weak window breaks poise (+50% damage)');
+ ok(T.inTele({x:100,y:0},{ln:1,x:0,y:0,a:0,len:200,w:40})&&!T.inTele({x:100,y:40},{ln:1,x:0,y:0,a:0,len:200,w:40}),'boss: line telegraphs hit only inside the lane');
+ T.S().res=0.01;T.step(0.02);
+}
+{
+ const s=raidSim('small','dps');console.log('RAID small (you dps)',JSON.stringify(s));
+ ok(s.end=='win'&&s.time>=90&&s.time<=240,`raid: bots + you win the small raid in 1.5-4 min (${s.end} in ${Math.round(s.time)} s)`);
+ ok(s.brk==2&&s.doomed,'raid: the fight used both poise windows and the Doom');
+ const t=raidSim('small','tank');console.log('RAID small (you tank)',JSON.stringify(t));
+ ok(t.end=='win','raid: also won with you as the tank');
+ const l=raidSim('large','heal');console.log('RAID large (you heal)',JSON.stringify(l));
+ ok(l.end=='win'&&l.size==6&&l.time<=270,`raid: the large raid (6) is won by a full role team (${l.end} in ${Math.round(l.time)} s)`);
+ const nt=raidSim('small','dps',S=>S.ps.forEach(p=>{if(p.cls=='tank')p.noTaunt=true;}));console.log('RAID small no taunt',JSON.stringify(nt));
+ ok(nt.end=='lose'||nt.deaths>=1,'raid: without Taunt the boss eats the healer and DPS');
+ const nd=raidSim('small','dps',S=>{S.b.hp=S.b.mh*0.61;S.ps.forEach(p=>{if(p.cls=='heal')p.ai_ignoreDoom=true;});});
+ ok(nd.end=='lose'&&/Doom/.test(nd.why),'raid: an uncleansed Doom wipes the whole party');
+}
+/* ---------- party messages between real players go through the master ---------- */
+{
+ T.devHub();netClock+=1000;fakePeers=['peer-a','peer-b'];fakeBroadcast=[];T.netPrepareHub('host');T.PARTY().m=[];T.PARTY().lead='me';
+ const prof=(n)=>({id:'player-party'+n+'x',name:'Pa'+n,cls:'dps',lv:2,ti:0,spd:1});
+ T.netReceive('peer-a',{type:'join',profile:prof(1),x:400,y:420});T.netReceive('peer-b',{type:'join',profile:prof(2),x:420,y:420});fakeBroadcast=[];
+ T.netReceive('peer-a',{type:'pi',to:'player-party2x',cls:'dps',lv:2});
+ const fw=fakeBroadcast.find(x=>x.id=='peer-b'&&x.msg.type=='pi');ok(fw&&fw.msg.from=='player-party1x'&&!('to' in fw.msg),'party: the master forwards an invite and stamps who sent it');
+ fakeBroadcast=[];for(let i=0;i<10;i++)T.netReceive('peer-a',{type:'pi',to:'player-party2x'});ok(fakeBroadcast.filter(x=>x.msg.type=='pi').length<=6,'party: invite spam is capped');
+ /* guest side: an invite opens a prompt; the leader's list makes you a member; an empty list removes you */
+ fakePeers=['host-peer'];T.netPrepareHub('guest');T.PARTY().m=[];T.PARTY().lead='me';
+ T.netReceive('host-peer',{type:'r',p:[[0,'host-player','Boss','tank',9,0,1],[1,'player-party3x','Pb3','heal',4,0,1]]});
+ T.partyMessage('player-party3x',{type:'pi'});ok(ctx.document.getElementById('dp').innerHTML.includes('ACCEPT'),'party: an invite from a real player asks you to accept');
+}
 /* ---------- player details travel once: full list to a newcomer, small join/leave/update messages to the rest ---------- */
 {
  T.devHub();netClock+=1000;fakePeers=['peer-a','peer-b'];fakeBroadcast=[];T.netPrepareHub('host');
@@ -466,8 +522,20 @@ const BASE_CHECKS=(r)=>[...(r.players<=12?[[r.cpuMs*PHONE_SLOWDOWN<=PHONE_CPU_MS
 /* sizes the game uses: small raid 3, large raid 6, hub and epic raid 12 (the most it will ever need) */
 const SIZES=[3,6,12];
 const QUICK=[['idle',[12]],['walk',SIZES],['crowd',[12]],['dash',[6]],['cheat',[12]],['flood',[12]],['econ',[12]],['hphack',[12]],['chat',[12]],['churn',[12]],['audit',[6]]];
+/* npm run bench -- --raids=5 : every raid with you in each role, N runs each (fight balance: win rate, time, deaths) */
+function raidBench(n){
+ const rows=[];
+ for(const key of ['small','large'])for(const cls of ['tank','heal','dps']){
+  const runs=Array.from({length:n},()=>raidSim(key,cls)),wins=runs.filter(r=>r.end=='win'),avg=(f,rs)=>rs.length?Math.round(rs.reduce((a,r)=>a+r[f],0)/rs.length):0;
+  rows.push({raid:key,you:cls,runs:n,'win %':Math.round(wins.length/n*100),'avg win s':avg('time',wins),'min s':wins.length?Math.round(Math.min(...wins.map(r=>r.time))):0,'max s':wins.length?Math.round(Math.max(...wins.map(r=>r.time))):0,'avg deaths':+(runs.reduce((a,r)=>a+r.deaths,0)/n).toFixed(1),'who died':[...new Set(runs.flatMap(r=>r.dead?r.dead.split(','):[]))].join(','),losses:runs.filter(r=>r.end!='win').map(r=>r.why||r.end).join('; ')});
+ }
+ const nt=Array.from({length:n},()=>raidSim('small','dps',S=>S.ps.forEach(p=>{if(p.cls=='tank')p.noTaunt=true;})));
+ rows.push({raid:'small',you:'dps','note':'tank never taunts',runs:n,'win %':Math.round(nt.filter(r=>r.end=='win').length/n*100),'avg deaths':+(nt.reduce((a,r)=>a+r.deaths,0)/n).toFixed(1),'who died':[...new Set(nt.flatMap(r=>r.dead?r.dead.split(','):[]))].join(','),losses:nt.filter(r=>r.end!='win').map(r=>r.why).join('; ')});
+ console.table(rows);return rows;
+}
 async function benchTests(){
  const arg=(name)=>(process.argv.find(a=>a.startsWith('--'+name+'='))||'').split('=')[1];
+ if(process.argv.some(a=>a.startsWith('--raids')))return raidBench(Number(arg('raids')||3));
  const names=arg('scenario')?arg('scenario').split(','):BENCH_ONLY?Object.keys(SCENARIOS):null;
  const sizes=arg('players')?arg('players').split(',').map(Number):SIZES,seconds=Number(arg('seconds')||(BENCH_ONLY?5:2));
  const plan=names?names.flatMap(n=>sizes.map(p=>[n,p])):QUICK.flatMap(([n,ps])=>ps.map(p=>[n,p]));

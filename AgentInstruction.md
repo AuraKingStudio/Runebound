@@ -19,7 +19,7 @@ Runebound is a browser-only (.io-style web) action game with a sky-island hub (N
 |---|---|
 | `index.html` | The whole browser game: CSS, embedded art, game logic, WebRTC transport, hub networking. Keep browser code here. |
 | `src/app.js` | The only Node file: the hub directory service (`npm run signaling`); tests `require` it for `createDirectoryServer`. |
-| `src/test.js` | Tests for game, networking, anti-cheat, transport, directory, rate limit + scenario benchmark (`npm test`, `npm run bench`). Parses the `<script>` block of `index.html`. |
+| `src/test.js` | Tests for game, raids, party, networking, anti-cheat, transport, directory, rate limit + scenario benchmark (`npm test`, `npm run bench`, `npm run bench -- --raids=N`). Parses the `<script>` block of `index.html`. |
 | `assets/icon.png` | Tab icon. One of only two allowed image files (with the embedded arena background). Code lives in `src/`. |
 | `package.json` | Scripts only: `npm test`, `npm run bench`, `npm run dev` (live-server on 8080), `npm run signaling`. Only dev dependency: live-server. |
 | `.nojekyll` | Makes GitHub Pages serve files as-is. |
@@ -62,9 +62,43 @@ Small raid 3, large raid 6, hub and epic raid **12** (the most the game will eve
 
 ## Latest (2026-10-31)
 
-- Done: this file renamed from `copilot_recap.md`, owner's pre-push rules added at the top; the unused embedded tank image removed (images now: icon + arena background only).
-- Upcoming: raid combat networking (3/6/12, hitscan, hitboxes) with benchmark scenarios; real-browser and real-phone tests.
-- Concerns: netcode changes since the last real-browser test are covered only by the simulated benchmark.
+**Done: raids, party, bosses**
+- **Party (hub):**
+  - Walk up to any player (bot or real) → `playerUI`: class, level, title, ring and badge, Invite/Remove. `👥 Party` HUD button → `partyUI`; max 6.
+  - Bots answer invites themselves (~85% yes) and stay in the hub while partied.
+  - Real players go through the master: `pi` invite, `pa` answer, `pp` leader's member list, `pl` leave, `pg` raid start. The master stamps `from`, caps size at 1.5 KB and 6 messages/s per sender (strike).
+- **Raid select (Rune Crossing) → `raidUI`:**
+  - Small (3: 1/1/1), Large (6: 2/2/2), Epic (12: 4/4/4) sealed with code-drawn chains.
+  - The leader starts it; missing roles are filled by `raidLook` bots about your level; too many of one class blocks the start.
+- **Fight (`arena`), works for any team size:**
+  - Boss target: the taunting tank while Taunt holds (8 s, cooldown 8 s). Otherwise the healer/DPS with the most threat, plus an unavoidable Seeker Bolt every 2 s (1.6 s in phase 2), and a Lunge on anyone kiting out of reach.
+  - Tanks take 40% of boss blows.
+  - Poise windows at 75% and 35% HP (5 s): Shield Bash breaks poise (stun 4 s, +50% party damage 8 s); a missed window enrages the boss (+30% for 8 s).
+  - Doom at 60%, once, on a healer: touch 3 runes within 12 s or the whole party is wiped.
+  - Phase 2 at 50%.
+- **Bosses (`BOSSES`, drawn in code):**
+  - The Hollow Seer (small, 17k HP): Rune Slam, Hex, plus Void Rain in phase 2.
+  - Thornmaw Colossus (large, 34k HP, horns, cleave): Earthsplitter (line), Thorn Nova, plus Rampage charge in phase 2.
+- **DPS Engine** (replaces Fury): speed ×(1 + seconds alive / 60); cooldowns ÷ that; Heavy Shot and Rapid Fire damage × that.
+- **Healer:** Heal 55, cooldown 5 s; the circle lands on the most hurt ally.
+- **Bot AI (`raidAI`):** dodges telegraphs (dash at the last moment); the tank keeps Taunt rolling and saves Shield Bash for poise windows; the healer heals, drops circles and runs the Doom runes; the DPS fires on cooldown. `P.auto` = autopilot for tests/bench.
+- **Other:**
+  - Rewards: the large raid pays 1.5× (audit raid cap raised to match).
+  - Quests: "First Raid" (win any), "Colossus Slayer" (win a large raid).
+  - Class texts updated. Herald shows "Fastest raid win".
+- **Tests:** comps, sealed epic, raid UI, party add/remove/inspect, invite relay and spam cap, invite prompt, Taunt, poise break, line hit test, Engine, full sims (win in 1.5–4 min, both windows and the Doom happen, no-Taunt fails, uncleansed Doom wipes).
+- **Bench:** `npm run bench -- --raids=N` → win %, time, deaths and who died per raid × your role, plus a no-Taunt row. Last run (N=4): every raid/role 100% at ~140 s with 0 deaths; no Taunt 0% (party wiped by ~47 s).
+
+**Upcoming**
+- Networked co-op raids: today each party member's screen runs the fight with the others played by the AI (`pg` starts everyone at once). Next: the master runs the raid and sends the state, with hits and boss events riding in the 10/s position message; add matching bench scenarios and the phone budget.
+- Epic raid (12) content; the hub's real-player party test in 2 browsers.
+
+**Concerns**
+- Bot teams never die with Taunt held; humans will, but difficulty for real players is untested.
+- Lore tales and tips still talk about the Rune Warden and its old moves.
+- While a guest is in a raid, it stops sending hub positions (others see it frozen).
+- Party messages and raid UI are unit-tested, not tested with 2 real browsers yet.
+- Earlier concerns still stand: no real-browser or phone test of the newer netcode.
 
 ## Verified (2026-10-31)
 
@@ -125,7 +159,7 @@ Built and tested (unit tests plus the `cheat`, `flood`, `econ`, `hphack`, `chat`
 ## Not done / open
 
 - Host migration and reconnect: a hub dies when its host leaves.
-- Raid sync is disabled. Next agreed step: raid combat networking for 3/6/12 players (movement, hitscan, hitboxes), with hit events riding in the same tick message as positions, measured with new benchmark scenarios and the phone budget.
+- Raid co-op is not networked yet (each screen runs the fight; see Latest). Next: master-run raids for 3/6/12 players (movement, hitscan, hitboxes) with hit events in the same tick message as positions, measured with bench scenarios and the phone budget.
 - Not tested on a real phone as master; the 5× phone slowdown is an estimate. On phones the browser pauses when the screen locks or the app is switched, so a phone master needs host migration.
 - Accounts, PC > console > phone host preference (must be measured or opt-in, not trusted), TURN relay.
 - Public hosting: GitHub Pages can't run `src/app.js`. A stable Cloudflare named tunnel or server is needed; Quick Tunnel URLs expire. `cloudflared` is installed at `%LOCALAPPDATA%\Runebound\cloudflared\cloudflared.exe`.
