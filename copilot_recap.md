@@ -12,25 +12,35 @@ Runebound is a browser-only (.io-style web) action game with a sky-island hub (N
 |---|---|
 | `index.html` | The whole browser game: CSS, embedded art, game logic, WebRTC transport, hub networking. Keep browser code here. |
 | `src/app.js` | The only Node file: the hub directory service (`npm run signaling`); tests `require` it for `createDirectoryServer`. |
-| `src/test.js` | Tests for game, networking authority, transport, directory, rate limit + load benchmark (`npm test`). Parses the `<script>` block of `index.html`. |
+| `src/test.js` | Tests for game, networking, anti-cheat, transport, directory, rate limit + scenario benchmark (`npm test`, `npm run bench`). Parses the `<script>` block of `index.html`. |
 | `assets/icon.png` | Tab icon. Images belong in `assets/`, code in `src/`. |
-| `package.json` | Scripts only: `npm test`, `npm run dev` (live-server on 8080), `npm run signaling`. Only dev dependency: live-server. |
+| `package.json` | Scripts only: `npm test`, `npm run bench`, `npm run dev` (live-server on 8080), `npm run signaling`. Only dev dependency: live-server. |
 | `.nojekyll` | Makes GitHub Pages serve files as-is. |
 
 Removed in this pass as unused: `tools/board.js`, `version.json` (plus the in-game dev board and update banner), `ads-config.js`, `privacy.html`, `banner.png`, `icon.svg`, the old copy-paste invite-code transport, and the old `main.js`, `signaling-server.js` and `test/dev.test.js`, which were merged into `src/`. Electron and the Windows .exe build (`build-exe.bat`, electron and electron-builder) were removed: it's a web-only game.
 
+## Group sizes (owner)
+
+Small raid 3, large raid 6, hub and epic raid **12** (the most the game will ever need; 3 or 6 by default). The game must run perfectly for 12 players with a **phone** as master. `HUB_MAX = 12` in `index.html`, `MAX_PLAYERS_PER_HUB = 12` in `src/app.js`.
+
 ## Multiplayer hub (pilot)
 
-- **Seat assignment:** after the name is set, the game asks the directory for a seat. It gets the first hub with an open seat, up to 10 hubs × 10 players. The first player in an empty hub hosts; player 11 opens Hub 2. No join/create buttons.
-- **Badge:** shows the hub number, why that hub was chosen, and the state: assigned → connecting → connected → synced, or hosting N/10.
+- **Seat assignment:** after the name is set, the game asks the directory for a seat. It gets the first hub with an open seat, up to 10 hubs × 12 players. The first player in an empty hub hosts; player 13 opens Hub 2. No join/create buttons.
+- **Badge:** shows the hub number, why that hub was chosen, and the state: assigned → connecting → connected → synced, or hosting N/12.
 - **Authority split (owner's rule):** clients do everything they safely can and show it immediately. The host ("master") checks only the cheat-sensitive parts and answers with a confirmation or a correction.
   - **Movement:** the guest moves locally and sends its position. The host clamps steps faster than class speed × speed bonus × 1.35, plus dash distance on cooldown. On a clamp it sends a correction `c` with the move's sequence number; the guest shifts by the error and keeps the steps walked since.
   - **Chat and emotes:** shown at once, then sent as a query with a sequence number. The host rate-limits (chat 0.7 s, emote 1 s) and validates. It relays to the other players and acks, or rejects, which undoes the sender's bubble.
-- **Lightweight wire format (owner's rule: many clients per host):**
-  - `r` roster `[slot, id, name, cls, lv, title, spd]`, sent only on join or leave.
-  - `s` state: a flat list of `[slot, x, y, facing 0-3]` whole numbers, only for players who moved, 10 times a second, plus a full refresh once a second.
-  - Guest `m` `{x, y, f, d, s}` at most 15 times a second while moving and once a second while still. Chat, emote and ack messages are rare.
-- **Smoothing:** remote players are drawn 150 ms behind from a buffer of updates and smoothed. Teleports over 160 px snap, no coasting after a stop, and no slow start after standing still.
+- **Lightweight wire format (owner's rule: keep it light; player details sent once):**
+  - **Player details travel once per receiver.** Entry `[slot, id, name, cls, lv, title, spd]`; slot 0 is the master.
+    - A newcomer gets the full list `r` once, with the master first and itself last. Everyone else gets only the newcomer's entry `j` (~58 B).
+    - Leaving is `l` + slot (18 B). A level or speed change is `u` [slot, lv, spd]. With nobody joining or leaving, no player details are sent.
+  - **Positions `s`, one message per guest:**
+    - A packed string, base-91 digits. A moved player is a 4-char delta (code = 4096 + slot*4 + facing, then dx+45, dy+45), or a 6-char absolute position when it moved more than 45 px (`netPack`/`netUnpack`).
+    - Only players who moved are sent, never the receiver itself. Players farther than 320 px go at most every 3 intervals.
+    - Everyone gets everything (absolute) once a second.
+    - The rate is 10/s up to 20 players, easing to 4/s at 100 (`netStateMs`).
+  - Guest `m` `{x, y, f, d, s}` at most 15 times a second while moving and once a second while still. Chat, emote, ack, fair-play and correction messages are rare.
+- **Smoothing:** each remote player is drawn behind by ~1.4× its own update interval (min 150 ms, max 600) from a buffer of updates, then smoothed. Teleports over 160 px snap, no coasting past a stop, no slow start after standing still.
 - **Robustness:**
   - Networking runs on a 50 ms timer, not the render loop, so a paused or background host keeps relaying.
   - A guest that isn't connected after 30 s gives up its seat and retries.
@@ -45,38 +55,29 @@ Removed in this pass as unused: `tools/board.js`, `version.json` (plus the in-ga
 
 ## Verified (2026-10-31)
 
-- `npm test` passes (game, network, directory, rate-limit and benchmark checks); `node --check` on both src files and `git diff --check` are clean.
+- `npm test` passes (game, network, anti-cheat, roster, directory, rate-limit and benchmark checks); `node --check` on both src files and `git diff --check` are clean.
 - A two- and three-browser test drove headless Chrome over DevTools against the real directory and WebRTC:
   - Passed: host and guest in Hub 1, synced, see each other, no bots.
   - Passed: chat between three players in every direction; spam rejected and withdrawn.
   - Passed: capacity overflow to Hub 2; leaving frees the seat.
   - With the earlier (uncompressed) protocol, guest and host movement matched within 20 px.
-- After the compact protocol and join-position fix, browser movement was **not** rerun. The automated runs failed because simulated keys didn't reach the background browsers, and the fix rerun was interrupted. The owner tested with two real windows on the earlier protocol and said it "works really good".
+- After the compact protocol, anti-cheat, deltas and send-once roster, real browsers were **not** rerun. The automated runs failed because simulated keys didn't reach the background browsers, and the fix rerun was interrupted. The owner tested with two real windows on the earlier protocol and said it "works really good".
 
 ## Networking benchmark (scenarios)
 
-The benchmark lives in `src/test.js`. `npm test` runs a quick set; `npm run bench` runs every scenario at 10/20/100 players and prints a table. Pick your own with `npm run bench -- --scenario=cheat,chat --players=10,20 --seconds=5`.
+The benchmark lives in `src/test.js`. `npm test` runs a quick set. `npm run bench` runs every scenario at 3/6/12 players and prints a table; pick your own with `npm run bench -- --scenario=cheat,chat --players=3,12 --seconds=5`. `--json=file` saves the rows, including `upByType`: host upload per message type (bytes/s, messages/s, average size).
 
-- Each run uses the real host code (the game script in a VM with a fake network) and N-1 simulated guests that follow the real client's sending rules.
+- Each run uses the real host code (the game script in a VM with a fake network) and N-1 simulated guests that follow the real client's sending rules and answer fair-play checks.
 - CPU is the host's networking JS only. "wire" columns add ~60 B/message of WebRTC overhead.
-- Scenarios: `idle`, `walk`, `crowd` (30% walking), `dash` (legal dashes), `cheat` (every 5th guest speed-hacks), `chat` (plus one spammer), `churn` (a leave and a join every 0.5 s).
-- Each scenario has its own checks, plus shared ones: every player seated, compact state, light CPU.
-- To add one: an entry in `SCENARIOS` with `about`, `guest(g, k)` (return the message a guest sends this tick, or null) and `checks(r)`.
+- Scenarios: `idle`, `walk`, `crowd` (30% walking), `dash` (legal dashes), `cheat` (speed hack), `flood` (speed hack by many tiny moves), `econ` (legal earning/spending plus gold editors), `hphack`, `chat` (plus a spam bot), `churn` (a leave and a join every 0.5 s), `audit` (slaves catch a master with edited gold).
+- **Shared checks:**
+  - seats match who is still in; no honest player is removed; every cheater is removed; state stays compact; host CPU stays light;
+  - **phone master** (12 players or fewer): CPU × 5 (estimated phone slowdown) ≤ 50 ms/s, and wire upload ≤ 0.5 Mbit/s.
+- **To add one:** an entry in `SCENARIOS` with `about`, `guest(g, k)` (return the message a guest sends this tick, or null) and `checks(r)`. Optional: `cheater(i)`, `stats(g, k, snap)`, `seconds`.
 
-Results (3 s runs, this PC):
+Master upload at 12 players, everyone walking (20 s run, this PC): **5.4 KB/s payload, ~11 KB/s on the wire (0.09 Mbit/s)**. That's positions 5.4 KB/s (91 msg/s, ~60 B each: 19 B wrapper + 4 B per moved player), fair-play questions 36 B/s, corrections 21 B/s, and **no** player-detail traffic. CPU is ~4.4 ms/s (phone estimate ~22 of 50). 3 players: 1.3 KB/s wire; 6 players: 4 KB/s wire. WebRTC packaging (~60 B per message) is about half of the wire bytes, so raid combat events should ride in the same 10/s message as positions.
 
-| Scenario | 10 players: CPU / host upload | 20 players | 100 players |
-|---|---|---|---|
-| idle | 1.8 ms/s / 1.2 KB/s | 1.8 / 5 KB/s | 6.5 / 127 KB/s |
-| walk | 3.2 / 9 KB/s | 6.2 / 38 KB/s | 29 / ~1 MB/s |
-| crowd | 1.9 / 4.5 KB/s | 3.4 / 17 KB/s | 14 / 398 KB/s |
-| chat | 3.0 / 13 KB/s | 6.0 / 55 KB/s | 30 / 1.5 MB/s |
-| churn | 3.2 / 21 KB/s | 6.6 / 90 KB/s | 30 / **2.4 MB/s** |
-
-- Speed hacks were corrected 100% of the time (90/90, 166/166, 587/587). Honest players are corrected in under 1% of moves.
-- Findings to optimise next:
-  1. Every join or leave resends the whole roster to everyone, with full 50+ character player ids. That is why `churn` costs more than `walk`. Send join/leave deltas instead.
-  2. Host upload grows with players², so hubs of 100 need a server or relay, not a player's PC.
+What the benchmark found and fixed, at 20 players walking: 70.5 -> 48 (roster at most once a second) -> 26.2 (packed positions, per-player sending, no self echo) -> 21.9 KB/s (deltas). After that, player details became send-once. At 100 players, idle went from 4.5 MB/s to 266 KB/s, but 100 is no longer a target.
 
 ## Cloudflare / public hosting status
 
@@ -84,28 +85,40 @@ Results (3 s runs, this PC):
 - The directory is ready to sit behind a tunnel. Run with `TRUST_CLOUDFLARE=1` so the per-player rate limit (3000 requests/min) uses `cf-connecting-ip`. That header is trusted only for requests arriving from localhost, i.e. the connector. Without this, all players behind the tunnel would share one limit. Set `ALLOWED_ORIGINS` to the game origin.
 - Existing protections: CORS origin allowlist, 16 KB request bodies, SDP size and type checks, 48-character random session tokens with a 30 s expiry, per-IP rate limit with a pruned table, hub/seat caps. Not done: Cloudflare WAF/rate rules, bot protection (Turnstile), TURN relay.
 
-## In progress: anti-cheat (master audits slaves, slaves audit master)
+## Anti-cheat ("fair play"): master audits slaves, slaves audit the master
 
-Agreed with the owner, not built yet:
-- **Economy ledger:** every gold/XP/upgrade change goes through `goldAdd`/`gainXP` and is logged as `[kind, gold, xp, upgrade]`. The master randomly asks each slave for a snapshot (gold, XP, upgrade levels, blessing, HP/max HP, ledger since the last one). It checks the snapshot with a pure `netAudit()`:
+Built and tested (unit tests plus the `cheat`, `flood`, `econ`, `hphack`, `chat` and `audit` benchmark scenarios). No honest player was removed in runs at 3, 6, 10, 12 and 20 players; every cheater was.
+
+- **Ledger:** every gold/XP/upgrade change goes through `goldAdd(n, kind)`, `gainXP(n, why)` or `ledger()`, as `[kind, gold, xp, upgradeKey?]`. The only direct `V.gold -=` left is `buy()`, which records its own `upgrade` entry. Every auditor (`NET_AUDIT_CURSOR`) gets each entry once.
+- **Audits (`q`/`a`):** at random 3–8 s intervals each side asks for a snapshot (gold, XP, upgrades, blessing, class, HP/max HP, new ledger entries). `netAudit(prev, snap, windowMs)` is pure and checks:
   - gold and XP add up;
-  - each entry is within the game's own reward tables (raid, daily, lore, bounty, quest, blackjack payout ≤ 2.5× bet);
-  - spends are negative only, and upgrades only rise with a matching spend or lore reward;
-  - max HP and speed match the upgrades, and level matches XP.
-- **Movement:** a refilling movement budget per player (closes the "many tiny moves" loophole), drop old or replayed sequence numbers, strike points that fade over time, kick on repeated violations.
-- **Slaves check the master:** ignore impossible corrections, speed-check the positions the host reports, audit the host's own stats, and report a cheating host to the directory with `/api/report`. When half a hub's guests report, the directory stops sending new players there.
-- **Dev tools (F2, `?dev`, triple-tap the gold coin) stay for now (owner).** Their changes are labelled `dev` in the record; while testing they're allowed but flagged (`AUDIT_ALLOW_DEV`).
-- HP and gold live in the player's own browser save. This makes Cheat Engine edits detectable while online, not impossible; that would need a server that owns the economy.
+  - rewards are within the game's own tables (`auditRules()` reads DAILY, TALE_MS, BOUNTIES, QUESTS, guild and pass bonuses) and not more frequent than possible;
+  - blackjack pays at most 2.5× a real bet; spends never give gold;
+  - upgrades only rise when paid for, or from a lore reward;
+  - max HP matches the Stoneheart level (×1.3 with Blessing of Stone), and HP ≤ max;
+  - the snapshot is well-formed.
+
+  The master uses audited speed upgrades, blessing and level instead of what the slave claimed at join.
+- **Strike points:** an audit failure is 8 (two failed audits in a row remove the player outright), no answer within 5 s is 4, a speed-limited move is 1, chat spam is 1. They fade 1 point per 2 s; 12 means removal. The master sends `k`, calls `/api/kick` to free the seat, and disconnects. A slave at 12 against its master warns the player and calls `/api/report` once.
+- **Movement:** one refilling budget per player: 1.3× class speed × audited speed upgrade, holding at most 0.5 s of walking, plus dash distance when off cooldown. Sending many tiny moves buys nothing. Move sequence numbers must increase.
+- **Slaves check the master:**
+  - corrections must belong to a move they sent and stay within 260 px of it;
+  - every position the master reports (itself included) is speed-checked against roster class and speed;
+  - the master's own stats are audited the same way.
+- **Directory:** `/api/report` (guests only). When half the guests have reported, the hub is `flagged` and gets no new players (shown in `/api/hubs`). `/api/kick` lets the host free a guest's seat.
+- **F2 dev tools stay (owner's choice):** their edits are recorded as `dev`. They're allowed and flagged while `AUDIT_ALLOW_DEV = true`; set it false before release.
+- **Limits, stated honestly:** this is detection during online play, not prevention. The browser owns the save, so a skilled cheater can forge a consistent ledger within the reward limits; only a server-owned economy stops that. HP in raids isn't networked yet. A master and slave cheating together are only caught by the other slaves. Not yet tested in real browsers.
 
 ## Not done / open
 
 - Host migration and reconnect: a hub dies when its host leaves.
-- Raid sync is disabled.
+- Raid sync is disabled. Next agreed step: raid combat networking for 3/6/12 players (movement, hitscan, hitboxes), with hit events riding in the same tick message as positions, measured with new benchmark scenarios and the phone budget.
+- Not tested on a real phone as master; the 5× phone slowdown is an estimate. On phones the browser pauses when the screen locks or the app is switched, so a phone master needs host migration.
 - Accounts, PC > console > phone host preference (must be measured or opt-in, not trusted), TURN relay.
 - Public hosting: GitHub Pages can't run `src/app.js`. A stable Cloudflare named tunnel or server is needed; Quick Tunnel URLs expire. `cloudflared` is installed at `%LOCALAPPDATA%\Runebound\cloudflared\cloudflared.exe`.
-- A player-controlled host can still cheat. Don't claim robust anti-cheat or 100-player scale (no benchmark exists).
+- A player-controlled host can still cheat. Don't claim robust anti-cheat or real-network scale; the benchmark is a simulation.
 - Older owner reports still open: pause softlock; guild kick/disband.
-- Dev tools (F2, `?dev`, triple-tap) still ship in the normal build.
+- Dev tools (F2, `?dev`, triple-tap) still ship in the normal build (owner's choice for now).
 
 ## Rules for agents
 

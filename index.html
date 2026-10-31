@@ -1466,6 +1466,7 @@
       function gainXP(n, why) {
         const before = lvlInfo().L;
         V.xp = (V.xp || 0) + n;
+        ledger(why || "xp", 0, n);
         save();
         if (P) ftxt(P.x, P.y - 44, "+" + n + " XP", "#9fe8ff");
         const after = lvlInfo().L;
@@ -1492,6 +1493,19 @@
           localStorage.setItem(SAVE_KEY, JSON.stringify(V));
         } catch (e) {}
       };
+      /* LEDGER: every gold / XP / upgrade change since the last hub audit, as [kind, gold, xp, upgradeKey?].
+         An online hub master replays it against the game's own reward tables (netAudit), so an edit of V
+         (Cheat Engine, devtools, save editing) no longer adds up. goldAdd is the only way gold changes in play. */
+      const LEDGER = [];
+      let LEDGER_BASE = 0; /* absolute index of LEDGER[0]: each auditor remembers how far it has read */
+      function ledger(kind, gold, xp, up) {
+        LEDGER.push(up ? [kind, gold, xp, up] : [kind, gold, xp]);
+        if (LEDGER.length > 300) { LEDGER.shift(); LEDGER_BASE++; }
+      }
+      function goldAdd(n, kind) {
+        V.gold = Math.max(0, (V.gold || 0) + n);
+        ledger(kind, n, 0);
+      }
       /* blessing from the Archivist (V.bl = "stone" | "swift"), lasts until the next raid ends */
       const bless = (k) => V.bl == k;
       const dm = () => 1 + 0.12 * V.up.dmg,
@@ -1609,7 +1623,7 @@
          Visitors glide toward their last reported spot (tx, ty), so ~10 updates a second still look smooth.
          Bots top the hub up to HUB_MIN. When a real player joins a full hub, a bot "leaves for a raid":
          it plays the teleport animation (v.out = start time) and disconnects after TP_TIME. */
-      const HUB_MAX = 10;
+      const HUB_MAX = 12; /* hubs and epic raids: 12 players, small raid 3, large raid 6 */
       /* botName(): a handle like real players pick - gamer tags, nicknames, numbers, underscores, the odd xX..Xx */
       const NM_A = ["Shadow", "Frost", "Moon", "Ember", "Storm", "Night", "Rune", "Ash", "Iron", "Void", "Star", "Wolf", "Raven", "Blood", "Silver", "Dark", "Sun", "Mist", "Thorn", "Crimson"],
         NM_B = ["fang", "blade", "walker", "heart", "born", "bane", "fall", "whisper", "slayer", "storm", "hunter", "veil", "knight", "song", "fox", "claw"],
@@ -1699,7 +1713,10 @@
       /* wire format is kept small for many players: facing is 0-3, positions are whole pixels, players are slot numbers
          (0 = host) and names/classes travel only in the roster message when someone joins or leaves */
       const NET_F = "udlr", NET_SLOT_IDS = new Map();
-      let NET_FULL_AT = 0, NET_SENT_KEY = "", NET_HOST_SENT = "";
+      let NET_FULL_AT = 0, NET_SENT_KEY = "";
+      /* fair-play state. Master side lives on each guest (v.netAud, v.netHeat); slave side checks the master here. */
+      const NET_AUDIT_CURSOR = new Map(), NET_SLOT_INFO = new Map(), NET_SLOT_LAST = new Map(), NET_SLOT_POS = new Map();
+      let NET_HOST_AUD = null, NET_HOST_HEAT = 0, NET_HOST_HEAT_AT = 0, NET_HOST_REPORTED = false, NET_ANSWERED_AT = 0;
       /* netQuery(msg, undo): In: action already shown locally, undo() to roll it back. Out: sends it to the host with a seq number. */
       function netQuery(message, undo) {
         const seq = ++NET_SEQ;
@@ -1813,7 +1830,10 @@
         NET_PENDING.clear();
         NET_MOVES.length = 0;
         NET_SLOT_IDS.clear();
-        NET_FULL_AT = 0; NET_SENT_KEY = NET_HOST_SENT = "";
+        NET_FULL_AT = 0; NET_SENT_KEY = "";
+        NET_AUDIT_CURSOR.clear(); NET_SLOT_INFO.clear(); NET_SLOT_LAST.clear(); NET_SLOT_POS.clear();
+        NET_HOST_AUD = null; NET_HOST_HEAT = NET_HOST_HEAT_AT = NET_ANSWERED_AT = 0; NET_HOST_REPORTED = false;
+        NET_HOST_INFO = "";
         NET?.disconnectAll();
         try { await NET?.directoryLeave(); } catch (error) { netStatus("Could not leave lobby cleanly: " + error.message); }
         NET_SESSION = null;
@@ -1838,7 +1858,8 @@
       const NET_DELAY = 150; /* ms behind real time: enough to always have an update on each side of the drawn moment */
       function netPush(v, x, y) {
         const at = performance.now(), samples = v.netSamples || (v.netSamples = []), last = samples[samples.length - 1];
-        if (last && at - last.at > 250) samples.push({ x: last.x, y: last.y, at: at - 100 }); /* was standing still: start the walk now */
+        if (last && at - last.at < 1000) v.netGap = v.netGap ? v.netGap * 0.8 + (at - last.at) * 0.2 : at - last.at; /* typical update interval */
+        if (last && at - last.at > Math.max(250, (v.netGap || 100) * 1.8)) samples.push({ x: last.x, y: last.y, at: at - 100 }); /* was standing still: start the walk now */
         samples.push({ x, y, at });
         while (samples.length > 2 && samples[1].at < at - 1000) samples.shift();
         if (samples.length > 20) samples.shift();
@@ -1846,11 +1867,11 @@
       /* netSmooth(v, dt): In: remote player with buffered updates. Out: v.x/v.y eased toward where it was NET_DELAY ms ago,
          so late, bunched or uneven updates still look like a steady walk; big gaps (teleports) snap */
       function netSmooth(v, dt) {
-        const samples = v.netSamples, renderAt = performance.now() - NET_DELAY;
+        const delay = Math.max(NET_DELAY, Math.min(600, (v.netGap || 100) * 1.4)), samples = v.netSamples, renderAt = performance.now() - delay;
         let i = samples.length - 1;
         while (i > 0 && samples[i - 1].at > renderAt) i--;
         const a = samples[Math.max(0, i - 1)], b = samples[i], span = Math.max(1, b.at - a.at);
-        const coast = b == samples[samples.length - 1] && performance.now() - b.at < 250; /* updates late: coast a little, never past a stop */
+        const coast = b == samples[samples.length - 1] && performance.now() - b.at < delay + 100; /* updates late: coast a little, never past a stop */
         const t = cl((renderAt - a.at) / span, 0, coast ? 1.5 : 1);
         const tx = a.x + (b.x - a.x) * t, ty = a.y + (b.y - a.y) * t, gap = Math.hypot(tx - v.x, ty - v.y);
         const k = gap > 160 ? 1 : 1 - Math.exp(-dt * 16), ox = v.x, oy = v.y;
@@ -1870,33 +1891,217 @@
         return { id: value.id, name: value.name.replace(/[^A-Za-z0-9 _-]/g, "").slice(0, 16) || "Wanderer",
           cls: value.cls, lv: value.lv, ti: value.ti, spd: value.spd };
       }
-      /* netRoster(): host sends who is in the hub (slot, id, name, class, level, title, speed); only on join/leave */
-      function netRoster() {
-        const host = netProfile(), p = [[0, "host-player", host.name, P.cls, host.lv, host.ti, host.spd]];
-        for (const v of HUBV) if (!v.bot && !v.out && v.netClientId) p.push([v.netSlot, v.netClientId, v.name, v.cls, v.lv, TITLES.indexOf(v.ti), v.netSpd || 1]);
-        NET?.broadcast({ type: "r", p });
-        NET_FULL_AT = 0;
-      }
-      /* netSnapshot(full): host sends [slot, x, y, facing] for players that moved, or for everyone once a second */
-      function netSnapshot(full) {
-        const p = [], add = (slot, x, y, f, owner, key) => {
-          const sent = [slot, Math.round(x), Math.round(y), Math.max(0, NET_F.indexOf(f))], k = sent.join();
-          if (!full && owner[key] == k) return;
-          owner[key] = k;
-          p.push(...sent);
+      /* ---------- fair play: the master audits every slave and every slave audits the master ----------
+         Each side keeps its own progress (gold, XP, upgrades, HP) and a LEDGER of why it changed. At random moments the
+         other side asks ("q") for a snapshot ("a") and replays the ledger against the game's own reward tables (netAudit).
+         Edits that skip the game code (Cheat Engine, devtools, save editing) stop adding up. Failures add strike points
+         that fade over time; the master kicks a slave that keeps failing, a slave reports a master that keeps failing.
+         Detection, not prevention: the browser still owns the save, so only a real server could make cheats impossible. */
+      const AUDIT_ALLOW_DEV = true; /* owner keeps the F2 dev tools for now: their edits are flagged, not punished */
+      const AUDIT_SPENDS = ["cosmetic", "smith", "guild", "skill", "upgrade"], STRIKE_KICK = 12;
+      /* auditRules(): biggest single reward (g gold, x XP) per kind and the shortest gap between two (ms), from the game's tables */
+      function auditRules() {
+        const bonus = (1 + GUILD_MAX * 0.03) * (1 + PASS.bonus);
+        return {
+          raid: { g: Math.round(80 * bonus), x: Math.round(160 * bonus), gap: 15000 },
+          daily: { g: Math.max(...DAILY), x: 0, gap: 72e6 },
+          lore: { g: Math.max(150, ...Object.values(TALE_MS).map((m) => m[0])), x: 150, gap: 700 },
+          bounty: { g: Math.max(...BOUNTIES.map((b) => b.g)), x: Math.max(...BOUNTIES.map((b) => b.x)), gap: 1000 },
+          quest: { g: Math.max(...QUESTS.map((q) => q.r)), x: 100, gap: 2000 },
         };
-        const hostSent = { k: NET_HOST_SENT };
-        add(0, P.x, P.y, P.f || "d", hostSent, "k");
-        NET_HOST_SENT = hostSent.k;
-        for (const v of HUBV) if (!v.bot && !v.out && v.netClientId) add(v.netSlot, v.netX ?? v.x, v.netY ?? v.y, v.f || "d", v, "netSent");
-        if (p.length) NET?.broadcast({ type: "s", p });
+      }
+      /* netAudit(prev, snap, windowMs): In: last accepted stats (null on the first audit), a snapshot with its ledger slice,
+         ms since the previous audit. Out: { reasons: [failures], dev: dev tools used, next: stats for the next audit }. Pure. */
+      function netAudit(prev, snap, windowMs) {
+        const reasons = [], R = auditRules(), keys = UPG.map((u) => u.k), int = (n, lo, hi) => Number.isInteger(n) && n >= lo && n <= hi;
+        if (!snap || !int(snap.g, 0, 1e9) || !int(snap.xp, 0, 1e9) || !Array.isArray(snap.up) || snap.up.length != keys.length ||
+            !snap.up.every((l) => int(l, 0, MAXL)) || !["", "stone", "swift"].includes(snap.bl) || !CL[snap.cls] ||
+            !Number.isFinite(snap.hp) || !int(snap.mh, 1, 1e5) || !Array.isArray(snap.led) || snap.led.length > 150 ||
+            !snap.led.every((e) => Array.isArray(e) && (e.length == 3 || (e.length == 4 && keys.includes(e[3]))) &&
+              typeof e[0] == "string" && e[0].length <= 12 && int(e[1], -1e6, 1e6) && int(e[2], 0, 1e5)))
+          return { reasons: ["sent malformed stats"], dev: false, next: prev };
+        const base = CL[snap.cls].hp * (1 + 0.15 * snap.up[keys.indexOf("vit")]);
+        if (snap.mh != Math.round(base) && snap.mh != Math.round(base * 1.3)) reasons.push("max HP does not match upgrades");
+        if (snap.hp > snap.mh + 1) reasons.push("HP above max");
+        if (snap.over) reasons.push("too many changes between checks");
+        const dev = snap.led.some((e) => e[0] == "dev");
+        if (dev && !AUDIT_ALLOW_DEV) reasons.push("used dev tools");
+        const next = { g: snap.g, xp: snap.xp, up: snap.up.slice(), bet: prev?.bet || 0, daily: prev?.daily || 0, bounty: prev?.bounty || 0 }, seen = {};
+        for (const [kind, g, x, up] of snap.led) {
+          const rule = R[kind];
+          if (kind == "dev") continue;
+          if (rule) {
+            if (g < 0 || g > rule.g || x > rule.x) reasons.push(kind + " reward too big");
+            if (g > 0) seen[kind + "g"] = (seen[kind + "g"] || 0) + 1;
+            if (x > 0) seen[kind + "x"] = (seen[kind + "x"] || 0) + 1;
+            if (kind == "daily" && g > 0) next.daily++;
+            if (kind == "bounty" && g > 0) next.bounty++;
+            if (up && kind != "lore") reasons.push("upgrade from a reward");
+          } else if (kind == "bj") {
+            if (x) reasons.push("blackjack gave XP");
+            if (g < 0) next.bet = -g;
+            else if (g > 0) { if (!next.bet || g > Math.floor(next.bet * 2.5)) reasons.push("blackjack payout without a matching bet"); next.bet = 0; }
+          } else if (AUDIT_SPENDS.includes(kind)) {
+            if (g > 0 || x) reasons.push(kind + " gave gold or XP");
+            if (up && kind != "upgrade") reasons.push("upgrade from the wrong shop");
+          } else if (g || x || up) reasons.push("unknown reward " + kind.replace(/[^a-z]/g, ""));
+        }
+        for (const [kind, rule] of Object.entries(R)) for (const f of ["g", "x"])
+          if ((seen[kind + f] || 0) > (kind == "lore" ? 2 : 1) * (1 + Math.floor(Math.max(0, windowMs) / rule.gap))) reasons.push(kind + " rewards too often");
+        if (next.daily > 2) reasons.push("daily reward claimed again");
+        if (next.bounty > 6) reasons.push("too many bounties");
+        if (prev && !dev && !snap.lost) {
+          const sum = (i) => snap.led.reduce((a, e) => a + e[i], 0);
+          if (Math.abs(snap.g - (prev.g + sum(1))) >= 1) reasons.push("gold changed without a reason");
+          if (snap.xp != prev.xp + sum(2)) reasons.push("XP changed without a reason");
+          keys.forEach((k, i) => {
+            const gained = snap.up[i] - prev.up[i];
+            if (gained < 0) reasons.push("upgrade went down");
+            else if (gained > snap.led.filter((e) => e[3] == k).length) reasons.push("upgrade without paying");
+          });
+        }
+        return { reasons: [...new Set(reasons)], dev, next };
+      }
+      /* netStats(auditor, n): my snapshot for one auditor, with the ledger entries that auditor has not seen yet */
+      function netStats(auditor, n) {
+        const end = LEDGER_BASE + LEDGER.length, from = NET_AUDIT_CURSOR.has(auditor) ? NET_AUDIT_CURSOR.get(auditor) : end;
+        NET_AUDIT_CURSOR.set(auditor, end);
+        const led = LEDGER.slice(Math.max(0, from - LEDGER_BASE)), cls = P ? P.cls : "tank";
+        return { type: "a", n, g: Math.round(V.gold || 0), xp: V.xp || 0, up: UPG.map((u) => V.up[u.k]), bl: V.bl || "", cls,
+          hp: P ? Math.round(P.hp) : 1, mh: P ? P.mh : Math.round(CL[cls].hp * hpm()), led: led.slice(-150),
+          lost: from < LEDGER_BASE, over: led.length > 150 };
+      }
+      /* netStrike(v, n, why): master adds n strike points to a slave (they fade 1 per 2 s); at STRIKE_KICK it is removed */
+      function netStrike(v, n, why) {
+        const now = performance.now();
+        v.netHeat = Math.max(0, (v.netHeat || 0) - (now - (v.netHeatAt || now)) / 2000) + n;
+        v.netHeatAt = now;
+        if (v.netHeat < STRIKE_KICK || v.netKicked) return;
+        v.netKicked = true;
+        chatSys(v.name + " was removed: " + why, "bye");
+        NET.send(v.id, { type: "k", reason: why });
+        NET.directorySend("/api/kick", { peerId: v.id }).catch(() => {}); /* free the seat even if the cheater never leaves */
+        NET.disconnect(v.id);
+      }
+      /* hostStrike(n, why): a slave's suspicion of its master; at STRIKE_KICK it warns the player and reports the hub once */
+      function hostStrike(n, why) {
+        const now = performance.now();
+        NET_HOST_HEAT = Math.max(0, NET_HOST_HEAT - (now - (NET_HOST_HEAT_AT || now)) / 2000) + n;
+        NET_HOST_HEAT_AT = now;
+        if (NET_HOST_HEAT < STRIKE_KICK || NET_HOST_REPORTED) return;
+        NET_HOST_REPORTED = true;
+        chatSys("⚠ The hub host failed fair-play checks (" + why + "). Reported.", "bye");
+        NET.directorySend("/api/report", { reason: why.slice(0, 80) }).catch(() => {});
+      }
+      /* netAuditTick(target, a, now, strike): asks for a snapshot at random 3-8 s intervals; no answer within 5 s is a strike */
+      function netAuditTick(target, a, now, strike) {
+        if (a.n && now - a.askedAt > 5000) { a.n = 0; strike(4, "did not answer a fair-play check"); }
+        if (!a.n && now >= a.nextAt) { a.n = ++NET_SEQ; a.askedAt = now; a.nextAt = now + 3000 + Math.random() * 5000; NET.send(target, { type: "q", n: a.n }); }
+      }
+      /* netAuditCheck(a, message, now, strike): runs netAudit on an answer; Out: the audit result, or null if it was not asked for */
+      function netAuditCheck(a, message, now, strike) {
+        if (!a.n || message.n !== a.n) return null;
+        a.n = 0;
+        const res = netAudit(a.prev, message, now - a.lastAt);
+        a.lastAt = now;
+        if (res.next) a.prev = res.next;
+        a.fails = res.reasons.length ? (a.fails || 0) + 1 : 0;
+        for (const why of res.reasons) strike(a.fails >= 2 ? STRIKE_KICK : 8, why); /* two failed checks in a row: removed */
+        return res;
+      }
+      const newAudit = (now) => ({ prev: null, n: 0, askedAt: 0, nextAt: now + 1500 + Math.random() * 3000, lastAt: now });
+      /* Player details travel once per receiver. A newcomer gets the whole list ("r") once; everyone else gets only the
+         newcomer's entry ("j"). Leaving is a slot number ("l"); a level or speed change is slot + level + speed ("u").
+         Entry: [slot, id, name, class, level, title, speed]. Slot 0 is the master. */
+      let NET_HOST_INFO = "";
+      const netEntry = (v) => [v.netSlot, v.netClientId, v.name, v.cls, v.lv, Math.max(0, TITLES.indexOf(v.ti)), v.netSpd || 1];
+      function netHostEntry() {
+        const host = netProfile();
+        return [0, "host-player", host.name, P.cls, host.lv, host.ti, host.spd];
+      }
+      /* netRoster(to): the whole list, to one newcomer */
+      function netRoster(to) {
+        const p = [netHostEntry()];
+        for (const v of HUBV) if (!v.bot && !v.out && v.netClientId && v.id != to) p.push(netEntry(v));
+        p.push(...HUBV.filter((v) => v.id == to).map(netEntry)); /* the newcomer's own entry last */
+        NET.send(to, { type: "r", p });
+        const v = HUBV.find((o) => o.id == to);
+        if (v) v.netSeen = null; /* it gets everyone's full position next */
+      }
+      /* netTell(message, except): one small roster change to every guest but one */
+      function netTell(message, except) {
+        for (const id of NET.peerIds()) if (id != except) NET.send(id, message);
+      }
+      /* netPack / netUnpack: player positions as printable characters (base 91, two digits = 0..8280).
+         Absolute entry, 6 chars: code = slot*4 + facing, then x, then y.
+         Delta entry, 4 chars:    code = 4096 + slot*4 + facing, then dx+45 and dy+45 in one digit each (moves up to 45 px).
+         base(slot) gives the receiver's last position of that slot; the once-a-second full update is always absolute. */
+      const NET_ABC = Array.from({ length: 92 }, (_, i) => String.fromCharCode(35 + i)).filter((c) => c != "\\").join(""),
+        NET_ABC_IX = Object.fromEntries([...NET_ABC].map((c, i) => [c, i])),
+        pack1 = (n) => NET_ABC[n], pack2 = (n) => NET_ABC[Math.floor(n / 91)] + NET_ABC[n % 91];
+      function netPack(list, base) {
+        return list.map(([slot, x, y, f]) => {
+          const b = base && base(slot), dx = b ? x - b.x : 99, dy = b ? y - b.y : 99;
+          return Math.abs(dx) <= 45 && Math.abs(dy) <= 45 ? pack2(4096 + slot * 4 + f) + pack1(dx + 45) + pack1(dy + 45) : pack2(slot * 4 + f) + pack2(x) + pack2(y);
+        }).join("");
+      }
+      function netUnpack(str, base) {
+        const out = [], d1 = (i) => NET_ABC_IX[str[i]] ?? -1e6, d2 = (i) => d1(i) * 91 + d1(i + 1);
+        for (let i = 0; i + 3 < str.length; ) {
+          let code = d2(i), x, y;
+          if (code >= 4096) {
+            code -= 4096;
+            const b = base && base(code >> 2);
+            x = b ? b.x + d1(i + 2) - 45 : NaN; y = b ? b.y + d1(i + 3) - 45 : NaN; /* no base yet: skipped until the next full update */
+            i += 4;
+          } else { x = d2(i + 2); y = d2(i + 4); i += 6; }
+          out.push([code >> 2, x, y, code & 3]);
+        }
+        return out;
+      }
+      /* netSnapshot(full): per guest, the players that moved. Nearby players (NET_NEAR px) go out at 10/s, far ones at ~3/s,
+         nobody gets their own position back, and once a second everyone gets everything (full). */
+      const NET_NEAR = 320;
+      /* state interval: 10/s up to 20 players, easing to 4/s at 100 (remote players are smoothed over their own interval) */
+      const netStateMs = () => cl(100 + (NET_CLIENTS.size + 1 - 20) * 2, 100, 250);
+      function netSnapshot(full) {
+        const now = performance.now(), cur = [[0, P.x, P.y, P.f || "d"]];
+        for (const v of HUBV) if (!v.bot && !v.out && v.netClientId) cur.push([v.netSlot, v.netX ?? v.x, v.netY ?? v.y, v.f || "d"]);
+        const list = cur.map(([slot, x, y, f]) => { const e = [slot, Math.round(x), Math.round(y), Math.max(0, NET_F.indexOf(f))]; return { e, k: e.join() }; });
+        for (const r of HUBV) {
+          if (r.bot || r.out || !r.netClientId || r.netKicked) continue;
+          const seen = r.netSeen || (r.netSeen = new Map()), rx = r.netX ?? r.x, ry = r.netY ?? r.y, out = [];
+          for (const { e, k } of list) {
+            if (e[0] == r.netSlot) continue;
+            const last = seen.get(e[0]);
+            if (!full && last && (last.k == k || (now - last.at < netStateMs() * 3 && Math.hypot(e[1] - rx, e[2] - ry) > NET_NEAR))) continue;
+            out.push(e);
+          }
+          if (!out.length) continue;
+          const packed = netPack(out, full ? null : (slot) => seen.get(slot));
+          for (const e of out) seen.set(e[0], { k: e.join(), at: now, x: e[1], y: e[2] });
+          NET.send(r.id, { type: "s", p: packed });
+        }
+      }
+      /* netGoodEntry(e) / netAddEntry(e): check one roster entry from the master, then show that player */
+      const netGoodEntry = (e) => Array.isArray(e) && e.length == 7 && Number.isInteger(e[0]) && e[0] >= 0 && e[0] < HUB_MAX &&
+        typeof e[1] == "string" && e[1].length <= 56 && typeof e[2] == "string" && e[2].length <= 16 && CL[e[3]] &&
+        Number.isInteger(e[4]) && e[4] >= 1 && e[4] <= 60 && Number.isInteger(e[5]) && e[5] >= 0 && e[5] < TITLES.length &&
+        Number.isFinite(e[6]) && e[6] >= 1 && e[6] <= 1.3;
+      function netAddEntry([slot, pid, name, cls, lv, ti, spd]) {
+        if (NET_SLOT_IDS.get(slot) != pid) { NET_SLOT_LAST.delete(slot); NET_SLOT_POS.delete(slot); } /* slot now holds someone else */
+        NET_SLOT_IDS.set(slot, pid);
+        NET_SLOT_INFO.set(slot, { cls, spd });
+        if (pid == NET_LOCAL_ID) return;
+        const v = HUBV.find((other) => other.id == pid) || hubJoin(pid, { name: name.replace(/[^A-Za-z0-9 _-]/g, "") || "Wanderer", cls, lv, ti }, 0);
+        if (v) { v.netClientId = pid; v.lv = lv; v.ti = TITLES[ti]; v.netSpd = spd; }
       }
       function netReceive(id, message) {
         if (NET_ROLE == "host") {
           if (message.type == "join") {
             const profile = netSafeProfile(message.profile);
             const existing = HUBV.find((v) => v.id == id && !v.bot);
-            if (existing && profile?.id == existing.netClientId) return netRoster();
+            if (existing && profile?.id == existing.netClientId) return netRoster(id);
             if (!profile || NET_CLIENTS.size >= HUB_MAX - 1 || hubCount() >= HUB_MAX ||
                 HUBV.some((v) => !v.bot && v.netClientId == profile.id)) {
               NET.send(id, { type: "reject", reason: "This hub is full or the profile is invalid." });
@@ -1911,33 +2116,62 @@
             /* start where the guest really stands (kept on the island), so its first step is not "corrected" back to a spawn spot */
             if (Number.isFinite(message.x) && Number.isFinite(message.y)) { const at = { x: cl(message.x, 0, W), y: cl(message.y, 0, H), hp: 1 }; clampW(at); v.x = v.tx = at.x; v.y = v.ty = at.y; }
             v.netX = v.x; v.netY = v.y; /* validated position; v.x/v.y are only the smoothed drawing position */
+            v.netBudget = 0; v.netSeq = 0; v.netBl = "swift"; /* until audited, assume the shortest legal dash cooldown */
+            v.netAud = newAudit(performance.now());
+            v.netInfo = [v.lv, v.netSpd].join(); /* level + speed as announced; an audit that changes them sends "u" */
             for (let slot = 1; slot < HUB_MAX; slot++) if (!HUBV.some((o) => o.netSlot == slot)) { v.netSlot = slot; break; }
             NET_CLIENTS.set(id, profile.id);
             netStatus("Connected players: " + (NET_CLIENTS.size + 1));
-            netRoster();
+            netRoster(id);
+            netTell({ type: "j", e: netEntry(v) }, id);
           } else if (message.type == "m") {
             /* the guest moves itself; the host accepts only a step it could have walked (or dashed) since the last one */
             const v = HUBV.find((item) => item.id == id && !item.bot && !item.out);
             if (!v || !Number.isFinite(message.x) || !Number.isFinite(message.y) || message.x < 0 || message.x > W ||
                 message.y < 0 || message.y > H || !NET_F[message.f] || (message.d !== 0 && message.d !== 1) ||
                 !Number.isInteger(message.s)) return;
-            const now = performance.now(), elapsed = cl((now - (v.netPosAt || now)) / 1000, 0.05, 1);
-            const dash = DASH[v.cls], walk = CL[v.cls].sp * (v.netSpd || 1) * elapsed * 1.35 + 12;
-            const canDash = message.d && now - v.netDashAt >= dash.cd * 900, budget = walk + (canDash ? dash.d : 0);
-            const mx = message.x - v.netX, my = message.y - v.netY, dist = Math.hypot(mx, my);
-            if (canDash && dist > walk) v.netDashAt = now;
-            const k = dist > budget ? budget / dist : 1, pos = { x: v.netX + mx * k, y: v.netY + my * k, hp: 1 };
+            if (message.s <= v.netSeq) return; /* replayed or out of order */
+            v.netSeq = message.s;
+            /* budget refills at 1.3x the class speed (x audited speed upgrades), holds at most 0.5 s of walking */
+            const now = performance.now(), rate = CL[v.cls].sp * (v.netSpd || 1) * 1.3, cap = rate * 0.5 + 24;
+            v.netBudget = Math.min(cap, v.netBudget + (rate * (now - (v.netPosAt || now))) / 1000);
+            v.netPosAt = now;
+            const dash = DASH[v.cls], canDash = message.d && now - v.netDashAt >= dash.cd * (v.netBl == "swift" ? 0.45 : 0.9) * 1000;
+            const mx = message.x - v.netX, my = message.y - v.netY, dist = Math.hypot(mx, my), allow = v.netBudget + (canDash ? dash.d : 0);
+            if (canDash && dist > v.netBudget) v.netDashAt = now;
+            const k = dist > allow ? allow / dist : 1, pos = { x: v.netX + mx * k, y: v.netY + my * k, hp: 1 };
+            v.netBudget = Math.max(0, v.netBudget - Math.max(0, dist * k - (canDash ? dash.d : 0)));
             clampW(pos);
-            v.netX = pos.x; v.netY = pos.y; v.f = NET_F[message.f]; v.netPosAt = now;
+            v.netX = pos.x; v.netY = pos.y; v.f = NET_F[message.f];
             netPush(v, v.netX, v.netY);
-            if (Math.hypot(v.netX - message.x, v.netY - message.y) > 1) NET.send(id, { type: "c", x: Math.round(v.netX), y: Math.round(v.netY), s: message.s });
+            if (Math.hypot(v.netX - message.x, v.netY - message.y) > 1) {
+              NET.send(id, { type: "c", x: Math.round(v.netX), y: Math.round(v.netY), s: message.s });
+              if (k < 1) netStrike(v, 1, "moving too fast");
+            }
+          } else if (message.type == "q" && Number.isInteger(message.n)) {
+            if (performance.now() - (HUBV.find((o) => o.id == id)?.netAnsweredAt || 0) < 1000) return; /* one answer per second */
+            const v = HUBV.find((o) => o.id == id && !o.bot);
+            if (v) { v.netAnsweredAt = performance.now(); NET.send(id, netStats(id, message.n)); }
+          } else if (message.type == "a") {
+            const v = HUBV.find((o) => o.id == id && !o.bot);
+            if (!v?.netAud) return;
+            const res = netAuditCheck(v.netAud, message, performance.now(), (n, why) => netStrike(v, n, why));
+            if (!res || res.reasons.length) return;
+            /* audited numbers replace what the slave claimed when it joined */
+            v.netBl = message.bl; v.netDev = res.dev;
+            v.netSpd = Math.min(1.3, 1 + 0.06 * message.up[UPG.findIndex((u) => u.k == "spd")]);
+            const lv = Math.min(60, lvlInfo(message.xp).L);
+            const spd = v.netSpd, was = v.netInfo;
+            v.lv = lv;
+            v.netInfo = [lv, spd].join();
+            if (was && was != v.netInfo) netTell({ type: "u", e: [v.netSlot, lv, spd] }); /* level-up or speed upgrade */
           } else if (message.type == "chat" || message.type == "emote") {
             const v = HUBV.find((item) => item.id == id && !item.bot);
             if (!v) return;
             const now = performance.now(), chat = message.type == "chat";
             const text = chat && typeof message.text == "string" ? message.text.replace(/[<>]/g, "").trim().slice(0, 80) : "";
             if (chat ? !text || message.text.length > 80 : !Object.values(EMOTES).includes(message.e)) return netAck(id, message.seq, false, "That was not valid.");
-            if (now - (chat ? v.netChatAt || -1e9 : v.netEmoteAt || -1e9) < (chat ? 700 : 1000)) return netAck(id, message.seq, false, "Slow down a little.");
+            if (now - (chat ? v.netChatAt || -1e9 : v.netEmoteAt || -1e9) < (chat ? 700 : 1000)) { netStrike(v, 1, "spamming"); return netAck(id, message.seq, false, "Slow down a little."); }
             if (chat) { v.netChatAt = now; say(v, text); } else { v.netEmoteAt = now; emote(v, message.e); }
             const relay = chat ? { type: "chat", id: v.netClientId, name: v.name, text } : { type: "emote", id: v.netClientId, e: message.e };
             for (const peerId of NET.peerIds()) if (peerId != id) NET.send(peerId, relay);
@@ -1945,26 +2179,37 @@
           }
         } else if (NET_ROLE == "guest") {
           if (message.type == "r" && Array.isArray(message.p) && message.p.length <= HUB_MAX) {
-            const roster = message.p.filter((e) => Array.isArray(e) && e.length == 7 && Number.isInteger(e[0]) && e[0] >= 0 && e[0] < HUB_MAX &&
-              typeof e[1] == "string" && e[1].length <= 56 && typeof e[2] == "string" && e[2].length <= 16 && CL[e[3]] &&
-              Number.isInteger(e[4]) && e[4] >= 1 && e[4] <= 60 && Number.isInteger(e[5]) && e[5] >= 0 && e[5] < TITLES.length &&
-              Number.isFinite(e[6]) && e[6] >= 1 && e[6] <= 1.3);
-            NET_SLOT_IDS.clear();
-            for (const e of roster) NET_SLOT_IDS.set(e[0], e[1]);
+            const roster = message.p.filter(netGoodEntry);
             const ids = new Set(roster.map((e) => e[1]));
             for (const v of HUBV.filter((v) => !v.bot && v.netClientId && !ids.has(v.id))) hubLeave(v.id);
-            for (const [, pid, name, cls, lv, ti, spd] of roster) {
-              if (pid == NET_LOCAL_ID) continue;
-              const v = HUBV.find((other) => other.id == pid) || hubJoin(pid, { name: name.replace(/[^A-Za-z0-9 _-]/g, "") || "Wanderer", cls, lv, ti }, 0);
-              if (v) { v.netClientId = pid; v.lv = lv; v.ti = TITLES[ti]; v.netSpd = spd; }
-            }
-          } else if (message.type == "s" && Array.isArray(message.p) && message.p.length <= HUB_MAX * 4 && message.p.length % 4 == 0) {
+            NET_SLOT_IDS.clear(); NET_SLOT_INFO.clear(); NET_SLOT_LAST.clear(); NET_SLOT_POS.clear();
+            roster.forEach(netAddEntry);
+          } else if (message.type == "j" && netGoodEntry(message.e)) {
+            netAddEntry(message.e);
+          } else if (message.type == "l" && Number.isInteger(message.s)) {
+            const pid = NET_SLOT_IDS.get(message.s);
+            NET_SLOT_IDS.delete(message.s); NET_SLOT_INFO.delete(message.s); NET_SLOT_LAST.delete(message.s); NET_SLOT_POS.delete(message.s);
+            if (pid && pid != NET_LOCAL_ID) hubLeave(pid);
+          } else if (message.type == "u" && Array.isArray(message.e) && message.e.length == 3) {
+            const [slot, lv, spd] = message.e, info = NET_SLOT_INFO.get(slot), v = HUBV.find((o) => o.id == NET_SLOT_IDS.get(slot));
+            if (!info || !Number.isInteger(lv) || lv < 1 || lv > 60 || !Number.isFinite(spd) || spd < 1 || spd > 1.3) return;
+            info.spd = spd;
+            if (v) { v.lv = lv; v.netSpd = spd; }
+          } else if (message.type == "s" && typeof message.p == "string" && message.p.length <= HUB_MAX * 6) {
             const first = !NET_LAST_STATE;
             NET_LAST_STATE = performance.now();
             if (first) netStatus(`Synced with hub ${NET_SESSION?.hubId || ""}.`);
-            for (let i = 0; i < message.p.length; i += 4) {
-              const [slot, x, y, f] = message.p.slice(i, i + 4), pid = NET_SLOT_IDS.get(slot);
+            for (const [slot, x, y, f] of netUnpack(message.p, (slot) => NET_SLOT_POS.get(slot))) {
+              const pid = NET_SLOT_IDS.get(slot);
+              if (Number.isFinite(x) && Number.isFinite(y)) NET_SLOT_POS.set(slot, { x, y }); /* base for the next delta */
               if (!pid || pid == NET_LOCAL_ID || !Number.isFinite(x) || !Number.isFinite(y) || x < 0 || x > W || y < 0 || y > H || !NET_F[f]) continue;
+              /* the master must not report anyone (itself included) moving faster than walking plus one dash allows */
+              const info = NET_SLOT_INFO.get(slot), last = NET_SLOT_LAST.get(slot), at = performance.now();
+              if (info && last) {
+                const dt = Math.min(2, (at - last.at) / 1000), allow = CL[info.cls].sp * info.spd * 1.35 * dt + 40 + DASH[info.cls].d;
+                if (Math.hypot(x - last.x, y - last.y) > allow) hostStrike(slot == 0 ? 3 : 2, slot == 0 ? "host moved impossibly fast" : "host let a player move impossibly fast");
+              }
+              NET_SLOT_LAST.set(slot, { x, y, at });
               const v = HUBV.find((other) => other.id == pid);
               if (v) { netPush(v, x, y); v.f = NET_F[f]; }
             }
@@ -1979,7 +2224,9 @@
           } else if (message.type == "c" && Number.isFinite(message.x) && Number.isFinite(message.y) && Number.isInteger(message.s) && P) {
             /* shift by the host's error at that update, keeping the steps walked since (no snap back) */
             const sent = NET_MOVES.find((m) => m.seq == message.s);
-            const ox = sent ? message.x - sent.x : message.x - P.x, oy = sent ? message.y - sent.y : message.y - P.y;
+            if (!sent) return hostStrike(2, "corrected a move never sent");
+            if (Math.hypot(message.x - sent.x, message.y - sent.y) > 260) return hostStrike(4, "tried to teleport you");
+            const ox = message.x - sent.x, oy = message.y - sent.y;
             for (const m of NET_MOVES) if (m.seq > message.s) { m.x += ox; m.y += oy; }
             while (NET_MOVES.length && NET_MOVES[0].seq <= message.s) NET_MOVES.shift();
             P.x = cl(P.x + ox, 0, W); P.y = cl(P.y + oy, 0, H);
@@ -1994,6 +2241,16 @@
           } else if (message.type == "emote" && message.id != NET_LOCAL_ID && Object.values(EMOTES).includes(message.e)) {
             const v = HUBV.find((other) => other.id == message.id);
             if (v) emote(v, message.e);
+          } else if (message.type == "q" && Number.isInteger(message.n)) {
+            if (performance.now() - NET_ANSWERED_AT < 1000) return;
+            NET_ANSWERED_AT = performance.now();
+            NET.send(id, netStats(id, message.n));
+          } else if (message.type == "a" && NET_HOST_AUD) {
+            netAuditCheck(NET_HOST_AUD, message, performance.now(), hostStrike);
+          } else if (message.type == "k" && typeof message.reason == "string") {
+            const why = message.reason.replace(/[<>]/g, "").slice(0, 80);
+            chatSys("You were removed from the hub: " + why, "bye");
+            netDisconnect().then(() => netStatus("Removed by the hub host: " + why));
           } else if (message.type == "reject" && typeof message.reason == "string") {
             netStatus("Host rejected connection: " + message.reason.slice(0, 100));
             NET.disconnect(id);
@@ -2008,11 +2265,11 @@
         },
         onMessage: netReceive,
         onClose: (id) => {
-          const clientId = NET_CLIENTS.get(id);
+          const clientId = NET_CLIENTS.get(id), slot = HUBV.find((v) => v.id == id)?.netSlot;
           if (clientId) {
             hubLeave(id);
             NET_CLIENTS.delete(id);
-            netRoster();
+            if (slot != null) netTell({ type: "l", s: slot });
           } else if (NET_ROLE == "guest" && id == NET_SESSION?.peerId) {
             HUBV = HUBV.filter((v) => v.id != "host-player");
           }
@@ -2033,8 +2290,13 @@
         const now = performance.now();
         if (now - NET_BADGE_AT > 500) { NET_BADGE_AT = now; netBadgeUpdate(); }
         if (!NET || !NET.peerIds().length || !P || S.sc != "hub") return;
+        if (NET_ROLE == "host") for (const v of HUBV) { if (!v.bot && v.netAud && !v.netKicked) netAuditTick(v.id, v.netAud, now, (n, why) => netStrike(v, n, why)); }
+        else if (NET_CONNECTED) netAuditTick(NET_SESSION?.peerId, NET_HOST_AUD || (NET_HOST_AUD = newAudit(now)), now, hostStrike);
         if (NET_ROLE == "host") {
-          if (now - NET_LAST_SEND < 100) return;
+          const me = netHostEntry(), info = [me[4], me[6]].join();
+          if (NET_HOST_INFO && info != NET_HOST_INFO) netTell({ type: "u", e: [0, me[4], me[6]] }); /* the master levelled up */
+          NET_HOST_INFO = info;
+          if (now - NET_LAST_SEND < netStateMs()) return;
           NET_LAST_SEND = now;
           const full = now - NET_FULL_AT >= 1000;
           if (full) NET_FULL_AT = now;
@@ -2657,7 +2919,7 @@
       function cosBuyGold(id) {
         const it = cosGet(id);
         if (!it || !it.gold || cosOwn(it) || V.gold < it.gold) return;
-        V.gold -= it.gold;
+        goldAdd(-it.gold, "cosmetic");
         cosV().own[id] = 1;
         save();
         sfx("coin", 1);
@@ -3142,7 +3404,7 @@
         S.res = 5;
         const g = Math.round((60 + (S.at < 90 ? 20 : 0)) * (1 + gBonus()) * passMul()); /* guild bonus, Rune Pass */
         bountyAdd("raid");
-        V.gold += g;
+        goldAdd(g, "raid");
         coin = g;
         gainXP(Math.round((S.at < 90 ? 160 : 120) * (1 + gBonus()) * passMul()), "raid");
         burst(S.b.x, S.b.y, "#ffd84a", 40, 260);
@@ -3489,7 +3751,7 @@
         V.dl = today;
         const day = ((V.ds - 1) % 7) + 1,
           g = DAILY[day - 1];
-        V.gold += g;
+        goldAdd(g, "daily");
         save();
         $("dlg").hidden = false;
         $("dp").innerHTML =
@@ -3665,21 +3927,22 @@
       /* Archivist secret-page rewards. w = weight (chance), big = only offered weight during a ✦ window.
          Each give() applies the reward and returns the text shown in the dialog. */
       const LORE_REW = [
-        { w: 30, big: 15, give: (b) => { const g = Math.round(rnd(50, b ? 150 : 100)); V.gold += g; return `💰 +${g} gold`; } },
+        { w: 30, big: 15, give: (b) => { const g = Math.round(rnd(50, b ? 150 : 100)); goldAdd(g, "lore"); return `💰 +${g} gold`; } },
         { w: 25, big: 15, give: (b) => { const x = Math.round(rnd(60, b ? 150 : 100)); gainXP(x, "lore"); return `✨ +${x} XP`; } },
         { w: 12, big: 18, give: () => { V.bl = "stone"; return "🛡 Blessing of Stone: +30% max HP next raid"; } },
         { w: 12, big: 18, give: () => { V.bl = "swift"; return "💨 Swift Blessing: dash cooldown halved next raid"; } },
         { w: 6, big: 12, give: () => {
             const open = UPG.filter((u) => V.up[u.k] < MAXL);
-            if (!open.length) { V.gold += 150; return "💰 +150 gold (all runes maxed)"; }
+            if (!open.length) { goldAdd(150, "lore"); return "💰 +150 gold (all runes maxed)"; }
             const u = open[Math.floor(Math.random() * open.length)];
             V.up[u.k]++;
+            ledger("lore", 0, 0, u.k);
             if (P) { P.mh = Math.round(CL[P.cls].hp * hpm()); P.hp = Math.min(P.hp, P.mh); }
             return `⬆ Free upgrade: ${u.n} Lv ${V.up[u.k]}`;
           } },
-        { w: 9, big: 16, give: () => { const nx = UNLOCK_ORDER.find((k) => k != "class" && !isUnl(k) && (V.lt || 0) >= UNLOCK_AT[k]); return nx ? unlockNpc(nx) : (V.gold += 100, "💰 +100 gold"); } },
+        { w: 9, big: 16, give: () => { const nx = UNLOCK_ORDER.find((k) => k != "class" && !isUnl(k) && (V.lt || 0) >= UNLOCK_AT[k]); return nx ? unlockNpc(nx) : (goldAdd(100, "lore"), "💰 +100 gold"); } },
         { w: 3, big: 6, give: () => {
-            if (V.af) { V.gold += 120; return "💰 +120 gold"; }
+            if (V.af) { goldAdd(120, "lore"); return "💰 +120 gold"; }
             V.af = 1;
             return "🏷 New title unlocked: Archivist's Friend";
           } },
@@ -3729,7 +3992,7 @@
           [kind, text] = TALES[pick],
           tag = { L: "Lore", T: "Tip", E: "Secret" }[kind],
           ms = TALE_MS[n];
-        if (ms) V.gold += ms[0];
+        if (ms) goldAdd(ms[0], "lore");
         const rw = rare ? loreReward(bonus) : "";
         /* Class Master: pure luck, 1 in 100 per tale (guaranteed by tale 300 so nobody is stuck) */
         const cm = !isUnl("class") && classRoll() ? unlockNpc("class") : "";
@@ -3852,7 +4115,7 @@
       }
       function smithBuy(k) {
         if (V.bl || V.gold < SMITH_COST) return;
-        V.gold -= SMITH_COST;
+        goldAdd(-SMITH_COST, "smith");
         V.bl = k;
         save();
         if (P) burst(P.x, P.y, "#ff9f43", 26, 160);
@@ -3916,7 +4179,7 @@
         const bo = bountyDay(), b = BOUNTIES.find((x) => x.id == id);
         if (bo.done[id] || (bo.prog[id] || 0) < b.n) return;
         bo.done[id] = 1;
-        V.gold += b.g;
+        goldAdd(b.g, "bounty");
         gainXP(b.x, "bounty");
         save();
         if (P) burst(P.x, P.y, "#ffd84a", 30, 180);
@@ -4011,7 +4274,7 @@
       function guildRecruit() {
         const m = (V.gd && V.gd.m) || [], cost = recruitCost();
         if (!V.gd || m.length >= GUILD_MAX || V.gold < cost) return;
-        V.gold -= cost;
+        goldAdd(-cost, "guild");
         const used = m.map((r) => r.n), free = RECRUITS.filter((n) => !used.includes(n));
         m.push({ n: free[Math.floor(Math.random() * free.length)] || "Recruit", c: ["tank", "dps", "heal"][Math.floor(Math.random() * 3)] });
         V.gd.m = m;
@@ -4093,7 +4356,7 @@
         if (V.gold < bet) return;
         const tutorialHand = tut() == 5;
         tutNext(5);
-        V.gold -= bet;
+        goldAdd(-bet, "bj");
         BJ = tutorialHand
           ? { bet, p: [5, 6], d: [10, 7], end: "", win: 0, tutorial: true }
           : { bet, p: [bjCard(), bjCard()], d: [bjCard(), bjCard()], end: "", win: 0 };
@@ -4122,7 +4385,7 @@
         else if (d > 21 || p > d) { pay = BJ.bet * 2; msg = "You win! +" + pay; }
         else if (p == d) { pay = BJ.bet; msg = "Push. Your bet is returned."; }
         else msg = "The house wins this round.";
-        V.gold += pay;
+        if (pay) goldAdd(pay, "bj");
         BJ.end = msg;
         BJ.win = pay - BJ.bet;
         if (BJ.win > 0) { bountyAdd("bj"); if (P) burst(P.x, P.y, "#ffd84a", 26, 170); sfx("coin", 1.4); } else sfx("hurt");
@@ -4156,7 +4419,7 @@
         const q = QUESTS[V.q];
         if (a == 1) V.qs = 1;
         else {
-          V.gold += q.r;
+          goldAdd(q.r, "quest");
           gainXP(100, "quest");
           toast("Quest complete! +" + q.r + " gold");
           V.q++;
@@ -4199,7 +4462,7 @@
       function skBuy(a) {
         const cls = P ? P.cls : "tank", lv = (V.sk[cls] || [])[a] || 0, cost = 80 * (lv + 1);
         if (lv >= 5 || V.gold < cost) return;
-        V.gold -= cost;
+        goldAdd(-cost, "skill");
         V.sk[cls][a] = lv + 1;
         save();
         if (P) burst(P.x, P.y, SKC[cls], 22, 170);
@@ -4213,6 +4476,7 @@
         if (l >= MAXL || V.gold < cost) return;
         V.gold -= cost;
         V.up[k]++;
+        ledger("upgrade", -cost, 0, k);
         bountyAdd("buy");
         if (V.q == 0 && V.qs == 1) {
           V.qs = 2;
@@ -4312,11 +4576,15 @@
         devUI();
       };
       function devGold() {
+        const before = V.gold;
         V.gold = Math.max(0, +$("dg").value | 0);
+        ledger("dev", V.gold - before, 0);
         devS();
       }
       function devAdd(n) {
+        const before = V.gold;
         V.gold = Math.max(0, V.gold + n);
+        ledger("dev", V.gold - before, 0);
         devS();
       }
       function devQuest() {
@@ -4326,6 +4594,7 @@
         devS();
       }
       function devUp(m) {
+        ledger("dev", 0, 0);
         if (m != null) UPG.forEach((u) => (V.up[u.k] = m));
         else
           document.querySelectorAll(".du").forEach((i) => {
@@ -4375,6 +4644,7 @@
         devS();
       }
       function devWipe() {
+        ledger("dev", 100 - V.gold, 0);
         V.gold = 100;
         V.up = { dmg: 0, vit: 0, spd: 0, cdr: 0 };
         V.q = 0;

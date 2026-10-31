@@ -8,7 +8,7 @@ const { randomBytes } = require("node:crypto");
 
 const MAX_BODY_BYTES = 16 * 1024;
 const MAX_HUBS = 10;
-const MAX_PLAYERS_PER_HUB = 10;
+const MAX_PLAYERS_PER_HUB = 12;
 const SESSION_TTL_MS = 30000;
 const SDP_LIMIT = 16000;
 
@@ -130,7 +130,7 @@ function createDirectoryServer(options = {}) {
     if (req.method === "GET" && url.pathname === "/api/hubs") {
       cleanup();
       return send(res, 200, { hubs: [...hubs.values()].sort((a, b) => a.id - b.id).map((hub) => ({
-        id: hub.id, players: hub.members.size, capacity: maxPlayersPerHub,
+        id: hub.id, players: hub.members.size, capacity: maxPlayersPerHub, flagged: !!hub.flagged,
       })) });
     }
     if (req.method !== "POST") return send(res, 404, { error: "Not found." });
@@ -143,7 +143,7 @@ function createDirectoryServer(options = {}) {
       cleanup();
       if (!validProfile(body.profile)) return send(res, 400, { error: "Player profile is invalid." });
       const active = [...hubs.values()].sort((a, b) => a.id - b.id)
-        .find((hub) => hub.members.size < maxPlayersPerHub);
+        .find((hub) => !hub.flagged && hub.members.size < maxPlayersPerHub); /* never send new players to a reported host */
       if (active) {
         if ([...active.members.values()].some((member) => member.profile.id === body.profile.id)) {
           return send(res, 409, { error: "This profile already has a seat in the selected hub." });
@@ -198,6 +198,26 @@ function createDirectoryServer(options = {}) {
       if (!guest || guest.role !== "guest") return send(res, 404, { error: "Joining player is no longer in this hub." });
       guest.events.push({ type: "answer", peerId: body.peerId, description: body.description });
       return send(res, 202, { ok: true });
+    }
+    if (url.pathname === "/api/report") {
+      /* a guest's fair-play checks failed on its host; once half the guests agree, the hub gets no new players */
+      if (session.role !== "guest" || typeof body.reason !== "string" || body.reason.length > 80) return send(res, 400, { error: "Report is invalid." });
+      hub.reports = hub.reports || new Set();
+      hub.reports.add(session.peerId);
+      const guests = hub.members.size - 1;
+      if (!hub.flagged && hub.reports.size * 2 >= guests) {
+        hub.flagged = true;
+        console.log(`Hub ${hub.id} flagged by ${hub.reports.size}/${guests} guests: ${body.reason.replace(/[^\w .,'-]/g, "")}`);
+      }
+      return send(res, 200, { ok: true, flagged: !!hub.flagged });
+    }
+    if (url.pathname === "/api/kick") {
+      /* the host removed a cheater: free its seat even if the cheater keeps its own session alive */
+      if (session.role !== "host" || typeof body.peerId !== "string") return send(res, 400, { error: "Kick is invalid." });
+      const member = hub.members.get(body.peerId);
+      if (!member || member.role !== "guest") return send(res, 404, { error: "That player is not in this hub." });
+      removeSession(member);
+      return send(res, 200, { ok: true });
     }
     if (url.pathname === "/api/leave") {
       removeSession(session);

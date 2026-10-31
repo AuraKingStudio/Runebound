@@ -5,15 +5,15 @@ const SCRIPT=fs.readFileSync(path.join(__dirname,'..','index.html'),'utf8').matc
 const NET_START='/* Browser networking block:',NET_END='/* End browser networking block. */',NET_START_INDEX=SCRIPT.indexOf(NET_START),NET_END_INDEX=SCRIPT.indexOf(NET_END);
 if(NET_START_INDEX<0||NET_END_INDEX<=NET_START_INDEX)throw new Error('Browser networking block is missing from index.html.');
 const NETSRC=SCRIPT.slice(NET_START_INDEX,NET_END_INDEX),SRC=SCRIPT.slice(0,NET_START_INDEX)+SCRIPT.slice(NET_END_INDEX+NET_END.length);
-let netClock=0,fakePeers=[],fakeHandlers={},fakeBroadcast=[];
-const fakeNet={setHandlers:h=>fakeHandlers=h,peerIds:()=>fakePeers.slice(),send:(id,msg)=>{fakeBroadcast.push({id,msg});return fakePeers.includes(id)},broadcast:msg=>{fakeBroadcast.push({id:'all',msg});return fakePeers.length},disconnect:id=>{fakePeers=fakePeers.filter(p=>p!=id);fakeHandlers.onClose?.(id)},disconnectAll:()=>{const old=fakePeers.slice();fakePeers=[];old.forEach(id=>fakeHandlers.onClose?.(id));}};
+let netClock=0,fakePeers=[],fakeHandlers={},fakeBroadcast=[],fakeDirectory=[];
+const fakeNet={directorySend:(path,data)=>{fakeDirectory.push({path,data});return Promise.resolve({ok:true});},setHandlers:h=>fakeHandlers=h,peerIds:()=>fakePeers.slice(),send:(id,msg)=>{fakeBroadcast.push({id,msg});return fakePeers.includes(id)},broadcast:msg=>{fakeBroadcast.push({id:'all',msg});return fakePeers.length},disconnect:id=>{fakePeers=fakePeers.filter(p=>p!=id);fakeHandlers.onClose?.(id)},disconnectAll:()=>{const old=fakePeers.slice();fakePeers=[];old.forEach(id=>fakeHandlers.onClose?.(id));}};
 const els={};const doc={addEventListener(){},createTextNode:t=>t,getElementById:id=>els[id]||(els[id]={style:{},dataset:{},children:[{style:{}}],value:'',addEventListener(){},append(){},setPointerCapture(){},getContext:()=>new Proxy({},{get:()=>()=>({addColorStop(){}}),set:()=>true}),set innerHTML(v){this._h=v},get innerHTML(){return this._h||''},hidden:false,textContent:''}),querySelectorAll:()=>[],body:{className:'',appendChild(){}},createElement:()=>({style:{},remove(){},append(){},classList:{add(){},remove(){}}}),documentElement:{cls:new Set(),classList:{add(c){doc.documentElement.cls.add(c)},remove(c){doc.documentElement.cls.delete(c)}},style:{setProperty(){}}}};
 const store={};
 const ctx={document:doc,window:{},innerWidth:900,innerHeight:600,performance:{now:()=>netClock},requestAnimationFrame(){},addEventListener(){},localStorage:{getItem:k=>store[k]||null,setItem:(k,v)=>store[k]=v,removeItem:k=>delete store[k]},Image:function(){this.complete=false},location:{search:''},console,setTimeout:f=>0,Math,JSON,Object,Array,Date,Number,parseInt,isNaN};
 ctx.RBNet=fakeNet;
 ctx.window=ctx;vm.createContext(ctx);
 vm.runInContext(SRC+`
-;globalThis.devMin=devMin;globalThis.devFs=devFs;globalThis.T={V:()=>V,P:()=>P,S:()=>S,start,devAdd,devUp,devUI,devCls,devHeal,devWipe,devResetQ,devArena,devBoss,devHub,DEV,hurt,act,step,pauseGame,resumeGame,isPaused:()=>paused,QUESTS,UPG,toggleDev,buy,shopUI,qAct,togglePause,dailyCheck,saveName,lvlInfo,gainXP,lvlCol,loreReward,isUnl,tutNext,bjVal,bjDeal,bjHit,bjStand,guildFound,guildRecruit,gBonus,bountyDay,bountyAdd,bountyClaim,guildJoin,guildTab,rankPool,rankRefresh,rankSort,dm,dash,dashStep,setIn,padPoll,inMode:()=>INMODE,KEYHINT,HUBV:()=>HUBV,FURY,furyMul,arena,toArena,HUB_NPCS,BOT_NPC_LV,BARKEEP,CLASSN,SKC,PEMB,hubJoin,hubLeave,hubCount,HUB_MAX,hubVisitStep,botName,botLook,chatSend,COS,cosOwn,cosV,cosBuyGold,cosEquip,shopPay,myEmote,streamPts,crossFrame,bridgeAt,riverNear,clampW,WF,STATUE,PORTAL,SET,keyLabel,EDGE,inIsle,netReceive,netPrepareHub,netStep,FX:()=>FX,FT:()=>FT,shk:()=>shk,els:null};`,ctx);
+;globalThis.devMin=devMin;globalThis.devFs=devFs;globalThis.T={V:()=>V,P:()=>P,S:()=>S,start,devAdd,devUp,devUI,devCls,devHeal,devWipe,devResetQ,devArena,devBoss,devHub,DEV,hurt,act,step,pauseGame,resumeGame,isPaused:()=>paused,QUESTS,UPG,toggleDev,buy,shopUI,qAct,togglePause,dailyCheck,saveName,lvlInfo,gainXP,lvlCol,loreReward,isUnl,tutNext,bjVal,bjDeal,bjHit,bjStand,guildFound,guildRecruit,gBonus,bountyDay,bountyAdd,bountyClaim,guildJoin,guildTab,rankPool,rankRefresh,rankSort,dm,dash,dashStep,setIn,padPoll,inMode:()=>INMODE,KEYHINT,HUBV:()=>HUBV,FURY,furyMul,arena,toArena,HUB_NPCS,BOT_NPC_LV,BARKEEP,CLASSN,SKC,PEMB,hubJoin,hubLeave,hubCount,HUB_MAX,hubVisitStep,botName,botLook,chatSend,COS,cosOwn,cosV,cosBuyGold,cosEquip,shopPay,myEmote,streamPts,crossFrame,bridgeAt,riverNear,clampW,WF,STATUE,PORTAL,SET,keyLabel,EDGE,inIsle,netReceive,netPrepareHub,netStep,netPack,netUnpack,netAudit,auditRules,goldAdd,gainXP,netStats,LEDGER:()=>LEDGER,FX:()=>FX,FT:()=>FT,shk:()=>shk,els:null};`,ctx);
 const T=ctx.T,BENCH_ONLY=process.argv.includes('--bench');let f=0;const ok=(c,m)=>{if(!c||!BENCH_ONLY)console.log((c?'PASS ':'FAIL ')+m);if(!c)f++};
 T.start();ok(T.S().sc=='hub','start -> hub');
 ctx.document.getElementById('dlg').hidden=true;const pausedAt=T.S().tm;T.pauseGame();T.step(.1);ok(T.isPaused()&&T.S().tm===pausedAt,'pause freezes the game');T.resumeGame();ok(!T.isPaused(),'resume re-enables play');
@@ -153,7 +153,11 @@ netClock+=100;const dash2=remote.netX;T.netReceive('peer-one',{type:'m',x:dash2+
 ok(remote.netX-dash2<45,'network hub: dash budget respects the cooldown');
 T.netStep();
 {const s=T.HUBV().find(v=>v.netClientId=='player-test1234');const x0=s.netX-50;s.x=x0;s.y=s.netY;netClock+=400;T.hubVisitStep(0.05);ok(s.x>x0+5&&s.x<x0+45,'network hub: remote players glide toward their buffered position instead of jumping');}
-fakeBroadcast=[];netClock+=1000;T.netStep();const full=fakeBroadcast.find(x=>x.msg.type=='s');ok(full&&full.msg.p.length==8&&full.msg.p.every(Number.isInteger),'network hub: full state is compact whole numbers for every player');
+fakeBroadcast=[];netClock+=1000;T.netStep();const full=fakeBroadcast.find(x=>x.msg.type=='s');ok(full&&full.id=='peer-one'&&typeof full.msg.p=='string'&&full.msg.p.length==6&&T.netUnpack(full.msg.p)[0][0]==0,'network hub: state is 6 packed characters per player, without the receiver itself');
+ok(JSON.stringify(T.netUnpack(T.netPack([[7,899,599,3],[0,0,0,0]])))=='[[7,899,599,3],[0,0,0,0]]','network hub: packed positions decode exactly');
+{const base=()=>({x:90,y:110}),d=T.netPack([[3,100,100,1]],base);ok(d.length==4&&JSON.stringify(T.netUnpack(d,base))=='[[3,100,100,1]]','network hub: a small move is sent as a 4-character delta and decodes exactly');
+ ok(T.netPack([[3,300,100,1]],base).length==6,'network hub: a big jump falls back to the full 6-character position');
+ ok(!Number.isFinite(T.netUnpack(d,()=>undefined)[0][1]),'network hub: a delta without a known base is skipped, not guessed');}
 fakeBroadcast=[];netClock+=100;T.netStep();ok(!fakeBroadcast.some(x=>x.msg.type=='s'),'network hub: nothing is sent while no one moves');
 fakeBroadcast=[];netClock+=1000;T.netReceive('peer-one',{type:'chat',text:'hello all',seq:50});
 ok(fakeBroadcast.some(x=>x.msg.type=='ack'&&x.msg.seq==50&&x.msg.ok),'network hub: host confirms a valid guest chat');
@@ -162,6 +166,66 @@ ok(fakeBroadcast.some(x=>x.msg.type=='ack'&&x.msg.seq==51&&!x.msg.ok),'network h
 fakeBroadcast=[];T.netReceive('peer-one',{type:'emote',e:'not-an-emote',seq:52});
 ok(fakeBroadcast.some(x=>x.msg.type=='ack'&&x.msg.seq==52&&!x.msg.ok),'network hub: host rejects unknown emotes');
 fakePeers=[];T.netPrepareHub('');T.netDisconnect?.();
+/* ---------- player details travel once: full list to a newcomer, small join/leave/update messages to the rest ---------- */
+{
+ T.devHub();netClock+=1000;fakePeers=['peer-a','peer-b'];fakeBroadcast=[];T.netPrepareHub('host');
+ const prof=(n,lv)=>({id:'player-once'+n+'xx',name:'Once'+n,cls:'heal',lv,ti:0,spd:1});
+ T.netReceive('peer-a',{type:'join',profile:prof(1,4),x:400,y:420});fakeBroadcast=[];
+ T.netReceive('peer-b',{type:'join',profile:prof(2,7),x:500,y:420});
+ const toA=fakeBroadcast.filter(x=>x.id=='peer-a'),toB=fakeBroadcast.filter(x=>x.id=='peer-b');
+ const full=toB.filter(x=>x.msg.type=='r'),ids=full[0]?.msg.p.map(e=>e[1])||[];
+ ok(full.length==1&&ids[0]=='host-player'&&ids.includes('player-once1xx')&&ids[ids.length-1]=='player-once2xx','roster: a newcomer gets the full list once (master first, itself last)');
+ ok(!toA.some(x=>x.msg.type=='r')&&toA.filter(x=>x.msg.type=='j').length==1&&toA.find(x=>x.msg.type=='j').msg.e[2]=='Once2','roster: others get only the newcomer entry');
+ fakeBroadcast=[];fakeNet.disconnect('peer-b');
+ const leave=fakeBroadcast.find(x=>x.id=='peer-a'&&x.msg.type=='l');ok(leave&&JSON.stringify(leave.msg).length<25&&!fakeBroadcast.some(x=>x.msg.type=='r'),'roster: leaving sends a slot number, not the list');
+ /* guest side: build the hub from r, then j / u / l */
+ fakePeers=['host-peer'];T.netPrepareHub('guest');
+ const e=(slot,n,lv)=>[slot,'player-guest'+n+'xx','G'+n,'tank',lv,0,1];
+ T.netReceive('host-peer',{type:'r',p:[[0,'host-player','Boss','dps',9,0,1],e(1,1,3)]});
+ T.netReceive('host-peer',{type:'j',e:e(2,2,5)});
+ const g2=()=>T.HUBV().find(v=>v.id=='player-guest2xx');
+ ok(g2()&&g2().lv==5&&T.HUBV().some(v=>v.id=='host-player'),'roster: guest adds players from the list and from joins');
+ T.netReceive('host-peer',{type:'u',e:[2,6,1.06]});ok(g2().lv==6&&g2().netSpd==1.06,'roster: a level-up arrives as a small update');
+ T.netReceive('host-peer',{type:'l',s:2});ok(!g2(),'roster: a leave removes that player');
+ fakePeers=[];T.netPrepareHub('');T.netDisconnect?.();
+}
+/* ---------- fair play: the audit rules (pure), the ledger, master and slave checks ---------- */
+{
+ const base={g:100,xp:0,up:[0,0,0,0],bl:'',cls:'tank',hp:200,mh:200,led:[]},A=(prev,patch,win=10000)=>T.netAudit(prev,{...base,...patch},win);
+ const first=A(null,{}),p=first.next;ok(first.reasons.length==0,'audit: an honest first snapshot passes');
+ ok(A(p,{g:196,xp:190,led:[['raid',96,0],['raid',0,190]]},20000).reasons.length==0,'audit: a legal raid reward passes');
+ ok(A(p,{g:600}).reasons.includes('gold changed without a reason'),'audit: gold edited without a reward is caught (Cheat Engine)');
+ ok(A(p,{xp:5000}).reasons.includes('XP changed without a reason'),'audit: XP edited without a reward is caught');
+ ok(A(p,{g:5100,led:[['raid',5000,0]]}).reasons.includes('raid reward too big'),'audit: a forged oversize reward is caught');
+ ok(A(p,{g:388,led:[['raid',96,0],['raid',96,0],['raid',96,0]]},1000).reasons.includes('raid rewards too often'),'audit: rewards faster than the game allows are caught');
+ ok(A(p,{g:200,led:[['bj',100,0]]}).reasons.some(r=>r.includes('blackjack')),'audit: a blackjack payout without a bet is caught');
+ ok(A(p,{g:115,led:[['bj',-10,0],['bj',25,0]]}).reasons.length==0,'audit: a blackjack win of 2.5x the bet passes');
+ ok(A(p,{up:[0,1,0,0],mh:230}).reasons.includes('upgrade without paying'),'audit: an upgrade without paying is caught');
+ ok(A(p,{g:50,up:[0,1,0,0],mh:230,led:[['upgrade',-50,0,'vit']]}).reasons.length==0,'audit: a paid upgrade passes');
+ ok(A(p,{mh:400,hp:400}).reasons.includes('max HP does not match upgrades'),'audit: a max HP hack is caught');
+ ok(A(p,{hp:350}).reasons.includes('HP above max'),'audit: HP above max is caught');
+ ok(A(p,{mh:260,hp:260,bl:'stone'}).reasons.length==0,'audit: Blessing of Stone max HP passes');
+ const dev=A(p,{g:9999,led:[['dev',9899,0]]});ok(dev.dev&&dev.reasons.length==0,'audit: F2 dev edits are flagged but allowed while AUDIT_ALLOW_DEV');
+ ok(A(p,{g:600,led:[['hack',500,0]]}).reasons.some(r=>r.startsWith('unknown reward')),'audit: unknown reward kinds are caught');
+ ok(A(p,{g:150,led:[['upgrade',50,0]]}).reasons.some(r=>r.includes('gave gold')),'audit: a spend that gives gold is caught');
+ ok(A(p,{g:'lots'}).reasons[0]=='sent malformed stats','audit: malformed stats are rejected');
+ T.goldAdd(30,'quest');T.gainXP(100,'quest');const L=T.LEDGER();
+ ok(L.length<=300&&L[L.length-2].join()=='quest,30,0'&&L[L.length-1].join()=='quest,0,100','ledger: gold and XP changes are recorded with their reason');
+ ok(T.netStats('auditor-a',1).led.length==0&&T.netStats('auditor-b',2).led.length==0,'ledger: a new auditor starts from now');
+ T.goldAdd(10,'quest');ok(T.netStats('auditor-a',3).led.length==1&&T.netStats('auditor-b',4).led.length==1&&T.netStats('auditor-a',5).led.length==0,'ledger: every auditor gets each new entry exactly once');
+ /* master: a speed hacker collects strikes and is removed, and its seat is freed at the directory */
+ T.devHub();netClock+=1000;fakePeers=['peer-x'];fakeBroadcast=[];fakeDirectory=[];T.netPrepareHub('host');
+ T.netReceive('peer-x',{type:'join',profile:{id:'player-hack0001',name:'Hacker',cls:'dps',lv:3,ti:0,spd:1},x:450,y:420});
+ for(let i=1;i<=20;i++){netClock+=66;const v=T.HUBV().find(o=>o.id=='peer-x');if(!v)break;T.netReceive('peer-x',{type:'m',x:Math.min(880,v.netX+80),y:v.netY,f:3,d:0,s:i});}
+ ok(fakeBroadcast.some(x=>x.id=='peer-x'&&x.msg.type=='k')&&!T.HUBV().some(o=>o.id=='peer-x'),'fair play: master removes a speed hacker');
+ ok(fakeDirectory.some(x=>x.path=='/api/kick'&&x.data.peerId=='peer-x'),'fair play: master frees the cheater seat at the directory');
+ /* slave: a master that teleports you is ignored, then reported */
+ fakePeers=['host-peer'];fakeDirectory=[];T.netPrepareHub('guest');const px=T.P().x;
+ for(let i=0;i<6;i++)T.netReceive('host-peer',{type:'c',x:5,y:5,s:999+i});
+ ok(T.P().x==px,'fair play: slave ignores corrections for moves it never sent');
+ ok(fakeDirectory.some(x=>x.path=='/api/report'),'fair play: slave reports a master that keeps failing checks');
+ fakePeers=[];T.netPrepareHub('');T.netDisconnect?.();
+}
 async function networkTests(){
  const peers=[];
  class Channel{constructor(){this.readyState='connecting';this.bufferedAmount=0;this.sent=[];}send(v){this.sent.push(v)}close(){this.readyState='closed';this.onclose?.()}}
@@ -247,6 +311,18 @@ async function signalingTests(){
   await new Promise(resolve=>server.close(resolve));
  }
 }
+async function reportTests(){
+ const {server}=createDirectoryServer({allowedOrigins:[]});await new Promise(r=>server.listen(0,'127.0.0.1',r));
+ const base=`http://127.0.0.1:${server.address().port}`,post=(path,body)=>fetch(base+path,{method:'POST',headers:{'content-type':'application/json'},body:JSON.stringify(body)}).then(async r=>({status:r.status,body:await r.json()}));
+ const prof=(n)=>({id:'player-rep'+n+'xxxx',name:'R'+n,cls:'tank',lv:1,ti:0,spd:1});
+ const host=(await post('/api/join',{profile:prof(1)})).body,g1=(await post('/api/join',{profile:prof(2)})).body,g2=(await post('/api/join',{profile:prof(3)})).body;
+ ok((await post('/api/report',{token:host.token,reason:'x'})).status==400,'directory: only guests can report a host');
+ ok((await post('/api/report',{token:g1.token,reason:'host moved impossibly fast'})).body.flagged,'directory: half the guests reporting flags the hub');
+ const next=(await post('/api/join',{profile:prof(4)})).body;ok(next.hubId==2,'directory: new players are not sent to a flagged hub');
+ ok((await post('/api/kick',{token:g2.token,peerId:g1.peerId})).status==400,'directory: guests cannot kick');
+ ok((await post('/api/kick',{token:host.token,peerId:g2.peerId})).status==200&&(await post('/api/heartbeat',{token:g2.token})).status==401,'directory: the host can free a kicked cheater seat');
+ server.close();
+}
 async function rateLimitTests(){
  /* per-player rate limit behind a Cloudflare Tunnel: real address from cf-connecting-ip, only when trusted */
  const hit=(port,ip)=>new Promise(r=>http.get({host:'127.0.0.1',port,path:'/health',headers:ip?{'cf-connecting-ip':ip}:{}},res=>{res.resume();r(res.statusCode);}));
@@ -261,93 +337,139 @@ async function rateLimitTests(){
 }
 /* ---------- networking benchmark: pick-and-mix scenarios ----------
    npm test           -> quick set (QUICK below), fails only on clear regressions
-   npm run bench      -> every scenario at 10/20/100 players, printed as a table
+   npm run bench      -> every scenario at 3/6/12 players (small raid, large raid, hub / epic raid), printed as a table
    npm run bench -- --scenario=cheat,chat --players=10,20 --seconds=5
    A run = a real host (the game script in a VM, fake network) + N-1 simulated guests that behave like the real client:
    they keep themselves on the walkable map and send at most 15 moves/s, only when something changed, plus a 1 s keep-alive.
    CPU is the host's networking JS only (no WebRTC crypto, no drawing). wireKBps adds ~60 B/message of WebRTC/UDP overhead.
    To add a scenario: give it a guest(g, tick) that returns the message a guest sends this tick (or null), and checks(r). */
 const WIRE_OVERHEAD=60;
+/* A scenario: about (one line), guest(g, k) -> the message guest g sends this tick (or null), checks(r) -> [[ok, label]].
+   Optional: cheater(i) marks guest i as a cheater (counted separately; the master must kick every cheater and no honest
+   player), stats(g, k) edits the snapshot a guest answers fair-play checks with, seconds = minimum run length. */
+const walkStep=(g,k)=>k.move(g,Math.cos(k.t+g.i)*6,Math.sin(k.t+g.i)*6);
+const fairPlay=(r)=>[[r.kickedCheat==r.cheaters,`every cheater is removed (${r.kickedCheat}/${r.cheaters})`]];
 const SCENARIOS={
  idle:{about:'everyone stands still: only keep-alives and the 1 s full refresh',
   guest:(g,k)=>k.move(g,0,0),
   checks:(r)=>[[r.stateMsgsPerSec<=1.5,`idle host sends ~1 state/s (${r.stateMsgsPerSec})`]]},
  walk:{about:'everyone walks in circles at a normal pace',
-  guest:(g,k)=>k.move(g,Math.cos(k.t+g.i)*6,Math.sin(k.t+g.i)*6),
+  guest:walkStep,
   checks:(r)=>[[r.honestCorrected<=r.honestMoves*0.05,`walking is not "corrected" (${r.honestCorrected}/${r.honestMoves})`]]},
  crowd:{about:'30% walk, 70% stand around (a normal hub)',
-  guest:(g,k)=>g.i%10<3?k.move(g,Math.cos(k.t+g.i)*6,Math.sin(k.t+g.i)*6):k.move(g,0,0),
+  guest:(g,k)=>g.i%10<3?walkStep(g,k):k.move(g,0,0),
   checks:(r)=>[[r.honestCorrected<=r.honestMoves*0.05,`crowd is not "corrected" (${r.honestCorrected}/${r.honestMoves})`]]},
  dash:{about:'walking plus a legal dash every 6 s',
-  guest:(g,k)=>{const dash=k.every(g,6000,'dash');return k.move(g,(dash?DASHD[g.cls]*0.9:6)*Math.cos(g.i),(dash?DASHD[g.cls]*0.9:6)*Math.sin(g.i),dash);},
+  guest:(g,k)=>{const dash=k.every(g,6000,'dash'),d=dash?DASHD[g.cls]*0.9:6;return k.move(g,d*Math.cos(g.i),d*Math.sin(g.i),dash);},
   checks:(r)=>[[r.honestCorrected<=r.honestMoves*0.05,`legal dashes are accepted (${r.honestCorrected}/${r.honestMoves} corrected)`]]},
- cheat:{about:'every 5th guest speed-hacks (+60 px per update); the rest walk',
-  guest:(g,k)=>{g.cheater=g.i%5==0;return k.move(g,g.cheater?60:Math.cos(k.t+g.i)*6,g.cheater?0:Math.sin(k.t+g.i)*6);},
-  checks:(r)=>[[r.cheatCorrected>=r.cheatMoves*0.9,`speed hacks are corrected (${r.cheatCorrected}/${r.cheatMoves})`],
-   [r.honestCorrected<=r.honestMoves*0.05,`honest players are not punished (${r.honestCorrected}/${r.honestMoves})`]]},
- chat:{about:'walking + everyone chats every 2 s, one spammer every 100 ms',
-  guest:(g,k)=>g.i==0?(k.every(g,100,'chat')?k.chat(g):null):k.every(g,2000,'chat')?k.chat(g):k.move(g,Math.cos(k.t+g.i)*6,Math.sin(k.t+g.i)*6),
-  checks:(r)=>[[r.chatRejected>0,`chat spam is rejected (${r.chatRejected})`],[r.chatAccepted>=r.chatSent-r.chatRejected,`normal chat is accepted and relayed (${r.chatAccepted})`]]},
+ cheat:{about:'speed hack: every 5th guest jumps +60 px per update; the rest walk',
+  cheater:(i)=>i%5==0,guest:(g,k)=>g.cheater?k.move(g,60,0):walkStep(g,k),
+  checks:(r)=>[...fairPlay(r),[r.cheatCorrected>=r.cheatMoves*0.9,`speed hacks are corrected (${r.cheatCorrected}/${r.cheatMoves})`]]},
+ flood:{about:'speed hack by flooding: every 5th guest sends a small +6 px step every frame (60/s)',
+  cheater:(i)=>i%5==0,guest:(g,k)=>g.cheater?k.move(g,6,0,false,true):walkStep(g,k),
+  checks:(r)=>fairPlay(r)},
+ econ:{about:'everyone earns/spends legally (raids, upgrades, blackjack); every 5th guest also edits its gold',
+  seconds:30,cheater:(i)=>i%5==0,
+  guest:(g,k)=>{const s=g.stats;
+   if(k.every(g,16000,'raid')){s.g+=96;s.xp+=190;s.led.push(['raid',96,0],['raid',0,190]);}
+   if(k.every(g,9000,'bj')&&s.g>=10){s.g+=10;s.led.push(['bj',-10,0],['bj',20,0]);}
+   const cost=50*(s.up[1]+1);if(k.every(g,12000,'buy')&&s.g>=cost&&s.up[1]<5){s.g-=cost;s.up[1]++;s.led.push(['upgrade',-cost,0,'vit']);}
+   return walkStep(g,k);},
+  stats:(g)=>{if(g.cheater)g.stats.g+=500;}, /* Cheat Engine: gold changes with no reason in the ledger */
+  checks:(r)=>fairPlay(r)},
+ hphack:{about:'every 5th guest reports double max HP',
+  seconds:30,cheater:(i)=>i%5==0,guest:walkStep,stats:(g,k,snap)=>{if(g.cheater)snap.mh*=2;},
+  checks:(r)=>fairPlay(r)},
+ chat:{about:'walking + everyone chats every 2 s; guest 0 is a spam bot (every 100 ms)',
+  cheater:(i)=>i==0,guest:(g,k)=>g.cheater?(k.every(g,100,'chat')?k.chat(g):null):k.every(g,2000,'chat')?k.chat(g):walkStep(g,k),
+  checks:(r)=>[...fairPlay(r),[r.chatRejected>0,`chat spam is rejected (${r.chatRejected})`],[r.honestChatAccepted==r.honestChatSent,`normal chat is accepted and relayed (${r.honestChatAccepted}/${r.honestChatSent})`]]},
  churn:{about:'walking while a guest leaves and a new one joins every 0.5 s',
-  churn:500,guest:(g,k)=>k.move(g,Math.cos(k.t+g.i)*6,Math.sin(k.t+g.i)*6),
-  checks:(r)=>[[r.endPlayers==r.players,`seats stay consistent through joins/leaves (${r.endPlayers}/${r.players})`],[r.churned>0,`players actually churned (${r.churned})`]]},
+  churn:500,guest:walkStep,
+  checks:(r)=>[[r.churned>0,`players actually churned (${r.churned})`]]},
+ audit:{about:'slaves audit the master: the host edits its own gold; every slave must flag it',
+  seconds:30,guest:walkStep,hostCheat:true,
+  checks:(r)=>[[r.hostAuditFailures>0,`slave-side audit catches an edited master (${r.hostAuditFailures} failed checks)`]]},
 };
 const DASHD={tank:60,dps:150,heal:105};
-function runBench({scenario,players:N,seconds:SEC=3}){
- const sc=SCENARIOS[scenario],c={...ctx};c.window=c;vm.createContext(c);
- vm.runInContext(SRC.replace('const HUB_MAX = 10;','const HUB_MAX = '+N+';')+';globalThis.B={netReceive,netStep,netPrepareHub,hubVisitStep,devHub,clampW,HUBV:()=>HUBV};',c);
+function runBench({scenario,players:N,seconds}){
+ const sc=SCENARIOS[scenario],SEC=Math.max(seconds||3,sc.seconds||0),c={...ctx};c.window=c;vm.createContext(c);
+ vm.runInContext(SRC.replace(/const HUB_MAX = \d+;/,'const HUB_MAX = '+N+';')+';globalThis.B={netReceive,netStep,netPrepareHub,hubVisitStep,devHub,clampW,netStats,netAudit,CL,V:()=>V,HUBV:()=>HUBV};',c);
  const B=c.B,ms=()=>Number(process.hrtime.bigint())/1e6,cpu={recv:0,send:0,smooth:0},FRAME=1000/60;
- const r={scenario,players:N,honestMoves:0,honestCorrected:0,cheatMoves:0,cheatCorrected:0,chatSent:0,chatAccepted:0,chatRejected:0,churned:0,guestBytes:0,guestMsgs:0};
- let next=0,seq=0;const guests=new Map();
- const join=()=>{const i=next++,id='peer-'+i;fakePeers.push(id);
-  B.netReceive(id,{type:'join',profile:{id:'player-bench'+String(i).padStart(4,'0'),name:'P'+i,cls:['tank','dps','heal'][i%3],lv:5,ti:0,spd:1},x:250+(i%20)*20,y:280+Math.floor(i/20)*25});
-  guests.set(id,{id,i,cls:['tank','dps','heal'][i%3],key:'',sentAt:-1e9,timers:{}});};
+ const r={scenario,players:N,cheaters:0,kickedCheat:0,kickedHonest:0,honestMoves:0,honestCorrected:0,cheatMoves:0,cheatCorrected:0,
+  chatSent:0,chatAccepted:0,chatRejected:0,honestChatSent:0,honestChatAccepted:0,churned:0,guestBytes:0,guestMsgs:0,audits:0,hostAuditFailures:0};
+ let next=0,seq=0,seen=0;const guests=new Map();
+ const join=()=>{const i=next++,id='peer-'+i,cls=['tank','dps','heal'][i%3];fakePeers.push(id);
+  B.netReceive(id,{type:'join',profile:{id:'player-bench'+String(i).padStart(4,'0'),name:'P'+i,cls,lv:1,ti:0,spd:1},x:250+(i%20)*20,y:280+Math.floor(i/20)*25});
+  const g={id,i,cls,key:'',sentAt:-1e9,timers:{},cheater:!!sc.cheater?.(i),stats:{g:100,xp:0,up:[0,0,0,0],bl:'',led:[]}};
+  if(g.cheater)r.cheaters++;guests.set(id,g);};
  B.devHub();netClock=1000;fakePeers=[];B.netPrepareHub('host');
  for(let i=1;i<N;i++)join();
  fakeBroadcast=[];
  const k={t:0,
   every:(g,period,name)=>{if(netClock-(g.timers[name]??-1e9)<period)return false;g.timers[name]=netClock;return true;},
-  move:(g,dx,dy,dash=false)=>{const v=B.HUBV().find(o=>o.id==g.id);if(!v)return null;
+  move:(g,dx,dy,dash=false,raw=false)=>{const v=B.HUBV().find(o=>o.id==g.id);if(!v)return null;
    const at={x:v.netX+dx,y:v.netY+dy,hp:1};if(!g.cheater)B.clampW(at);
    const m={type:'m',x:Math.round(at.x),y:Math.round(at.y),f:3,d:dash?1:0},key=[m.x,m.y,m.d].join();
-   if(netClock-g.sentAt<66||(key==g.key&&netClock-g.sentAt<1000))return null; /* same send rules as the real client */
+   if(!raw&&(netClock-g.sentAt<66||(key==g.key&&netClock-g.sentAt<1000)))return null; /* the real client's send rules */
    g.key=key;g.sentAt=netClock;return m;},
   chat:(g)=>({type:'chat',text:'hello from '+g.i}),
  };
+ /* the guest side of every message the host sent: answer fair-play checks, notice kicks */
+ const guestInbox=()=>{for(;seen<fakeBroadcast.length;seen++){const m=fakeBroadcast[seen],g=guests.get(m.id);if(!g)continue;
+  if(m.msg.type=='k'){guests.delete(g.id);g.cheater?r.kickedCheat++:r.kickedHonest++;}
+  else if(m.msg.type=='q'){const s=g.stats,mh=Math.round(B.CL[g.cls].hp*(1+0.15*s.up[1]));
+   const snap={type:'a',n:m.msg.n,g:s.g,xp:s.xp,up:s.up.slice(),bl:s.bl,cls:g.cls,hp:mh,mh,led:s.led.splice(0)};
+   sc.stats?.(g,k,snap);if(g.cheater&&scenario=='econ')snap.g=s.g;r.audits++;B.netReceive(g.id,snap);}}};
+ /* slaves audit the master: ask for its snapshot and run the same netAudit the real slave runs */
+ let hostPrev=null,hostAt=netClock;
+ const auditHost=()=>{const snap=B.netStats('bench-auditor',1);const res=B.netAudit(hostPrev,snap,netClock-hostAt);hostAt=netClock;if(res.next)hostPrev=res.next;if(res.reasons.length)r.hostAuditFailures++;};
+ auditHost();
  for(let frame=0;frame<SEC*60;frame++){
   netClock+=FRAME;k.t=frame/60;
   if(sc.churn&&frame>0&&frame%Math.round(sc.churn/FRAME)==0&&guests.size){const old=[...guests.keys()][0];guests.delete(old);fakeNet.disconnect(old);join();r.churned++;}
-  for(const g of guests.values()){
+  if(sc.hostCheat&&frame%120==60)B.V().gold+=250; /* the master's own Cheat Engine edit */
+  if(frame%240==0&&frame)auditHost();
+  for(const g of [...guests.values()]){
+   if(!guests.has(g.id))continue;
    const m=sc.guest(g,k);if(!m)continue;
    if(m.type=='m')m.s=++seq;else m.seq=++seq; /* moves number themselves in s, queries (chat) in seq */
    const before=fakeBroadcast.length,bytes=JSON.stringify(m).length;r.guestBytes+=bytes;r.guestMsgs++;
    const t0=ms();B.netReceive(g.id,m);cpu.recv+=ms()-t0;
    const replies=fakeBroadcast.slice(before).filter(x=>x.id==g.id);
    if(m.type=='m'){const corrected=replies.some(x=>x.msg.type=='c');if(g.cheater){r.cheatMoves++;if(corrected)r.cheatCorrected++;}else{r.honestMoves++;if(corrected)r.honestCorrected++;}}
-   else if(m.type=='chat'){r.chatSent++;const ack=replies.find(x=>x.msg.type=='ack');if(ack?.msg.ok)r.chatAccepted++;else if(ack)r.chatRejected++;}
+   else if(m.type=='chat'){r.chatSent++;if(!g.cheater)r.honestChatSent++;const ack=replies.find(x=>x.msg.type=='ack');if(ack?.msg.ok){r.chatAccepted++;if(!g.cheater)r.honestChatAccepted++;}else if(ack)r.chatRejected++;}
+   guestInbox();
   }
-  if(frame%3==0){const t0=ms();B.netStep();cpu.send+=ms()-t0;}
+  if(frame%3==0){const t0=ms();B.netStep();cpu.send+=ms()-t0;guestInbox();}
   const t0=ms();B.hubVisitStep(FRAME/1000);cpu.smooth+=ms()-t0;
  }
  let up=0,upMsgs=0;const states=[];
- for(const m of fakeBroadcast){const b=JSON.stringify(m.msg).length,n=m.id=='all'?guests.size:1;up+=b*n;upMsgs+=n;if(m.msg.type=='s')states.push(b);}
+ const byType={}; /* host upload split by message type: bytes and messages per second */
+ for(const m of fakeBroadcast){const b=JSON.stringify(m.msg).length,n=m.id=='all'?guests.size:1;up+=b*n;upMsgs+=n;if(m.msg.type=='s')states.push(b);const e=byType[m.msg.type]||(byType[m.msg.type]={bytes:0,msgs:0});e.bytes+=b*n;e.msgs+=n;}
  const per=(x)=>+(x/SEC).toFixed(1);
- Object.assign(r,{endPlayers:B.HUBV().filter(v=>v.netClientId).length+1,
+ Object.assign(r,{seconds:SEC,endPlayers:B.HUBV().filter(v=>v.netClientId).length+1,
   cpuMs:+((cpu.recv+cpu.send+cpu.smooth)/SEC).toFixed(2),recvMs:+(cpu.recv/SEC).toFixed(2),sendMs:+(cpu.send/SEC).toFixed(2),smoothMs:+(cpu.smooth/SEC).toFixed(2),
   upKBps:per(up/1024),wireUpKBps:per((up+upMsgs*WIRE_OVERHEAD)/1024),upMsgsPerSec:Math.round(upMsgs/SEC),
   downKBps:per(r.guestBytes/1024),wireDownKBps:per((r.guestBytes+r.guestMsgs*WIRE_OVERHEAD)/1024),
   perGuestUpKBps:+(r.guestBytes/SEC/1024/Math.max(1,N-1)).toFixed(2),
-  stateMsgsPerSec:per(states.length),biggestState:states.length?Math.max(...states):0});
+  stateMsgsPerSec:per(states.length/Math.max(1,N-1)) /* per guest */,
+  upByType:Object.fromEntries(Object.entries(byType).map(([k,e])=>[k,{Bps:Math.round(e.bytes/SEC),msgsPerSec:+(e.msgs/SEC).toFixed(1),avgB:Math.round(e.bytes/e.msgs)}])),biggestState:states.length?Math.max(...states):0});
  fakePeers=[];return r;
 }
-/* shared limits for every run: these catch protocol/CPU regressions whatever the scenario */
-const BASE_CHECKS=(r)=>[[r.endPlayers==r.players,`every player has a seat (${r.endPlayers}/${r.players})`],
- [r.biggestState<=24+r.players*16,`state stays compact (${r.biggestState} B)`],[r.cpuMs<r.players*5,`host CPU stays light (${r.cpuMs} ms/s)`]];
-const QUICK=[['idle',[10]],['walk',[10,20,100]],['crowd',[20]],['dash',[10]],['cheat',[10]],['chat',[10]],['churn',[10]]];
+/* shared limits for every run: these catch protocol/CPU/fair-play regressions whatever the scenario */
+/* a phone master: mid-range phones run JavaScript ~5x slower than a desktop (estimate). Networking may use at most 5%
+   of one core (50 ms per second) after that slowdown, and at most 0.5 Mbit/s of mobile upload. */
+const PHONE_SLOWDOWN=5,PHONE_CPU_MS=50,PHONE_UP_MBIT=0.5;
+const BASE_CHECKS=(r)=>[...(r.players<=12?[[r.cpuMs*PHONE_SLOWDOWN<=PHONE_CPU_MS,`phone master CPU fits (${(r.cpuMs*PHONE_SLOWDOWN).toFixed(1)} of ${PHONE_CPU_MS} ms/s est.)`],[r.wireUpKBps*8/1000<=PHONE_UP_MBIT,`phone master upload fits (${(r.wireUpKBps*8/1000).toFixed(3)} of ${PHONE_UP_MBIT} Mbit/s)`]]:[]),[r.endPlayers==r.players-r.kickedCheat-r.kickedHonest,`seats match who is still in (${r.endPlayers})`],
+ [r.kickedHonest==0,`no honest player is removed (${r.kickedHonest})`],
+ [r.biggestState<=32+r.players*6,`state stays compact (${r.biggestState} B)`],[r.cpuMs<r.players*5,`host CPU stays light (${r.cpuMs} ms/s)`]];
+/* sizes the game uses: small raid 3, large raid 6, hub and epic raid 12 (the most it will ever need) */
+const SIZES=[3,6,12];
+const QUICK=[['idle',[12]],['walk',SIZES],['crowd',[12]],['dash',[6]],['cheat',[12]],['flood',[12]],['econ',[12]],['hphack',[12]],['chat',[12]],['churn',[12]],['audit',[6]]];
 async function benchTests(){
  const arg=(name)=>(process.argv.find(a=>a.startsWith('--'+name+'='))||'').split('=')[1];
  const names=arg('scenario')?arg('scenario').split(','):BENCH_ONLY?Object.keys(SCENARIOS):null;
- const sizes=arg('players')?arg('players').split(',').map(Number):[10,20,100],seconds=Number(arg('seconds')||(BENCH_ONLY?5:2));
+ const sizes=arg('players')?arg('players').split(',').map(Number):SIZES,seconds=Number(arg('seconds')||(BENCH_ONLY?5:2));
  const plan=names?names.flatMap(n=>sizes.map(p=>[n,p])):QUICK.flatMap(([n,ps])=>ps.map(p=>[n,p]));
  const rows=[];
  for(const [scenario,players] of plan){
@@ -356,10 +478,11 @@ async function benchTests(){
   for(const [c,label] of [...BASE_CHECKS(r),...SCENARIOS[scenario].checks(r)])ok(c,`bench ${scenario} ${players}p: ${label}`);
   if(!BENCH_ONLY)console.log('BENCH',JSON.stringify({scenario,players,cpuMs:r.cpuMs,upKBps:r.upKBps,downKBps:r.downKBps,biggestState:r.biggestState}));
  }
+ if(arg('json'))fs.writeFileSync(arg('json'),JSON.stringify({at:new Date().toISOString(),seconds,rows},null,1)); /* --json=file: keep results to chart or compare runs */
  if(BENCH_ONLY){
   for(const [n,s] of Object.entries(SCENARIOS))if(!names||names.includes(n))console.log(`  ${n.padEnd(6)} ${s.about}`);
   console.table(rows.map(r=>({scenario:r.scenario,players:r.players,'cpu ms/s':r.cpuMs,'host up KB/s':r.upKBps,'host up wire':r.wireUpKBps,'host down KB/s':r.downKBps,
-   'per guest up KB/s':r.perGuestUpKBps,'state msg B':r.biggestState,'states/s':r.stateMsgsPerSec,corrected:`${r.honestCorrected}/${r.honestMoves}`+(r.cheatMoves?` cheat ${r.cheatCorrected}/${r.cheatMoves}`:'')})));
+   'per guest up KB/s':r.perGuestUpKBps,'state msg B':r.biggestState,'states/s':r.stateMsgsPerSec,corrected:`${r.honestCorrected}/${r.honestMoves}`+(r.cheatMoves?` cheat ${r.cheatCorrected}/${r.cheatMoves}`:''),kicked:r.cheaters||r.kickedHonest?`${r.kickedCheat}/${r.cheaters} cheaters, ${r.kickedHonest} honest`:'',audits:r.audits+(r.hostAuditFailures?` host✗${r.hostAuditFailures}`:'')})));
  }
 }
-(BENCH_ONLY?Promise.resolve():networkTests().then(signalingTests).then(rateLimitTests)).then(benchTests).then(()=>{console.log(f?f+' FAILED':'ALL PASSED');process.exit(f?1:0);}).catch(e=>{console.error(e);process.exit(1);});
+(BENCH_ONLY?Promise.resolve():networkTests().then(signalingTests).then(reportTests).then(rateLimitTests)).then(benchTests).then(()=>{console.log(f?f+' FAILED':'ALL PASSED');process.exit(f?1:0);}).catch(e=>{console.error(e);process.exit(1);});
