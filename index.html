@@ -3764,16 +3764,10 @@
         const e = streamPts()[streamPts().length - 1],
           bot = e.y + 38,
           hw = e.w - 1;
-        c.save();
-        /* only below the rim: the fall starts exactly on the curved edge of the platform */
-        c.beginPath();
-        c.rect(-W, -H, W * 3, H * 3);
-        c.ellipse(PLAT.x, PLAT.y, PLAT.rx, PLAT.ry, 0, 0, 6.3);
-        c.clip("evenodd");
-        /* plain water joining the river above and the ground stream below (no seam) */
+        /* plain water from inside the river's end, over the last bit of stone up to the rim (the rim is lower on the left),
+           down the wall and into the ground stream, so no part of the river is missing */
         c.fillStyle = "#5aa7a6";
-        c.fillRect(e.x - hw, rimY(e.x - hw) - 30, hw * 2, bot - rimY(e.x - hw) + 30);
-        c.restore();
+        c.fillRect(e.x - hw, e.y - 10, hw * 2, bot - e.y + 10);
         /* the falling-water look only on the side wall: between the rim and the wall's bottom edge */
         c.save();
         c.beginPath();
