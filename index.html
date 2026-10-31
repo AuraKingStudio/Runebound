@@ -5848,15 +5848,32 @@
           const a = (n / 10) * 6.28 + 0.2;
           g.fillText(RUNES_HUB[n * 3 + 1], px + Math.cos(a) * (prx + 5), py + Math.sin(a) * (pry + 3));
         }
-        /* spout on the near side where the brook pours out */
-        const sx = px + 6,
-          sy = py + pry + 2;
-        g.fillStyle = "#b39a72";
-        g.fillRect(sx - 9, sy - 3, 18, 9);
+        /* the outlet: the canal runs straight through a gap in the rim, finished with a carved block on each side */
+        const pts = streamPts(),
+          inRim = (p, m) => ((p.x - px) / (R + m)) ** 2 + ((p.y - py - 3) / (Ry + m)) ** 2 < 1,
+          K = pts.findIndex((p) => !inRim(p, 6)),
+          gap = pts.slice(0, K + 1);
+        g.fillStyle = "#5e5444";
+        bank(g, gap, 0.6, 0);
+        g.fill();
+        g.fillStyle = "#4b6a60";
+        bank(g, gap, -1.4, 0);
+        g.fill();
         g.fillStyle = "#5aa7a6";
-        g.fillRect(sx - 5, sy - 4, 10, 10);
-        g.fillStyle = "rgba(220,255,255,.5)";
-        g.fillRect(sx - 4, sy - 3, 2, 8);
+        bank(g, gap, -3, 0);
+        g.fill();
+        pondWater(g); /* basin water over the canal mouth, so the two pools of water read as one */
+        const e = pts[pts.findIndex((p) => !inRim(p, 0))];
+        for (const sd of [-1, 1]) {
+          const bx = e.x + e.nx * (e.w + 4.5) * sd,
+            by = e.y + e.ny * (e.w + 4.5) * sd;
+          g.fillStyle = "#8a7558";
+          g.fillRect(bx - 5, by - 3, 10, 8);
+          g.fillStyle = "#e2cba0";
+          g.fillRect(bx - 5, by - 6, 10, 4);
+          g.fillStyle = "rgba(110,240,220,.85)";
+          g.fillRect(bx - 0.6, by - 1, 1.2, 4);
+        }
         /* two short pillars at the back for the crystals */
         for (const dx of [-R + 4, R - 4]) {
           const bx = px + dx,
@@ -6083,7 +6100,7 @@
         if (STREAM) return STREAM;
         const r = rng(23),
           segs = [
-            [WF.px + 6, WF.py + WF.pry + 4, 130, 304, 250, 292],
+            [WF.px + 8, WF.py + WF.pry * 0.4, 150, 312, 250, 292], /* starts inside the cistern, so the canal cuts through its rim */
             [250, 292, 350, 284, 450, 352],
             [450, 352, 530, 400, 566, 470],
             [566, 470, 596, 540, 604, 650], /* toward the viewer, over the near edge and out of sight below */
