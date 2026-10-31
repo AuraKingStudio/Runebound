@@ -1083,6 +1083,79 @@
         P.cd = [0, 0, 0];
         P.dx = P.dy = 0;
       }
+      /* ---------- hub visitors: up to HUB_MAX players share a hub (you + 9 others) ----------
+         HUBV = the other players. Kept apart from S.ps (the raid party) so arena logic never sees them.
+         Network hooks: hubJoin(id, {name, cls, x, y}), hubMove(id, x, y), hubLeave(id).
+         Visitors glide toward their last reported spot (tx, ty), so ~10 updates a second still look smooth. */
+      const HUB_MAX = 10;
+      let HUBV = [];
+      /* HUB_SPAWNS: spawn spots south of the river, spread so arrivals never stack (0 = you) */
+      const HUB_SPAWNS = [[450, 440], [400, 450], [500, 450], [355, 430], [545, 430], [425, 485], [475, 485], [310, 455], [590, 455], [450, 515]];
+      function hubJoin(id, o) {
+        if (HUBV.length >= HUB_MAX - 1 || HUBV.some((v) => v.id == id)) return null;
+        const [sx, sy] = HUB_SPAWNS[(HUBV.length + 1) % HUB_SPAWNS.length],
+          v = { id, name: o.name || "Wanderer", cls: CL[o.cls] ? o.cls : "tank", x: o.x ?? sx, y: o.y ?? sy, dx: 0, dy: 0, f: "d", hp: 1, mh: 1 };
+        v.tx = v.x;
+        v.ty = v.y;
+        HUBV.push(v);
+        return v;
+      }
+      function hubMove(id, x, y) {
+        const v = HUBV.find((v) => v.id == id);
+        if (v) {
+          v.tx = x;
+          v.ty = y;
+        }
+      }
+      function hubLeave(id) {
+        HUBV = HUBV.filter((v) => v.id != id);
+      }
+      /* hubVisitStep(dt): glide visitors toward their target, keep them on the stones and out of the river, update facing */
+      function hubVisitStep(dt) {
+        const k = 1 - Math.exp(-dt * 12);
+        for (const v of HUBV) {
+          if (v.bot) botStep(v, dt);
+          const mx = (v.tx - v.x) * k,
+            my = (v.ty - v.y) * k,
+            d = Math.hypot(mx, my),
+            walking = d / Math.max(dt, 1e-3) > 15;
+          v.x += mx;
+          v.y += my;
+          clampW(v);
+          v.dx = walking ? mx / d : 0;
+          v.dy = walking ? my / d : 0;
+          if (walking) v.f = Math.abs(v.dx) > Math.abs(v.dy) ? (v.dx > 0 ? "r" : "l") : v.dy > 0 ? "d" : "u";
+        }
+      }
+      /* bots (?bots=N in the url): wander between random spots, standing in for remote players to test a full hub.
+         They report a new target 10 times a second, like a network update would. */
+      function botStep(v, dt) {
+        v.wt = (v.wt || 0) - dt;
+        if (v.wt > 0) return;
+        /* new goal when arrived, or when stuck against the river or the edge for 2s */
+        v.st = Math.hypot(v.x - (v.lx ?? v.x), v.y - (v.ly ?? v.y)) < 1 ? (v.st || 0) + 0.1 : 0;
+        v.lx = v.x;
+        v.ly = v.y;
+        if (!v.gx || v.st > 2 || Math.hypot(v.gx - v.x, v.gy - v.y) < 6) {
+          v.st = 0;
+          v.gx = HUB.x + rnd(-300, 300);
+          v.gy = HUB.y + rnd(-160, 170);
+          v.wt = rnd(0.5, 3);
+          return;
+        }
+        const a = Math.atan2(v.gy - v.y, v.gx - v.x);
+        v.tx = v.x + Math.cos(a) * 15;
+        v.ty = v.y + Math.sin(a) * 15;
+        v.wt = 0.1;
+      }
+      function addBots(n) {
+        const names = ["Aster", "Bram", "Cyra", "Dain", "Elow", "Fenn", "Gale", "Hollis", "Isk"],
+          ks = Object.keys(CL);
+        for (let i = 0; i < n; i++) {
+          const v = hubJoin("bot" + i, { name: names[i % names.length], cls: ks[i % ks.length] });
+          if (v) v.bot = 1;
+        }
+      }
       function toHub() {
         S.sc = "hub";
         S.b = null;
@@ -1458,6 +1531,7 @@
           for (let i = 0; i < 3; i++) P.cd[i] = Math.max(0, P.cd[i] - dt);
         }
         if (S.sc == "arena") arena(dt);
+        else hubVisitStep(dt);
         if (S.res > 0) {
           S.res -= dt;
           if (S.res <= 0) toHub();
@@ -2379,6 +2453,8 @@
         }
       });
       if (/[?&]dev\b/.test(location.search)) toggleDev();
+      const botsQ = /[?&]bots=(\d+)/.exec(location.search);
+      if (botsQ) addBots(Math.min(+botsQ[1], HUB_MAX - 1));
       /* dev: skip the class menu and jump straight into the hub. Set to false before release. */
       const AUTOSTART = true;
       /* dev hot-reload: when the page reloads (live-server, F5), keep the current run.
@@ -2970,6 +3046,38 @@
         heal: new (typeof Path2D == "function" ? Path2D : Object)("M-2.6-9h5.2v6.4h6.4v5.2h-6.4v6.4h-5.2v-6.4h-6.4v-5.2h6.4z"),
       };
       const FACE_A = { r: 0, d: Math.PI / 2, l: Math.PI, u: -Math.PI / 2 };
+      /* bodySprite(cls): body disc, glowing class ring and emblem pre-rendered once at 3x.
+         The radial gradient + shadowBlur were the costliest part of a player, paid every frame for every player. */
+      const BODY = {},
+        BODY_PAD = 12,
+        BODY_K = 3;
+      function bodySprite(k) {
+        if (BODY[k]) return BODY[k];
+        const sz = (PR + BODY_PAD) * 2,
+          cv2 = document.createElement("canvas");
+        cv2.width = cv2.height = sz * BODY_K;
+        const g = cv2.getContext("2d"),
+          col = SKC[k];
+        g.scale(BODY_K, BODY_K);
+        g.translate(sz / 2, sz / 2);
+        const bg = g.createRadialGradient(0, -4, 1, 0, 0, PR + 1);
+        bg.addColorStop(0, "#1c2a36");
+        bg.addColorStop(1, "#0b1218");
+        g.fillStyle = bg;
+        g.strokeStyle = col;
+        g.lineWidth = 2.5;
+        g.shadowColor = col;
+        g.shadowBlur = 8 * BODY_K;
+        g.beginPath();
+        g.arc(0, 0, PR, 0, 6.3);
+        g.fill();
+        g.stroke();
+        g.shadowBlur = 0;
+        g.fillStyle = col;
+        g.scale(0.82, 0.82);
+        g.fill(PEMB[k]);
+        return (BODY[k] = cv2);
+      }
       function drawPlayer(p, dt) {
         const col = SKC[p.cls],
           moving = Math.hypot(p.dx, p.dy) > 0.1,
@@ -2978,7 +3086,7 @@
           bob = moving && !da ? -Math.abs(step) * 4 : 0;
         /* footstep dust while walking */
         p.stp = (p.stp || 0) - dt;
-        if (moving && !da && p.stp <= 0) { p.stp = 0.17; burst(p.x + rnd(-4, 4), p.y + PR, "#6c7a86", 2, 25); }
+        if (moving && !da && p.stp <= 0 && (p === P || FX.length < 300)) { p.stp = 0.17; burst(p.x + rnd(-4, 4), p.y + PR, "#6c7a86", 2, 25); }
         p.lvp = Math.max(0, (p.lvp || 0) - dt); /* level-up pop timer */
         c.save();
         c.translate(p.x, p.y);
@@ -3016,20 +3124,9 @@
           c.rotate(cl(p.dx, -1, 1) * 0.14);
           c.scale(1 + 0.07 * Math.abs(step), 1 - 0.07 * Math.abs(step));
         }
-        /* body disc */
-        const bg = c.createRadialGradient(0, -4, 1, 0, 0, PR + 1);
-        bg.addColorStop(0, "#1c2a36");
-        bg.addColorStop(1, "#0b1218");
-        c.fillStyle = bg;
-        c.strokeStyle = col;
-        c.lineWidth = 2.5;
-        c.shadowColor = col;
-        c.shadowBlur = 8;
-        c.beginPath();
-        c.arc(0, 0, PR, 0, 6.3);
-        c.fill();
-        c.stroke();
-        c.shadowBlur = 0;
+        /* body disc, ring and class emblem (cached sprite) */
+        const bs = PR + BODY_PAD;
+        c.drawImage(bodySprite(p.cls), -bs, -bs, bs * 2, bs * 2);
         /* facing arrow: snaps to the move direction */
         c.save();
         /* keyboard + mouse: point at the cursor; touch / controller: snap to the move direction */
@@ -3042,12 +3139,6 @@
         c.closePath();
         c.fill();
         c.restore();
-        /* class emblem */
-        c.fillStyle = col;
-        c.save();
-        c.scale(0.82, 0.82);
-        c.fill(PEMB[p.cls]);
-        c.restore();
         /* tank armor from dash: blue shield ring */
         if (p.ar > 0) {
           c.strokeStyle = `rgba(77,163,255,${0.4 + 0.3 * Math.sin(S.tm * 10)})`;
@@ -3058,6 +3149,19 @@
         }
         c.restore();
         /* health bar turns white while armored (tank dash); thin strip above = armor time left */
+        if (p.name && p !== P) {
+          /* hub visitor: just a name tag, no health bar */
+          c.textAlign = "center";
+          c.textBaseline = "alphabetic";
+          c.lineWidth = 3;
+          c.strokeStyle = "#000";
+          c.font = "bold 11px Georgia";
+          c.fillStyle = "#dfe8f0";
+          c.strokeText(p.name, 0, PR + 16);
+          c.fillText(p.name, 0, PR + 16);
+          c.restore();
+          return;
+        }
         bar(-14, -PR - 12, 28, 4, p.hp / p.mh, p.ar > 0 ? "#eef6ff" : "#48e07a");
         if (p.ar > 0) {
           c.fillStyle = "#ffffff";
@@ -4918,7 +5022,9 @@
         }
         c.globalAlpha = 1;
         RINGS = RINGS.filter((r) => r.t < 0.6);
-        for (const p of S.ps) drawPlayer(p, dt);
+        /* hub: you and the visitors, drawn top to bottom so whoever stands lower overlaps the one behind */
+        const who = S.sc == "hub" ? S.ps.concat(HUBV).sort((a, b) => a.y - b.y) : S.ps;
+        for (const p of who) drawPlayer(p, dt);
         c.save();
         c.globalCompositeOperation = "lighter";
         for (const p of FX) {
