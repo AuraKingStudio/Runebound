@@ -345,10 +345,26 @@
         pointer-events: auto;
       }
       #chat.op #chlog div.old { opacity: 1; }
+      #chrow { display: flex; gap: 6px; margin-top: 6px; align-items: center; }
+      #emo { display: flex; gap: 3px; pointer-events: auto; }
+      #emo button {
+        width: 28px;
+        height: 28px;
+        padding: 0;
+        border-radius: 8px;
+        border: 1px solid #d9a40066;
+        background: #1b2a33b3;
+        font-size: 15px;
+        line-height: 1;
+        cursor: pointer;
+        opacity: 0.75;
+        transition: transform 0.12s, opacity 0.2s, border-color 0.2s;
+      }
+      #emo button:hover { opacity: 1; transform: translateY(-2px) scale(1.08); border-color: #ffd84a; }
       #chin {
         pointer-events: auto;
-        margin-top: 6px;
-        width: 100%;
+        flex: 1;
+        min-width: 0;
         box-sizing: border-box;
         font: 13px Georgia, serif;
         padding: 7px 10px;
@@ -767,7 +783,7 @@
     <div id="dev" hidden></div>
     <div id="jz"></div>
     <div id="jb"><div id="jk"></div></div>
-    <div id="chat" hidden><div id="chlog"></div><input id="chin" maxlength="80" autocomplete="off" placeholder="Press Enter to chat" /></div>
+    <div id="chat" hidden><div id="chlog"></div><div id="chrow"><input id="chin" maxlength="80" autocomplete="off" placeholder="Press Enter to chat" /><div id="emo"></div></div></div>
     <div id="btns">
       <button id="b0"></button><button id="b1"></button><button id="b2"></button
       ><button id="bi" hidden>Enter arena</button><button id="bt">🏷 Titles</button><button id="bq" class="hb">📜 Quests</button><button id="bg" class="hb">🛡 Guild</button>
@@ -1179,7 +1195,7 @@
         v.ti = v.lv < 5 || Math.random() < 0.35 ? TITLES[0] : pick(ok);
       }
       let HUBV = [],
-        HUB_MIN = 5, /* ?bots=N raises it to N + 1 for stress tests */
+        HUB_MIN = 6, /* you + at least 5 bots. ?bots=N raises it to N + 1 for stress tests */
         botN = 0;
       /* HUB_SPAWNS: spawn spots south of the river. Arrivals take the free spot farthest from everyone, so nobody stacks. */
       const HUB_SPAWNS = [[450, 440], [400, 450], [500, 450], [355, 430], [545, 430], [425, 485], [475, 485], [310, 455], [590, 455], [450, 515]];
@@ -1224,7 +1240,10 @@
         HUBV = HUBV.filter((v) => v.id != id);
       }
       /* botOut(v): the bot heads off to a raid: stops, rises into a pillar of light, then disconnects */
+      /* ALUMNI: bots that went raiding. About half come back 3-6 min later: same name, a level or two higher. */
+      const ALUMNI = [];
       function botOut(v) {
+        if (v.bot && Math.random() < 0.5) ALUMNI.push({ name: v.name, cls: v.cls, lv: v.lv, ti: v.ti, chatty: v.chatty, back: HUB_T + rnd(180, 360) });
         if (v.chatty && Math.random() < 0.4) say(v, pick(BOT_BYE));
         chatSys(v.name + " left for a raid", "out");
         v.out = S.tm || 1e-6;
@@ -1237,26 +1256,37 @@
          HUB_T = hub clock (only runs while you're in the hub, so a raid doesn't age the bots). */
       const BOT_STAY = [60, 300];
       let HUB_T = 0,
-        HUB_AIM = 6,
+        HUB_AIM = 7,
         nextJoin = 0,
         hubSeeded = false;
       function addBot(quiet) {
-        let name = botName();
-        while (HUBV.some((v) => v.name == name) || name == pname()) name = botName();
+        const ai = quiet ? -1 : ALUMNI.findIndex((a) => HUB_T >= a.back && !HUBV.some((v) => v.name == a.name)),
+          al = ai >= 0 ? ALUMNI.splice(ai, 1)[0] : null;
+        let name = al ? al.name : botName();
+        while (!al && (HUBV.some((v) => v.name == name) || name == pname())) name = botName();
         const ks = Object.keys(CL),
-          v = hubJoin("bot" + botN, { name, cls: pick(ks), quiet }, 1);
+          v = hubJoin("bot" + botN, { name, cls: al ? al.cls : pick(ks), quiet }, 1);
         if (!v) return null;
-        botLook(v);
-        v.life = rnd(...BOT_STAY);
-        v.chatty = Math.random() < 0.3; /* most players never say a word */
         botN++;
+        v.life = rnd(...BOT_STAY);
+        if (al) {
+          /* back from the raid: a bit stronger, maybe says how it went */
+          v.lv = Math.min(60, al.lv + Math.floor(rnd(0, 3)));
+          v.ti = al.ti;
+          v.chatty = al.chatty;
+          if (v.chatty && Math.random() < 0.6) botSay(v, pick(["gg ez", "back", "that raid was rough", "warden down o/", "ez clap", "almost died lol"]), 1);
+          else if (Math.random() < 0.3) emoteLater(v, "🎉", 1.5);
+          return v;
+        }
+        botLook(v);
+        v.chatty = Math.random() < 0.3; /* most players never say a word */
         return v;
       }
       /* fillBots(): first visit - the hub is already lively (bots part-way through their stay). After that, joins trickle in. */
       function fillBots() {
         if (!hubSeeded) {
           hubSeeded = true;
-          HUB_AIM = Math.max(HUB_MIN, 5 + Math.floor(Math.random() * 3));
+          HUB_AIM = Math.max(HUB_MIN, 6 + Math.floor(Math.random() * 4)); /* you + 5-8 bots */
           while (hubCount() < HUB_AIM) {
             const v = addBot(true);
             if (!v) break;
@@ -1264,13 +1294,13 @@
           }
           return;
         }
-        const n = hubCount();
+        const n = hubCount() - HUBV.filter((v) => v.plan == "raid" && !v.out).length; /* bots heading to a raid already count as gone */
         if (n >= Math.max(HUB_MIN, HUB_AIM) || n >= HUB_MAX) return (nextJoin = 0);
-        if (!nextJoin) nextJoin = HUB_T + (n < HUB_MIN ? rnd(1, 4) : rnd(8, 45));
+        if (!nextJoin || (n < HUB_MIN && nextJoin - HUB_T > 4)) nextJoin = HUB_T + (n < HUB_MIN ? rnd(1, 4) : rnd(8, 45)); /* under the minimum: someone shows up soon */
         if (HUB_T >= nextJoin) {
           nextJoin = 0;
           addBot(false);
-          HUB_AIM = Math.max(HUB_MIN, 5 + Math.floor(Math.random() * 3));
+          HUB_AIM = Math.max(HUB_MIN, 6 + Math.floor(Math.random() * 4)); /* you + 5-8 bots */
         }
       }
       /* hubVisitStep(dt): top up bots, glide visitors toward their target (on the stones, out of the river), update facing,
@@ -1279,10 +1309,13 @@
         HUB_T += dt;
         fillBots();
         chatStep();
+        raidGroupStep();
         HUBV = HUBV.filter((v) => !v.out || S.tm - v.out < TP_TIME);
         const k = 1 - Math.exp(-dt * 12);
         for (const v of HUBV) {
-          if (v.bot && !v.out && HUB_T - v.born > v.life) botOut(v); /* session over: off to a raid */
+          if (v.bot && !v.out && v.outAt && S.tm >= v.outAt) botOut(v); /* raid group: leaving together */
+          else if (v.bot && !v.out && !v.outAt && v.plan != "raid" && HUB_T - v.born > v.life) toCrossing(v); /* session over: walk to the crossing */
+          else if (v.bot && v.plan == "raid" && !v.out && !RAID_GROUP.mem.includes(v)) raidSoloStep(v); /* ...and teleport from there */
           if (v.out || (v.inn && S.tm - v.inn < ARRIVE)) {
             v.dx = v.dy = 0;
             continue;
@@ -1346,28 +1379,39 @@
       function chatSend(t) {
         t = t.trim().slice(0, 80);
         if (!t || !P) return;
+        const cmd = /^\/(\w+)$/.exec(t);
+        if (cmd && EMOTES[cmd[1].toLowerCase()]) return myEmote(EMOTES[cmd[1].toLowerCase()]);
         say(P, t);
         /* network: send t to the hub here once there is a server */
         if (/^(hi+|hey+|hello|yo|sup|o\/|hiya)\b/i.test(t)) botReply(BOT_REPLY);
         else if (/raid/i.test(t) && Math.random() < 0.5) botReply(["sure", "im in", "maybe later", "need a healer?", "1 sec"]);
       }
-      /* typeTime(n): how long a person takes to notice a message and type n characters */
-      const typeTime = (n) => rnd(1.5, 4) + n / rnd(4, 7);
+      /* botSay(v, t, wait): v says t after noticing (wait + 1.5-4s) and typing it out; the "…" bubble shows while typing */
+      function botSay(v, t, wait = 0) {
+        const ty = S.tm + wait + rnd(1.5, 4);
+        chatQ.push({ ty, at: ty + t.length / rnd(4, 7), v, t });
+      }
       /* a bot answers in a moment, like someone typing */
       function botReply(lines) {
         const bots = HUBV.filter((v) => v.bot && !v.out);
         if (!bots.length || Math.random() < 0.5) return;
-        const t = pick(lines);
-        chatQ.push({ at: S.tm + typeTime(t.length), v: pick(bots), t });
+        botSay(pick(bots), pick(lines));
       }
+      /* a newcomer sometimes gets a "hey" or a wave */
       function botGreet(nv) {
         const bots = HUBV.filter((v) => v.bot && !v.out && v !== nv);
-        if (bots.length && Math.random() < 0.2) chatQ.push({ at: S.tm + typeTime(2), v: pick(bots), t: pick(BOT_HI) });
+        if (!bots.length) return;
+        const r = Math.random();
+        if (r < 0.15) botSay(pick(bots), pick(BOT_HI));
+        else if (r < 0.3) emoteLater(pick(bots), "👋");
       }
       /* chatStep(): due bot lines, plus now and then a random bot says something */
       function chatStep() {
         for (const q of chatQ.filter((q) => S.tm >= q.at)) if (HUBV.includes(q.v) && !q.v.out) say(q.v, q.t);
         chatQ.splice(0, chatQ.length, ...chatQ.filter((q) => S.tm < q.at));
+        for (const v of HUBV) v.typing = chatQ.some((q) => q.v === v && S.tm >= q.ty);
+        for (const e of emoQ.filter((e) => S.tm >= e.at)) if (HUBV.includes(e.v) && !e.v.out) emote(e.v, e.e);
+        emoQ.splice(0, emoQ.length, ...emoQ.filter((e) => S.tm < e.at));
         if (HUB_T < chatNext) return;
         /* like a real hub: long quiet stretches, then a line now and then. Only chatty ones start talk;
            a question or a raid call sometimes gets an answer from someone else a little later */
@@ -1376,12 +1420,61 @@
         if (!bots.length) return;
         const v = pick(bots),
           t = pick(BOT_LINES);
-        say(v, t);
+        botSay(v, t);
         if (/\?$|^lf|raid/.test(t) && Math.random() < 0.45) {
           const o = HUBV.filter((o) => o.bot && !o.out && o !== v),
             a = pick(/raid|^lf/.test(t) ? ["im in", "maybe later", "inv me", "sure", "same"] : ["idk", "no idea lol", "yeah", "not sure tbh", "ask the elder"]);
-          if (o.length) chatQ.push({ at: S.tm + typeTime(a.length) + 2, v: pick(o), t: a });
+          if (o.length) botSay(pick(o), a, 4 + t.length / 5);
+        } else if (Math.random() < 0.2) {
+          const o = HUBV.filter((o) => o.bot && !o.out && o !== v);
+          if (o.length) emoteLater(pick(o), pick(["😂", "👍", "❤️"]), 4 + t.length / 5);
         }
+      }
+      /* ---------- emotes: a pop-up icon over someone's head for a couple of seconds ----------
+         Yours from the bar next to the chat (or /wave /lol /love /gg /wow /party in chat). Bots wave at newcomers,
+         react to your emotes and celebrate. hubEmote(id, e) is the network hook. */
+      const EMOTES = { wave: "👋", lol: "😂", love: "❤️", gg: "👍", wow: "😮", party: "🎉" },
+        EMO_LIFE = 2.6,
+        emoQ = [];
+      function emote(p, e) {
+        p.emo = { e, at: S.tm };
+      }
+      function emoteLater(v, e, wait = 0) {
+        emoQ.push({ v, e, at: S.tm + wait + rnd(0.8, 2.5) });
+      }
+      function hubEmote(id, e) {
+        const v = HUBV.find((v) => v.id == id);
+        if (v && Object.values(EMOTES).includes(e)) emote(v, e);
+      }
+      function myEmote(e) {
+        if (!P || S.sc != "hub") return;
+        emote(P, e);
+        /* network: send the emote to the hub here once there is a server */
+        const bots = HUBV.filter((v) => v.bot && !v.out);
+        if (bots.length && Math.random() < 0.35) emoteLater(pick(bots), e == "👋" ? "👋" : pick([e, "😂", "👍"]), 0.5);
+      }
+      /* drawEmote(p, y): the icon pops up, bobs, then fades and drifts up */
+      function drawEmote(p, y) {
+        if (!p.emo) return;
+        const age = S.tm - p.emo.at;
+        if (age > EMO_LIFE) return (p.emo = null);
+        const pop = age < 0.25 ? 0.4 + (age / 0.25) * 0.8 : 1.2 - Math.min(0.2, (age - 0.25) * 0.8);
+        c.save();
+        c.globalAlpha *= Math.min(1, (EMO_LIFE - age) * 2.5);
+        c.translate(0, y - age * 6 + Math.sin(age * 7) * 1.5);
+        c.scale(pop, pop);
+        c.fillStyle = "rgba(11,18,24,.55)";
+        c.beginPath();
+        c.arc(0, 0, 13, 0, 6.3);
+        c.fill();
+        c.strokeStyle = "rgba(217,164,0,.6)";
+        c.lineWidth = 1.2;
+        c.stroke();
+        c.font = "16px sans-serif";
+        c.textAlign = "center";
+        c.textBaseline = "middle";
+        c.fillText(p.emo.e, 0, 1);
+        c.restore();
       }
       /* sayBubble(p, y): speech bubble with the last thing p said, bottom edge at y (local space). Fades after a few seconds. */
       function sayBubble(p, y) {
@@ -1424,6 +1517,80 @@
         lines.forEach((l, i) => c.fillText(l, 0, top + 5 + i * 14));
         c.restore();
         return true;
+      }
+      /* npcAction(v, n): what you see when someone finishes at an NPC, like a real player's purchase or turn-in */
+      function npcAction(v, n) {
+        if (n === SHOP && Math.random() < 0.6) burst(v.x, v.y - 6, "#ffd84a", 12, 70); /* bought something: gold sparkle */
+        else if (n === SMITH && Math.random() < 0.6) {
+          burst(n.x, n.y, "#ff9f43", 14, 110); /* upgrade: forge sparks */
+          burst(v.x, v.y, "#ffcf8a", 6, 50);
+        } else if (n === MAIDEN && Math.random() < 0.7) {
+          RINGS.push({ x: v.x, y: v.y, col: "#ff8fc8", t: 0.25 }); /* blessing */
+          burst(v.x, v.y, "#ffc7da", 10, 60);
+        } else if (n === ELDER && Math.random() < 0.35) {
+          /* quest turned in: level up, same ring and badge pop you get */
+          v.lv = Math.min(60, v.lv + 1);
+          v.lvp = 0.5;
+          RINGS.push({ x: v.x, y: v.y, col: lvlCol(v.lv), t: 0 });
+          if (Math.random() < 0.4) emoteLater(v, "🎉", 0.3);
+        } else if (n === CLASSN && Math.random() < 0.3) {
+          /* switched class */
+          v.cls = pick(Object.keys(CL).filter((k) => k != v.cls));
+          RINGS.push({ x: v.x, y: v.y, col: SKC[v.cls], t: 0.2 });
+          burst(v.x, v.y, SKC[v.cls], 16, 120);
+        } else if (n === LORE && Math.random() < 0.5) burst(v.x, v.y - 8, "#5ad7ff", 10, 50); /* tale heard */
+        else if (n === BARKEEP && Math.random() < 0.3) emoteLater(v, pick(["🎉", "😂"]), 0);
+      }
+      /* ---------- raid groups: 2-3 bots gather on the Rune Crossing, then teleport out one after another ----------
+         RAID_GROUP.next = when the next group forms (hub clock). Members get plan "raid"; once all stand on the crossing
+         (or after 30s) they leave 0.6s apart. */
+      const RAID_GROUP = { next: 150, at: 0, mem: [] };
+      function toCrossing(v, i = 0, n = 1) {
+        const { q, R, Ry } = crossFrame(),
+          a = (i / n) * 6.28 + rnd(-0.6, 0.6),
+          r = n > 1 ? 0.35 : rnd(0, 0.25),
+          mine = riverNear(v.x, v.y).side;
+        v.npc = null;
+        v.goal = { x: q.x + Math.cos(a) * R * r, y: q.y + Math.sin(a) * Ry * r };
+        v.stay = 999;
+        v.plan = "raid";
+        v.raidAt = HUB_T;
+        v.wait = 0;
+        v.st = 0;
+        v.talk = false;
+        v.via = bridgeAt(v) ? [] : [{ x: q.x + q.nx * 30 * mine, y: q.y + q.ny * 30 * mine }];
+      }
+      /* raidSolo(v): session over - walk to the crossing, then teleport from there (30s fallback if the walk fails) */
+      function raidSoloStep(v) {
+        if (v.outAt) return;
+        if ((!v.goal && v.wait > 0) || HUB_T - v.raidAt > 30) v.outAt = S.tm + rnd(0.3, 1);
+      }
+      function raidGroupStep() {
+        const G = RAID_GROUP;
+        if (G.mem.length) {
+          G.mem = G.mem.filter((v) => HUBV.includes(v) && !v.out);
+          const ready = G.mem.every((v) => v.plan == "raid" && !v.goal && v.wait > 0);
+          if (G.mem.length && (ready || HUB_T - G.at > 30)) {
+            G.mem.forEach((v, i) => (v.outAt = S.tm + 0.8 + i * 0.6));
+            G.mem = [];
+          }
+          return;
+        }
+        if (HUB_T < G.next) return;
+        G.next = HUB_T + rnd(120, 300);
+        const free = HUBV.filter((v) => v.bot && !v.out && !v.outAt && v.plan != "raid" && !(v.inn && S.tm - v.inn < ARRIVE) && HUB_T - v.born > 30);
+        if (free.length < 2) return;
+        const n = Math.min(free.length, Math.random() < 0.5 ? 2 : 3);
+        G.mem = free.sort(() => Math.random() - 0.5).slice(0, n);
+        G.at = HUB_T;
+        G.mem.forEach((v, i) => toCrossing(v, i, n));
+        /* the leader calls it, the others answer */
+        const L = G.mem[0];
+        if (L.chatty || Math.random() < 0.5) {
+          const call = pick(["raid now, meet at the crossing", "ok raid, come to the crossing", "group up at the middle", "lets go raid"]);
+          botSay(L, call, rnd(0, 2));
+          G.mem.slice(1).forEach((v) => Math.random() < 0.6 && botSay(v, pick(["omw", "coming", "k", "1 sec", "ok"]), 3 + call.length / 5));
+        }
       }
       /* ---------- bot brain: acts like a player hanging out in the hub ----------
          Mostly idle. Now and then, at random, picks a plan and moves there at its class's normal speed, then lingers:
@@ -1504,7 +1671,11 @@
               dy = v.npc.y - v.y;
             v.f = Math.abs(dx) > Math.abs(dy) ? (dx > 0 ? "r" : "l") : dy > 0 ? "d" : "u";
           }
-          if (v.wait <= 0) botPlan(v);
+          if (v.wait <= 0) {
+            if (v.plan == "raid") return;
+            if (v.plan == "npc" && v.npc) npcAction(v, v.npc);
+            botPlan(v);
+          }
           return;
         }
         v.talk = false;
@@ -3155,6 +3326,13 @@
           for (const k in kk) kk[k] = 0;
         };
         inp.onblur = () => box.classList.remove("op");
+        for (const [k, e] of Object.entries(EMOTES)) {
+          const b = document.createElement("button");
+          b.textContent = e;
+          b.title = "/" + k;
+          b.onclick = () => myEmote(e);
+          $("emo").append(b);
+        }
         inp.onkeydown = (e) => {
           e.stopPropagation();
           if (e.key == "Enter") {
@@ -3584,8 +3762,9 @@
         /* health bar turns white while armored (tank dash); thin strip above = armor time left */
         if (p.name && p !== P) {
           /* hub visitor: just a name tag, no health bar */
-          nameplate(p.lv, p.name, p.ti, 1, "#dfe8f0");
-          if (!sayBubble(p, -PR - 6) && p.talk) {
+          nameplate(p.lv, p.name, p.ti, 1 + (p.lvp || 0) * 1.2, "#dfe8f0");
+          drawEmote(p, -PR - 22);
+          if (!sayBubble(p, -PR - 6) && (p.talk || p.typing)) {
             /* chat bubble with three bouncing dots */
             c.fillStyle = "rgba(245,248,252,.92)";
             c.beginPath();
@@ -3617,6 +3796,7 @@
         if (p === P) {
           nameplate(lvlInfo().L, pname(), myTitle(), 1 + p.lvp * 1.2, "#fff");
           sayBubble(p, -PR - 17);
+          drawEmote(p, -PR - 32);
         }
         c.restore();
       }
