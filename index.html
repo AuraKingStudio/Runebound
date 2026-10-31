@@ -3432,10 +3432,13 @@
           }
           c.globalAlpha = 1;
         }
+        /* centre on the drawn digits themselves (Georgia numerals like 4 and 9 dip below the line, so "middle" sits off) */
         c.fillStyle = lc;
-        c.textAlign = "center";
-        c.textBaseline = "middle";
-        c.fillText(L, 0, 1);
+        c.textAlign = "left";
+        c.textBaseline = "alphabetic";
+        const m = c.measureText(L),
+          ink = (k, d) => (m[k] != null ? m[k] : d);
+        c.fillText(L, (ink("actualBoundingBoxLeft", m.width / 2) - ink("actualBoundingBoxRight", m.width / 2)) / 2, (ink("actualBoundingBoxAscent", fs * 0.7) - ink("actualBoundingBoxDescent", 0)) / 2);
         if (L >= 40) {
           /* 40+: a shine sweeping across the number every few seconds */
           const sw = ((t * 0.5) % 2) - 0.5;
