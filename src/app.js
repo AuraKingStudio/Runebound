@@ -1,6 +1,6 @@
-/* Dependency-free HTTP rendezvous for automatic player-hosted hubs.
-   Inputs: browser join/heartbeat/poll/offer/answer/leave requests.
-   Outputs: ten in-memory hub assignments and WebRTC setup messages; never simulates gameplay. */
+/* Runebound hub directory (the only Node file): ten in-memory hub assignments and WebRTC setup messages.
+   It never simulates gameplay. Inputs: browser join/heartbeat/poll/offer/answer/leave requests.
+   Run with `npm run signaling`; the tests require it for createDirectoryServer. */
 "use strict";
 
 const http = require("node:http");
@@ -19,7 +19,7 @@ function token() {
 function validProfile(profile) {
   return profile && typeof profile === "object" && !Array.isArray(profile) &&
     typeof profile.id === "string" && /^player-[a-zA-Z0-9-]{4,48}$/.test(profile.id) &&
-    typeof profile.name === "string" && /^[A-Za-z0-9 _-]{2,16}$/.test(profile.name) &&
+    typeof profile.name === "string" && /^[A-Za-z0-9 _-]{1,16}$/.test(profile.name) &&
     ["tank", "dps", "heal"].includes(profile.cls) &&
     Number.isInteger(profile.lv) && profile.lv >= 1 && profile.lv <= 60 &&
     Number.isInteger(profile.ti) && profile.ti >= 0 && profile.ti < 100 &&

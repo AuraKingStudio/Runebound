@@ -2,7 +2,7 @@
 <html lang="en">
   <head>
     <meta charset="utf-8" />
-    <title>Runebound</title><link rel="preconnect" href="https://fonts.gstatic.com" crossorigin><link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Cinzel:wght@600;700;900&display=swap"><link rel="icon" type="image/svg+xml" href="assets/icon.svg"><link rel="apple-touch-icon" href="assets/icon.png">
+    <title>Runebound</title><link rel="preconnect" href="https://fonts.gstatic.com" crossorigin><link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Cinzel:wght@600;700;900&display=swap"><link rel="icon" type="image/png" href="assets/icon.png"><link rel="apple-touch-icon" href="assets/icon.png">
     <meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover" />
     <style>
       :root {
@@ -418,8 +418,8 @@
       }
       #gp .coin { width: 18px; height: 18px; margin: 0; }
       /* no visible scrollbars on the side board or the chat log (they still scroll) */
-      #board, #chlog { scrollbar-width: none; }
-      #board::-webkit-scrollbar, #chlog::-webkit-scrollbar { display: none; }
+      #chlog { scrollbar-width: none; }
+      #chlog::-webkit-scrollbar { display: none; }
       #btns #bs { left: calc(50% + 50px); border-color: #ffd84acc; box-shadow: 0 0 10px #ffd84a55; }
       /* cosmetics shop */
       .pn canvas { position: static; width: auto; height: auto; } /* the game canvas rule is position: fixed */
@@ -612,54 +612,6 @@
         background-color: #24404a;
         text-shadow: 0 1px 2px #000;
       }
-      /* dev build board in the left black margin */
-      #board {
-        position: fixed; left: 10px; top: 10px; bottom: 10px; z-index: 5; overflow: auto; font-size: 12px; color: #cfe;
-        background: #0b1218e6; border: 1px solid #2c3b48; border-radius: 10px; padding: 10px; box-sizing: border-box; user-select: text;
-      }
-      #board.top { left: 10px; right: 10px; top: 6px; bottom: auto; padding: 6px 10px; }
-      #board.top .tb { display: none; }
-      #board.top ul { columns: 2; column-gap: 24px; }
-      #board ul { list-style: none; margin: 6px 0 12px; padding: 0; }
-      #board li { padding: 3px 0; border-bottom: 1px solid #1c2832; break-inside: avoid; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
-      /* crypto-news build feed */
-      #board .live { font: bold 12px "Cinzel", Georgia; color: #ff6070; letter-spacing: 2px; display: flex; align-items: center; gap: 6px; }
-      #board .dot { width: 8px; height: 8px; border-radius: 50%; background: #ff3b4e; box-shadow: 0 0 8px #ff3b4e; animation: livePulse 1.2s ease-in-out infinite; }
-      @keyframes livePulse { 50% { opacity: 0.3; transform: scale(0.7); } }
-      #board .ticker { overflow: hidden; white-space: nowrap; margin: 8px -10px; padding: 5px 0; background: #05080c; border-block: 1px solid #1c2832; }
-      #board .tkr { display: inline-block; animation: tickerMove 28s linear infinite; }
-      #board .tk { margin-right: 26px; font-size: 11px; }
-      #board .tk i { color: #8fa3ad; font-style: normal; font-size: 9px; margin-left: 6px; }
-      @keyframes tickerMove { to { transform: translateX(-50%); } }
-      #board .chips { display: grid; grid-template-columns: repeat(2, 1fr); gap: 6px; margin: 6px 0; }
-      #board .ver { margin-left: auto; color: #ffd84a; font-size: 12px; letter-spacing: 1px; }
-      #board .vnote { font-size: 11px; color: #cfe; margin-top: 3px; }
-      #board .cdl { display: flex; align-items: center; gap: 2px; margin-top: 3px; height: 6px; }
-      #board .cdl i { display: block; height: 6px; border-radius: 1px; min-width: 2px; }
-      #board .cdl .ca { background: #7dff9a; } #board .cdl .cd { background: #ff6070; }
-      #board .cdl em { font-style: normal; font-size: 9px; color: #8fa3ad; margin-left: 4px; white-space: nowrap; }
-      #board li { white-space: normal !important; }
-      #board .chip { background: #0f1a22; border: 1px solid #1c2832; border-radius: 6px; padding: 5px 6px; }
-      #board .chip span { display: block; font-size: 8px; color: #8fa3ad; letter-spacing: 1px; }
-      #board .chip b { font: bold 18px Georgia; color: #e6f1ef; font-variant-numeric: tabular-nums; }
-      #board .chip em { font-style: normal; font-size: 10px; margin-left: 4px; color: #8fa3ad; }
-      #board .chip em.up { color: #7dff9a; } #board .chip em.down { color: #ff6070; }
-      #board .spark { margin: 6px 0 4px; }
-      #board .spark span { font-size: 8px; color: #8fa3ad; letter-spacing: 1px; }
-      #board .spark svg { display: block; width: 100%; height: 34px; }
-      #board.top .chips, #board.top .spark, #board.top .ticker { display: none; }
-      #board .tag { display: inline-block; min-width: 40px; font: bold 9px/16px Georgia, serif; text-align: center; border-radius: 4px; margin-right: 6px; letter-spacing: 0.5px; }
-      #board .tag.in { background: #1f5c34; color: #7dff9a; }
-      #board .tag.out { background: #5c1f26; color: #ff8a94; }
-      #board .tag.fix { background: #5c4a1f; color: #ffd84a; }
-      #board b { color: #ffd84a; letter-spacing: 1.5px; }
-      #board table { width: 100%; border-collapse: collapse; margin-top: 8px; }
-      #board th { text-align: left; font-size: 10px; color: #8fa3ad; letter-spacing: 1px; padding: 4px; border-bottom: 1px solid #2c3b48; }
-      #board td { padding: 5px 4px; border-bottom: 1px solid #1c2832; vertical-align: top; }
-      #board td:first-child { color: #ffd84a; font-weight: bold; white-space: nowrap; }
-      #board .p1 { color: #ff6070; font-weight: bold; } #board .p2 { color: #ffb84a; } #board .p3 { color: #8fa3ad; }
-      #board tr.wip td:last-child { color: #ffb84a; } #board tr.done { opacity: 0.45; } #board tr.done td:last-child { color: #7dff9a; }
-      #board td:last-child { white-space: nowrap; font-size: 10px; }
       /* hub: combat skill buttons small and faded, so the room stays clear */
       body.hub #btns .sk { width: 40px; height: 40px; opacity: 0.3; }
       body.hub #btns #b0 { width: 52px; height: 52px; }
@@ -971,54 +923,18 @@
       (() => {
         "use strict";
 
-        const MAX_CODE_LENGTH = 24000;
         const MAX_MESSAGE_LENGTH = 4096;
         const MAX_MESSAGES_PER_SECOND = 40;
         const NETWORK_CONFIG = Object.freeze({
           signalingUrl: "",
-          iceServers: [],
+          /* STUN only tells this browser its public address so peers on different networks can reach each other; no game data goes through it. */
+          iceServers: [{ urls: "stun:stun.cloudflare.com:3478" }],
         });
         const peers = new Map();
-        const pendingOffers = new Map();
         let handlers = {};
         let iceServers = [];
         let directoryUrl = "";
         let directorySession = null;
-
-        function randomId() {
-          const bytes = crypto.getRandomValues(new Uint8Array(16));
-          return Array.from(bytes, (b) => b.toString(16).padStart(2, "0")).join("");
-        }
-
-        function encodeCode(value) {
-          const bytes = new TextEncoder().encode(JSON.stringify(value));
-          let binary = "";
-          for (const byte of bytes) binary += String.fromCharCode(byte);
-          const code = btoa(binary).replace(/\+/g, "-").replace(/\//g, "_").replace(/=+$/, "");
-          if (code.length > MAX_CODE_LENGTH) throw new Error("Connection code is too large.");
-          return code;
-        }
-
-        function decodeCode(code, expectedType) {
-          if (typeof code !== "string" || code.length < 8 || code.length > MAX_CODE_LENGTH) {
-            throw new Error("Connection code is invalid or too large.");
-          }
-          try {
-            const base64 = code.replace(/-/g, "+").replace(/_/g, "/");
-            const binary = atob(base64 + "=".repeat((4 - (base64.length % 4)) % 4));
-            const bytes = Uint8Array.from(binary, (char) => char.charCodeAt(0));
-            const value = JSON.parse(new TextDecoder().decode(bytes));
-            if (!value || value.v !== 1 || value.type !== expectedType || typeof value.token !== "string" ||
-                value.token.length > 64 || !value.description || value.description.type !== expectedType ||
-                typeof value.description.sdp !== "string" || value.description.sdp.length > 16000) {
-              throw new Error("Connection code has an invalid format.");
-            }
-            return value;
-          } catch (error) {
-            if (error instanceof Error && error.message === "Connection code has an invalid format.") throw error;
-            throw new Error("Could not read the connection code.");
-          }
-        }
 
         function makeConnection() {
           if (!window.RTCPeerConnection) throw new Error("This browser does not support WebRTC.");
@@ -1220,55 +1136,6 @@
           });
         }
 
-        async function createOffer() {
-          const pc = makeConnection();
-          const token = randomId();
-          const id = "guest-" + token.slice(0, 12);
-          const channel = pc.createDataChannel("runebound", { ordered: true });
-          bindPeer(id, pc, channel);
-          try {
-            await pc.setLocalDescription(await pc.createOffer());
-            await waitForIce(pc);
-            pendingOffers.set(token, id);
-            return encodeCode({ v: 1, type: "offer", token, description: pc.localDescription });
-          } catch (error) {
-            const peer = peers.get(id);
-            if (peer) closePeer(id, peer);
-            throw error;
-          }
-        }
-
-        async function createAnswer(offerCode) {
-          const offer = decodeCode(offerCode.trim(), "offer");
-          const pc = makeConnection();
-          const id = "host";
-          pc.ondatachannel = (event) => {
-            if (peers.has(id)) {
-              event.channel.close();
-              return;
-            }
-            bindPeer(id, pc, event.channel);
-          };
-          try {
-            await pc.setRemoteDescription(offer.description);
-            await pc.setLocalDescription(await pc.createAnswer());
-            await waitForIce(pc);
-            return encodeCode({ v: 1, type: "answer", token: offer.token, description: pc.localDescription });
-          } catch (error) {
-            pc.close();
-            throw error;
-          }
-        }
-
-        async function acceptAnswer(answerCode) {
-          const answer = decodeCode(answerCode.trim(), "answer");
-          const id = pendingOffers.get(answer.token);
-          const peer = peers.get(id);
-          if (!id || !peer) throw new Error("That answer does not match an active invite.");
-          await peer.pc.setRemoteDescription(answer.description);
-          pendingOffers.delete(answer.token);
-        }
-
         function send(id, message) {
           const peer = peers.get(id);
           if (!peer || peer.channel.readyState !== "open") return false;
@@ -1291,7 +1158,6 @@
 
         function disconnectAll() {
           for (const [id, peer] of peers) closePeer(id, peer);
-          pendingOffers.clear();
         }
 
         function directoryConfig() {
@@ -1308,13 +1174,10 @@
           directoryHeartbeat,
           directoryLeave,
           directoryConfig,
-          defaultConfig: () => ({ signalingUrl: NETWORK_CONFIG.signalingUrl, iceServers: NETWORK_CONFIG.iceServers.map((server) => ({ ...server })) }),
+          defaultConfig: () => ({ signalingUrl: NETWORK_CONFIG.signalingUrl || (["localhost", "127.0.0.1"].includes(location.hostname) ? "http://localhost:8787" : ""), iceServers: NETWORK_CONFIG.iceServers.map((server) => ({ ...server })) }),
           createPeerOffer,
           createPeerAnswer,
           acceptPeerAnswer,
-          createOffer,
-          createAnswer,
-          acceptAnswer,
           send,
           broadcast,
           disconnect,
@@ -1424,6 +1287,10 @@
           SET.mb1 = 1;
         }
       } catch (e) {}
+      /* local testing only: http://localhost:8080/?player=2 keeps a separate save, so two tabs sharing one browser
+         (e.g. VS Code's Simple Browser) are two different players */
+      const SAVE_SLOT = ["localhost", "127.0.0.1"].includes(location.hostname) && /[?&]player=(\w{1,12})/.exec(location.search || "");
+      const SAVE_KEY = "runebound1" + (SAVE_SLOT ? "-" + SAVE_SLOT[1] : "");
       const saveSet = () => { try { localStorage.setItem("runebound_settings", JSON.stringify(SET)); } catch (e) {} };
       /* ---------- soft synth sfx (no audio files) ---------- */
       let AC = null;
@@ -1506,7 +1373,7 @@
       ];
       let V = { gold: 100, up: { dmg: 0, vit: 0, spd: 0, cdr: 0 }, q: 0, qs: 0, sk: { tank: [0, 0, 0], dps: [0, 0, 0], heal: [0, 0, 0] } };
       try {
-        const s = JSON.parse(localStorage.getItem("runebound1") || "null");
+        const s = JSON.parse(localStorage.getItem(SAVE_KEY) || "null");
         if (s && typeof s === "object") {
           V.gold = Math.max(0, +s.gold || 0);
           V.q = cl(+s.q || 0, 0, QUESTS.length);
@@ -1612,7 +1479,7 @@
       for (const u of UPG) V.up[u.k] = cl(+V.up[u.k] | 0, 0, MAXL);
       const save = () => {
         try {
-          localStorage.setItem("runebound1", JSON.stringify(V));
+          localStorage.setItem(SAVE_KEY, JSON.stringify(V));
         } catch (e) {}
       };
       /* blessing from the Archivist (V.bl = "stone" | "swift"), lasts until the next raid ends */
@@ -1815,17 +1682,37 @@
       }
       const NET = window.RBNet || null, NET_CONFIG = NET?.defaultConfig?.() || { signalingUrl: "", iceServers: [] };
       const NET_LOCAL_ID = "player-" + (window.crypto?.randomUUID ? window.crypto.randomUUID() : Math.random().toString(36).slice(2));
-      let NET_ROLE = "", NET_LAST_SEND = 0, NET_LAST_SIM = 0, NET_SIM_ACC = 0, NET_STATUS = "Offline", NET_SESSION = null, NET_AUTO_STARTED = false, NET_CONNECTED = false, NET_DIRECTORY_STATE = "idle";
-      let NET_POLL_TIMER = 0, NET_HEARTBEAT_TIMER = 0, NET_GUEST_POLLING = false;
+      let NET_ROLE = "", NET_LAST_SEND = 0, NET_STATUS = "Offline", NET_SESSION = null, NET_AUTO_STARTED = false, NET_CONNECTED = false, NET_DIRECTORY_STATE = "idle";
+      let NET_POLL_TIMER = 0, NET_HEARTBEAT_TIMER = 0, NET_GUEST_POLLING = false, NET_LAST_STATE = 0, NET_CONNECT_TIMER = 0, NET_BADGE_AT = 0, NET_SEQ = 0;
+      /* optimistic networking: the guest shows its own action at once, then the host confirms it (ack) or undoes it (reject/correct) */
+      const NET_PENDING = new Map(), NET_MOVES = [];
+      /* wire format is kept small for many players: facing is 0-3, positions are whole pixels, players are slot numbers
+         (0 = host) and names/classes travel only in the roster message when someone joins or leaves */
+      const NET_F = "udlr", NET_SLOT_IDS = new Map();
+      let NET_FULL_AT = 0, NET_SENT_KEY = "", NET_HOST_SENT = "";
+      /* netQuery(msg, undo): In: action already shown locally, undo() to roll it back. Out: sends it to the host with a seq number. */
+      function netQuery(message, undo) {
+        const seq = ++NET_SEQ;
+        NET_PENDING.set(seq, { undo, at: performance.now() });
+        if (NET_PENDING.size > 32) NET_PENDING.delete(NET_PENDING.keys().next().value);
+        NET.send(NET_SESSION?.peerId, { ...message, seq });
+      }
+      /* netAck(id, seq, ok, reason): host's answer to one guest query */
+      function netAck(id, seq, ok, reason) {
+        if (Number.isInteger(seq)) NET.send(id, ok ? { type: "ack", seq, ok: true } : { type: "ack", seq, ok: false, reason });
+      }
       const NET_CLIENTS = new Map();
       function netBadgeUpdate() {
         const badge = $("netBadge");
         if (!badge) return;
         if (NET_SESSION) {
           const role = NET_ROLE == "host" ? "HOST" : "PLAYER";
-          const connection = NET_ROLE == "host" ? "HOSTING" : NET_CONNECTED ? "ONLINE" : "CONNECTING";
+          /* three separate facts: the directory gave us a seat, a peer link is open, and hub snapshots are arriving */
+          const synced = NET_ROLE == "guest" && NET_LAST_STATE && performance.now() - NET_LAST_STATE < 3000;
+          const connection = NET_ROLE == "host" ? (NET?.peerIds().length ? `HOSTING · ${NET_CLIENTS.size + 1}/${HUB_MAX} PLAYERS` : "HOSTING · WAITING FOR PLAYERS") :
+            !NET_CONNECTED ? "ASSIGNED · CONNECTING TO HOST" : synced ? "CONNECTED · SYNCED" : "CONNECTED · WAITING FOR HUB STATE";
           badge.textContent = `HUB ${NET_SESSION.hubId} · ${connection}\n${NET_SESSION.reason}`;
-          badge.title = `${NET_SESSION.reason} ${role == "HOST" ? "You host this player-run hub." : "You joined its host."}`;
+          badge.title = `${NET_SESSION.reason} ${role == "HOST" ? "You host this player-run hub." : "You joined its host."} ${NET_STATUS}`;
         } else {
           const label = NET_DIRECTORY_STATE == "joining" ? "ONLINE · FINDING HUB" :
             NET_DIRECTORY_STATE == "unavailable" ? "ONLINE · HUB UNAVAILABLE" : "ONLINE · HUB NOT CONNECTED";
@@ -1862,6 +1749,13 @@
             const offer = await NET.createPeerOffer(NET_SESSION.peerId);
             await NET.directorySend("/api/offer", { description: offer });
             NET_GUEST_POLLING = true;
+            /* host never answered or the link never opened: give the seat back and retry instead of hanging at CONNECTING */
+            NET_CONNECT_TIMER = setTimeout(async () => {
+              if (NET_CONNECTED || !NET_SESSION) return;
+              await netDisconnect();
+              netStatus("Could not reach the hub host within 30 s; retrying…");
+              setTimeout(networkAutoJoin, 2000);
+            }, 30000);
           }
           NET_POLL_TIMER = setInterval(netPollDirectory, NET_ROLE == "host" ? 800 : 700);
           NET_HEARTBEAT_TIMER = setInterval(netHeartbeat, 10000);
@@ -1904,7 +1798,12 @@
       async function netDisconnect() {
         clearInterval(NET_POLL_TIMER);
         clearInterval(NET_HEARTBEAT_TIMER);
-        NET_POLL_TIMER = NET_HEARTBEAT_TIMER = 0;
+        clearTimeout(NET_CONNECT_TIMER);
+        NET_POLL_TIMER = NET_HEARTBEAT_TIMER = NET_CONNECT_TIMER = NET_LAST_STATE = 0;
+        NET_PENDING.clear();
+        NET_MOVES.length = 0;
+        NET_SLOT_IDS.clear();
+        NET_FULL_AT = 0; NET_SENT_KEY = NET_HOST_SENT = "";
         NET?.disconnectAll();
         try { await NET?.directoryLeave(); } catch (error) { netStatus("Could not leave lobby cleanly: " + error.message); }
         NET_SESSION = null;
@@ -1923,7 +1822,33 @@
         HUB_MIN = HUB_AIM = 1;
         hubSeeded = true;
         nextJoin = 0;
-        NET_LAST_SEND = NET_LAST_SIM = NET_SIM_ACC = 0;
+        NET_LAST_SEND = NET_LAST_STATE = 0;
+      }
+      /* netPush(v, x, y): remembers a remote player's position with its arrival time; netSmooth draws from this buffer */
+      const NET_DELAY = 150; /* ms behind real time: enough to always have an update on each side of the drawn moment */
+      function netPush(v, x, y) {
+        const at = performance.now(), samples = v.netSamples || (v.netSamples = []), last = samples[samples.length - 1];
+        if (last && at - last.at > 250) samples.push({ x: last.x, y: last.y, at: at - 100 }); /* was standing still: start the walk now */
+        samples.push({ x, y, at });
+        while (samples.length > 2 && samples[1].at < at - 1000) samples.shift();
+        if (samples.length > 20) samples.shift();
+      }
+      /* netSmooth(v, dt): In: remote player with buffered updates. Out: v.x/v.y eased toward where it was NET_DELAY ms ago,
+         so late, bunched or uneven updates still look like a steady walk; big gaps (teleports) snap */
+      function netSmooth(v, dt) {
+        const samples = v.netSamples, renderAt = performance.now() - NET_DELAY;
+        let i = samples.length - 1;
+        while (i > 0 && samples[i - 1].at > renderAt) i--;
+        const a = samples[Math.max(0, i - 1)], b = samples[i], span = Math.max(1, b.at - a.at);
+        const coast = b == samples[samples.length - 1] && performance.now() - b.at < 250; /* updates late: coast a little, never past a stop */
+        const t = cl((renderAt - a.at) / span, 0, coast ? 1.5 : 1);
+        const tx = a.x + (b.x - a.x) * t, ty = a.y + (b.y - a.y) * t, gap = Math.hypot(tx - v.x, ty - v.y);
+        const k = gap > 160 ? 1 : 1 - Math.exp(-dt * 16), ox = v.x, oy = v.y;
+        v.x += (tx - v.x) * k; v.y += (ty - v.y) * k;
+        v.tx = v.x; v.ty = v.y;
+        v.dx = (v.x - ox) / Math.max(1e-3, dt * 1000); v.dy = (v.y - oy) / Math.max(1e-3, dt * 1000);
+        if (Math.hypot(v.dx, v.dy) > 0.03) v.f = Math.abs(v.dx) > Math.abs(v.dy) ? (v.dx > 0 ? "r" : "l") : v.dy > 0 ? "d" : "u";
+        else v.dx = v.dy = 0;
       }
       function netSafeProfile(value) {
         if (!value || typeof value !== "object" || typeof value.id !== "string" ||
@@ -1935,20 +1860,33 @@
         return { id: value.id, name: value.name.replace(/[^A-Za-z0-9 _-]/g, "").slice(0, 16) || "Wanderer",
           cls: value.cls, lv: value.lv, ti: value.ti, spd: value.spd };
       }
-      function netSnapshot() {
-        const host = netProfile();
-        const players = [{ id: "host-player", name: host.name, cls: P.cls, x: P.x, y: P.y, f: P.f || "d", lv: host.lv, ti: host.ti, spd: host.spd }];
-        for (const v of HUBV) if (!v.bot && !v.out && v.netClientId) players.push({
-          id: v.netClientId, name: v.name, cls: v.cls, x: v.x, y: v.y, f: v.f || "d", lv: v.lv, ti: TITLES.indexOf(v.ti), spd: v.netSpd || 1,
-        });
-        NET?.broadcast({ type: "hub-state", players });
+      /* netRoster(): host sends who is in the hub (slot, id, name, class, level, title, speed); only on join/leave */
+      function netRoster() {
+        const host = netProfile(), p = [[0, "host-player", host.name, P.cls, host.lv, host.ti, host.spd]];
+        for (const v of HUBV) if (!v.bot && !v.out && v.netClientId) p.push([v.netSlot, v.netClientId, v.name, v.cls, v.lv, TITLES.indexOf(v.ti), v.netSpd || 1]);
+        NET?.broadcast({ type: "r", p });
+        NET_FULL_AT = 0;
+      }
+      /* netSnapshot(full): host sends [slot, x, y, facing] for players that moved, or for everyone once a second */
+      function netSnapshot(full) {
+        const p = [], add = (slot, x, y, f, owner, key) => {
+          const sent = [slot, Math.round(x), Math.round(y), Math.max(0, NET_F.indexOf(f))], k = sent.join();
+          if (!full && owner[key] == k) return;
+          owner[key] = k;
+          p.push(...sent);
+        };
+        const hostSent = { k: NET_HOST_SENT };
+        add(0, P.x, P.y, P.f || "d", hostSent, "k");
+        NET_HOST_SENT = hostSent.k;
+        for (const v of HUBV) if (!v.bot && !v.out && v.netClientId) add(v.netSlot, v.netX ?? v.x, v.netY ?? v.y, v.f || "d", v, "netSent");
+        if (p.length) NET?.broadcast({ type: "s", p });
       }
       function netReceive(id, message) {
         if (NET_ROLE == "host") {
           if (message.type == "join") {
             const profile = netSafeProfile(message.profile);
             const existing = HUBV.find((v) => v.id == id && !v.bot);
-            if (existing && profile?.id == existing.netClientId) return netSnapshot();
+            if (existing && profile?.id == existing.netClientId) return netRoster();
             if (!profile || NET_CLIENTS.size >= 9 || hubCount() >= HUB_MAX ||
                 HUBV.some((v) => !v.bot && v.netClientId == profile.id)) {
               NET.send(id, { type: "reject", reason: "This hub is full or the profile is invalid." });
@@ -1958,62 +1896,94 @@
             if (!v) return NET.disconnect(id);
             v.netClientId = profile.id;
             v.netSpd = profile.spd;
-            v.netInputX = v.netInputY = 0;
-            v.netInputAt = performance.now();
-            v.netDashDown = false;
+            v.netPosAt = performance.now();
+            v.netDashAt = -1e9;
+            /* start where the guest really stands (kept on the island), so its first step is not "corrected" back to a spawn spot */
+            if (Number.isFinite(message.x) && Number.isFinite(message.y)) { const at = { x: cl(message.x, 0, W), y: cl(message.y, 0, H), hp: 1 }; clampW(at); v.x = v.tx = at.x; v.y = v.ty = at.y; }
+            v.netX = v.x; v.netY = v.y; /* validated position; v.x/v.y are only the smoothed drawing position */
+            for (let slot = 1; slot < HUB_MAX; slot++) if (!HUBV.some((o) => o.netSlot == slot)) { v.netSlot = slot; break; }
             NET_CLIENTS.set(id, profile.id);
             netStatus("Connected players: " + (NET_CLIENTS.size + 1));
-            netSnapshot();
-          } else if (message.type == "hub-input") {
+            netRoster();
+          } else if (message.type == "m") {
+            /* the guest moves itself; the host accepts only a step it could have walked (or dashed) since the last one */
             const v = HUBV.find((item) => item.id == id && !item.bot && !item.out);
-            if (!v || !Number.isFinite(message.x) || !Number.isFinite(message.y) ||
-                Math.abs(message.x) > 1 || Math.abs(message.y) > 1 ||
-                !["u", "d", "l", "r"].includes(message.f) || typeof message.dash != "boolean" ||
-                !Number.isFinite(message.dashX) || !Number.isFinite(message.dashY) ||
-                Math.abs(message.dashX) > 1 || Math.abs(message.dashY) > 1) return;
-            const magnitude = Math.hypot(message.x, message.y) || 1;
-            v.netInputX = message.x / Math.max(1, magnitude);
-            v.netInputY = message.y / Math.max(1, magnitude);
-            v.netInputAt = performance.now();
-            v.f = message.f;
-            const dashMagnitude = Math.hypot(message.dashX, message.dashY) || 1;
-            if (message.dash && !v.netDashDown && !(v.netDcd > 0)) {
-              const dash = DASH[v.cls];
-              v.netDs = dash.t;
-              v.netDvx = (message.dashX / dashMagnitude) * (dash.d / dash.t);
-              v.netDvy = (message.dashY / dashMagnitude) * (dash.d / dash.t);
-              v.netDcd = dash.cd;
-            }
-            v.netDashDown = message.dash;
-          } else if (message.type == "chat" && typeof message.text == "string" && message.text.length <= 80) {
+            if (!v || !Number.isFinite(message.x) || !Number.isFinite(message.y) || message.x < 0 || message.x > W ||
+                message.y < 0 || message.y > H || !NET_F[message.f] || (message.d !== 0 && message.d !== 1) ||
+                !Number.isInteger(message.s)) return;
+            const now = performance.now(), elapsed = cl((now - (v.netPosAt || now)) / 1000, 0.05, 1);
+            const dash = DASH[v.cls], walk = CL[v.cls].sp * (v.netSpd || 1) * elapsed * 1.35 + 12;
+            const canDash = message.d && now - v.netDashAt >= dash.cd * 900, budget = walk + (canDash ? dash.d : 0);
+            const mx = message.x - v.netX, my = message.y - v.netY, dist = Math.hypot(mx, my);
+            if (canDash && dist > walk) v.netDashAt = now;
+            const k = dist > budget ? budget / dist : 1, pos = { x: v.netX + mx * k, y: v.netY + my * k, hp: 1 };
+            clampW(pos);
+            v.netX = pos.x; v.netY = pos.y; v.f = NET_F[message.f]; v.netPosAt = now;
+            netPush(v, v.netX, v.netY);
+            if (Math.hypot(v.netX - message.x, v.netY - message.y) > 1) NET.send(id, { type: "c", x: Math.round(v.netX), y: Math.round(v.netY), s: message.s });
+          } else if (message.type == "chat" || message.type == "emote") {
             const v = HUBV.find((item) => item.id == id && !item.bot);
             if (!v) return;
-            say(v, message.text.replace(/[<>]/g, "").slice(0, 80));
-            const text = message.text.replace(/[<>]/g, "").slice(0, 80);
-            for (const peerId of NET.peerIds()) if (peerId != id) NET.send(peerId, { type: "chat", id: v.netClientId, text });
+            const now = performance.now(), chat = message.type == "chat";
+            const text = chat && typeof message.text == "string" ? message.text.replace(/[<>]/g, "").trim().slice(0, 80) : "";
+            if (chat ? !text || message.text.length > 80 : !Object.values(EMOTES).includes(message.e)) return netAck(id, message.seq, false, "That was not valid.");
+            if (now - (chat ? v.netChatAt || -1e9 : v.netEmoteAt || -1e9) < (chat ? 700 : 1000)) return netAck(id, message.seq, false, "Slow down a little.");
+            if (chat) { v.netChatAt = now; say(v, text); } else { v.netEmoteAt = now; emote(v, message.e); }
+            const relay = chat ? { type: "chat", id: v.netClientId, name: v.name, text } : { type: "emote", id: v.netClientId, e: message.e };
+            for (const peerId of NET.peerIds()) if (peerId != id) NET.send(peerId, relay);
+            netAck(id, message.seq, true);
           }
         } else if (NET_ROLE == "guest") {
-          if (message.type == "hub-state" && Array.isArray(message.players) && message.players.length <= HUB_MAX) {
-            for (const item of message.players) {
-              if (!item || typeof item.id != "string" || !["u", "d", "l", "r"].includes(item.f) ||
-                  typeof item.name != "string" || item.name.length > 16 || !CL[item.cls] ||
-                  !Number.isFinite(item.x) || !Number.isFinite(item.y) || item.x < 0 || item.x > W || item.y < 0 || item.y > H ||
-                  !Number.isInteger(item.lv) || item.lv < 1 || item.lv > 60 || !Number.isInteger(item.ti) || item.ti < 0 || item.ti >= TITLES.length ||
-                  !Number.isFinite(item.spd) || item.spd < 1 || item.spd > 1.3) continue;
-              if (item.id == NET_LOCAL_ID) {
-                P.netTarget = { x: item.x, y: item.y };
-                continue;
-              }
-              let v = HUBV.find((other) => other.id == item.id);
-              if (!v) v = hubJoin(item.id, item, 0);
-              if (v) {
-                const now = performance.now();
-                v.netSamples = (v.netSamples || []).concat({ x: item.x, y: item.y, at: now }).slice(-3);
-                v.netClientId = item.id; v.f = item.f; v.lv = item.lv; v.ti = TITLES[item.ti]; v.netSpd = item.spd;
-              }
+          if (message.type == "r" && Array.isArray(message.p) && message.p.length <= HUB_MAX) {
+            const roster = message.p.filter((e) => Array.isArray(e) && e.length == 7 && Number.isInteger(e[0]) && e[0] >= 0 && e[0] < HUB_MAX &&
+              typeof e[1] == "string" && e[1].length <= 56 && typeof e[2] == "string" && e[2].length <= 16 && CL[e[3]] &&
+              Number.isInteger(e[4]) && e[4] >= 1 && e[4] <= 60 && Number.isInteger(e[5]) && e[5] >= 0 && e[5] < TITLES.length &&
+              Number.isFinite(e[6]) && e[6] >= 1 && e[6] <= 1.3);
+            NET_SLOT_IDS.clear();
+            for (const e of roster) NET_SLOT_IDS.set(e[0], e[1]);
+            const ids = new Set(roster.map((e) => e[1]));
+            for (const v of HUBV.filter((v) => !v.bot && v.netClientId && !ids.has(v.id))) hubLeave(v.id);
+            for (const [, pid, name, cls, lv, ti, spd] of roster) {
+              if (pid == NET_LOCAL_ID) continue;
+              const v = HUBV.find((other) => other.id == pid) || hubJoin(pid, { name: name.replace(/[^A-Za-z0-9 _-]/g, "") || "Wanderer", cls, lv, ti }, 0);
+              if (v) { v.netClientId = pid; v.lv = lv; v.ti = TITLES[ti]; v.netSpd = spd; }
+            }
+          } else if (message.type == "s" && Array.isArray(message.p) && message.p.length <= HUB_MAX * 4 && message.p.length % 4 == 0) {
+            const first = !NET_LAST_STATE;
+            NET_LAST_STATE = performance.now();
+            if (first) netStatus(`Synced with hub ${NET_SESSION?.hubId || ""}.`);
+            for (let i = 0; i < message.p.length; i += 4) {
+              const [slot, x, y, f] = message.p.slice(i, i + 4), pid = NET_SLOT_IDS.get(slot);
+              if (!pid || pid == NET_LOCAL_ID || !Number.isFinite(x) || !Number.isFinite(y) || x < 0 || x > W || y < 0 || y > H || !NET_F[f]) continue;
+              const v = HUBV.find((other) => other.id == pid);
+              if (v) { netPush(v, x, y); v.f = NET_F[f]; }
             }
           } else if (message.type == "chat" && message.id != NET_LOCAL_ID && typeof message.text == "string" && message.text.length <= 80) {
-            hubChat(message.id, message.text.replace(/[<>]/g, ""));
+            const text = message.text.replace(/[<>]/g, "");
+            if (HUBV.some((v) => v.id == message.id)) hubChat(message.id, text);
+            else { /* sender not drawn yet: still show the line in the chat log */
+              const b = document.createElement("b");
+              b.textContent = String(message.name || "Player").replace(/[^A-Za-z0-9 _-]/g, "").slice(0, 16) + ": ";
+              chatLine([b, document.createTextNode(text.slice(0, 80))]);
+            }
+          } else if (message.type == "c" && Number.isFinite(message.x) && Number.isFinite(message.y) && Number.isInteger(message.s) && P) {
+            /* shift by the host's error at that update, keeping the steps walked since (no snap back) */
+            const sent = NET_MOVES.find((m) => m.seq == message.s);
+            const ox = sent ? message.x - sent.x : message.x - P.x, oy = sent ? message.y - sent.y : message.y - P.y;
+            for (const m of NET_MOVES) if (m.seq > message.s) { m.x += ox; m.y += oy; }
+            while (NET_MOVES.length && NET_MOVES[0].seq <= message.s) NET_MOVES.shift();
+            P.x = cl(P.x + ox, 0, W); P.y = cl(P.y + oy, 0, H);
+            clampW(P);
+          } else if (message.type == "ack" && Number.isInteger(message.seq)) {
+            const pending = NET_PENDING.get(message.seq);
+            NET_PENDING.delete(message.seq);
+            if (pending && !message.ok) {
+              pending.undo?.();
+              chatSys("Not sent: " + String(message.reason || "rejected by the hub host").slice(0, 60), "bye");
+            }
+          } else if (message.type == "emote" && message.id != NET_LOCAL_ID && Object.values(EMOTES).includes(message.e)) {
+            const v = HUBV.find((other) => other.id == message.id);
+            if (v) emote(v, message.e);
           } else if (message.type == "reject" && typeof message.reason == "string") {
             netStatus("Host rejected connection: " + message.reason.slice(0, 100));
             NET.disconnect(id);
@@ -2022,7 +1992,7 @@
       }
       if (NET) NET.setHandlers({
         onOpen: (id) => {
-          if (NET_ROLE == "guest") NET.send(id, { type: "join", profile: netProfile() });
+          if (NET_ROLE == "guest") NET.send(id, { type: "join", profile: netProfile(), x: Math.round(P.x), y: Math.round(P.y) });
           NET_CONNECTED = true;
           netStatus(`Connected to hub ${NET_SESSION?.hubId || ""}.`);
         },
@@ -2032,6 +2002,7 @@
           if (clientId) {
             hubLeave(id);
             NET_CLIENTS.delete(id);
+            netRoster();
           } else if (NET_ROLE == "guest" && id == NET_SESSION?.peerId) {
             HUBV = HUBV.filter((v) => v.id != "host-player");
           }
@@ -2047,41 +2018,32 @@
         onDisconnected: () => netStatus("Peer connection interrupted; waiting for reconnection…"),
         onError: (_id, error) => netStatus("Network error: " + error.message),
       });
+      /* netStep(): runs on its own 50 ms timer, not the render loop, so a paused or background host keeps relaying the hub */
       function netStep() {
-        if (!NET || !NET.peerIds().length || !P || paused || S.sc != "hub") return;
         const now = performance.now();
+        if (now - NET_BADGE_AT > 500) { NET_BADGE_AT = now; netBadgeUpdate(); }
+        if (!NET || !NET.peerIds().length || !P || S.sc != "hub") return;
         if (NET_ROLE == "host") {
-          if (!NET_LAST_SIM) NET_LAST_SIM = now;
-          NET_SIM_ACC += Math.min(250, now - NET_LAST_SIM);
-          NET_LAST_SIM = now;
-          while (NET_SIM_ACC >= 50) {
-            for (const v of HUBV) {
-              if (v.bot || v.out || !v.netClientId) continue;
-              const active = now - (v.netInputAt || 0) <= 300;
-              const x = active ? v.netInputX || 0 : 0, y = active ? v.netInputY || 0 : 0;
-              v.netDcd = Math.max(0, (v.netDcd || 0) - 0.05);
-              if (v.netDs > 0) {
-                const dashDt = Math.min(0.05, v.netDs);
-                v.x += v.netDvx * dashDt; v.y += v.netDvy * dashDt; v.netDs -= dashDt;
-                v.dx = v.netDvx; v.dy = v.netDvy;
-              } else {
-                v.dx = x; v.dy = y;
-                v.x += x * CL[v.cls].sp * (v.netSpd || 1) * 0.05;
-                v.y += y * CL[v.cls].sp * (v.netSpd || 1) * 0.05;
-              }
-              clampW(v);
-              v.tx = v.x; v.ty = v.y;
-            }
-            NET_SIM_ACC -= 50;
-          }
-          if (now - NET_LAST_SEND >= 100) { NET_LAST_SEND = now; netSnapshot(); }
-        } else if (now - NET_LAST_SEND >= 50) {
+          if (now - NET_LAST_SEND < 100) return;
           NET_LAST_SEND = now;
-          const dashMagnitude = Math.hypot(P.dvx || 0, P.dvy || 0) || 1;
-          NET.send(NET_SESSION?.peerId, { type: "hub-input", x: cl(P.dx || 0, -1, 1), y: cl(P.dy || 0, -1, 1), f: P.f || "d",
-            dash: P.ds > 0, dashX: P.ds > 0 ? P.dvx / dashMagnitude : 0, dashY: P.ds > 0 ? P.dvy / dashMagnitude : 0 });
+          const full = now - NET_FULL_AT >= 1000;
+          if (full) NET_FULL_AT = now;
+          netSnapshot(full);
+        } else {
+          /* 15 updates/s while moving, one keep-alive per second while standing still */
+          const x = Math.round(P.x), y = Math.round(P.y), f = Math.max(0, NET_F.indexOf(P.f || "d")), d = P.ds > 0 ? 1 : 0, key = [x, y, f, d].join();
+          if (now - NET_LAST_SEND < 66 || (key == NET_SENT_KEY && now - NET_LAST_SEND < 1000)) return;
+          NET_LAST_SEND = now;
+          NET_SENT_KEY = key;
+          const seq = ++NET_SEQ;
+          NET_MOVES.push({ seq, x, y });
+          if (NET_MOVES.length > 60) NET_MOVES.shift();
+          NET.send(NET_SESSION?.peerId, { type: "m", x, y, f, d, s: seq });
         }
       }
+      if (typeof setInterval == "function") setInterval(netStep, 50);
+      /* closing or reloading the tab frees the seat at once (keepalive request) instead of leaving a dead hub for 30 s */
+      addEventListener("pagehide", () => { if (NET_SESSION) netDisconnect(); });
       /* botOut(v): the bot heads off to a raid: stops, rises into a pillar of light, then disconnects */
       /* ALUMNI: bots that went raiding. About half come back 3-6 min later: same name, a level or two higher. */
       const ALUMNI = [];
@@ -2160,17 +2122,8 @@
         const ease = 1 - Math.exp(-dt * 12);
         for (const v of HUBV) {
           if (!v.bot && v.netSamples?.length) {
-            const samples = v.netSamples, newest = samples[samples.length - 1];
-            if (samples.length > 1) {
-              const older = samples[samples.length - 2], renderAt = performance.now() - 100,
-                span = Math.max(1, newest.at - older.at), t = cl((renderAt - older.at) / span, 0, 1);
-              v.x = older.x + (newest.x - older.x) * t;
-              v.y = older.y + (newest.y - older.y) * t;
-              v.dx = (newest.x - older.x) / span;
-              v.dy = (newest.y - older.y) / span;
-              if (Math.hypot(v.dx, v.dy) > 0.1) v.f = Math.abs(v.dx) > Math.abs(v.dy) ? (v.dx > 0 ? "r" : "l") : v.dy > 0 ? "d" : "u";
-              continue;
-            }
+            netSmooth(v, dt);
+            continue;
           }
           const k = v.bot ? 1 : ease; /* bots move themselves at full speed; remote players glide toward their last update */
           if (v.bot && !v.out && v.outAt && S.tm >= v.outAt) botOut(v); /* raid group: leaving together */
@@ -2243,8 +2196,8 @@
         if (cmd && EMOTES[cmd[1].toLowerCase()]) return myEmote(EMOTES[cmd[1].toLowerCase()]);
         say(P, t);
         if (NET?.peerIds().length && S.sc == "hub") {
-          if (NET_ROLE == "guest") NET.send(NET_SESSION?.peerId, { type: "chat", text: t });
-          else if (NET_ROLE == "host") NET.broadcast({ type: "chat", id: "host-player", text: t });
+          if (NET_ROLE == "guest") { const shown = P.say; netQuery({ type: "chat", text: t }, () => { if (P.say === shown) P.say = null; }); }
+          else if (NET_ROLE == "host") NET.broadcast({ type: "chat", id: "host-player", name: netProfile().name, text: t });
         } else if (/^(hi+|hey+|hello|yo|sup|o\/|hiya)\b/i.test(t)) botReply(BOT_REPLY);
         else if (/raid/i.test(t) && Math.random() < 0.5) botReply(["sure", "im in", "maybe later", "need a healer?", "1 sec"]);
       }
@@ -2739,7 +2692,11 @@
         const it = COS.find((i) => i.t == "emote" && i.e == e);
         if (!it || !cosOwn(it)) return;
         emote(P, e);
-        /* network: send the emote to the hub here once there is a server */
+        if (NET?.peerIds().length) {
+          if (NET_ROLE == "guest") { const shown = P.emo; netQuery({ type: "emote", e }, () => { if (P.emo === shown) P.emo = null; }); }
+          else if (NET_ROLE == "host") NET.broadcast({ type: "emote", id: "host-player", e });
+          return;
+        }
         const bots = HUBV.filter((v) => v.bot && !v.out);
         if (bots.length && Math.random() < 0.35) emoteLater(pick(bots), e == "👋" ? "👋" : pick([e, "😂", "👍"]), 0.5);
       }
@@ -3442,12 +3399,6 @@
           if (!dashStep(P, dt)) {
             P.x += P.dx * k.sp * spm() * dt;
             P.y += P.dy * k.sp * spm() * dt;
-            clampW(P);
-          }
-          if (NET_ROLE == "guest" && P.netTarget) {
-            const dx = P.netTarget.x - P.x, dy = P.netTarget.y - P.y, error = Math.hypot(dx, dy);
-            if (error > 85) { P.x = P.netTarget.x; P.y = P.netTarget.y; }
-            else { const correction = Math.min(1, dt * 5); P.x += dx * correction; P.y += dy * correction; }
             clampW(P);
           }
           for (let i = 0; i < 3; i++) P.cd[i] = Math.max(0, P.cd[i] - dt);
@@ -4457,8 +4408,6 @@
         let snap = null;
         try { snap = JSON.parse(localStorage.getItem(HOT_KEY) || "null"); localStorage.removeItem(HOT_KEY); } catch (e) {}
         if (!snap || Date.now() - snap.at > 30000) return false;
-        /* any recent reload = code changed: always show the banner */
-        setTimeout(showUpdate, 50);
         if (!snap.S || !snap.S.ps || !snap.S.ps[0]) return false;
         selK = snap.S.ps[0].cls;
         start(); S = snap.S; P = S.ps[0];
@@ -4466,77 +4415,6 @@
         if (["elder", "shop", "lore"].includes(snap.dlg) && snap.dlg != "lore") openDlg(snap.dlg); /* reopen the menu you had open (not lore: it would use a tale) */
         return true;
       }
-      /* showUpdate(): "Code updated" banner + the reason, read from version.json ({"note": "..."}) next to index.html */
-      function showUpdate() {
-        /* just the reason, small, 10s. Shown once per note: reloads with the same note don't replay it. */
-        const done = (n) => {
-          const key = "runebound_last_note";
-          try { if (n && localStorage.getItem(key) === n) return; if (n) localStorage.setItem(key, n); } catch (e) {}
-          popMsg("✨ " + (n || "Code updated"), 0.9, 10000);
-        };
-        if (typeof fetch != "function") return done("");
-        fetch("version.json?" + Date.now()).then((r) => r.json()).then((j) => done(String(j.note || "").slice(0, 90))).catch(() => done(""));
-      }
-      /* popMsg(text): small animated banner at the top of the screen for ~2s. */
-      /* ---------- dev build board (local only) ----------
-         Shows version.json "board" as a priority table in the empty side margin. In: [{id, p: 1-3, t: text, s: "todo"|"wip"|"done"}] */
-      const IS_LOCAL = typeof location != "undefined" && /^(localhost|127\.0\.0\.1|)$/.test(location.hostname);
-      function showBoard() {
-        if (!IS_LOCAL || typeof fetch != "function") return;
-        fetch("version.json?" + Date.now()).then((r) => r.json()).then((j) => {
-          const rows = (j.board || []).filter((r) => r.s != "done").sort((a, b) => a.p - b.p).slice(0, 6); /* open tasks only */
-          let el = $("board");
-          if (!el) { el = document.createElement("div"); el.id = "board"; document.body.appendChild(el); }
-          const st = { todo: "TO DO", wip: "IN PROGRESS", done: "DONE" };
-          /* recap of the latest code changes (newest first) */
-          /* each change: tag + text + a candle bar sized by lines added (green) / removed (red) */
-          const cmax = Math.max(1, ...(j.log || []).map((l) => (l.add || 0) + (l.del || 0)));
-          const log = (j.log || []).slice(0, 5).map((l) => {
-            const a = l.add || 0, d = l.del || 0, wa = (Math.sqrt(a) / Math.sqrt(cmax)) * 100, wd = (Math.sqrt(d) / Math.sqrt(cmax)) * 100;
-            return `<li><span class="tag ${l.k || "in"}">${{ in: "+ IN", out: "− OUT", fix: "~ FIX" }[l.k || "in"]}</span> ${l.t}${a + d ? `<span class="cdl"><i class="ca" style="width:${wa}%"></i><i class="cd" style="width:${wd}%"></i><em>+${a} −${d}</em></span>` : ""}</li>`;
-          }).join("");
-          /* smooth curve (bezier) through the lines-changed-per-hour series */
-          const ls = sx.lines || [], lm = Math.max(1, ...ls),
-            lp = ls.map((v, i) => [(i / Math.max(1, ls.length - 1)) * 100, 28 - (v / lm) * 24]),
-            curve = lp.reduce((acc, p, i) => (i ? acc + ` C ${(lp[i - 1][0] + p[0]) / 2},${lp[i - 1][1]} ${(lp[i - 1][0] + p[0]) / 2},${p[1]} ${p[0]},${p[1]}` : `M ${p[0]},${p[1]}`), "");
-          /* crypto-news style header: LIVE ticker, stat chips, commits-per-hour sparkline (numbers from tools/board.js) */
-          const sx = j.stats || {}, dT = (sx.tests || 0) - (sx.prevTests || sx.tests || 0),
-            ago = (iso) => { const m = Math.round((Date.now() - Date.parse(iso)) / 60e3); return !iso || isNaN(m) ? "" : m < 1 ? "now" : m < 60 ? m + "m" : Math.round(m / 60) + "h"; },
-            tick = (j.log || []).slice(0, 8).map((l) => `<span class="tk"><span class="tag ${l.k || "in"}">${(l.k || "in").toUpperCase()}</span>${l.t}<i>${ago(l.at)}</i></span>`).join(""),
-            sp = sx.spark || [], mx = Math.max(1, ...sp),
-            pts = sp.map((v, i) => `${(i / Math.max(1, sp.length - 1)) * 100},${28 - (v / mx) * 24}`).join(" ");
-          el.innerHTML = `<div class="live"><span class="dot"></span>LIVE<span class="ver">v${j.ver || "0.5.0"}</span></div><div class="vnote">${j.note || ""}</div>
-            <div class="ticker"><div class="tkr">${tick}${tick}</div></div>
-            <div class="chips">
-              <div class="chip"><span>TESTS</span><b>${sx.tests ?? "—"}</b><em class="${dT > 0 ? "up" : dT < 0 ? "down" : ""}">${dT > 0 ? "▲" + dT : dT < 0 ? "▼" + -dT : "■ 0"}</em></div>
-              <div class="chip"><span>COMMITS TODAY</span><b>${sx.today ?? "—"}</b></div>
-              <div class="chip"><span>OPEN TASKS</span><b>${sx.open ?? rows.length}</b></div>
-              <div class="chip"><span>FEATURES</span><b>${sx.features ?? 0}</b><em class="up">IN</em></div>
-            </div>
-            ${sp.length ? `<div class="spark"><span>ACTIVITY · 12H</span><svg viewBox="0 0 100 30" preserveAspectRatio="none"><polyline points="0,30 ${pts} 100,30" fill="#7dff9a22" stroke="none"/><polyline points="${pts}" fill="none" stroke="#7dff9a" stroke-width="1.5" vector-effect="non-scaling-stroke"/></svg></div>` : ""}
-            ${ls.length ? `<div class="spark"><span>LINES CHANGED · 12H · peak ${lm}</span><svg viewBox="0 0 100 30" preserveAspectRatio="none"><path d="${curve} L 100,30 L 0,30 Z" fill="#5ad7ff22"/><path d="${curve}" fill="none" stroke="#5ad7ff" stroke-width="1.5" vector-effect="non-scaling-stroke"/></svg></div>` : ""}
-            <div class="lg"><b>LATEST CHANGES</b><ul>${log}</ul></div>
-            <div class="tb"><b>BUILD BOARD</b><span class="sm"> · say "do R3"</span>
-            <table><tr><th>#</th><th>P</th><th>Task</th><th>State</th></tr>${rows
-              .map((r) => `<tr class="${r.s}"><td>${r.id}</td><td class="p${r.p}">P${r.p}</td><td>${r.t}</td><td>${st[r.s] || r.s}</td></tr>`)
-              .join("")}</table></div>`;
-          boardFit();
-        }).catch(() => {});
-      }
-      /* boardFit(): place the board in the widest black margin; hide it if there is no room */
-      function boardFit() {
-        const el = $("board");
-        if (!el) return;
-        /* side bars (wide screens): log + table on the left. Top bar (tall screens): log only, across the top. */
-        const r = cv.getBoundingClientRect(), s = sc / Math.min(2, devicePixelRatio || 1),
-          side = (r.width - W * s) / 2, top = (r.height - H * s) / 2;
-        el.className = side >= 230 ? "side" : top >= 70 ? "top" : "";
-        el.hidden = !el.className;
-        el.style.cssText = el.className == "side" ? `width:${Math.min(420, side - 20)}px` : el.className == "top" ? `height:${top - 12}px` : "";
-      }
-      addEventListener("resize", boardFit);
-      showBoard();
-      if (IS_LOCAL) setInterval(showBoard, 30e3); /* live feed refresh */
       /* popMsg(text, z = size multiplier, ms = time on screen) */
       function popMsg(t, z = 1, ms = 2000) {
         const d = document.createElement("div");
@@ -8618,7 +8496,6 @@
         last = now;
         padPoll();
         step(dt);
-        netStep();
         uiUpd();
         draw(dt);
         requestAnimationFrame(loop);

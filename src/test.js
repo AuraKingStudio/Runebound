@@ -1,6 +1,6 @@
 // Headless logic test for dev tools: stubs the DOM, runs the real game script.
 const fs=require('fs'),http=require('node:http'),vm=require('vm'),path=require('path');
-const {createDirectoryServer}=require('../signaling-server.js');
+const {createDirectoryServer}=require('./app.js');
 const SCRIPT=fs.readFileSync(path.join(__dirname,'..','index.html'),'utf8').match(/<script>([\s\S]*)<\/script>/)[1];
 const NET_START='/* Browser networking block:',NET_END='/* End browser networking block. */',NET_START_INDEX=SCRIPT.indexOf(NET_START),NET_END_INDEX=SCRIPT.indexOf(NET_END);
 if(NET_START_INDEX<0||NET_END_INDEX<=NET_START_INDEX)throw new Error('Browser networking block is missing from index.html.');
@@ -139,12 +139,28 @@ ok(T.keyLabel('Mouse0')=='MB1','controls: main attack shows as MB1');
 /* ---------- hub networking authority ---------- */
 T.devHub();netClock=1000;fakePeers=['peer-one'];fakeBroadcast=[];T.netPrepareHub('host');
 T.netReceive('peer-one',{type:'join',profile:{id:'player-test1234',name:'Guest',cls:'tank',lv:3,ti:0,spd:1}});
-const remote=T.HUBV().find(v=>v.netClientId=='player-test1234'),remoteX=remote&&remote.x;
+const remote=T.HUBV().find(v=>v.netClientId=='player-test1234'),remoteX=remote&&remote.netX;
 ok(remote&&!T.HUBV().some(v=>v.bot),'network hub: real guest joins without simulated bot filler');
-T.netReceive('peer-one',{type:'hub-input',x:2,y:0,f:'r',dash:false,dashX:0,dashY:0});ok(remote.netInputX==0,'network hub: rejects out-of-range movement input');
-T.netReceive('peer-one',{type:'hub-input',x:1,y:0,f:'r',dash:false,dashX:0,dashY:0});T.netStep();netClock+=50;T.netStep();
-ok(remote.x>remoteX&&remote.x-remoteX<=15,'network hub: host simulates bounded movement from client input');
-ok(fakeBroadcast.some(x=>x.msg.type=='hub-state'),'network hub: host broadcasts authoritative snapshots');
+ok(fakeBroadcast.some(x=>x.msg.type=='r'&&x.msg.p.length==2),'network hub: host sends the roster when a guest joins');
+T.netReceive('peer-one',{type:'m',x:'far',y:0,f:3,d:0,s:1});ok(remote.netX==remoteX,'network hub: rejects malformed movement');
+netClock+=100;fakeBroadcast=[];T.netReceive('peer-one',{type:'m',x:remoteX+10,y:remote.netY,f:3,d:0,s:2});
+ok(Math.abs(remote.netX-(remoteX+10))<1e-6&&!fakeBroadcast.some(x=>x.msg.type=='c'),'network hub: host accepts a walkable guest step without correcting');
+netClock+=100;fakeBroadcast=[];const beforeX=remote.netX;T.netReceive('peer-one',{type:'m',x:beforeX+400,y:remote.netY,f:3,d:0,s:3});
+ok(remote.netX-beforeX<60&&fakeBroadcast.some(x=>x.msg.type=='c'),'network hub: host clamps a too-fast step and sends a correction');
+netClock+=100;const dashX=remote.netX;T.netReceive('peer-one',{type:'m',x:dashX+70,y:remote.netY,f:3,d:1,s:4});
+ok(remote.netX-dashX>50,'network hub: a dash gets its extra distance');
+netClock+=100;const dash2=remote.netX;T.netReceive('peer-one',{type:'m',x:dash2+70,y:remote.netY,f:3,d:1,s:5});
+ok(remote.netX-dash2<45,'network hub: dash budget respects the cooldown');
+T.netStep();
+{const s=T.HUBV().find(v=>v.netClientId=='player-test1234');const x0=s.netX-50;s.x=x0;s.y=s.netY;netClock+=400;T.hubVisitStep(0.05);ok(s.x>x0+5&&s.x<x0+45,'network hub: remote players glide toward their buffered position instead of jumping');}
+fakeBroadcast=[];netClock+=1000;T.netStep();const full=fakeBroadcast.find(x=>x.msg.type=='s');ok(full&&full.msg.p.length==8&&full.msg.p.every(Number.isInteger),'network hub: full state is compact whole numbers for every player');
+fakeBroadcast=[];netClock+=100;T.netStep();ok(!fakeBroadcast.some(x=>x.msg.type=='s'),'network hub: nothing is sent while no one moves');
+fakeBroadcast=[];netClock+=1000;T.netReceive('peer-one',{type:'chat',text:'hello all',seq:50});
+ok(fakeBroadcast.some(x=>x.msg.type=='ack'&&x.msg.seq==50&&x.msg.ok),'network hub: host confirms a valid guest chat');
+fakeBroadcast=[];T.netReceive('peer-one',{type:'chat',text:'spam',seq:51});
+ok(fakeBroadcast.some(x=>x.msg.type=='ack'&&x.msg.seq==51&&!x.msg.ok),'network hub: host rejects chat spam');
+fakeBroadcast=[];T.netReceive('peer-one',{type:'emote',e:'not-an-emote',seq:52});
+ok(fakeBroadcast.some(x=>x.msg.type=='ack'&&x.msg.seq==52&&!x.msg.ok),'network hub: host rejects unknown emotes');
 fakePeers=[];T.netPrepareHub('');T.netDisconnect?.();
 async function networkTests(){
  const peers=[];
@@ -155,15 +171,14 @@ async function networkTests(){
  h.setHandlers({onMessage:(_id,m)=>{if(m.type=='test')received++;},onError:()=>errors++});
  h.setIceServers([{urls:'stun:example.invalid:3478'}]);
  try{h.setIceServers([{urls:'https://invalid.example'}]);ok(false,'network: rejects non-ICE URL');}catch{ok(true,'network: rejects non-ICE URL');}
- const invite=await h.createOffer(),decoded=JSON.parse(Buffer.from(invite.replace(/-/g,'+').replace(/_/g,'/'),'base64').toString());
- const hostChannel=peers[0].channels[0],peerId='guest-'+decoded.token.slice(0,12);
- ok(decoded.type=='offer'&&decoded.description.sdp=='offer-sdp','network: host creates a copyable invite');
- hostChannel.readyState='open';hostChannel.onopen();ok(h.send(peerId,{type:'test'})&&hostChannel.sent.length==1,'network: sends small messages on an open peer');
+ const offer=await h.createPeerOffer('peer-a'),hostChannel=peers[0].channels[0];
+ ok(offer.type=='offer'&&offer.sdp=='offer-sdp','network: guest side creates an offer for its directory seat');
+ hostChannel.readyState='open';hostChannel.onopen();ok(h.send('peer-a',{type:'test'})&&hostChannel.sent.length==1,'network: sends small messages on an open peer');
  hostChannel.onmessage({data:JSON.stringify({type:'test'})});ok(received==1,'network: parses and dispatches peer messages');
- const guest=createContext(),g=guest.RBNet,answer=await g.createAnswer(invite);
- ok(JSON.parse(Buffer.from(answer.replace(/-/g,'+').replace(/_/g,'/'),'base64').toString()).type=='answer','network: guest creates an answer from invite');
- await h.acceptAnswer(answer);ok(peers[0].remoteDescription.type=='answer','network: host accepts matching answer');
- try{await h.acceptAnswer(answer);ok(false,'network: rejects reused answer');}catch{ok(true,'network: rejects reused answer');}
+ const guest=createContext(),g=guest.RBNet,answer=await g.createPeerAnswer('peer-a',offer);
+ ok(answer.type=='answer','network: host side answers a directory offer');
+ await h.acceptPeerAnswer('peer-a',answer);ok(peers[0].remoteDescription.type=='answer','network: offer side accepts the answer');
+ try{await h.acceptPeerAnswer('unknown',answer);ok(false,'network: rejects answer for unknown peer');}catch{ok(true,'network: rejects answer for unknown peer');}
  for(let i=0;i<40;i++)hostChannel.onmessage({data:JSON.stringify({type:'test'})});
  ok(errors==1&&hostChannel.readyState=='closed','network: closes peer that exceeds message rate');
  h.disconnectAll();g.disconnectAll();ok(h.peerIds().length==0&&g.peerIds().length==0,'network: disconnect clears peer sessions');

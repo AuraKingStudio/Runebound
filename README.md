@@ -1,33 +1,36 @@
-![Runebound](assets/banner.png)
-
 **Play in your browser:** https://aurakingstudio.github.io/Runebound/
 
-# Runebound (solo prototype)
+# Runebound (prototype)
 
-- **Quickest:** double-click `index.html` (works offline, everything is embedded).
-- **Windows .exe:** double-click `build-exe.bat` (needs Node.js). The .exe appears in `dist/`.
-- **Desktop app / .exe (manual):** install Node.js, then in this folder run `npm install` and `npm start`.
-  For a Windows portable .exe run `npm run dist` (build it on Windows; the file appears in `dist/`).
-- Progress (gold, upgrades, quests) is saved in the browser/app storage.
-- Press **Esc** or **P** (or use Pause) to pause. The optional, compact AdSense slot appears only in this menu.
-- For web release, edit `ads-config.js` with the approved AdSense publisher and pause-slot IDs, set `enabled: true`, and deploy over HTTPS. Finish AdSense site approval and consent-message setup first. Ads are intentionally disabled in the offline file and Electron app.
-- Upload `Runebound-itchio.zip` to itch.io as an HTML5 game. Its files are at the ZIP root.
+- A browser game: play it at the link above, or open `index.html` locally (single player works offline).
+- Progress (gold, upgrades, quests) is saved in the browser's storage.
+- Press **Esc** or **P** (or use Pause) to pause.
 
-## Automatic player-hosted hub pilot
+## Files
 
-The browser automatically requests a seat after the player name is set. The dependency-free signaling directory assigns the first available hub, in numeric order; each player-hosted hub has up to 10 players, and the directory permits up to 10 hubs. The first player assigned to an empty hub hosts its gameplay. This pilot syncs hub movement and chat only; raid combat, host migration, reconnect recovery, authenticated accounts, and a public profile trust system are not implemented.
+- `index.html`: the whole browser game, including its networking.
+- `src/app.js`: the only Node file: the hub directory service (`npm run signaling`).
+- `src/test.js`: game, transport and directory tests (`npm test`).
+- `assets/icon.png`: tab icon.
 
-### Configure and run the directory
+## Player-hosted hubs (pilot)
 
-The rendezvous service is plain Node.js using built-in modules—no new npm package is required:
+After the player name is set, the game asks the hub directory for a seat. The directory assigns the first hub with an open seat, in numeric order: up to 10 hubs of 10 players. The first player in an empty hub hosts it. The corner badge shows the hub number, why it was chosen, and whether you are connecting, connected or synced.
 
-1. Run `node signaling-server.js` on a machine reachable by players (default port 8787), or set `PORT`.
-2. Deploy it behind HTTPS for internet use. Set `ALLOWED_ORIGINS` to a comma-separated allowlist containing the game's exact origin, such as `https://aurakingstudio.github.io`. GitHub Pages serves the game files but does not run this service.
-3. Set `signalingUrl` and, if needed, `iceServers` in the `NETWORK_CONFIG` constant in `index.html`. The test PC's Cloudflare Quick Tunnel has been stopped, so the checked-in URL is blank until the signaling service is available. Quick Tunnel URLs change on restart; use a named Cloudflare Tunnel and stable domain for a longer-lived host. Never commit private TURN credentials to this public repository.
-4. Open the game in two browser profiles/devices and set a distinct local player name in each. The game automatically attempts to assign each player after their name is set. The HUD shows the hub number and why that hub was selected; the first player hosts. After 10 seats, the next player is assigned to the next available hub.
+**How the traffic is split.** Each player shows its own actions at once: movement, chat and emotes. The host then checks only what could be cheated. It clamps steps that are too fast for the class, speed bonus and dash cooldown, and rate-limits chat and emotes. It confirms each chat or emote, or rejects it so the sender's screen undoes it. A movement correction shifts the player by the host's error without throwing away the steps walked since.
 
-The directory stores temporary hub assignments and WebRTC offer/answer data in memory only. It does not receive local save data or simulate the game. A server restart clears sessions. Browser WebRTC encrypts peer traffic in transit; directory bearer tokens are temporary secrets. Host-side checks limit profile shape, movement input, dash frequency, and message rate, but a player-controlled host can still cheat and these checks are not a guarantee of integrity. Shared display profiles are player-supplied, not verified account records.
+**How it stays light.** Names, classes and levels are sent only in a roster message when someone joins or leaves. Positions travel as `[slot, x, y, facing]` whole numbers. The host sends only players who moved (10 times a second), plus a full refresh once a second. Guests send at most 15 updates a second while moving and one keep-alive a second while still. Remote players are drawn about 150 ms behind and smoothed, so uneven updates still look like walking.
 
-The host simulates guest movement at 20 ticks/second and sends snapshots at about 10 per second. Clients predict their own movement, interpolate remote movement behind by a short buffer, and smoothly correct smaller errors while snapping larger ones. The host selection for now is “first player in an empty hub”; PC/console/phone ranking and host migration are not implemented.
+**Not implemented:** raid sync, host migration, reconnect, accounts, and PC/console/phone host ranking. A player-controlled host can still cheat; these checks are not robust anti-cheat. There is no 100-player benchmark.
 
-All browser-side networking, configuration, and game integration live in `index.html`. `signaling-server.js` is the separately runnable rendezvous service because it must run under Node.js. The game rules can later use a dedicated-server transport instead. Run `node test/dev.test.js` for game, transport, and signaling-directory regression tests.
+### Run it locally
+
+1. `npm run signaling`: starts the directory on port 8787 (set `PORT` to change it).
+2. `npm run dev`: serves the game on http://localhost:8080. On localhost the game uses `http://localhost:8787` automatically.
+3. Open two tabs, for example in VS Code's **Simple Browser: Show**: `http://localhost:8080/?player=1` and `http://localhost:8080/?player=2`. On localhost, `?player=N` gives each tab its own save, so they are two different players. The first hosts Hub 1, the second joins it.
+
+### Hosting for other people
+
+GitHub Pages only serves files; it cannot run `src/app.js`. Run the directory on a reachable machine behind HTTPS. Set `ALLOWED_ORIGINS` to the game's exact origin (e.g. `https://aurakingstudio.github.io`). Then set `signalingUrl` in `NETWORK_CONFIG` in `index.html`. It is blank in the public build, so nothing is publicly hosted right now. Cloudflare Quick Tunnel URLs change on every restart; use a named tunnel and a stable domain. Players on strict networks may need a TURN relay in `iceServers`. Never commit private TURN credentials.
+
+The directory keeps hub seats and WebRTC offer/answer data in memory only; a restart clears it. It never receives save data or runs the game. Shared display profiles are player-supplied, not verified.
