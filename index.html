@@ -48,7 +48,6 @@
         width: calc(100% - var(--dw, 0px));
         height: calc(100% - var(--dh, 0px));
       }
-      #ui,
       #dlg {
         position: fixed;
         inset: 0;
@@ -928,19 +927,6 @@
   </head>
   <body>
     <canvas id="cv"></canvas>
-    <div id="ui">
-      <div class="pn">
-        <h2>Runebound</h2>
-        <p class="sm">
-          Solo adventure. Pick a class, then walk to the portal to face the Rune Warden. Talk to the Elder and
-          the Merchant in the hub.
-        </p>
-        <b>Class</b>
-        <div id="cls"></div>
-        <div class="sm">WASD/arrows move · J/Space, K, L skills · E interact</div>
-        <button id="start" onclick="start()">Start game</button>
-      </div>
-    </div>
     <div id="dlg" hidden><div class="pn" id="dp"></div></div>
     <div id="dev" hidden></div>
     <div id="jz"></div>
@@ -2766,24 +2752,15 @@
         openDlg(n);
       }
       function start() {
-        const k = CL[V.cls] ? V.cls : $("cls").dataset.k || "tank"; /* last class picked at the Class Master */
+        const k = CL[V.cls] ? V.cls : selK; /* last class picked at the Class Master */
         P = mkP(k);
         S.ps = [P];
-        $("ui").hidden = true;
         document.body.className = "g";
         toHub();
         if (!V.name) nameUI(); /* first login: ask the name, daily bonus follows */
         else dailyCheck();
       }
       let selK = "tank";
-      $("cls").innerHTML = Object.keys(CL)
-        .map(
-          (k) =>
-            `<button onclick="selK='${k}';$('cls').dataset.k='${k}';[...$('cls').children].forEach(b=>b.style.outline=b.dataset.k==='${k}'?'3px solid #fff':'')" data-k="${k}">${k == "tank" ? `<img src="${IM.tank.src}">` : ""}${CL[k].n}</button>`,
-        )
-        .join("");
-      $("cls").dataset.k = "tank";
-      $("cls").children[0].style.outline = "3px solid #fff";
       /* ---------- NPC dialogs ---------- */
       const dlgOpen = () => !$("dlg").hidden;
       function closeDlg() {
@@ -3673,7 +3650,7 @@
         /* any recent reload = code changed: always show the banner */
         setTimeout(showUpdate, 50);
         if (!snap.S || !snap.S.ps || !snap.S.ps[0]) return false;
-        selK = snap.S.ps[0].cls; $("cls").dataset.k = selK;
+        selK = snap.S.ps[0].cls;
         start(); S = snap.S; P = S.ps[0];
         closeDlg(); /* don't re-show the daily popup on every save */
         if (["elder", "shop", "lore"].includes(snap.dlg) && snap.dlg != "lore") openDlg(snap.dlg); /* reopen the menu you had open (not lore: it would use a tale) */
