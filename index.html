@@ -1057,22 +1057,36 @@
             p.x = HUB.x + (dx / l) * rx;
             p.y = HUB.y + (dy / l) * ry;
           }
-          /* the river blocks walking, except on the bridges */
-          if (!bridgeAt(p))
-            for (const q of streamPts()) {
-              if (((q.x - PLAT.x) / PLAT.rx) ** 2 + ((q.y - PLAT.y) / PLAT.ry) ** 2 > 1) continue;
-              const dx = p.x - q.x,
-                dy = p.y - q.y,
-                d = Math.hypot(dx, dy),
-                lim = q.w + 5;
-              if (d < lim) {
-                const ux = d > 0.001 ? dx / d : q.nx,
-                  uy = d > 0.001 ? dy / d : q.ny;
-                p.x = q.x + ux * lim;
-                p.y = q.y + uy * lim;
-              }
-            }
+          riverPush(p);
         }
+      }
+      /* riverPush(p): invisible wall along both banks. The player's body never touches the water.
+         p._rs remembers which bank they are on, so fast moves can't tunnel to the other side. The bridge deck is free. */
+      function riverPush(p) {
+        if (bridgeAt(p)) {
+          p._rs = 0;
+          return;
+        }
+        const pts = streamPts();
+        let best = 1e9, bx = 0, by = 0, bw = 0, bnx = 0, bny = 1;
+        for (let i = 0; i < pts.length - 1; i++) {
+          const a = pts[i],
+            b = pts[i + 1],
+            ex = b.x - a.x,
+            ey = b.y - a.y,
+            u = Math.max(0, Math.min(1, ((p.x - a.x) * ex + (p.y - a.y) * ey) / (ex * ex + ey * ey || 1))),
+            cx = a.x + ex * u,
+            cy = a.y + ey * u,
+            d = Math.hypot(p.x - cx, p.y - cy);
+          if (d < best) (best = d), (bx = cx), (by = cy), (bw = a.w + (b.w - a.w) * u), (bnx = a.nx), (bny = a.ny);
+        }
+        const lim = bw + PR + 6,
+          side = Math.sign((p.x - bx) * bnx + (p.y - by) * bny) || 1;
+        if (best < lim) {
+          const sd = p._rs || side;
+          p.x = bx + bnx * lim * sd;
+          p.y = by + bny * lim * sd;
+        } else p._rs = side;
       }
       function place(a) {
         P.mh = Math.round(CL[P.cls].hp * hpm());
@@ -3307,18 +3321,55 @@
         }
         trees.sort((p, q) => p[1] - q[1]);
         for (const [tx, ty, tr] of trees) {
-          g.fillStyle = "#00000044";
+          const bloom = r() < 0.18,
+            pal = bloom ? ["#b8577a", "#d9779a", "#f0a3bf", "#ffd0e0"] : ["#24542a", "#2f6b2c", "#46913b", "#6cb84f"],
+            puffs = [];
+          for (let k = 0; k < 7; k++) {
+            const a = (k / 7) * 6.283 + r() * 0.4;
+            puffs.push([Math.cos(a) * tr * 0.5, Math.sin(a) * tr * 0.32 - tr * 0.3, tr * (0.42 + r() * 0.14)]);
+          }
+          /* ground shadow and trunk */
+          g.fillStyle = "rgba(0,0,0,.28)";
           g.beginPath();
-          g.ellipse(tx + 6, ty + tr * 0.55, tr * 0.9, tr * 0.4, 0, 0, 6.3);
+          g.ellipse(tx + 6, ty + tr * 0.5, tr * 0.95, tr * 0.38, 0, 0, 6.3);
           g.fill();
           g.fillStyle = "#5a3a22";
-          g.fillRect(tx - 4, ty, 8, tr * 0.5);
-          for (const [dx, dy, k, col] of [[0, 0, 1, "#2f6b2c"], [-tr * 0.35, -tr * 0.2, 0.7, "#3d8236"], [tr * 0.3, -tr * 0.3, 0.6, "#4a9a40"], [-tr * 0.1, -tr * 0.45, 0.45, "#62b352"]]) {
+          g.beginPath();
+          g.moveTo(tx - 5, ty + tr * 0.45);
+          g.lineTo(tx - 3, ty - tr * 0.1);
+          g.lineTo(tx + 3, ty - tr * 0.1);
+          g.lineTo(tx + 5, ty + tr * 0.45);
+          g.fill();
+          g.fillStyle = "#3e2716";
+          g.fillRect(tx + 1, ty - tr * 0.1, 2, tr * 0.55);
+          /* dark rim, base tone, mid light, then top highlights: four layers of puffs */
+          [[pal[0], 1.12, 0, 0], [pal[1], 1, -1, -1], [pal[2], 0.72, -3, -5], [pal[3], 0.38, -5, -9]].forEach(([col, k, ox, oy], L) => {
             g.fillStyle = col;
+            for (const [px, py, pr] of puffs) {
+              g.beginPath();
+              g.arc(tx + px * (L > 1 ? 0.8 : 1) + ox, ty + py + oy, pr * k, 0, 6.3);
+              g.fill();
+            }
+            if (L == 1) {
+              g.beginPath();
+              g.arc(tx, ty - tr * 0.32, tr * 0.6, 0, 6.3);
+              g.fill();
+            }
+          });
+          /* soft speckles of light, and blossoms or berries */
+          for (let k = 0; k < 6; k++) {
+            g.fillStyle = bloom ? "rgba(255,240,245,.8)" : "rgba(210,255,170,.45)";
             g.beginPath();
-            g.arc(tx + dx, ty + dy - tr * 0.3, tr * k, 0, 6.3);
+            g.arc(tx + (r() - 0.6) * tr * 0.9, ty - tr * 0.3 + (r() - 0.7) * tr * 0.6, 1.3 + r() * 1.2, 0, 6.3);
             g.fill();
           }
+          if (!bloom && r() < 0.3)
+            for (let k = 0; k < 4; k++) {
+              g.fillStyle = "#ff6b6b";
+              g.beginPath();
+              g.arc(tx + (r() - 0.5) * tr * 0.9, ty - tr * 0.2 + (r() - 0.5) * tr * 0.5, 2.2, 0, 6.3);
+              g.fill();
+            }
         }
       }
       /* waterfall in the top-left corner: rocky cliff, falling water and a pond. WF = fall position. */
@@ -3647,7 +3698,7 @@
         pondWater(g);
       }
       /* the river's end: it drips off the platform's stone lip into a little pool below. LP = that pool. */
-      const LP = { x: 842, y: 494, rx: 50, ry: 21 };
+      const LP = { x: 834, y: 476, rx: 46, ry: 18 }; /* pool at the foot of the side wall, under the river end */
       function lowPool(g) {
         const e = streamPts()[streamPts().length - 1],
           r = rng(41);
@@ -3675,54 +3726,52 @@
         g.beginPath();
         g.ellipse(e.x, e.y + 2, e.w * 0.9, 5, 0, 0, 6.3);
         g.fill();
-        g.fillStyle = "rgba(40,70,70,.35)";
-        g.fillRect(e.x - e.w * 0.6, e.y + 4, e.w * 1.2, LP.y - LP.ry - e.y - 2);
       }
-      /* riverEnd(t): water dripping and trickling off the lip into the pool, with splashes and ripples */
+      /* riverEnd(t): the river pours over the stone lip and runs down the platform's curved side wall into the pool below */
       function riverEnd(t) {
         const e = streamPts()[streamPts().length - 1],
-          top = e.y + 4,
-          bot = LP.y - LP.ry + 6;
+          top = e.y - 2,
+          bot = e.y + 22,
+          hw = e.w * 0.85;
+        c.save();
+        /* clip to the side face: inside the side wall ellipse, outside the top surface */
+        c.beginPath();
+        c.ellipse(PLAT.x, PLAT.y + 18, PLAT.rx + 1, PLAT.ry + 1, 0, 0, 6.3);
+        c.ellipse(PLAT.x, PLAT.y, PLAT.rx - 1, PLAT.ry - 1, 0, 0, 6.3);
+        c.clip("evenodd");
+        const sh = c.createLinearGradient(0, top, 0, bot);
+        sh.addColorStop(0, "#5aa7a6");
+        sh.addColorStop(1, "#9fd6d2");
+        c.fillStyle = sh;
+        c.fillRect(e.x - hw, top, hw * 2, bot - top);
+        c.globalCompositeOperation = "lighter";
+        for (let i = 0; i < 6; i++) {
+          const sx = e.x - hw + (i + 0.5) * ((hw * 2) / 6),
+            head = ((t * 60 + i * 13) % 30) + top - 8,
+            gr = c.createLinearGradient(0, head, 0, head + 8);
+          gr.addColorStop(0, "rgba(255,255,255,0)");
+          gr.addColorStop(1, "rgba(235,255,255,.6)");
+          c.fillStyle = gr;
+          c.fillRect(sx - 1, head, 2, 8);
+        }
+        c.restore();
+        /* foam where it lands, then ripples spreading over the pool */
         c.save();
         c.globalCompositeOperation = "lighter";
-        /* thin trickles sliding down the stone */
-        for (let i = 0; i < 5; i++) {
-          const tx = e.x + (i - 2) * e.w * 0.25,
-            gr = c.createLinearGradient(0, top, 0, bot);
-          gr.addColorStop(0, "rgba(140,210,210,.55)");
-          gr.addColorStop(1, "rgba(200,240,240,.25)");
-          c.strokeStyle = gr;
-          c.lineWidth = 2 + (i % 2);
+        for (let i = 0; i < 6; i++) {
+          const p = (t * 1.2 + i / 6) % 1,
+            fx = e.x + (i / 5 - 0.5) * hw * 1.6;
+          c.fillStyle = `rgba(240,255,255,${0.55 * (1 - p)})`;
           c.beginPath();
-          c.moveTo(tx, top);
-          c.quadraticCurveTo(tx + Math.sin(t * 2 + i) * 1.5, (top + bot) / 2, tx + (i - 2) * 1.5, bot);
-          c.stroke();
+          c.arc(fx, LP.y - LP.ry + 6 - p * 5, 2 + p * 3, 0, 6.3);
+          c.fill();
         }
-        /* falling drops: each drop swells on the lip, falls, then splashes */
-        for (let i = 0; i < 7; i++) {
-          const p = (t * 0.9 + i / 7) % 1,
-            dx = e.x + ((i * 37) % 9 - 4) * e.w * 0.12;
-          if (p < 0.25) {
-            c.fillStyle = `rgba(210,250,250,${0.5 + p * 2})`;
-            c.beginPath();
-            c.ellipse(dx, top + 1, 1.5 + p * 6, 1.5 + p * 8, 0, 0, 6.3);
-            c.fill();
-          } else {
-            const f = (p - 0.25) / 0.75,
-              dy = top + f * f * (bot - top);
-            c.fillStyle = `rgba(220,255,255,${0.85 - f * 0.3})`;
-            c.beginPath();
-            c.ellipse(dx, dy, 1.6, 2.6, 0, 0, 6.3);
-            c.fill();
-          }
-        }
-        /* splash ripples where the water lands */
         for (let i = 0; i < 3; i++) {
           const p = (t * 0.8 + i / 3) % 1;
           c.strokeStyle = `rgba(210,250,255,${0.45 * (1 - p)})`;
           c.lineWidth = 1.3;
           c.beginPath();
-          c.ellipse(e.x, bot + 2, 4 + p * (LP.rx - 14), 2 + p * (LP.ry - 8), 0, 0, 6.3);
+          c.ellipse(e.x, LP.y - LP.ry + 8, 6 + p * (LP.rx - 14), 2 + p * (LP.ry - 6), 0, 0, 6.3);
           c.stroke();
         }
         c.restore();
@@ -3807,7 +3856,7 @@
       const BRIDGES = [{ i: 72, kind: "arch" }];
       function bridgeFrame(b) {
         const q = streamPts()[b.i];
-        return { q, half: q.w + 30, wid: 46 };
+        return { q, half: q.w + 44, wid: 58 };
       }
       function bridgeAt(p) {
         for (const b of BRIDGES) {
@@ -3918,6 +3967,85 @@
           g.restore();
         }
       }
+      /* bridgeArch(t): stone archway over the middle of the bridge. Pillars stand on the parapets, the arch rises upright on screen. */
+      function bridgeArch(t) {
+        const { q, wid } = bridgeFrame(BRIDGES[0]),
+          tx = q.ny,
+          ty = -q.nx,
+          off = wid / 2 + 2,
+          L = { x: q.x - tx * off, y: q.y - ty * off },
+          R = { x: q.x + tx * off, y: q.y + ty * off },
+          [A, B] = L.x < R.x ? [L, R] : [R, L],
+          H = 64,
+          pw = 12;
+        c.save();
+        for (const P0 of [A, B]) {
+          c.fillStyle = "rgba(0,0,0,.22)";
+          c.beginPath();
+          c.ellipse(P0.x + 3, P0.y + 3, 10, 4, 0, 0, 6.3);
+          c.fill();
+          c.fillStyle = "#c9b18a";
+          c.fillRect(P0.x - pw / 2 - 3, P0.y - 6, pw + 6, 8);
+          c.fillStyle = "#e6d2ab";
+          c.fillRect(P0.x - pw / 2, P0.y - H, pw, H - 4);
+          c.fillStyle = "#b39a74";
+          c.fillRect(P0.x + pw / 2 - 4, P0.y - H, 4, H - 4);
+          c.fillStyle = "#f0dfbf";
+          c.fillRect(P0.x - pw / 2 - 3, P0.y - H - 4, pw + 6, 6);
+        }
+        /* arch band from capital to capital */
+        const mx = (A.x + B.x) / 2,
+          my = Math.min(A.y, B.y) - H - 2,
+          span = (B.x - A.x) / 2;
+        c.lineWidth = 12;
+        c.strokeStyle = "#b39a74";
+        c.beginPath();
+        c.ellipse(mx, my + 2, span, 24, 0, Math.PI, 0);
+        c.stroke();
+        c.lineWidth = 8;
+        c.strokeStyle = "#ead7b2";
+        c.beginPath();
+        c.ellipse(mx, my, span, 24, 0, Math.PI, 0);
+        c.stroke();
+        /* keystone with a glowing rune */
+        c.fillStyle = "#d6bf96";
+        c.beginPath();
+        c.moveTo(mx - 8, my - 32);
+        c.lineTo(mx + 8, my - 32);
+        c.lineTo(mx + 6, my - 18);
+        c.lineTo(mx - 6, my - 18);
+        c.closePath();
+        c.fill();
+        c.shadowColor = "#5af0dc";
+        c.shadowBlur = 6 + 4 * Math.sin(t * 1.6);
+        c.fillStyle = "#7fe8da";
+        c.font = "bold 11px Georgia";
+        c.textAlign = "center";
+        c.textBaseline = "middle";
+        c.fillText("ᛉ", mx, my - 25);
+        c.shadowBlur = 0;
+        /* vines and flowers climbing the left pillar and over the arch */
+        for (let k = 0; k < 8; k++) {
+          c.fillStyle = k % 2 ? "#62a84a" : "#4f8a3a";
+          c.beginPath();
+          c.ellipse(A.x + (k % 2 ? 5 : -5), A.y - 8 - k * 7, 4, 2, k % 2 ? 0.5 : -0.5, 0, 6.3);
+          c.fill();
+        }
+        for (let k = 0; k < 6; k++) {
+          const a = Math.PI + (k / 6) * Math.PI * 0.6;
+          c.fillStyle = "#62a84a";
+          c.beginPath();
+          c.ellipse(mx + Math.cos(a) * span, my + Math.sin(a) * 24, 4, 2, a, 0, 6.3);
+          c.fill();
+        }
+        for (const [fx, fy] of [[A.x + 3, A.y - 30], [mx - span * 0.6, my - 18], [A.x - 2, A.y - 52]]) {
+          c.fillStyle = "#ff9fcf";
+          c.beginPath();
+          c.arc(fx, fy, 2.4, 0, 6.3);
+          c.fill();
+        }
+        c.restore();
+      }
       const HUB_ANIM = 0.55; /* hub scenery animation speed (1 = original) */
       function drawHub() {
         if (!HUBC) paintHub();
@@ -3937,6 +4065,7 @@
         riverEnd(t);
         waterfall(t);
         bridges(c, t);
+        bridgeArch(t);
         /* mist drifting around the platform rim */
         for (let i = 0; i < 18; i++) {
           const a = (i / 18) * 6.283 + t * 0.03 * (i % 2 ? 1 : -1),
