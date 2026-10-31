@@ -3116,19 +3116,7 @@
           r = rng(7),
           { x, y, rx, ry } = PLAT;
         g.scale(k, k);
-        /* dusk sky: deep blue up top, warm glow near the horizon, a few stars */
-        const sky = g.createLinearGradient(0, 0, 0, H);
-        sky.addColorStop(0, "#1b2340");
-        sky.addColorStop(0.55, "#2c2d4a");
-        sky.addColorStop(1, "#4a3346");
-        g.fillStyle = sky;
-        g.fillRect(0, 0, W, H);
-        for (let i = 0; i < 90; i++) {
-          g.fillStyle = `rgba(255,244,220,${0.25 + r() * 0.6})`;
-          g.beginPath();
-          g.arc(r() * W, r() * H * 0.6, 0.5 + r() * 1.1, 0, 6.3);
-          g.fill();
-        }
+        forest(g, r);
         /* platform side wall (drum) */
         g.fillStyle = "#6e6152";
         g.beginPath();
@@ -3163,6 +3151,7 @@
           g.lineTo(x + Math.cos(a) * rx * (s0 == 0.86 ? 1 : 0.86), y + Math.sin(a) * ry * (s0 == 0.86 ? 1 : 0.86));
           g.stroke();
         }
+        streams(g);
         fountain(g);
         /* rune ring (glow pulses in drawHub) */
         g.strokeStyle = "#3aa89a";
@@ -3188,6 +3177,126 @@
           g.fillRect(392 - i * 10, y + ry + 11 + i * 9, 116 + i * 20, 2);
         }
         HUBC = cv2;
+      }
+      /* forest(g, r): forest floor, grass, bushes with flowers and a ring of trees around the platform */
+      function forest(g, r) {
+        const { x, y, rx, ry } = PLAT,
+          out = (px, py, m) => ((px - x) / (rx * m)) ** 2 + ((py - y) / (ry * m)) ** 2 > 1;
+        const fl = g.createRadialGradient(x, y, 120, x, y, 620);
+        fl.addColorStop(0, "#4f8a3a");
+        fl.addColorStop(1, "#24461f");
+        g.fillStyle = fl;
+        g.fillRect(0, 0, W, H);
+        /* grass blades */
+        for (let i = 0; i < 1600; i++) {
+          const gx = r() * W,
+            gy = r() * H;
+          g.strokeStyle = r() < 0.5 ? "#6aa84a" : "#2f5e27";
+          g.lineWidth = 1;
+          g.beginPath();
+          g.moveTo(gx, gy);
+          g.lineTo(gx + (r() - 0.5) * 3, gy - 3 - r() * 4);
+          g.stroke();
+        }
+        /* bushes with little flowers hugging the platform edge */
+        for (let i = 0; i < 26; i++) {
+          const ang = (i / 26) * 6.283 + r() * 0.1,
+            bx = x + Math.cos(ang) * (rx + 18),
+            by = y + 10 + Math.sin(ang) * (ry + 16);
+          for (let j = 0; j < 3; j++) {
+            g.fillStyle = j ? "#4c8f3c" : "#356d2c";
+            g.beginPath();
+            g.arc(bx + (j - 1) * 9, by - j * 2, 10 + r() * 4, 0, 6.3);
+            g.fill();
+          }
+          g.fillStyle = ["#ff8fc8", "#ffd84a", "#fff3f8", "#b48cff"][i % 4];
+          for (let j = 0; j < 3; j++) {
+            g.beginPath();
+            g.arc(bx + (r() - 0.5) * 18, by - 6 + (r() - 0.5) * 8, 2, 0, 6.3);
+            g.fill();
+          }
+        }
+        /* trees: round canopies with a shadow and a highlight, only outside the platform */
+        const trees = [];
+        for (let i = 0; i < 140; i++) {
+          const tx = r() * (W + 80) - 40,
+            ty = r() * (H + 80) - 40;
+          if (out(tx, ty, 1.18)) trees.push([tx, ty, 26 + r() * 22]);
+        }
+        trees.sort((p, q) => p[1] - q[1]);
+        for (const [tx, ty, tr] of trees) {
+          g.fillStyle = "#00000044";
+          g.beginPath();
+          g.ellipse(tx + 6, ty + tr * 0.55, tr * 0.9, tr * 0.4, 0, 0, 6.3);
+          g.fill();
+          g.fillStyle = "#5a3a22";
+          g.fillRect(tx - 4, ty, 8, tr * 0.5);
+          for (const [dx, dy, k, col] of [[0, 0, 1, "#2f6b2c"], [-tr * 0.35, -tr * 0.2, 0.7, "#3d8236"], [tr * 0.3, -tr * 0.3, 0.6, "#4a9a40"], [-tr * 0.1, -tr * 0.45, 0.45, "#62b352"]]) {
+            g.fillStyle = col;
+            g.beginPath();
+            g.arc(tx + dx, ty + dy - tr * 0.3, tr * k, 0, 6.3);
+            g.fill();
+          }
+        }
+      }
+      /* two little streams flow from the fountain to the platform edge and spill over it.
+         STREAMS = angles (rad) placed in the gaps between NPC spots. streamPath() traces one stream. */
+      const STREAMS = [0.39, 2.75];
+      function streamPath(ctx, a) {
+        const sx = FOUNT.x + Math.cos(a) * (FOUNT.rx + 4),
+          sy = FOUNT.y + Math.sin(a) * (FOUNT.ry + 4),
+          ex = PLAT.x + Math.cos(a) * PLAT.rx,
+          ey = PLAT.y + Math.sin(a) * PLAT.ry,
+          bend = a < 1.5 ? 1 : -1;
+        ctx.beginPath();
+        ctx.moveTo(sx, sy);
+        ctx.quadraticCurveTo((sx + ex) / 2 - Math.sin(a) * 40 * bend, (sy + ey) / 2 + Math.cos(a) * 26 * bend, ex, ey);
+        return [ex, ey];
+      }
+      function streams(g) {
+        g.lineCap = "round";
+        for (const a of STREAMS) {
+          streamPath(g, a);
+          g.strokeStyle = "#b39570";
+          g.lineWidth = 22;
+          g.stroke();
+          streamPath(g, a);
+          g.strokeStyle = "#1f8fa3";
+          g.lineWidth = 14;
+          const [ex, ey] = streamPath(g, a);
+          g.stroke();
+          /* little waterfall down the platform side */
+          const wf = g.createLinearGradient(0, ey, 0, ey + 26);
+          wf.addColorStop(0, "#5fd3e0");
+          wf.addColorStop(1, "#5fd3e000");
+          g.fillStyle = wf;
+          g.fillRect(ex - 7, ey, 14, 26);
+        }
+        g.lineCap = "butt";
+      }
+      /* streamFlow(t): moving ripples along the streams and foam at the waterfall */
+      function streamFlow(t) {
+        c.save();
+        c.globalCompositeOperation = "lighter";
+        c.lineCap = "round";
+        c.setLineDash([6, 14]);
+        c.lineDashOffset = -t * 30;
+        c.strokeStyle = "rgba(200,250,255,.45)";
+        c.lineWidth = 3;
+        for (const a of STREAMS) {
+          const [ex, ey] = streamPath(c, a);
+          c.stroke();
+          c.setLineDash([]);
+          for (let i = 0; i < 3; i++) {
+            const p = (t * 1.5 + i / 3) % 1;
+            c.fillStyle = `rgba(220,255,255,${0.6 * (1 - p)})`;
+            c.beginPath();
+            c.arc(ex + (i - 1) * 4, ey + 4 + p * 20, 2, 0, 6.3);
+            c.fill();
+          }
+          c.setLineDash([6, 14]);
+        }
+        c.restore();
       }
       /* magic teleport fountain in the middle of the platform. FOUNT = basin footprint, also used to block walking through it. */
       const FOUNT = { x: 450, y: 352, rx: 74, ry: 42 };
@@ -3377,6 +3486,7 @@
         c.stroke();
         c.globalCompositeOperation = "source-over";
         fountainWater(t);
+        streamFlow(t);
         /* mist drifting around the platform rim */
         for (let i = 0; i < 18; i++) {
           const a = (i / 18) * 6.283 + t * 0.03 * (i % 2 ? 1 : -1),
