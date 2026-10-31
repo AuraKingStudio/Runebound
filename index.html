@@ -3755,23 +3755,45 @@
         g.stroke();
       }
       /* riverEnd(t): the river pours over the stone lip and runs down the platform's curved side wall into the pool below */
+      /* rimY(x): y of the platform's front rim at x (where the top surface ends and the side wall begins) */
+      function rimY(x) {
+        const k = (x - PLAT.x) / PLAT.rx;
+        return PLAT.y + PLAT.ry * Math.sqrt(Math.max(0, 1 - k * k));
+      }
       function riverEnd(t) {
         const e = streamPts()[streamPts().length - 1],
-          top = e.y - 10,
           bot = e.y + 38,
           hw = e.w - 1;
         c.save();
-        /* one continuous band of water: from the end of the river, down the wall, into the ground stream.
-           It overlaps both ends and starts and ends in the river color, so there is no seam. */
-        const sh = c.createLinearGradient(0, top, 0, bot);
+        /* only below the rim: the fall starts exactly on the curved edge of the platform */
+        c.beginPath();
+        c.rect(-W, -H, W * 3, H * 3);
+        c.ellipse(PLAT.x, PLAT.y, PLAT.rx, PLAT.ry, 0, 0, 6.3);
+        c.clip("evenodd");
+        const top = rimY(e.x + hw) - 2,
+          sh = c.createLinearGradient(0, top, 0, bot);
         sh.addColorStop(0, "#5aa7a6");
         sh.addColorStop(0.35, "#7cc0bd");
         sh.addColorStop(0.55, "#a9dcd8");
         sh.addColorStop(1, "#5aa7a6");
         c.fillStyle = sh;
-        c.fillRect(e.x - hw, top, hw * 2, bot - top);
+        c.fillRect(e.x - hw, rimY(e.x - hw) - 30, hw * 2, bot - rimY(e.x - hw) + 30);
+        /* falling streaks: each lane starts on the rim right above it */
+        c.globalCompositeOperation = "lighter";
+        for (let k = 0; k < 6; k++) {
+          const sx = e.x - hw + (k + 0.5) * ((hw * 2) / 6),
+            r0 = rimY(sx),
+            len = 9,
+            span = e.y + 22 - r0,
+            head = r0 - len + ((t * 60 + k * 13) % (span + len)),
+            gr = c.createLinearGradient(0, head, 0, head + len);
+          gr.addColorStop(0, "rgba(255,255,255,0)");
+          gr.addColorStop(1, "rgba(235,255,255,.6)");
+          c.fillStyle = gr;
+          c.fillRect(sx - 1, head, 2, len);
+        }
         c.restore();
-        /* the river's own current lines simply keep going: down the wall and along the ground stream, off screen */
+        /* the river's current lines keep going along the ground stream, off screen */
         c.save();
         c.globalCompositeOperation = "lighter";
         c.lineCap = "round";
@@ -3782,8 +3804,7 @@
         for (const lane of [-0.45, 0, 0.45]) {
           const ox = lane * hw;
           c.beginPath();
-          c.moveTo(e.x + ox, top);
-          c.lineTo(e.x + ox, e.y + 8);
+          c.moveTo(e.x + ox, e.y + 24);
           c.quadraticCurveTo(e.x + ox, e.y + 74 + lane * 10, W + 30, e.y + 104 + lane * 16);
           c.stroke();
         }
