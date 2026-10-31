@@ -4111,50 +4111,65 @@
         outflowPath(c);
         c.stroke();
         c.restore();
-        /* off the edge: the stream falls straight down off the island in a long ribbon, fading into mist above the clouds */
+        /* off the edge: the river falls straight down off the island in a long ribbon, with two thin falls beside it
+           (water seeping out of the rim). Each ribbon fades into mist above the clouds. */
         const SP = spill(),
-          fw = e.w - 1,
-          fb = H + 30;
+          fb = H + 30,
+          FALLS = [
+            { x: SP.x, w: e.w - 1, streaks: 7, sp: 70 },
+            { x: SP.x - 52, w: 5, streaks: 2, sp: 60 },
+            { x: SP.x + 40, w: 4, streaks: 2, sp: 55 },
+          ];
         c.save();
         skyClip(c);
         c.clip();
-        const fall = c.createLinearGradient(0, SP.y, 0, fb);
-        fall.addColorStop(0, "rgba(110,190,190,.95)");
-        fall.addColorStop(0.5, "rgba(170,225,228,.7)");
-        fall.addColorStop(1, "rgba(235,245,250,0)");
-        c.fillStyle = fall;
-        c.beginPath();
-        c.moveTo(SP.x - fw, SP.y - 2);
-        c.lineTo(SP.x + fw, SP.y - 2);
-        c.lineTo(SP.x + fw * 1.25, fb);
-        c.lineTo(SP.x - fw * 1.25, fb);
-        c.closePath();
-        c.fill();
-        c.globalCompositeOperation = "lighter";
-        for (let k = 0; k < 7; k++) {
-          const lx = SP.x - fw + (k + 0.5) * ((fw * 2) / 7),
-            len = 14,
-            head = SP.y - len + ((t * 70 + k * 23) % (fb - SP.y + len)),
-            gr = c.createLinearGradient(0, head, 0, head + len);
-          gr.addColorStop(0, "rgba(255,255,255,0)");
-          gr.addColorStop(1, "rgba(235,255,255,.55)");
-          c.fillStyle = gr;
-          c.fillRect(lx - 1, head, 2, len);
+        for (const F of FALLS) {
+          const fy = edgeLowY(F.x),
+            fall = c.createLinearGradient(0, fy, 0, fb);
+          fall.addColorStop(0, "rgba(110,190,190,.95)");
+          fall.addColorStop(0.5, "rgba(170,225,228,.7)");
+          fall.addColorStop(1, "rgba(235,245,250,0)");
+          c.fillStyle = fall;
+          c.beginPath();
+          c.moveTo(F.x - F.w, fy - 2);
+          c.lineTo(F.x + F.w, fy - 2);
+          c.lineTo(F.x + F.w * 1.25, fb);
+          c.lineTo(F.x - F.w * 1.25, fb);
+          c.closePath();
+          c.fill();
         }
+        c.globalCompositeOperation = "lighter";
+        FALLS.forEach((F, n) => {
+          const fy = edgeLowY(F.x);
+          for (let k = 0; k < F.streaks; k++) {
+            const lx = F.x - F.w + (k + 0.5) * ((F.w * 2) / F.streaks),
+              len = 14,
+              head = fy - len + ((t * F.sp + k * 23 + n * 41) % (fb - fy + len)),
+              gr = c.createLinearGradient(0, head, 0, head + len);
+            gr.addColorStop(0, "rgba(255,255,255,0)");
+            gr.addColorStop(1, "rgba(235,255,255,.55)");
+            c.fillStyle = gr;
+            c.fillRect(lx - 1, head, 2, len);
+          }
+        });
         c.restore();
-        /* spray where it tips over the lip */
+        /* spray where each one tips over the lip (smaller for the thin falls) */
         c.save();
         c.globalCompositeOperation = "lighter";
-        for (let k = 0; k < 4; k++) {
-          const p = (t * 0.5 + k / 4) % 1,
-            mr = 8 + p * 14,
-            mx = SP.x + (k - 1.5) * 6,
-            my = SP.y + 6 + p * 10,
-            mg = c.createRadialGradient(mx, my, 1, mx, my, mr);
-          mg.addColorStop(0, `rgba(235,250,255,${0.32 * (1 - p)})`);
-          mg.addColorStop(1, "rgba(235,250,255,0)");
-          c.fillStyle = mg;
-          c.fillRect(mx - mr, my - mr, mr * 2, mr * 2);
+        for (const F of FALLS) {
+          const fy = edgeLowY(F.x),
+            big = F.w > 8 ? 1 : 0.45;
+          for (let k = 0; k < 4; k++) {
+            const p = (t * 0.5 + k / 4 + F.x * 0.01) % 1,
+              mr = (8 + p * 14) * big,
+              mx = F.x + (k - 1.5) * 6 * big,
+              my = fy + 6 + p * 10,
+              mg = c.createRadialGradient(mx, my, 1, mx, my, mr);
+            mg.addColorStop(0, `rgba(235,250,255,${0.32 * (1 - p)})`);
+            mg.addColorStop(1, "rgba(235,250,255,0)");
+            c.fillStyle = mg;
+            c.fillRect(mx - mr, my - mr, mr * 2, mr * 2);
+          }
         }
         c.restore();
       }
