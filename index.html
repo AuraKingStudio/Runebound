@@ -391,6 +391,20 @@
       }
       #btns #bq { left: calc(50% - 196px); }
       #btns #bg { left: calc(50% - 64px); }
+      /* top-left: gold and Titles on one row, level with the Quests / Guild / Shop buttons */
+      #tlbar { position: absolute; left: 1.4%; top: 1.5%; display: flex; gap: 8px; align-items: center; pointer-events: auto; }
+      #btns #tlbar #bt { position: static; top: auto; left: auto; height: 38px; }
+      #gp {
+        display: flex; align-items: center; gap: 6px; height: 38px; box-sizing: border-box; padding: 0 14px 0 10px;
+        border-radius: 10px; border: 1px solid var(--gild, #c9a14a);
+        background: linear-gradient(180deg, #3a2817f2, #24170df2);
+        box-shadow: 0 0 0 2px #140c0699, inset 0 1px 0 #ffffff1a, 0 4px 12px #0008;
+        font: bold 15px Georgia, serif; color: #f0c35a; text-shadow: 0 1px 1px #000;
+      }
+      #gp .coin { width: 18px; height: 18px; margin: 0; }
+      /* no visible scrollbars on the side board or the chat log (they still scroll) */
+      #board, #chlog { scrollbar-width: none; }
+      #board::-webkit-scrollbar, #chlog::-webkit-scrollbar { display: none; }
       #btns #bs { left: calc(50% + 50px); border-color: #ffd84acc; box-shadow: 0 0 10px #ffd84a55; }
       /* cosmetics shop */
       .pn canvas { position: static; width: auto; height: auto; } /* the game canvas rule is position: fixed */
@@ -934,7 +948,7 @@
     <div id="chat" hidden><div id="chlog"></div><div id="chrow"><input id="chin" maxlength="80" autocomplete="off" placeholder="Press Enter to chat" /><div id="emo"></div></div></div>
     <div id="btns">
       <button id="b0"></button><button id="b1"></button><button id="b2"></button
-      ><button id="bi" hidden>Enter arena</button><button id="bt">🏷 Titles</button><button id="bq" class="hb">📜 Quests</button><button id="bg" class="hb">🛡 Guild</button><button id="bs" class="hb">✨ Shop</button>
+      ><button id="bi" hidden>Enter arena</button><div id="tlbar"><span id="gp"><i class="coin"></i><b id="gn">0</b></span><button id="bt">🏷 Titles</button></div><button id="bq" class="hb">📜 Quests</button><button id="bg" class="hb">🛡 Guild</button><button id="bs" class="hb">✨ Shop</button>
     </div>
     <script>
       const W = 900,
@@ -1263,6 +1277,16 @@
             p.y = HUB.y + (dy / l) * ry;
           }
           riverPush(p);
+          /* the statue's plinth is solid */
+          {
+            const sx = (p.x - STATUE.x) / (16 * STATUE.k + PR),
+              sy = (p.y - STATUE.y + 6) / (8 * STATUE.k + PR),
+              sd = Math.hypot(sx, sy);
+            if (sd < 1 && sd > 0) {
+              p.x = STATUE.x + (sx / sd) * (16 * STATUE.k + PR);
+              p.y = STATUE.y - 6 + (sy / sd) * (8 * STATUE.k + PR);
+            }
+          }
           /* the Rune Cistern is solid */
           const cx = (p.x - WF.px) / (WF.prx + 10 + PR),
             cy = (p.y - WF.py - 3) / (WF.pry + 6 + PR),
@@ -3969,6 +3993,8 @@
         document.body.classList.toggle("tch", INMODE == "touch"); /* touch: chat sits above the joystick */
         $("chat").hidden = S.sc != "hub" || !P;
         $("bt").hidden = tut() < 4; /* Titles button appears after the tutorial */
+        $("tlbar").hidden = !P || S.sc == "lobby";
+        if ($("gn").textContent != V.gold) $("gn").textContent = V.gold;
         $("bq").hidden = $("bg").hidden = $("bs").hidden = tut() < 4 || S.sc != "hub";
         $("bq").classList.toggle("hot", bountyReady()); /* glows when a bounty can be claimed */
         loreBonusTick();
@@ -4014,38 +4040,6 @@
         c.fillRect(x - 1, y - 1, w + 2, h + 2);
         c.fillStyle = col;
         c.fillRect(x, y, w * cl(v, 0, 1), h);
-      }
-      function coinHUD(x, y, n) {
-        c.save();
-        c.fillStyle = "#000a";
-        c.strokeStyle = "#ffd84a";
-        c.lineWidth = 1.5;
-        c.beginPath();
-        c.roundRect(x, y, 96, 28, 14);
-        c.fill();
-        c.stroke();
-        const g = c.createRadialGradient(x + 12, y + 10, 1, x + 14, y + 14, 11);
-        g.addColorStop(0, "#fff3a8");
-        g.addColorStop(0.5, "#f5c518");
-        g.addColorStop(1, "#b07d00");
-        c.fillStyle = g;
-        c.strokeStyle = "#8a5f00";
-        c.lineWidth = 2;
-        c.beginPath();
-        c.arc(x + 15, y + 14, 10, 0, 6.3);
-        c.fill();
-        c.stroke();
-        c.strokeStyle = "#ffe27a";
-        c.lineWidth = 1;
-        c.beginPath();
-        c.arc(x + 15, y + 14, 6, 0, 6.3);
-        c.stroke();
-        c.font = "bold 15px Georgia";
-        c.fillStyle = "#ffd84a";
-        c.textAlign = "left";
-        c.textBaseline = "middle";
-        c.fillText(n, x + 32, y + 15);
-        c.restore();
       }
       /* quest marker: rune diamond. new = gold !, active = grey ?, ready = gold ? */
       const QM = {
@@ -5452,7 +5446,7 @@
       /* waterfall in the top-left corner: rocky cliff, falling water and a pond. WF = fall position. */
       /* WF: the sky fall. Water pours from an island high above (off screen) in one long column (x, w = width at the bottom)
          straight down into the pond (px, py, prx, pry) on the island's corner. */
-      const WF = { x: 124, w: 22, px: 124, py: 246, prx: 36, pry: 19 }; /* the column lands in the Rune Cistern (px, py, prx, pry) */
+      const WF = { x: 146, w: 26, px: 146, py: 244, prx: 46, pry: 24 }; /* the column lands in the Rune Cistern (px, py, prx, pry) */
       /* pondWater(g): the pond surface, same colors as the brook. Drawn again after the brook so the brook flows out of it. */
       /* pondPath(ctx, grow): an organic, lumpy outline for the pond (a few overlapping waves on the radius), grow = extra size */
       function pondPath(ctx, grow) {
@@ -5472,9 +5466,13 @@
       }
       /* STATUE: a robed sandstone guardian on the platform's rim beside the cistern, raising a staff whose crystal glows
          (glow animated in waterfall). Outside the walkable area: decor only. */
-      const STATUE = { x: 58, y: 292 };
+      const STATUE = { x: 86, y: 330, k: 1.5 };
       function statueDraw(g) {
-        const { x, y } = STATUE;
+        g.save();
+        g.translate(STATUE.x, STATUE.y);
+        g.scale(STATUE.k, STATUE.k);
+        const x = 0,
+          y = 0;
         g.fillStyle = "rgba(0,0,0,.28)";
         g.beginPath();
         g.ellipse(x + 5, y + 4, 20, 6, 0, 0, 6.3);
@@ -5561,6 +5559,7 @@
         g.moveTo(x - 8, by);
         g.bezierCurveTo(x - 4, by - 8, x - 9, by - 14, x - 5, by - 20);
         g.stroke();
+        g.restore();
       }
       /* cisternDraw(g): the Rune Cistern, a round carved basin set into the platform's edge that catches the sky fall.
          Thick sandstone ring with a visible front wall, glowing runes in the rim, two short pillars at the back
@@ -5783,8 +5782,8 @@
         c.globalCompositeOperation = "source-over";
         /* the statue's staff crystal glows in time with the cistern */
         {
-          const sx = STATUE.x + 11,
-            sy = STATUE.y - 72,
+          const sx = STATUE.x + 11 * STATUE.k,
+            sy = STATUE.y - 72 * STATUE.k,
             gl = c.createRadialGradient(sx, sy, 1, sx, sy, 16);
           gl.addColorStop(0, `rgba(120,255,235,${0.3 + 0.15 * Math.sin(t * 2.2)})`);
           gl.addColorStop(1, "rgba(120,255,235,0)");
@@ -6000,27 +5999,123 @@
           g.fillStyle = "#e9d6ae"; /* the lip */
           g.fillRect(p.x - hw - 4, p.y - 2, hw * 2 + 8, 3);
         }
-        /* rune posts along both curbs (not on the crossing, not by the cistern) */
-        for (let i = 10; i < N - 2; i += 12)
-          for (const sd of [-1, 1]) {
-            const p = pts[i],
-              [bx, by] = off(p, (p.w + 5) * sd);
-            if (bridgeAt({ x: bx, y: by })) continue;
+        /* rune obelisks along both curbs (their crystals glow in riverDecor) */
+        for (const [bx, by] of riverObelisks()) {
+          g.fillStyle = "rgba(0,0,0,.25)";
+          g.beginPath();
+          g.ellipse(bx + 3, by + 2, 6, 2.5, 0, 0, 6.3);
+          g.fill();
+          g.fillStyle = "#8c7556";
+          g.fillRect(bx - 5, by - 3, 10, 4);
+          g.fillStyle = "#a08a64";
+          g.beginPath();
+          g.moveTo(bx - 3.5, by - 3);
+          g.lineTo(bx - 2.2, by - 20);
+          g.lineTo(bx + 2.2, by - 20);
+          g.lineTo(bx + 3.5, by - 3);
+          g.fill();
+          g.fillStyle = "#d3bb90";
+          g.beginPath();
+          g.moveTo(bx - 3.5, by - 3);
+          g.lineTo(bx - 2.2, by - 20);
+          g.lineTo(bx - 0.5, by - 20);
+          g.lineTo(bx - 1.5, by - 3);
+          g.fill();
+          g.fillStyle = "#e9d6ae";
+          g.beginPath();
+          g.moveTo(bx - 3, by - 20);
+          g.lineTo(bx, by - 24);
+          g.lineTo(bx + 3, by - 20);
+          g.fill();
+          g.fillStyle = "rgba(110,240,220,.9)";
+          g.font = "5px serif";
+          g.textAlign = "center";
+          g.textBaseline = "middle";
+          g.fillText("ᚨ", bx, by - 12);
+        }
+        /* ancient fragments lying beside the canal: column drums, a carved tablet, an urn with ferns */
+        const bySide = (i, sd, d) => {
+          const p = pts[i];
+          return [p.x + p.nx * (p.w + d) * sd, p.y + p.ny * (p.w + d) * sd];
+        };
+        {
+          const [cx1, cy1] = bySide(20, -1, 20);
+          for (const [dx, dy, rr] of [[0, 0, 6], [12, 4, 5]]) {
             g.fillStyle = "#8c7556";
-            g.fillRect(bx - 3.5, by - 7, 7, 8);
-            g.fillStyle = "#d9c49c";
-            g.fillRect(bx - 3.5, by - 7, 2.5, 8);
-            g.fillStyle = "#e9d6ae";
             g.beginPath();
-            g.moveTo(bx, by - 11);
-            g.lineTo(bx + 4.5, by - 7);
-            g.lineTo(bx, by - 5);
-            g.lineTo(bx - 4.5, by - 7);
-            g.closePath();
+            g.ellipse(cx1 + dx, cy1 + dy + 2, rr * 1.6, rr * 0.9, 0.2, 0, 6.3);
             g.fill();
-            g.fillStyle = "rgba(110,240,220,.9)";
-            g.fillRect(bx - 0.7, by - 5, 1.4, 4);
+            g.fillStyle = "#cdb48a";
+            g.beginPath();
+            g.ellipse(cx1 + dx - 2, cy1 + dy, rr * 1.5, rr * 0.8, 0.2, 0, 6.3);
+            g.fill();
+            g.strokeStyle = "rgba(90,70,45,.5)";
+            g.lineWidth = 0.8;
+            for (let k = -1; k <= 1; k++) {
+              g.beginPath();
+              g.moveTo(cx1 + dx - 2 + k * rr * 0.5, cy1 + dy - rr * 0.7);
+              g.lineTo(cx1 + dx - 2 + k * rr * 0.5, cy1 + dy + rr * 0.7);
+              g.stroke();
+            }
+            g.fillStyle = "#5c9e45";
+            g.beginPath();
+            g.ellipse(cx1 + dx + rr, cy1 + dy - rr * 0.5, 3, 1.4, 0, 0, 6.3);
+            g.fill();
           }
+          /* a carved tablet half sunk in the grass of the stones, glyphs faintly lit */
+          const [tx, ty] = bySide(64, 1, 22);
+          g.fillStyle = "#7d6a50";
+          g.beginPath();
+          g.moveTo(tx - 9, ty + 3);
+          g.lineTo(tx - 7, ty - 13);
+          g.quadraticCurveTo(tx, ty - 18, tx + 7, ty - 13);
+          g.lineTo(tx + 9, ty + 3);
+          g.fill();
+          g.fillStyle = "#b39a72";
+          g.beginPath();
+          g.moveTo(tx - 8, ty + 2);
+          g.lineTo(tx - 6, ty - 12);
+          g.quadraticCurveTo(tx, ty - 16.5, tx + 6, ty - 12);
+          g.lineTo(tx + 7, ty + 2);
+          g.fill();
+          g.fillStyle = "rgba(110,240,220,.8)";
+          g.font = "5px serif";
+          g.textAlign = "center";
+          for (let k = 0; k < 3; k++) g.fillText(RUNES_HUB.slice(k * 3, k * 3 + 3), tx, ty - 9 + k * 4.5);
+          g.fillStyle = "#5c9e45";
+          g.beginPath();
+          g.ellipse(tx + 5, ty - 12, 3.5, 1.5, 0.3, 0, 6.3);
+          g.fill();
+          /* an old urn with ferns */
+          const [ux, uy] = bySide(44, -1, 20);
+          g.fillStyle = "rgba(0,0,0,.25)";
+          g.beginPath();
+          g.ellipse(ux + 3, uy + 2, 8, 3, 0, 0, 6.3);
+          g.fill();
+          g.fillStyle = "#a07a54";
+          g.beginPath();
+          g.moveTo(ux - 4, uy);
+          g.quadraticCurveTo(ux - 8, uy - 7, ux - 5, uy - 12);
+          g.lineTo(ux + 5, uy - 12);
+          g.quadraticCurveTo(ux + 8, uy - 7, ux + 4, uy);
+          g.fill();
+          g.fillStyle = "#c49a6c";
+          g.fillRect(ux - 6, uy - 14, 12, 3);
+          g.strokeStyle = "rgba(70,50,30,.5)";
+          g.lineWidth = 0.8;
+          g.beginPath();
+          g.moveTo(ux - 6, uy - 7);
+          g.lineTo(ux + 6, uy - 7);
+          g.stroke();
+          g.strokeStyle = "#4f8f3f";
+          g.lineWidth = 1.3;
+          for (let k = -2; k <= 2; k++) {
+            g.beginPath();
+            g.moveTo(ux, uy - 13);
+            g.quadraticCurveTo(ux + k * 4, uy - 22, ux + k * 7, uy - 18 + Math.abs(k));
+            g.stroke();
+          }
+        }
         cisternDraw(g); /* over the brook's start, so the brook pours out of the spout */
       }
       /* the river's end: it pours off the platform's stone lip, down the side wall, then runs away through the forest off screen.
@@ -6250,6 +6345,85 @@
           b = pts[i + 1],
           m = (k) => a[k] + (b[k] - a[k]) * f;
         return { x: m("x"), y: m("y"), nx: m("nx"), ny: m("ny"), w: m("w") };
+      }
+      /* riverObelisks(): where the rune obelisks stand along the canal (both curbs, not on the crossing or at the lip) */
+      let OBELISKS = null;
+      function riverObelisks() {
+        if (OBELISKS) return OBELISKS;
+        const pts = streamPts(),
+          L = pts.findIndex((p) => p.drop),
+          N = L > 0 ? L - 1 : pts.length - 1;
+        OBELISKS = [];
+        for (let i = 8; i < N - 3; i += 11)
+          for (const sd of [-1, 1]) {
+            const p = pts[i],
+              o = [p.x + p.nx * (p.w + 5) * sd, p.y + p.ny * (p.w + 5) * sd];
+            if (!bridgeAt({ x: o[0], y: o[1] }) && Math.hypot(o[0] - WF.px, o[1] - WF.py) > WF.prx + 20) OBELISKS.push(o);
+          }
+        return OBELISKS;
+      }
+      /* riverDecor(t): the moving arcane bits along the river - obelisk crystals hovering and pulsing,
+         sigils glowing up through the canal floor one after another, stone shards drifting by the cistern */
+      function riverDecor(t) {
+        const pts = streamPts();
+        c.save();
+        c.globalCompositeOperation = "lighter";
+        riverObelisks().forEach(([bx, by], i) => {
+          const cy = by - 30 + Math.sin(t * 1.5 + i) * 1.5,
+            pulse = 0.55 + 0.45 * Math.sin(t * 2 + i * 0.9),
+            gl = c.createRadialGradient(bx, cy, 0.5, bx, cy, 10);
+          gl.addColorStop(0, `rgba(140,255,240,${0.45 * pulse})`);
+          gl.addColorStop(1, "rgba(140,255,240,0)");
+          c.fillStyle = gl;
+          c.fillRect(bx - 10, cy - 10, 20, 20);
+          c.fillStyle = `rgba(200,255,250,${0.6 + 0.4 * pulse})`;
+          c.beginPath();
+          c.moveTo(bx, cy - 3.5);
+          c.lineTo(bx + 1.8, cy);
+          c.lineTo(bx, cy + 2.5);
+          c.lineTo(bx - 1.8, cy);
+          c.closePath();
+          c.fill();
+        });
+        /* sigils in the canal floor, lighting up in a wave that runs downstream */
+        for (let i = 6; i < pts.length - 12; i += 9) {
+          const p = pts[i];
+          if (p.drop || bridgeAt(p)) continue;
+          const a = Math.max(0, Math.sin(t * 1.4 - i * 0.12));
+          if (a < 0.05) continue;
+          c.save();
+          c.translate(p.x, p.y);
+          c.scale(1, PLAT.ry / PLAT.rx);
+          c.strokeStyle = `rgba(140,255,240,${0.35 * a})`;
+          c.lineWidth = 1;
+          c.beginPath();
+          c.arc(0, 0, 7, 0, 6.3);
+          c.stroke();
+          c.fillStyle = `rgba(160,255,240,${0.45 * a})`;
+          c.font = "8px serif";
+          c.textAlign = "center";
+          c.textBaseline = "middle";
+          c.fillText(RUNES_HUB[(i * 7) % RUNES_HUB.length], 0, 0);
+          c.restore();
+        }
+        c.restore();
+        /* stone shards drifting around the cistern */
+        for (let i = 0; i < 4; i++) {
+          const a = t * 0.25 + i * 1.57,
+            sx = WF.px + Math.cos(a) * (WF.prx + 22),
+            sy = WF.py - 26 + Math.sin(a) * 10 + Math.sin(t * 1.3 + i) * 3,
+            sz = 2.5 + (i % 2);
+          c.fillStyle = "#b39a72";
+          c.beginPath();
+          c.moveTo(sx - sz, sy);
+          c.lineTo(sx, sy - sz * 1.2);
+          c.lineTo(sx + sz, sy);
+          c.lineTo(sx, sy + sz * 1.6);
+          c.closePath();
+          c.fill();
+          c.fillStyle = "rgba(110,240,220,.7)";
+          c.fillRect(sx - 0.5, sy - 0.5, 1, 1.5);
+        }
       }
       /* wallSpill(t): the canal pouring over the platform's lip: streaks sliding down the short drop, foam where it lands */
       function wallSpill(t) {
@@ -6579,13 +6753,13 @@
         c.stroke();
         for (let k = 0; k < 2; k++) {
           const a0 = t * 0.5 + k * Math.PI;
-          c.strokeStyle = "rgba(150,255,240,.28)";
-          c.lineWidth = 8;
+          c.strokeStyle = "rgba(150,255,240,.1)";
+          c.lineWidth = 6;
           c.beginPath();
           c.ellipse(x, y, rx * 0.56, ry * 0.56, 0, a0, a0 + 0.5);
           c.stroke();
-          c.strokeStyle = "rgba(220,255,250,.35)";
-          c.lineWidth = 3;
+          c.strokeStyle = "rgba(200,255,245,.14)";
+          c.lineWidth = 2;
           c.beginPath();
           c.ellipse(x, y, rx * 0.56, ry * 0.56, 0, a0 + 0.2, a0 + 0.45);
           c.stroke();
@@ -6593,6 +6767,7 @@
         c.globalCompositeOperation = "source-over";
         streamFlow(t);
         wallSpill(t);
+        riverDecor(t);
         riverEnd(t);
         waterfall(t);
         bridges(c, t);
@@ -6912,10 +7087,7 @@
         c.font = "13px Georgia";
         c.textAlign = "left";
         if (P && S.sc != "lobby") {
-          c.fillStyle = "#e6f1ef";
-          c.fillText(CL[P.cls].n + "  " + Math.ceil(P.hp) + "/" + P.mh, 14, 24);
-          bar(14, 28, 120, 7, P.hp / P.mh, "#48e07a");
-          coinHUD(12, 44, V.gold);
+          /* no HP readout up here: your health bar floats over your character. Gold lives in the HTML bar (#gp). */
           /* tutorial: step text at the top + bouncing arrow over the next target */
           if (S.sc == "hub" && tut() < 4) {
             c.save();
@@ -6952,7 +7124,7 @@
             c.textBaseline = "middle";
             c.globalAlpha = 0.75 + 0.25 * Math.sin(S.tm * 3);
             c.fillStyle = BL[1];
-            c.fillText(BL[0] + " blessing", 116, 59);
+            c.fillText(BL[0] + " blessing", 14, 62);
             c.restore();
           }
           if (tut() >= 4) qTrack(ar ? 62 : 12);
