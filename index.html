@@ -5236,7 +5236,9 @@
         c.restore();
       }
       /* waterfall in the top-left corner: rocky cliff, falling water and a pond. WF = fall position. */
-      const WF = { x: 90, top: 18, mid: 58, bot: 98, w: 54, px: 92, py: 124, prx: 78, pry: 30 }; /* whole fall visible on screen */
+      /* WF: the sky fall. Water pours from an island high above (off screen) in one long column (x, w = width at the bottom)
+         straight down into the pond (px, py, prx, pry) on the island's corner. */
+      const WF = { x: 86, w: 22, px: 88, py: 152, prx: 60, pry: 24 };
       /* pondWater(g): the pond surface, same colors as the brook. Drawn again after the brook so the brook flows out of it. */
       /* pondPath(ctx, grow): an organic, lumpy outline for the pond (a few overlapping waves on the radius), grow = extra size */
       function pondPath(ctx, grow) {
@@ -5252,193 +5254,384 @@
         ctx.closePath();
       }
       function pondWater(g) {
-        g.fillStyle = "#5aa7a6";
+        g.fillStyle = "#86cdc6"; /* shallow edge */
         pondPath(g, 0);
         g.fill();
+        g.fillStyle = "#5aa7a6";
+        pondPath(g, -6);
+        g.fill();
+        g.fillStyle = "#4b9798"; /* deep middle */
+        pondPath(g, -16);
+        g.fill();
       }
+      /* SHRINE: a little ruined shrine on the pond's far shore, a rune crystal hovering over its pedestal */
+      const SHRINE = { x: 30, y: 136 };
+      /* cliff(g): the pond the sky fall lands in: a mossy shore ring, reeds and a few flat wet stones. Static. */
       function cliff(g) {
-        const { x, bot, w, px, py, prx, pry } = WF;
-        /* pond */
+        const { px, py, prx, pry } = WF,
+          r = rng(41);
         g.fillStyle = "#3d6b3a";
         pondPath(g, 8);
         g.fill();
+        g.fillStyle = "#4d8a40";
+        pondPath(g, 4);
+        g.fill();
         pondWater(g);
-        /* rocky cliff behind the fall */
-        const rocks = [[60, -20, 66], [140, -10, 64], [20, 24, 72], [96, 10, 70], [168, 34, 60], [-24, 76, 52], [200, 72, 44]]; /* big rocky hill filling the top-left corner so no far sky shows behind the fall */
-        /* seen from above: each boulder is mostly a mossy grass top, with its warm rock face showing only at the front */
-        for (const [rx0, ry0, rr] of rocks) {
-          g.fillStyle = "#6e5f4d";
+        /* deeper water where the column lands */
+        const dg = g.createRadialGradient(WF.x, py - 4, 2, WF.x, py - 4, prx * 0.7);
+        dg.addColorStop(0, "#3b8a8c");
+        dg.addColorStop(1, "rgba(90,167,166,0)");
+        g.fillStyle = dg;
+        g.beginPath();
+        g.ellipse(WF.x, py - 4, prx * 0.7, pry * 0.7, 0, 0, 6.3);
+        g.fill();
+        /* reeds on the far shore */
+        for (let k = 0; k < 18; k++) {
+          const a = Math.PI + 0.3 + (k / 17) * (Math.PI - 0.6),
+            bx = px + Math.cos(a) * (prx + 4) + (r() - 0.5) * 6,
+            by = py + Math.sin(a) * (pry + 3);
+          g.strokeStyle = r() < 0.5 ? "#4f8f3f" : "#6aad4c";
+          g.lineWidth = 1.4;
           g.beginPath();
-          g.arc(rx0, ry0, rr, 0, 6.3);
+          g.moveTo(bx, by);
+          g.quadraticCurveTo(bx + (r() - 0.5) * 4, by - 8, bx + (r() - 0.5) * 6, by - 13 - r() * 6);
+          g.stroke();
+          if (r() < 0.3) {
+            g.fillStyle = "#7a5a3a"; /* cattail */
+            g.beginPath();
+            g.ellipse(bx + (r() - 0.5) * 3, by - 14 - r() * 4, 1.3, 3, 0, 0, 6.3);
+            g.fill();
+          }
+        }
+        /* pebble shore */
+        for (let k = 0; k < 46; k++) {
+          const a = r() * 6.283,
+            q = 1.04 + r() * 0.1,
+            bx = px + Math.cos(a) * prx * q,
+            by = py + Math.sin(a) * pry * q + 2;
+          if (Math.hypot(bx - 98, by - 158) < 16) continue; /* keep the brook's mouth clear */
+          g.fillStyle = ["#9a8670", "#857259", "#b3a089", "#6e5f4d"][(r() * 4) | 0];
+          g.beginPath();
+          g.ellipse(bx, by, 1.6 + r() * 2.2, 1.1 + r() * 1.2, r() * 3, 0, 6.3);
+          g.fill();
+        }
+        /* the ruined shrine: a flagstone base, two broken pillars, a fallen lintel, a pedestal, moss and ivy */
+        {
+          const { x: sx, y: sy } = SHRINE;
+          g.fillStyle = "#6e6253";
+          g.beginPath();
+          g.ellipse(sx, sy + 4, 20, 7, 0, 0, 6.3);
+          g.fill();
+          g.fillStyle = "#a8997f";
+          g.beginPath();
+          g.ellipse(sx, sy + 2, 19, 6, 0, 0, 6.3);
+          g.fill();
+          g.strokeStyle = "rgba(60,50,40,.35)";
+          g.lineWidth = 0.8;
+          for (const dx of [-8, 0, 8]) {
+            g.beginPath();
+            g.moveTo(sx + dx, sy - 3);
+            g.lineTo(sx + dx + 2, sy + 7);
+            g.stroke();
+          }
+          const pillar = (cx, h, brk) => {
+            g.fillStyle = "#8d8070";
+            g.fillRect(cx - 3.5, sy - h, 7, h);
+            g.fillStyle = "#b0a28c";
+            g.fillRect(cx - 3.5, sy - h, 2.5, h);
+            g.fillStyle = "#6e6253";
+            g.fillRect(cx + 2, sy - h, 1.5, h);
+            g.fillStyle = "#9c8e78";
+            g.fillRect(cx - 4.5, sy - 2, 9, 3);
+            g.beginPath(); /* jagged broken top */
+            g.moveTo(cx - 3.5, sy - h);
+            g.lineTo(cx - 1, sy - h - brk);
+            g.lineTo(cx + 1, sy - h - 1);
+            g.lineTo(cx + 3.5, sy - h - brk * 0.6);
+            g.lineTo(cx + 3.5, sy - h + 1);
+            g.lineTo(cx - 3.5, sy - h + 1);
+            g.fillStyle = "#a89a84";
+            g.fill();
+            g.fillStyle = "#5c9e45"; /* moss on top */
+            g.beginPath();
+            g.ellipse(cx, sy - h, 4, 1.6, 0, 0, 6.3);
+            g.fill();
+          };
+          pillar(sx - 12, 22, 4);
+          pillar(sx + 12, 15, 3);
+          /* fallen lintel leaning on the base */
+          g.save();
+          g.translate(sx + 15, sy + 3);
+          g.rotate(0.25);
+          g.fillStyle = "#8d8070";
+          g.fillRect(-9, -2.5, 18, 5);
+          g.fillStyle = "#b0a28c";
+          g.fillRect(-9, -2.5, 18, 1.6);
+          g.fillStyle = "#5c9e45";
+          g.beginPath();
+          g.ellipse(-3, -2.5, 5, 1.4, 0, 0, 6.3);
+          g.fill();
+          g.restore();
+          /* pedestal in the middle with a carved rune */
+          g.fillStyle = "#7d705f";
+          g.fillRect(sx - 4, sy - 9, 8, 10);
+          g.fillStyle = "#a89a84";
+          g.fillRect(sx - 5.5, sy - 11, 11, 3);
+          g.fillStyle = "rgba(110,240,220,.8)";
+          g.font = "6px serif";
+          g.textAlign = "center";
+          g.textBaseline = "middle";
+          g.fillText("ᚱ", sx, sy - 4);
+          /* ivy creeping up the tall pillar */
+          g.strokeStyle = "#3f7a34";
+          g.lineWidth = 1;
+          g.beginPath();
+          g.moveTo(sx - 14, sy);
+          g.bezierCurveTo(sx - 9, sy - 6, sx - 15, sy - 12, sx - 11, sy - 18);
+          g.stroke();
+          g.fillStyle = "#6aad4c";
+          for (const [lx, ly] of [[-12, -4], [-13, -9], [-11, -13], [-12, -17]]) {
+            g.beginPath();
+            g.ellipse(sx + lx, sy + ly, 1.8, 1.1, 0.5, 0, 6.3);
+            g.fill();
+          }
+          /* a few flowers at its foot */
+          for (const [fx, fy, fc] of [[-18, 4, "#ff9fcf"], [17, 7, "#ffe27a"], [-6, 8, "#fff3f8"], [6, 9, "#c4a8ff"]]) {
+            g.fillStyle = fc;
+            g.beginPath();
+            g.arc(sx + fx, sy + fy, 1.6, 0, 6.3);
+            g.fill();
+          }
+        }
+        /* flat wet stones around the shore */
+        const stone = (sx, sy, sw, sh, seed) => {
+          const rr = rng(seed),
+            pts = [];
+          for (let k = 0; k < 7; k++) {
+            const a = (k / 7) * 6.283,
+              q = 0.8 + rr() * 0.3;
+            pts.push([sx + Math.cos(a) * sw * q, sy + Math.sin(a) * sh * q]);
+          }
+          g.fillStyle = "#4e4337";
+          g.beginPath();
+          pts.forEach(([a, b], k) => (k ? g.lineTo(a, b + 2) : g.moveTo(a, b + 2)));
+          g.closePath();
           g.fill();
           g.fillStyle = "#857259";
           g.beginPath();
-          g.ellipse(rx0 - rr * 0.2, ry0 + rr * 0.45, rr * 0.6, rr * 0.35, 0, 0, 6.3);
+          pts.forEach(([a, b], k) => (k ? g.lineTo(a, b) : g.moveTo(a, b)));
+          g.closePath();
           g.fill();
-        }
-        for (const [rx0, ry0, rr] of rocks) {
-          g.fillStyle = "#4b8a3c";
+          g.fillStyle = "rgba(255,240,220,.25)";
           g.beginPath();
-          g.ellipse(rx0, ry0 - rr * 0.18, rr * 0.98, rr * 0.78, 0, 0, 6.3);
+          g.ellipse(sx - sw * 0.25, sy - sh * 0.35, sw * 0.45, sh * 0.25, 0, 0, 6.3);
           g.fill();
-          g.fillStyle = "#62a34a";
+          g.fillStyle = "#5c9e45";
           g.beginPath();
-          g.ellipse(rx0 - rr * 0.15, ry0 - rr * 0.32, rr * 0.75, rr * 0.55, 0, 0, 6.3);
+          g.ellipse(sx + sw * 0.25, sy - sh * 0.45, sw * 0.4, sh * 0.3, 0, 0, 6.3);
           g.fill();
-          g.fillStyle = "#7cbd5c";
-          g.beginPath();
-          g.ellipse(rx0 - rr * 0.3, ry0 - rr * 0.45, rr * 0.35, rr * 0.22, 0, 0, 6.3);
-          g.fill();
-        }
-        /* mossy ledge splitting the fall into two tiers (the water itself is animated in waterfall) */
-        g.fillStyle = "#5c5a55";
-        g.beginPath();
-        g.ellipse(x, WF.mid + 4, w * 0.75, 9, 0, 0, 6.3);
-        g.fill();
-        g.fillStyle = "#77746c";
-        g.beginPath();
-        g.ellipse(x - 4, WF.mid + 1, w * 0.6, 5, 0, 0, 6.3);
-        g.fill();
-        g.fillStyle = "#4f8f3f";
-        g.beginPath();
-        g.ellipse(x - w * 0.55, WF.mid - 1, 9, 4, 0, 0, 6.3);
-        g.ellipse(x + w * 0.6, WF.mid, 7, 3.5, 0, 0, 6.3);
-        g.fill();
-        /* rocks at the foot of the fall */
-        for (const [bx, by, br] of [[x - w / 2 - 8, bot - 2, 11], [x + w / 2 + 9, bot, 10], [px + prx - 6, py - 4, 8]]) {
-          g.fillStyle = "#6b685f";
-          g.beginPath();
-          g.arc(bx, by, br, 0, 6.3);
-          g.fill();
-          g.fillStyle = "#4f8f3f";
-          g.beginPath();
-          g.arc(bx - br * 0.2, by - br * 0.6, br * 0.45, 0, 6.3);
-          g.fill();
-        }
+        };
+        stone(px - prx + 4, py + 6, 10, 6, 51);
+        stone(px + prx - 10, py - 12, 9, 5, 52);
+        stone(px - prx * 0.4, py + pry - 2, 7, 4, 53);
+        stone(px + prx * 0.3, py - pry + 1, 6, 3.5, 54);
       }
-      /* sheetPath(y0, y1, w0, w1, t, k): a falling water sheet that widens toward the bottom, edges gently rippling */
-      function sheetPath(y0, y1, w0, w1, t, k) {
-        const x = WF.x,
-          N = 12;
-        c.beginPath();
-        for (let i = 0; i <= N; i++) {
-          const p = i / N,
-            yy = y0 + (y1 - y0) * p,
-            ww = (w0 + (w1 - w0) * p) / 2 + Math.sin(t * 6 + p * 9 + k) * 1.6;
-          i ? c.lineTo(x - ww, yy) : c.moveTo(x - ww, yy);
-        }
-        for (let i = N; i >= 0; i--) {
-          const p = i / N,
-            yy = y0 + (y1 - y0) * p,
-            ww = (w0 + (w1 - w0) * p) / 2 + Math.sin(t * 6 + p * 9 + k + 2) * 1.6;
-          c.lineTo(x + ww, yy);
-        }
-        c.closePath();
-      }
-      /* waterfall(t): two-tier fall with flowing light bands, glossy lip, foam cloud, splash, mist and a faint rainbow */
+      /* waterfall(t): the sky fall. A long column from an island far above the screen, swaying slightly in the wind,
+         streaks racing down it, droplets peeling off its sides, and a churning landing: foam, splash, spreading rings, mist
+         and a faint rainbow. */
       function waterfall(t) {
-        const { x, bot, w, mid, py, prx, pry } = WF,
-          tiers = [[WF.top, mid + 2, w * 0.55, w * 0.7, 0], [mid, bot, w * 0.8, w * 1.05, 3]];
+        const { x, w, py, prx, pry } = WF,
+          y0 = -60,
+          y1 = py - 6,
+          sway = (yy) => Math.sin(t * 0.9 + yy * 0.012) * (1 - yy / y1) * 3; /* the top sways, the bottom is pinned to the pond */
         c.save();
-        for (const [y0, y1, w0, w1, k] of tiers) {
-          /* body: deep water color at the top, lighter and foamier as it falls */
-          const sh = c.createLinearGradient(0, y0, 0, y1);
-          sh.addColorStop(0, "#4f9fa0");
-          sh.addColorStop(0.6, "#7cc4c1");
-          sh.addColorStop(1, "#c9eeea");
-          c.fillStyle = sh;
-          sheetPath(y0, y1, w0, w1, t, k);
-          c.fill();
-          c.save();
-          sheetPath(y0, y1, w0, w1, t, k);
-          c.clip();
-          c.globalCompositeOperation = "lighter";
-          /* vertical light streaks of different widths and speeds */
-          for (let i = 0; i < 7; i++) {
-            const sx = x - w1 / 2 + (i + 0.5) * (w1 / 7) + Math.sin(i * 3.1) * 2,
-              len = 10 + (i % 3) * 6,
-              sp = 90 + (i % 4) * 30,
-              head = ((t * sp + i * 29) % (y1 - y0 + len)) + y0 - len,
-              gr = c.createLinearGradient(0, head, 0, head + len);
-            gr.addColorStop(0, "rgba(255,255,255,0)");
-            gr.addColorStop(1, "rgba(235,255,255,.65)");
-            c.fillStyle = gr;
-            c.fillRect(sx - 1 - (i % 2), head, 2 + (i % 2) * 2, len);
-          }
-          /* soft horizontal bands sliding down, like rippling water */
-          for (let yy = y0; yy < y1; yy += 4) {
-            const a = 0.08 + 0.08 * Math.sin(yy * 0.35 - t * 9 + k);
-            c.fillStyle = `rgba(220,255,255,${a})`;
-            c.fillRect(x - w1, yy, w1 * 2, 2);
-          }
-          c.restore();
-          /* glossy lip where the water bends over the edge */
-          c.strokeStyle = `rgba(245,255,255,${0.7 + 0.2 * Math.sin(t * 5 + k)})`;
-          c.lineWidth = 2;
+        /* faint shadow of the column on the ground behind it, and a soft glow of spray around it */
+        const halo = c.createLinearGradient(x - w * 2, 0, x + w * 2, 0);
+        halo.addColorStop(0, "rgba(225,250,255,0)");
+        halo.addColorStop(0.5, "rgba(225,250,255,.22)");
+        halo.addColorStop(1, "rgba(225,250,255,0)");
+        c.fillStyle = halo;
+        c.fillRect(x - w * 2, y0, w * 4, y1 - y0);
+        /* the column: narrow high up, widening as it falls */
+        const col = () => {
           c.beginPath();
-          c.ellipse(x, y0 + 2, w0 / 2, 3, 0, 3.3, 6.1);
-          c.stroke();
-          /* bright edge lines */
-          c.strokeStyle = "rgba(240,255,255,.35)";
-          c.lineWidth = 1;
-          for (const s of [-1, 1]) {
-            c.beginPath();
-            c.moveTo(x + (s * w0) / 2, y0 + 2);
-            c.lineTo(x + (s * w1) / 2, y1 - 2);
-            c.stroke();
+          for (let i = 0; i <= 20; i++) {
+            const yy = y0 + ((y1 - y0) * i) / 20,
+              hw = (w * 0.3 + (w * 0.5 - w * 0.3) * (i / 20)) + Math.sin(t * 7 + i) * 0.7;
+            i ? c.lineTo(x + sway(yy) - hw, yy) : c.moveTo(x + sway(yy) - hw, yy);
           }
-        }
-        /* foam cloud churning at both landings */
+          for (let i = 20; i >= 0; i--) {
+            const yy = y0 + ((y1 - y0) * i) / 20,
+              hw = (w * 0.3 + (w * 0.5 - w * 0.3) * (i / 20)) + Math.sin(t * 7 + i + 2) * 0.7;
+            c.lineTo(x + sway(yy) + hw, yy);
+          }
+          c.closePath();
+        };
+        const body = c.createLinearGradient(x - w / 2, 0, x + w / 2, 0);
+        body.addColorStop(0, "rgba(120,200,205,.75)");
+        body.addColorStop(0.35, "rgba(200,245,245,.92)");
+        body.addColorStop(0.65, "rgba(150,220,222,.88)");
+        body.addColorStop(1, "rgba(95,175,180,.75)");
+        c.fillStyle = body;
+        col();
+        c.fill();
+        c.save();
+        col();
+        c.clip();
         c.globalCompositeOperation = "lighter";
-        for (const [fy, fw, n] of [[mid + 2, w * 0.7, 6], [bot, w * 1.1, 10]])
-          for (let i = 0; i < n; i++) {
-            const p = (t * 1.4 + i / n) % 1,
-              fx = x + ((i / (n - 1)) - 0.5) * fw + Math.sin(t * 3 + i) * 2;
-            c.fillStyle = `rgba(245,255,255,${0.55 * (1 - p)})`;
-            c.beginPath();
-            c.arc(fx, fy - p * 8, 3 + p * 5, 0, 6.3);
-            c.fill();
-          }
-        /* splash droplets arcing out of the pond */
-        for (let i = 0; i < 8; i++) {
-          const p = (t * 1.1 + i / 8) % 1,
-            dir = i % 2 ? 1 : -1,
-            sx = x + dir * (6 + p * (16 + (i % 3) * 6)),
-            sy = bot - 2 - Math.sin(p * Math.PI) * (10 + (i % 4) * 3);
-          c.fillStyle = `rgba(230,255,255,${0.7 * (1 - p)})`;
+        /* streaks racing down, different speeds and widths */
+        for (let i = 0; i < 9; i++) {
+          const lane = (i / 8 - 0.5) * w * 0.8,
+            len = 18 + (i % 3) * 14,
+            sp = 260 + (i % 4) * 60,
+            head = ((t * sp + i * 53) % (y1 - y0 + len)) + y0 - len,
+            gr = c.createLinearGradient(0, head, 0, head + len);
+          gr.addColorStop(0, "rgba(255,255,255,0)");
+          gr.addColorStop(1, "rgba(255,255,255,.7)");
+          c.fillStyle = gr;
+          c.fillRect(x + sway(head) + lane - 1, head, 1.5 + (i % 2), len);
+        }
+        /* rope-like twists: soft bright bands sliding down */
+        for (let yy = y0; yy < y1; yy += 7) {
+          const a = 0.06 + 0.07 * Math.sin(yy * 0.22 - t * 14);
+          c.fillStyle = `rgba(235,255,255,${a})`;
+          c.fillRect(x - w, yy, w * 2, 3);
+        }
+        c.restore();
+        /* droplets peeling off both sides and falling alongside */
+        c.fillStyle = "rgba(225,250,255,.8)";
+        for (let i = 0; i < 14; i++) {
+          const sd = i % 2 ? 1 : -1,
+            p = (t * (0.5 + (i % 5) * 0.08) + i * 0.137) % 1,
+            yy = y0 + 20 + p * (y1 - y0 - 30),
+            xx = x + sway(yy) + sd * (w * 0.35 + p * 6 + (i % 3) * 2);
+          c.globalAlpha = Math.sin(p * Math.PI);
           c.beginPath();
-          c.arc(sx, sy, 1.4, 0, 6.3);
+          c.ellipse(xx, yy, 1, 2.2, 0, 0, 6.3);
+          c.fill();
+        }
+        c.globalAlpha = 1;
+        c.globalCompositeOperation = "lighter";
+        /* landing: churning foam puffs */
+        for (let i = 0; i < 12; i++) {
+          const p = (t * 1.6 + i / 12) % 1,
+            fx = x + ((i / 11) - 0.5) * w * 1.6 + Math.sin(t * 3 + i) * 2;
+          c.fillStyle = `rgba(245,255,255,${0.6 * (1 - p)})`;
+          c.beginPath();
+          c.arc(fx, y1 - p * 9, 3 + p * 6, 0, 6.3);
+          c.fill();
+        }
+        /* splash droplets arcing out */
+        for (let i = 0; i < 12; i++) {
+          const p = (t * 1.2 + i / 12) % 1,
+            dir = i % 2 ? 1 : -1,
+            sx = x + dir * (4 + p * (18 + (i % 3) * 8)),
+            sy = y1 - Math.sin(p * Math.PI) * (12 + (i % 4) * 4);
+          c.fillStyle = `rgba(230,255,255,${0.75 * (1 - p)})`;
+          c.beginPath();
+          c.arc(sx, sy, 1.5, 0, 6.3);
           c.fill();
         }
         /* drifting spray mist */
-        for (let i = 0; i < 4; i++) {
-          const mx = x + Math.sin(t * 0.6 + i * 1.7) * 18,
-            my = bot - 6 - ((t * 6 + i * 9) % 26),
-            mr = 22 + i * 6,
+        for (let i = 0; i < 5; i++) {
+          const mx = x + Math.sin(t * 0.6 + i * 1.7) * 20,
+            my = y1 - 4 - ((t * 7 + i * 9) % 30),
+            mr = 18 + i * 6,
             sp = c.createRadialGradient(mx, my, 2, mx, my, mr);
-          sp.addColorStop(0, "rgba(225,255,255,.16)");
+          sp.addColorStop(0, "rgba(225,255,255,.18)");
           sp.addColorStop(1, "rgba(225,255,255,0)");
           c.fillStyle = sp;
           c.fillRect(mx - mr, my - mr, mr * 2, mr * 2);
         }
-        /* faint rainbow arching through the mist */
+        /* faint rainbow in the mist */
         c.globalCompositeOperation = "source-over";
-        c.globalAlpha = 0.16 + 0.06 * Math.sin(t * 0.8);
+        c.globalAlpha = 0.18 + 0.07 * Math.sin(t * 0.8);
         c.lineWidth = 2;
-        ["#ff6b6b", "#ffd84a", "#7dff9a", "#5ad7ff", "#b48cff"].forEach((col, i) => {
-          c.strokeStyle = col;
+        ["#ff6b6b", "#ffd84a", "#7dff9a", "#5ad7ff", "#b48cff"].forEach((cl2, i) => {
+          c.strokeStyle = cl2;
           c.beginPath();
-          c.arc(x + 4, bot + 4, 34 - i * 2, 3.5, 5.6);
+          c.arc(x + 6, y1 + 6, 36 - i * 2, 3.5, 5.6);
           c.stroke();
         });
         c.globalAlpha = 1;
-        /* ripples spreading on the pond */
-        for (let i = 0; i < 3; i++) {
-          const p = (t * 0.5 + i / 3) % 1;
-          c.strokeStyle = `rgba(200,250,255,${0.4 * (1 - p)})`;
+        /* lily pads bobbing on the pond, two with flowers */
+        for (const [lx, ly, lr, fl, k] of [[WF.px - 34, WF.py + 6, 6, 1, 0], [WF.px - 22, WF.py + 13, 4.5, 0, 1], [WF.px + 30, WF.py + 9, 5.5, 1, 2], [WF.px + 40, WF.py - 4, 4, 0, 3]]) {
+          const by = ly + Math.sin(t * 1.3 + k) * 0.6;
+          c.fillStyle = "#3f7a34";
+          c.beginPath();
+          c.ellipse(lx, by + 0.6, lr, lr * 0.5, 0, 0.35, 6.0);
+          c.lineTo(lx, by + 0.6);
+          c.fill();
+          c.fillStyle = "#62a34a";
+          c.beginPath();
+          c.ellipse(lx, by, lr, lr * 0.5, 0, 0.35, 6.0);
+          c.lineTo(lx, by);
+          c.fill();
+          if (fl) {
+            c.fillStyle = "#ffd0e4";
+            for (let i = 0; i < 5; i++) {
+              const a = (i / 5) * 6.28 + k;
+              c.beginPath();
+              c.ellipse(lx + Math.cos(a) * 1.8, by - 1.5 + Math.sin(a) * 0.9, 1.8, 1, a, 0, 6.3);
+              c.fill();
+            }
+            c.fillStyle = "#ffe27a";
+            c.beginPath();
+            c.arc(lx, by - 1.5, 1, 0, 6.3);
+            c.fill();
+          }
+        }
+        /* the shrine's rune crystal: hovers, slowly turns, pulses, sheds motes, and lights the water */
+        {
+          const { x: sx, y: sy } = SHRINE,
+            cy = sy - 20 + Math.sin(t * 1.6) * 2.5,
+            pulse = 0.6 + 0.4 * Math.sin(t * 2.2),
+            sq = Math.cos(t * 1.1); /* turning: the crystal narrows and widens */
+          c.globalCompositeOperation = "lighter";
+          const gl = c.createRadialGradient(sx, cy, 1, sx, cy, 26);
+          gl.addColorStop(0, `rgba(120,255,235,${0.35 * pulse})`);
+          gl.addColorStop(1, "rgba(120,255,235,0)");
+          c.fillStyle = gl;
+          c.fillRect(sx - 26, cy - 26, 52, 52);
+          /* reflection on the pond */
+          c.fillStyle = `rgba(120,255,235,${0.12 * pulse})`;
+          c.beginPath();
+          c.ellipse(sx + 18, WF.py - 6, 14, 3, 0, 0, 6.3);
+          c.fill();
+          c.globalCompositeOperation = "source-over";
+          const hw = 3.2 * (0.35 + 0.65 * Math.abs(sq));
+          c.fillStyle = "#3fd6c6";
+          c.beginPath();
+          c.moveTo(sx, cy - 8);
+          c.lineTo(sx + hw, cy);
+          c.lineTo(sx, cy + 6);
+          c.lineTo(sx - hw, cy);
+          c.closePath();
+          c.fill();
+          c.fillStyle = `rgba(230,255,252,${0.6 + 0.3 * pulse})`;
+          c.beginPath();
+          c.moveTo(sx, cy - 8);
+          c.lineTo(sx + hw * (sq > 0 ? 1 : 0.2), cy);
+          c.lineTo(sx, cy + 1);
+          c.closePath();
+          c.fill();
+          c.globalCompositeOperation = "lighter";
+          for (let i = 0; i < 6; i++) {
+            const p = (t * 0.4 + i / 6) % 1;
+            c.fillStyle = `rgba(170,255,240,${0.8 * Math.sin(p * Math.PI)})`;
+            c.beginPath();
+            c.arc(sx + Math.sin(t * 1.5 + i * 2) * (5 + p * 6), cy + 4 - p * 26, 1.1, 0, 6.3);
+            c.fill();
+          }
+          c.globalCompositeOperation = "source-over";
+        }
+        /* rings spreading across the pond */
+        for (let i = 0; i < 4; i++) {
+          const p = (t * 0.55 + i / 4) % 1;
+          c.strokeStyle = `rgba(210,250,255,${0.5 * (1 - p)})`;
           c.lineWidth = 1.5;
           c.beginPath();
-          c.ellipse(x, py - 6, 8 + p * (prx - 18), 3 + p * (pry - 10), 0, 0, 6.3);
+          c.ellipse(x, y1 + 2, 6 + p * (prx - 12), 2.5 + p * (pry - 8), 0, 0, 6.3);
           c.stroke();
         }
         c.restore();
