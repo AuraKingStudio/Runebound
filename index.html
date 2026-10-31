@@ -320,8 +320,9 @@
         background-color: #1b2a33;
         border-color: #d9a40099;
       }
-      #btns #bq { left: calc(50% - 126px); }
-      #btns #bg { left: calc(50% + 8px); }
+      #btns #bq { left: calc(50% - 190px); }
+      #btns #bg { left: calc(50% - 56px); }
+      #btns #br { left: calc(50% + 72px); background: linear-gradient(180deg, #ff8a5c, #b8402e); border-color: #ffd84a; color: #fff; }
       #btns #bq.hot { box-shadow: 0 0 14px #ffd84a; border-color: #ffd84a; }
       #btns #bt {
         /* under the gold counter (game y ≈ 80 of 600) */
@@ -716,7 +717,7 @@
     <div id="jb"><div id="jk"></div></div>
     <div id="btns">
       <button id="b0"></button><button id="b1"></button><button id="b2"></button
-      ><button id="bi" hidden>Enter arena</button><button id="bt">🏷 Titles</button><button id="bq" class="hb">📜 Quests</button><button id="bg" class="hb">🛡 Guild</button>
+      ><button id="bi" hidden>Enter arena</button><button id="bt">🏷 Titles</button><button id="bq" class="hb">📜 Quests</button><button id="bg" class="hb">🛡 Guild</button><button id="br" class="hb raid">⚔ Raid</button>
     </div>
     <script>
       const W = 900,
@@ -766,7 +767,7 @@
       };
       /* hub plaza: ellipse center + radii. Sized for ~10 players, 3 NPC daises and the portal arch at the top. */
       const HUB = { x: 450, y: 350, rx: 395, ry: 232 };
-      const PORTAL = { x: 450, y: 352, ir: 110 } /* the fountain in the middle is the portal */,
+      const PORTAL = { x: 450, y: 352 } /* hub center: where the tutorial's final burst plays (raids start from the RAID button) */,
         /* NPCs. g = emblem path (SVG path syntax, drawn on a 40x40 box centered at 0,0), gs = stroke instead of fill */
         /* Elder: wizard hat (wide brim + bent cone) */
         ELDER = { tu: 1, x: 238, y: 224, ic: "🧙", nm: "The Elder", col: "#b48cff",
@@ -1056,15 +1057,21 @@
             p.x = HUB.x + (dx / l) * rx;
             p.y = HUB.y + (dy / l) * ry;
           }
-          /* fountain blocks the center: push the player out to its rim */
-          const fx = (p.x - FOUNT.x) / (FOUNT.rx + 10),
-            fy = (p.y - FOUNT.y) / (FOUNT.ry + 10),
-            fl = Math.hypot(fx, fy);
-          if (fl < 1) {
-            const k = fl > 0.001 ? 1 / fl : 1;
-            p.x = FOUNT.x + fx * k * (FOUNT.rx + 10);
-            p.y = FOUNT.y + (fl > 0.001 ? fy * k : 1) * (FOUNT.ry + 10);
-          }
+          /* the river blocks walking, except on the bridges */
+          if (!bridgeAt(p))
+            for (const q of streamPts()) {
+              if (((q.x - PLAT.x) / PLAT.rx) ** 2 + ((q.y - PLAT.y) / PLAT.ry) ** 2 > 1) continue;
+              const dx = p.x - q.x,
+                dy = p.y - q.y,
+                d = Math.hypot(dx, dy),
+                lim = q.w + 5;
+              if (d < lim) {
+                const ux = d > 0.001 ? dx / d : q.nx,
+                  uy = d > 0.001 ? dy / d : q.ny;
+                p.x = q.x + ux * lim;
+                p.y = q.y + uy * lim;
+              }
+            }
         }
       }
       function place(a) {
@@ -1408,7 +1415,7 @@
         burst(n.x, n.y, n.col || "#5af0dc", 40, 220);
         RINGS.push({ x: n.x, y: n.y, col: n.col || "#5af0dc", t: 0 });
         sfx("win", 1.1);
-        popMsg(V.tut >= 4 ? "🌀 Tutorial complete! The portal is open." : "✨ " + TUT_TXT[V.tut], 1.1, 3500);
+        popMsg(V.tut >= 4 ? "⚔ Tutorial complete! Press RAID to fight the Warden." : "✨ " + TUT_TXT[V.tut], 1.1, 3500);
       }
       /* step(dt): advance the whole game by dt seconds. In: dt (s). Out: mutates S, P. */
       function step(dt) {
@@ -1451,7 +1458,6 @@
           ["smith", SMITH],
           ["herald", HERALD],
           ["barkeep", BARKEEP],
-          ["portal", PORTAL],
         ])
           if (!npcHidden(n[1])) {
             const d = dist(P, n[1]);
@@ -1462,8 +1468,7 @@
       function inter() {
         const n = nearby();
         if (!n || dlgOpen()) return;
-        if (n == "portal") toArena(); /* portal is open from the start */
-        else openDlg(n);
+        openDlg(n);
       }
       function start() {
         const k = CL[V.cls] ? V.cls : $("cls").dataset.k || "tank"; /* last class picked at the Class Master */
@@ -2594,6 +2599,11 @@
         inter();
       });
       /* Quests / Guild HUD buttons open the same menus the boards used to */
+      /* RAID button: starts the Warden fight from anywhere in the hub */
+      $("br").addEventListener("pointerdown", (e) => {
+        e.preventDefault();
+        if (P && !dlgOpen() && S.sc == "hub") { sfx("ui"); toArena(); }
+      });
       for (const [id, w] of [["bq", "qboard"], ["bg", "gboard"]])
         $(id).addEventListener("pointerdown", (e) => {
           e.preventDefault();
@@ -2676,7 +2686,7 @@
       function uiUpd() {
         document.body.classList.toggle("hub", S.sc == "hub"); /* hub: skill buttons shrink and fade */
         $("bt").hidden = tut() < 4; /* Titles button appears after the tutorial */
-        $("bq").hidden = $("bg").hidden = tut() < 4 || S.sc != "hub";
+        $("bq").hidden = $("bg").hidden = $("br").hidden = tut() < 4 || S.sc != "hub";
         $("bq").classList.toggle("hot", bountyReady()); /* glows when a bounty can be claimed */
         loreBonusTick();
         const m = P;
@@ -2709,7 +2719,7 @@
         const n = nearby();
         $("bi").hidden = !n || dlgOpen();
         if (n) {
-          const lb = n == "portal" ? "ENTER ARENA" : n == "elder" ? "TALK" : n == "lore" ? "LISTEN" : ["class", "maiden", "smith", "herald"].includes(n) && !isUnl(n) ? "???" : n == "class" ? "CLASS" : n == "maiden" ? "PRAY" : n == "smith" ? "FORGE" : n == "herald" ? "RECORDS" : n == "barkeep" ? "BLACKJACK" : n == "qboard" ? "QUESTS" : n == "gboard" ? "GUILD" : "SHOP",
+          const lb = n == "elder" ? "TALK" : n == "lore" ? "LISTEN" : ["class", "maiden", "smith", "herald"].includes(n) && !isUnl(n) ? "???" : n == "class" ? "CLASS" : n == "maiden" ? "PRAY" : n == "smith" ? "FORGE" : n == "herald" ? "RECORDS" : n == "barkeep" ? "BLACKJACK" : n == "qboard" ? "QUESTS" : n == "gboard" ? "GUILD" : "SHOP",
             ht = KEYHINT[INMODE][3],
             h = lb + (ht ? ` <span class="kh k3">${ht}</span>` : "");
           if ($("bi")._h != h) { $("bi")._h = h; $("bi").innerHTML = h; $("bi").classList.add("small"); } /* only touch the DOM when it changes */
@@ -3225,7 +3235,6 @@
           }
         }
         streams(g);
-        fountain(g);
         /* rune ring (glow pulses in drawHub) */
         g.strokeStyle = "rgba(70,140,128,.7)";
         g.lineWidth = 2;
@@ -3512,6 +3521,8 @@
             [WF.px + 10, WF.py + 6, 60, 200, 96, 258],
             [96, 258, 150, 300, 250, 292],
             [250, 292, 350, 284, 450, 352],
+            [450, 352, 540, 412, 640, 405],
+            [640, 405, 740, 398, 826, 438],
           ],
           pts = [];
         for (const [x0, y0, cx, cy, x1, y1] of segs)
@@ -3520,7 +3531,6 @@
               u = 1 - t;
             pts.push({ x: u * u * x0 + 2 * u * t * cx + t * t * x1, y: u * u * y0 + 2 * u * t * cy + t * t * y1 });
           }
-        pts.push({ x: 450, y: 352 });
         /* normals + a width that swells and narrows like a real brook */
         for (let i = 0; i < pts.length; i++) {
           const p = pts[i],
@@ -3633,7 +3643,89 @@
             g.stroke();
           }
         }
+        lowPool(g);
         pondWater(g);
+      }
+      /* the river's end: it drips off the platform's stone lip into a little pool below. LP = that pool. */
+      const LP = { x: 842, y: 494, rx: 50, ry: 21 };
+      function lowPool(g) {
+        const e = streamPts()[streamPts().length - 1],
+          r = rng(41);
+        /* mossy rim and stones around the pool */
+        g.fillStyle = "#3d6b3a";
+        g.beginPath();
+        g.ellipse(LP.x, LP.y, LP.rx + 8, LP.ry + 6, 0, 0, 6.3);
+        g.fill();
+        g.fillStyle = "#5aa7a6";
+        g.beginPath();
+        g.ellipse(LP.x, LP.y, LP.rx, LP.ry, 0, 0, 6.3);
+        g.fill();
+        for (let i = 0; i < 12; i++) {
+          const a = (i / 12) * 6.283 + r() * 0.3,
+            sx = LP.x + Math.cos(a) * (LP.rx + 4),
+            sy = LP.y + Math.sin(a) * (LP.ry + 3),
+            sr = 4 + r() * 4;
+          g.fillStyle = r() < 0.5 ? "#8f8a80" : "#a59f92";
+          g.beginPath();
+          g.ellipse(sx, sy, sr, sr * 0.7, 0, 0, 6.3);
+          g.fill();
+        }
+        /* worn stone lip where the water leaves the platform, with wet dark streaks down the side wall */
+        g.fillStyle = "#c9b18a";
+        g.beginPath();
+        g.ellipse(e.x, e.y + 2, e.w * 0.9, 5, 0, 0, 6.3);
+        g.fill();
+        g.fillStyle = "rgba(40,70,70,.35)";
+        g.fillRect(e.x - e.w * 0.6, e.y + 4, e.w * 1.2, LP.y - LP.ry - e.y - 2);
+      }
+      /* riverEnd(t): water dripping and trickling off the lip into the pool, with splashes and ripples */
+      function riverEnd(t) {
+        const e = streamPts()[streamPts().length - 1],
+          top = e.y + 4,
+          bot = LP.y - LP.ry + 6;
+        c.save();
+        c.globalCompositeOperation = "lighter";
+        /* thin trickles sliding down the stone */
+        for (let i = 0; i < 5; i++) {
+          const tx = e.x + (i - 2) * e.w * 0.25,
+            gr = c.createLinearGradient(0, top, 0, bot);
+          gr.addColorStop(0, "rgba(140,210,210,.55)");
+          gr.addColorStop(1, "rgba(200,240,240,.25)");
+          c.strokeStyle = gr;
+          c.lineWidth = 2 + (i % 2);
+          c.beginPath();
+          c.moveTo(tx, top);
+          c.quadraticCurveTo(tx + Math.sin(t * 2 + i) * 1.5, (top + bot) / 2, tx + (i - 2) * 1.5, bot);
+          c.stroke();
+        }
+        /* falling drops: each drop swells on the lip, falls, then splashes */
+        for (let i = 0; i < 7; i++) {
+          const p = (t * 0.9 + i / 7) % 1,
+            dx = e.x + ((i * 37) % 9 - 4) * e.w * 0.12;
+          if (p < 0.25) {
+            c.fillStyle = `rgba(210,250,250,${0.5 + p * 2})`;
+            c.beginPath();
+            c.ellipse(dx, top + 1, 1.5 + p * 6, 1.5 + p * 8, 0, 0, 6.3);
+            c.fill();
+          } else {
+            const f = (p - 0.25) / 0.75,
+              dy = top + f * f * (bot - top);
+            c.fillStyle = `rgba(220,255,255,${0.85 - f * 0.3})`;
+            c.beginPath();
+            c.ellipse(dx, dy, 1.6, 2.6, 0, 0, 6.3);
+            c.fill();
+          }
+        }
+        /* splash ripples where the water lands */
+        for (let i = 0; i < 3; i++) {
+          const p = (t * 0.8 + i / 3) % 1;
+          c.strokeStyle = `rgba(210,250,255,${0.45 * (1 - p)})`;
+          c.lineWidth = 1.3;
+          c.beginPath();
+          c.ellipse(e.x, bot + 2, 4 + p * (LP.rx - 14), 2 + p * (LP.ry - 8), 0, 0, 6.3);
+          c.stroke();
+        }
+        c.restore();
       }
       /* streamFlow(t): current lines and glints drifting downstream toward the fountain */
       function streamFlow(t) {
@@ -3710,311 +3802,121 @@
           c.restore();
         }
       }
-      /* magic spring in the middle of the platform: the brook pours into a sunken stone pool, the pool is the portal.
-         FOUNT = pool footprint, also used to block walking through it. SPRING_IN = angle where the brook enters. */
-      const FOUNT = { x: 450, y: 352, rx: 74, ry: 42 };
-      const SPRING_IN = -2.54;
-      /* fountain(g): static parts. Carved sandstone ring (open where the brook pours in), the pool,
-         lily pads, and a vine-covered stone arch standing over the back of the spring. */
-      function fountain(g) {
-        const { x, y, rx, ry } = FOUNT,
-          a0 = SPRING_IN + 0.3,
-          a1 = SPRING_IN - 0.3 + 6.283;
-        /* sunken shadow */
-        g.fillStyle = "rgba(60,40,20,.3)";
-        g.beginPath();
-        g.ellipse(x, y + 5, rx + 12, ry + 9, 0, 0, 6.3);
-        g.fill();
-        /* pool water, same color as the brook, deeper in the middle */
-        const pool = g.createRadialGradient(x, y + 4, 4, x, y, rx);
-        pool.addColorStop(0, "#3d8f93");
-        pool.addColorStop(1, "#5aa7a6");
-        g.fillStyle = pool;
-        g.beginPath();
-        g.ellipse(x, y, rx, ry, 0, 0, 6.3);
-        g.fill();
-        /* carved ring: side face, top face, inner lip, joints */
-        g.lineCap = "round";
-        g.strokeStyle = "#a88f6c";
-        g.lineWidth = 12;
-        g.beginPath();
-        g.ellipse(x, y + 4, rx + 4, ry + 3, 0, a0, a1);
-        g.stroke();
-        g.strokeStyle = "#dcc6a0";
-        g.lineWidth = 10;
-        g.beginPath();
-        g.ellipse(x, y, rx + 4, ry + 3, 0, a0, a1);
-        g.stroke();
-        g.strokeStyle = "rgba(255,248,230,.55)";
-        g.lineWidth = 2;
-        g.beginPath();
-        g.ellipse(x, y - 2, rx + 5, ry + 4, 0, a0, a1);
-        g.stroke();
-        g.strokeStyle = "#9c8260";
-        g.lineWidth = 1.5;
-        g.beginPath();
-        g.ellipse(x, y, rx - 1, ry - 1, 0, a0, a1);
-        g.stroke();
-        g.lineCap = "butt";
-        g.strokeStyle = "rgba(120,96,64,.5)";
-        g.lineWidth = 1.2;
-        for (let i = 0; i < 18; i++) {
-          const a = (i / 18) * 6.283;
-          if (Math.abs(Math.atan2(Math.sin(a - SPRING_IN), Math.cos(a - SPRING_IN))) < 0.36) continue;
-          g.beginPath();
-          g.moveTo(x + Math.cos(a) * (rx - 1), y + Math.sin(a) * (ry - 1));
-          g.lineTo(x + Math.cos(a) * (rx + 9), y + Math.sin(a) * (ry + 8));
-          g.stroke();
-        }
-        /* little carved spout where the brook pours in */
-        const sx = x + Math.cos(SPRING_IN) * (rx + 4),
-          sy = y + Math.sin(SPRING_IN) * (ry + 3);
-        g.fillStyle = "#c9b18a";
-        for (const s of [-1, 1]) {
-          const ea = SPRING_IN + s * 0.3;
-          g.beginPath();
-          g.arc(x + Math.cos(ea) * (rx + 4), y + Math.sin(ea) * (ry + 3), 6.5, 0, 6.3);
-          g.fill();
-        }
-        g.fillStyle = "rgba(255,248,230,.5)";
-        g.beginPath();
-        g.ellipse(sx, sy - 1, 7, 2.5, SPRING_IN + 1.57, 0, 6.3);
-        g.fill();
-        /* lily pads with little pink flowers */
-        for (const [lx, ly, rot] of [[34, 10, 0.4], [-20, 18, 2.2], [44, -14, 4.1]]) {
-          g.fillStyle = "#4f8f3f";
-          g.beginPath();
-          g.ellipse(x + lx, y + ly, 9, 5, 0, rot, rot + 5.6);
-          g.lineTo(x + lx, y + ly);
-          g.fill();
-          g.fillStyle = "#ff9fcf";
-          g.beginPath();
-          g.arc(x + lx + 2, y + ly - 1, 2.2, 0, 6.3);
-          g.fill();
-        }
-        springArch(g);
+      /* the stone arch bridge: the only way across the river. bridgeAt(p) is true while p stands on its deck (walk collision).
+         Drawn every frame after the water effects so ripples and particles never show through it. */
+      const BRIDGES = [{ i: 72, kind: "arch" }];
+      function bridgeFrame(b) {
+        const q = streamPts()[b.i];
+        return { q, half: q.w + 30, wid: 46 };
       }
-      /* springArch(g): two pillars on the back of the ring holding a rounded arch with a glowing keystone and vines */
-      function springArch(g) {
-        const { x, y, rx } = FOUNT,
-          px = rx - 6,
-          base = y - 18,
-          top = y - 92,
-          pw = 13;
-        for (const s of [-1, 1]) {
-          const cx = x + s * px;
-          /* plinth */
-          g.fillStyle = "#a88f6c";
-          g.fillRect(cx - pw / 2 - 3, base - 4, pw + 6, 10);
-          g.fillStyle = "#dcc6a0";
-          g.fillRect(cx - pw / 2 - 3, base - 8, pw + 6, 5);
-          /* column with a lit side and a shaded side */
-          g.fillStyle = "#d3bc95";
-          g.fillRect(cx - pw / 2, top + 14, pw, base - top - 22);
-          g.fillStyle = "#b39a74";
-          g.fillRect(cx + (s > 0 ? pw / 2 - 4 : -pw / 2), top + 14, 4, base - top - 22);
-          for (let yy = top + 26; yy < base - 10; yy += 14) {
-            g.fillStyle = "rgba(120,96,64,.35)";
-            g.fillRect(cx - pw / 2, yy, pw, 1.2);
-          }
-          /* capital */
-          g.fillStyle = "#dcc6a0";
-          g.fillRect(cx - pw / 2 - 3, top + 10, pw + 6, 6);
+      function bridgeAt(p) {
+        for (const b of BRIDGES) {
+          const { q, half, wid } = bridgeFrame(b),
+            dx = p.x - q.x,
+            dy = p.y - q.y,
+            across = dx * q.nx + dy * q.ny,
+            along = dx * q.ny - dy * q.nx;
+          if (Math.abs(across) < half + 4 && Math.abs(along) < wid / 2 + 2) return true;
         }
-        /* the arch: thick curved band from capital to capital */
-        g.lineCap = "butt";
-        g.strokeStyle = "#a88f6c";
-        g.lineWidth = 14;
-        g.beginPath();
-        g.ellipse(x, top + 14, px, 30, 0, Math.PI, 0);
-        g.stroke();
-        g.strokeStyle = "#dcc6a0";
-        g.lineWidth = 10;
-        g.beginPath();
-        g.ellipse(x, top + 12, px, 30, 0, Math.PI, 0);
-        g.stroke();
-        /* voussoir joints */
-        g.strokeStyle = "rgba(120,96,64,.45)";
-        g.lineWidth = 1.2;
-        for (let i = 1; i < 9; i++) {
-          const a = Math.PI + (i / 9) * Math.PI;
-          g.beginPath();
-          g.moveTo(x + Math.cos(a) * (px - 6), top + 12 + Math.sin(a) * 24);
-          g.lineTo(x + Math.cos(a) * (px + 6), top + 12 + Math.sin(a) * 36);
-          g.stroke();
-        }
-        /* keystone with a carved rune (it glows in fountainWater) */
-        g.fillStyle = "#c9b18a";
-        g.beginPath();
-        g.moveTo(x - 8, top - 23);
-        g.lineTo(x + 8, top - 23);
-        g.lineTo(x + 6, top - 9);
-        g.lineTo(x - 6, top - 9);
-        g.closePath();
-        g.fill();
-        /* vines with leaves and flowers climbing the left pillar and over the arch */
-        g.strokeStyle = "#4f8a3a";
-        g.lineWidth = 1.8;
-        g.beginPath();
-        g.moveTo(x - px - 4, base - 6);
-        for (let i = 0; i <= 10; i++) {
-          const p = i / 10;
-          g.lineTo(x - px + Math.sin(p * 9) * 5, base - 6 - p * (base - top - 18));
-        }
-        g.quadraticCurveTo(x - px * 0.6, top - 16, x - 14, top - 14);
-        g.stroke();
-        const leaf = (lx, ly, rot) => {
-          g.fillStyle = "#62a84a";
-          g.beginPath();
-          g.ellipse(lx, ly, 4, 2, rot, 0, 6.3);
+        return false;
+      }
+      function bridges(g, t) {
+        for (const b of BRIDGES) {
+          const { q, half, wid } = bridgeFrame(b),
+            rr = (x0, y0, w0, h0, r0) => {
+              g.beginPath();
+              g.roundRect(x0, y0, w0, h0, r0);
+            };
+          g.save();
+          g.translate(q.x, q.y);
+          g.rotate(Math.atan2(q.ny, q.nx));
+          /* soft shadow and the dark arch opening seen on the downstream side */
+          g.fillStyle = "rgba(0,0,0,.22)";
+          rr(-half + 4, -wid / 2 + 7, half * 2, wid, 14);
           g.fill();
-        };
-        for (let i = 0; i < 9; i++) {
-          const p = i / 9;
-          leaf(x - px + Math.sin(p * 9) * 5 + (i % 2 ? 5 : -5), base - 10 - p * (base - top - 18), i % 2 ? 0.6 : -0.6);
-        }
-        for (const [fx, fy, col] of [[x - px + 4, base - 30, "#ff9fcf"], [x - px - 4, top + 34, "#fff3f8"], [x - px * 0.55, top - 12, "#ff9fcf"], [x - 24, top - 18, "#ffe27a"]]) {
-          g.fillStyle = col;
-          for (let k = 0; k < 5; k++) {
-            const ka = (k / 5) * 6.283;
+          g.fillStyle = "rgba(20,50,55,.55)";
+          g.beginPath();
+          g.ellipse(0, wid / 2 + 2, q.w + 4, 9, 0, 0, Math.PI);
+          g.fill();
+          /* thick side face of the arch */
+          g.fillStyle = "#b39a74";
+          rr(-half, -wid / 2 + 6, half * 2, wid, 14);
+          g.fill();
+          /* deck: humped, lighter at the crown */
+          const dg = g.createLinearGradient(-half, 0, half, 0);
+          dg.addColorStop(0, "#d6bf96");
+          dg.addColorStop(0.5, "#f3e3c2");
+          dg.addColorStop(1, "#d6bf96");
+          g.fillStyle = dg;
+          rr(-half, -wid / 2, half * 2, wid, 14);
+          g.fill();
+          /* rounded paving stones */
+          g.strokeStyle = "rgba(140,112,76,.35)";
+          g.lineWidth = 1.2;
+          for (let k = -half + 14; k < half - 8; k += 12) {
             g.beginPath();
-            g.arc(fx + Math.cos(ka) * 2.2, fy + Math.sin(ka) * 2.2, 1.8, 0, 6.3);
+            g.moveTo(k, -wid / 2 + 9);
+            g.quadraticCurveTo(k + 2, 0, k, wid / 2 - 9);
+            g.stroke();
+          }
+          /* chunky parapets with round posts and little glowing lantern caps */
+          for (const sd of [-1, 1]) {
+            const py = sd * (wid / 2 - 4);
+            g.fillStyle = "#a88f6c";
+            rr(-half + 4, py - 5, half * 2 - 8, 10, 5);
+            g.fill();
+            g.fillStyle = "#e6d2ab";
+            rr(-half + 4, py - 5, half * 2 - 8, 5, 4);
+            g.fill();
+            for (const ex of [-half + 7, 0, half - 7]) {
+              g.fillStyle = "#9c8260";
+              g.beginPath();
+              g.arc(ex, py + 1, 7.5, 0, 6.3);
+              g.fill();
+              g.fillStyle = "#ead7b2";
+              g.beginPath();
+              g.arc(ex, py - 1, 6, 0, 6.3);
+              g.fill();
+              if (ex) {
+                const gl = 0.6 + 0.3 * Math.sin(t * 2 + ex + sd);
+                g.fillStyle = `rgba(255,214,140,${gl})`;
+                g.beginPath();
+                g.arc(ex, py - 2, 2.6, 0, 6.3);
+                g.fill();
+              }
+            }
+            /* flower boxes */
+            for (const fx of [-half * 0.5, half * 0.5]) {
+              g.fillStyle = "#8a5c34";
+              rr(fx - 8, py - 4, 16, 7, 2);
+              g.fill();
+              for (let k = 0; k < 4; k++) {
+                g.fillStyle = ["#ff9fcf", "#ffe27a", "#fff3f8", "#c4a8ff"][k];
+                g.beginPath();
+                g.arc(fx - 6 + k * 4, py - 5 - (k % 2) * 2, 2.2, 0, 6.3);
+                g.fill();
+              }
+            }
+          }
+          /* vines trailing over the near parapet */
+          for (let k = 0; k < 9; k++) {
+            g.fillStyle = k % 2 ? "#62a84a" : "#4f8a3a";
+            g.beginPath();
+            g.ellipse(-half + 12 + k * ((half * 2 - 24) / 8), wid / 2 - 1 + (k % 2) * 3, 4, 2, k % 2 ? 0.5 : -0.5, 0, 6.3);
             g.fill();
           }
-          g.fillStyle = "#ffcf4d";
-          g.beginPath();
-          g.arc(fx, fy, 1.2, 0, 6.3);
-          g.fill();
+          /* glowing rune set in the crown */
+          g.save();
+          g.shadowColor = "#5af0dc";
+          g.shadowBlur = 6 + 4 * Math.sin(t * 1.6);
+          g.fillStyle = "#7fe8da";
+          g.font = "bold 14px Georgia";
+          g.textAlign = "center";
+          g.textBaseline = "middle";
+          g.fillText("ᛉ", 0, 1);
+          g.restore();
+          g.restore();
         }
-        /* a few leaves trailing down the right pillar */
-        for (let i = 0; i < 4; i++) leaf(x + px + (i % 2 ? 6 : -4), top + 22 + i * 9, i % 2 ? 0.5 : -0.5);
-      }
-      /* fountainWater(t): the magic. Inflow cascade, swirling pool, glow, a hovering runestone and rising sparkles. */
-      function fountainWater(t) {
-        const { x, y, rx, ry } = FOUNT,
-          ix = x + Math.cos(SPRING_IN) * rx,
-          iy = y + Math.sin(SPRING_IN) * ry;
-        c.save();
-        c.globalCompositeOperation = "lighter";
-        /* breathing magic glow in the pool */
-        const pg = c.createRadialGradient(x, y, 4, x, y, rx);
-        pg.addColorStop(0, `rgba(120,255,235,${0.3 + 0.1 * Math.sin(t * 1.8)})`);
-        pg.addColorStop(1, "rgba(90,200,220,0)");
-        c.fillStyle = pg;
-        c.beginPath();
-        c.ellipse(x, y, rx - 4, ry - 3, 0, 0, 6.3);
-        c.fill();
-        /* inflow: foam where the brook tumbles over the lip */
-        for (let i = 0; i < 8; i++) {
-          const p = (t * 1.8 + i / 8) % 1;
-          c.fillStyle = `rgba(240,255,255,${0.6 * (1 - p)})`;
-          c.beginPath();
-          c.arc(ix + (x - ix) * p * 0.35 + Math.sin(t * 4 + i) * 3, iy + (y - iy) * p * 0.35, 2 + p * 3, 0, 6.3);
-          c.fill();
-        }
-        /* swirl: the inflow spirals slowly around the pool */
-        c.lineWidth = 1.6;
-        for (let i = 0; i < 4; i++) {
-          const a0 = t * 0.7 + (i / 4) * 6.283;
-          c.strokeStyle = "rgba(200,255,250,.28)";
-          c.beginPath();
-          for (let s = 0; s <= 1.0001; s += 0.08) {
-            const a = a0 + s * 2.4,
-              rr = 14 + s * (rx - 26),
-              px = x + Math.cos(a) * rr,
-              py = y + Math.sin(a) * rr * (ry / rx);
-            s ? c.lineTo(px, py) : c.moveTo(px, py);
-          }
-          c.stroke();
-        }
-        /* keystone rune on the arch glows in time with the pool */
-        const ky = y - 92 - 16,
-          kg = c.createRadialGradient(x, ky, 1, x, ky, 18);
-        kg.addColorStop(0, `rgba(140,255,240,${0.45 + 0.2 * Math.sin(t * 1.8)})`);
-        kg.addColorStop(1, "rgba(120,220,255,0)");
-        c.fillStyle = kg;
-        c.fillRect(x - 18, ky - 18, 36, 36);
-        c.fillStyle = "rgba(170,255,245,.9)";
-        c.font = "bold 10px Georgia";
-        c.textAlign = "center";
-        c.textBaseline = "middle";
-        c.fillText("ᛉ", x, ky + 1);
-        /* glow under the hovering runestone */
-        const sy0 = y - 26 + Math.sin(t * 1.4) * 4,
-          halo = c.createRadialGradient(x, sy0, 2, x, sy0, 40);
-        halo.addColorStop(0, "rgba(150,255,240,.55)");
-        halo.addColorStop(1, "rgba(120,220,255,0)");
-        c.fillStyle = halo;
-        c.fillRect(x - 40, sy0 - 40, 80, 80);
-        c.restore();
-        /* runestone: a flat slate stone floating above the water, slowly turning, rune glowing */
-        c.save();
-        c.translate(x, sy0);
-        c.rotate(Math.sin(t * 0.6) * 0.15);
-        c.fillStyle = "rgba(0,0,0,.18)";
-        c.beginPath();
-        c.ellipse(0, y - sy0 + 4, 14, 5, 0, 0, 6.3);
-        c.fill();
-        c.fillStyle = "#4b5a5e";
-        c.beginPath();
-        c.moveTo(-9, -15);
-        c.lineTo(8, -17);
-        c.lineTo(11, 12);
-        c.lineTo(-10, 14);
-        c.closePath();
-        c.fill();
-        c.fillStyle = "#62767a";
-        c.beginPath();
-        c.moveTo(-9, -15);
-        c.lineTo(8, -17);
-        c.lineTo(6, -11);
-        c.lineTo(-7, -9);
-        c.closePath();
-        c.fill();
-        c.shadowColor = "#5af0dc";
-        c.shadowBlur = 8 + 4 * Math.sin(t * 2.4);
-        c.fillStyle = "#8ff7ea";
-        c.font = "bold 16px Georgia";
-        c.textAlign = "center";
-        c.textBaseline = "middle";
-        c.fillText("ᛟ", 0, 1);
-        c.restore();
-        /* rings spreading from under the runestone, plus drops landing on the pool */
-        c.save();
-        c.globalCompositeOperation = "lighter";
-        for (let i = 0; i < 3; i++) {
-          const p = (t * 0.45 + i / 3) % 1;
-          c.strokeStyle = `rgba(190,250,255,${0.3 * (1 - p)})`;
-          c.lineWidth = 1.3;
-          c.beginPath();
-          c.ellipse(x, y + 2, 8 + p * (rx - 18), 4 + p * (ry - 10), 0, 0, 6.3);
-          c.stroke();
-        }
-        for (let i = 0; i < 4; i++) {
-          const cyc = (t * 0.7 + i * 0.37) % 1,
-            a = Math.floor(t * 0.7 + i * 0.37) * 2.39 + i,
-            dx = x + Math.cos(a) * rx * 0.55,
-            dy = y + Math.sin(a) * ry * 0.55;
-          c.strokeStyle = `rgba(220,255,255,${0.45 * (1 - cyc)})`;
-          c.beginPath();
-          c.ellipse(dx, dy, 2 + cyc * 12, 1 + cyc * 6, 0, 0, 6.3);
-          c.stroke();
-        }
-        c.restore();
-        /* sparkles rising from the water */
-        c.save();
-        c.globalCompositeOperation = "lighter";
-        for (let i = 0; i < 14; i++) {
-          const p = (t * 0.35 + i / 14) % 1,
-            a = i * 2.39,
-            sx = x + Math.cos(a) * (rx - 20) * ((i % 5) / 5 + 0.2),
-            sy = y + Math.sin(a) * (ry - 12) * 0.6 - p * 60;
-          c.fillStyle = `rgba(${i % 3 ? "170,255,240" : "255,220,160"},${0.8 * (1 - p)})`;
-          c.beginPath();
-          c.arc(sx + Math.sin(t * 2 + i) * 3, sy, 1.5, 0, 6.3);
-          c.fill();
-        }
-        c.restore();
       }
       const HUB_ANIM = 0.55; /* hub scenery animation speed (1 = original) */
       function drawHub() {
@@ -4031,9 +3933,10 @@
         c.ellipse(x, y, rx * 0.56, ry * 0.56, 0, 0, 6.3);
         c.stroke();
         c.globalCompositeOperation = "source-over";
-        fountainWater(t);
         streamFlow(t);
+        riverEnd(t);
         waterfall(t);
+        bridges(c, t);
         /* mist drifting around the platform rim */
         for (let i = 0; i < 18; i++) {
           const a = (i / 18) * 6.283 + t * 0.03 * (i % 2 ? 1 : -1),
@@ -4070,7 +3973,7 @@
           c.fill();
         }
         /* fireflies drifting over the stones */
-        for (let i = 0; i < 22; i++) {
+        for (let i = 0; i < 14; i++) {
           const fx = x + Math.sin(t * 0.21 + i * 2.3) * rx * 0.8,
             fy = y + Math.cos(t * 0.17 + i * 1.7) * ry * 0.75,
             fa = 0.35 + 0.35 * Math.sin(t * 3 + i);
@@ -4087,7 +3990,7 @@
       function ambient(t) {
         c.save();
         /* falling leaves: drift down and sway, wrap around the screen */
-        for (let i = 0; i < 9; i++) {
+        for (let i = 0; i < 5; i++) {
           const sp = 14 + (i % 4) * 5,
             ly = ((t * sp + i * 97) % (H + 40)) - 20,
             lx = ((i * 131 + t * 8) % (W + 40)) - 20 + Math.sin(t * 1.2 + i) * 22;
@@ -4130,7 +4033,7 @@
         }
         /* pollen motes drifting slowly in the warm light */
         c.globalCompositeOperation = "lighter";
-        for (let i = 0; i < 30; i++) {
+        for (let i = 0; i < 14; i++) {
           const px = (i * 73 + t * (4 + (i % 5))) % W,
             py = (i * 151 + Math.sin(t * 0.4 + i) * 30 - t * 3) % H,
             a = 0.25 + 0.25 * Math.sin(t * 2 + i * 1.3);
@@ -4198,52 +4101,6 @@
           c.fillRect(0, 0, W, H);
         }
         if (S.sc == "hub") {
-          /* fountain portal: rune ring sliding around the basin, orbiting motes, glow + sparks when you can enter */
-          const pulse = 0.75 + 0.25 * Math.sin(S.tm * 2.2),
-            PRX = 104,
-            PRY = 62;
-          c.save();
-          c.globalAlpha = pulse;
-          c.strokeStyle = "rgba(90,240,220,0.7)";
-          c.lineWidth = 2;
-          c.setLineDash([10, 8]);
-          c.lineDashOffset = -S.tm * 20;
-          c.beginPath();
-          c.ellipse(PORTAL.x, PORTAL.y + 8, PRX, PRY, 0, 0, 6.3);
-          c.stroke();
-          c.setLineDash([]);
-          c.fillStyle = "rgba(160,255,240,0.95)";
-          c.font = "bold 12px Georgia";
-          c.textAlign = "center";
-          c.textBaseline = "middle";
-          const RUNES = "\u16A0\u16A2\u16A6\u16A8\u16B1\u16B2\u16B7\u16B9\u16BA\u16BE\u16C1\u16C3";
-          for (let i = 0; i < 12; i++) {
-            const a = (i / 12) * 6.283 + S.tm * 0.35;
-            c.fillText(RUNES[i], PORTAL.x + Math.cos(a) * (PRX + 12), PORTAL.y + 8 + Math.sin(a) * (PRY + 8));
-          }
-          c.restore();
-          /* motes orbit and rise from the water */
-          for (let i = 0; i < 6; i++) {
-            const a = S.tm * (1.1 + i * 0.25) + i * 1.7,
-              lift = ((S.tm * 0.6 + i / 6) % 1) * 40;
-            c.fillStyle = "#c8fff4";
-            c.globalAlpha = 0.8 * (1 - lift / 40);
-            c.beginPath();
-            c.arc(PORTAL.x + Math.cos(a) * 82, PORTAL.y + 4 + Math.sin(a) * 48 - lift, 2.2, 0, 6.3);
-            c.fill();
-          }
-          c.globalAlpha = 1;
-          if (nearby() == "portal") {
-            const k = 0.5 + 0.5 * Math.sin(S.tm * 6),
-              gl = c.createRadialGradient(PORTAL.x, PORTAL.y, 8, PORTAL.x, PORTAL.y, 130);
-            gl.addColorStop(0, `rgba(120,255,235,${0.3 + 0.2 * k})`);
-            gl.addColorStop(1, "rgba(60,220,200,0)");
-            c.fillStyle = gl;
-            c.beginPath();
-            c.ellipse(PORTAL.x, PORTAL.y + 4, 130, 80, 0, 0, 6.3);
-            c.fill();
-            if (Math.random() < 0.4) burst(PORTAL.x + rnd(-50, 50), PORTAL.y + rnd(-20, 24), "#7dffe9", 1, 50);
-          }
           npc(ELDER, V.q >= QUESTS.length ? "" : ["new", "active", "ready"][V.qs]);
           npc(SHOP, "");
           npc(CLASSN, "");
