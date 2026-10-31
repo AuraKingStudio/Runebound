@@ -1467,8 +1467,9 @@
         chatStep();
         raidGroupStep();
         HUBV = HUBV.filter((v) => !v.out || S.tm - v.out < TP_TIME);
-        const k = 1 - Math.exp(-dt * 12);
+        const ease = 1 - Math.exp(-dt * 12);
         for (const v of HUBV) {
+          const k = v.bot ? 1 : ease; /* bots move themselves at full speed; remote players glide toward their last update */
           if (v.bot && !v.out && v.outAt && S.tm >= v.outAt) botOut(v); /* raid group: leaving together */
           else if (v.bot && !v.out && !v.outAt && v.plan != "raid" && HUB_T - v.born > v.life) toCrossing(v); /* session over: walk to the crossing */
           else if (v.bot && v.plan == "raid" && !v.out && !RAID_GROUP.mem.includes(v)) raidSoloStep(v); /* ...and teleport from there */
@@ -2267,20 +2268,29 @@
           v.wait = rnd(2, 12); /* fresh bots stand around a while before doing anything */
           return;
         }
-        v.wt = (v.wt || 0) - dt;
-        if (v.wt > 0) return;
-        v.wt = 0.1;
-        /* stuck for 1.5s anyway: give up, stand there, pick something else later */
-        v.st = Math.hypot(v.x - (v.lx ?? v.x), v.y - (v.ly ?? v.y)) < 1 ? v.st + 0.1 : 0;
-        v.lx = v.x;
-        v.ly = v.y;
-        if (v.st > 1.5) {
-          v.goal = null;
-          v.npc = null;
-          v.wait = rnd(4, 10);
+        /* a brief stop on the way, like letting go of the stick */
+        if (v.pause > 0) {
+          v.pause -= dt;
+          v.tx = v.x;
+          v.ty = v.y;
           return;
         }
-        if (Math.random() < 0.004) return (v.wt = rnd(0.4, 1.5)); /* a brief stop on the way, like letting go of the stick */
+        /* checks 10 times a second; the walking itself happens every frame */
+        v.wt = (v.wt || 0) - dt;
+        if (v.wt <= 0) {
+          v.wt = 0.1;
+          /* stuck for 1.5s anyway: give up, stand there, pick something else later */
+          v.st = Math.hypot(v.x - (v.lx ?? v.x), v.y - (v.ly ?? v.y)) < 1 ? v.st + 0.1 : 0;
+          v.lx = v.x;
+          v.ly = v.y;
+          if (v.st > 1.5) {
+            v.goal = null;
+            v.npc = null;
+            v.wait = rnd(4, 10);
+            return;
+          }
+          if (Math.random() < 0.004) return (v.pause = rnd(0.4, 1.5));
+        }
         const g = v.via[0] || v.goal,
           d = Math.hypot(g.x - v.x, g.y - v.y);
         if (d < 6) {
@@ -2310,7 +2320,7 @@
             uy /= l;
           }
         }
-        const step = Math.min(d, CL[v.cls].sp * 0.1);
+        const step = Math.min(d, CL[v.cls].sp * spm() * dt); /* exactly a player's run speed (with your Wind Boots bonus) */
         v.tx = v.x + ux * step;
         v.ty = v.y + uy * step;
       }
@@ -4815,11 +4825,18 @@
         skyClip(g);
         g.clip();
         /* sky: pastel blue fading to a warm glow at the horizon */
-        const sky = g.createLinearGradient(0, -30, 0, 330);
-        sky.addColorStop(0, "#8fc4e6");
-        sky.addColorStop(0.45, "#cfe6f2");
-        sky.addColorStop(1, "#f7e1c8");
+        const sky = g.createLinearGradient(0, -30, 0, 120);
+        sky.addColorStop(0, "#5f9fd8");
+        sky.addColorStop(0.55, "#a8d2ee");
+        sky.addColorStop(1, "#ffd9ae");
         g.fillStyle = sky;
+        g.fillRect(-30, -30, 970, H + 60);
+        /* low sun glow on the horizon, warming the sky and the clouds around it */
+        const sun = g.createRadialGradient(640, horizonY(640) + 6, 4, 640, horizonY(640) + 6, 300);
+        sun.addColorStop(0, "rgba(255,236,190,.95)");
+        sun.addColorStop(0.25, "rgba(255,206,150,.45)");
+        sun.addColorStop(1, "rgba(255,190,140,0)");
+        g.fillStyle = sun;
         g.fillRect(-30, -30, 970, H + 60);
         /* a huge pale ringed moon hanging in the sky */
         g.fillStyle = "rgba(255,250,240,.55)";
@@ -4871,7 +4888,7 @@
               g.fill();
             }
         };
-        range((x) => horizonY(x) - 4, 62, 46, 91, "#d3dcea", "#bccadb", "#f6f9fc");
+        range((x) => horizonY(x) - 4, 62, 46, 91, "#d9d6ea", "#c2c0de", "#fff6f0");
         /* a far crystal citadel on the back range: slender spires with glowing tips */
         for (const [cx, ch, cw] of [[300, 54, 7], [316, 72, 8], [332, 48, 6], [346, 62, 7], [290, 36, 5]]) {
           const by = horizonY(cx) + 6;
@@ -4890,26 +4907,33 @@
           g.arc(cx, by - ch - cw * 2.2, 1.8, 0, 6.3);
           g.fill();
         }
-        range((x) => horizonY(x), 44, 38, 92, "#b6c4d6", "#9fb1c6", "#eef4f8");
-        range((x) => horizonY(x) + 8, 26, 30, 93, "#9eb6c8", "#8aa2b6", null);
+        range((x) => horizonY(x), 44, 38, 92, "#b5b6d6", "#9b9cc6", "#fbefe8");
+        range((x) => horizonY(x) + 8, 26, 30, 93, "#9aa7c8", "#8290b6", null);
         /* the endless sea of clouds far below, tinted by the warm light */
-        const sea = g.createLinearGradient(0, horizonY(660), 0, 330);
-        sea.addColorStop(0, "#f4ece6");
-        sea.addColorStop(1, "#dfe9f2");
+        const sea = g.createLinearGradient(0, horizonY(660), 0, 420);
+        sea.addColorStop(0, "#ffe2c6");
+        sea.addColorStop(0.4, "#efd6e2");
+        sea.addColorStop(1, "#b9c3e6");
         g.fillStyle = sea;
         g.fillRect(-30, horizonY(-30) + 14, 970, H + 40);
         for (let row = 0; row < 16; row++) {
           const cy = horizonY(660) + 18 + row * row * 3.6 + row * 6,
             sz = 6 + row * 4;
           for (let x = -30 + (row % 2) * sz; x < 960; x += sz * 1.6) {
-            const cr = sz * (0.8 + r() * 0.5);
-            g.fillStyle = r() < 0.5 ? "rgba(255,255,255,.9)" : "rgba(250,236,240,.85)";
+            const cr = sz * (0.8 + r() * 0.5),
+              cy2 = cy + (r() - 0.5) * sz * 0.4,
+              warm = Math.max(0, 1 - Math.abs(x - 640) / 420) * Math.max(0, 1 - row / 10); /* clouds near the sun catch its light */
+            g.fillStyle = "rgba(150,140,200,.32)"; /* shaded underside */
             g.beginPath();
-            g.ellipse(x, cy + (r() - 0.5) * sz * 0.4, cr * 1.4, cr * 0.6, 0, Math.PI, 0);
+            g.ellipse(x + cr * 0.15, cy2 + cr * 0.12, cr * 1.45, cr * 0.42, 0, 0, Math.PI);
             g.fill();
-            g.fillStyle = "rgba(190,200,225,.35)";
+            g.fillStyle = `rgba(255,${Math.round(244 - warm * 22)},${Math.round(238 - warm * 48)},.92)`; /* lit top */
             g.beginPath();
-            g.ellipse(x, cy + cr * 0.15, cr * 1.4, cr * 0.25, 0, 0, Math.PI);
+            g.ellipse(x, cy2, cr * 1.4, cr * 0.6, 0, Math.PI, 0);
+            g.fill();
+            g.fillStyle = "rgba(255,255,255,.55)"; /* rim light */
+            g.beginPath();
+            g.ellipse(x - cr * 0.3, cy2 - cr * 0.32, cr * 0.6, cr * 0.18, 0, Math.PI, 0);
             g.fill();
           }
         }
@@ -4937,26 +4961,71 @@
             g.stroke();
           }
         }
-        /* soft shadow of the island falling into the void near its edge */
-        g.lineJoin = "round";
-        g.strokeStyle = "rgba(30,40,50,.25)";
-        g.lineWidth = 26;
+        /* near(i): 0 on the far rim (we see over it), 1 where the rim turns toward us on the lower right */
+        const near = (i) => cl((EDGE[i][1] - (ISLE.y - 70)) / 110, 0, 1),
+          seg = (i, dx, dy) => {
+            g.beginPath();
+            g.moveTo(EDGE[i][0] + dx, EDGE[i][1] + dy);
+            g.lineTo(EDGE[i + 1][0] + dx, EDGE[i + 1][1] + dy);
+          };
+        g.lineJoin = g.lineCap = "round";
+        /* soft shadow of the island falling into the void, near side only */
+        for (let i = 0; i < EDGE.length - 1; i++) {
+          const k = near(i);
+          if (!k) continue;
+          g.strokeStyle = `rgba(60,50,80,${0.22 * k})`;
+          g.lineWidth = 26;
+          seg(i, 0, 0);
+          g.stroke();
+        }
+        /* far rim: a thin warm haze where the grass meets the sky */
+        g.strokeStyle = "rgba(255,236,210,.35)";
+        g.lineWidth = 6;
         g.beginPath();
-        EDGE.forEach(([x, y], i) => (i ? g.lineTo(x, y) : g.moveTo(x, y)));
+        EDGE.forEach(([x, y], i) => (i ? g.lineTo(x, y - 2) : g.moveTo(x, y - 2)));
         g.stroke();
         g.restore();
-        /* the island's rocky lip */
-        g.lineJoin = "round";
-        g.strokeStyle = "#5a4a3a";
-        g.lineWidth = 7;
-        g.beginPath();
-        EDGE.forEach(([x, y], i) => (i ? g.lineTo(x + 2, y - 3) : g.moveTo(x + 2, y - 3)));
-        g.stroke();
-        g.strokeStyle = "#3f342a";
-        g.lineWidth = 3;
-        g.beginPath();
-        EDGE.forEach(([x, y], i) => (i ? g.lineTo(x + 3, y - 6) : g.moveTo(x + 3, y - 6)));
-        g.stroke();
+        /* the island's rocky lip: fades in only on the near side */
+        for (let i = 0; i < EDGE.length - 1; i++) {
+          const k = near(i);
+          if (!k) continue;
+          g.globalAlpha = k;
+          g.strokeStyle = "#5a4a3a";
+          g.lineWidth = 7;
+          seg(i, 2, -3);
+          g.stroke();
+          g.strokeStyle = "#3f342a";
+          g.lineWidth = 3;
+          seg(i, 3, -6);
+          g.stroke();
+        }
+        g.globalAlpha = 1;
+        /* far rim: rounded hedge and bush tops sitting on the edge, darker at the base, lit on top */
+        const hr = rng(79);
+        for (let i = 0; i < EDGE.length - 1; i++) {
+          const k = 1 - near(i);
+          if (k < 0.1) continue;
+          for (let j = 0; j < 2; j++) {
+            const p = hr(),
+              x = EDGE[i][0] + (EDGE[i + 1][0] - EDGE[i][0]) * p,
+              y = EDGE[i][1] + (EDGE[i + 1][1] - EDGE[i][1]) * p + 3,
+              rr = (5 + hr() * 6) * k;
+            g.fillStyle = "#3f7a34";
+            g.beginPath();
+            g.ellipse(x, y, rr * 1.3, rr, 0, 0, 6.3);
+            g.fill();
+            g.fillStyle = hr() < 0.5 ? "#5e9e45" : "#6aad4c";
+            g.beginPath();
+            g.ellipse(x - rr * 0.2, y - rr * 0.3, rr, rr * 0.7, 0, 0, 6.3);
+            g.fill();
+            if (hr() < 0.12) {
+              g.fillStyle = ["#ff9fcf", "#ffe27a", "#fff3f8"][(hr() * 3) | 0];
+              g.beginPath();
+              g.arc(x + rr * 0.3, y - rr * 0.6, 1.6, 0, 6.3);
+              g.fill();
+            }
+          }
+        }
         /* grass and flowers fringing the edge on the island side */
         for (let i = 0; i < 110; i++) {
           const k = Math.floor(r() * (EDGE.length - 1)),
@@ -5196,18 +5265,29 @@
         pondWater(g);
         /* rocky cliff behind the fall */
         const rocks = [[60, -20, 66], [140, -10, 64], [20, 24, 72], [96, 10, 70], [168, 34, 60], [-24, 76, 52], [200, 72, 44]]; /* big rocky hill filling the top-left corner so no far sky shows behind the fall */
+        /* seen from above: each boulder is mostly a mossy grass top, with its warm rock face showing only at the front */
         for (const [rx0, ry0, rr] of rocks) {
-          g.fillStyle = "#5c5a55";
+          g.fillStyle = "#6e5f4d";
           g.beginPath();
           g.arc(rx0, ry0, rr, 0, 6.3);
           g.fill();
-          g.fillStyle = "#77746c";
+          g.fillStyle = "#857259";
           g.beginPath();
-          g.arc(rx0 - rr * 0.25, ry0 - rr * 0.3, rr * 0.55, 0, 6.3);
+          g.ellipse(rx0 - rr * 0.2, ry0 + rr * 0.45, rr * 0.6, rr * 0.35, 0, 0, 6.3);
           g.fill();
-          g.fillStyle = "#4f8f3f";
+        }
+        for (const [rx0, ry0, rr] of rocks) {
+          g.fillStyle = "#4b8a3c";
           g.beginPath();
-          g.arc(rx0 + rr * 0.3, ry0 - rr * 0.65, rr * 0.3, 0, 6.3);
+          g.ellipse(rx0, ry0 - rr * 0.18, rr * 0.98, rr * 0.78, 0, 0, 6.3);
+          g.fill();
+          g.fillStyle = "#62a34a";
+          g.beginPath();
+          g.ellipse(rx0 - rr * 0.15, ry0 - rr * 0.32, rr * 0.75, rr * 0.55, 0, 0, 6.3);
+          g.fill();
+          g.fillStyle = "#7cbd5c";
+          g.beginPath();
+          g.ellipse(rx0 - rr * 0.3, ry0 - rr * 0.45, rr * 0.35, rr * 0.22, 0, 0, 6.3);
           g.fill();
         }
         /* mossy ledge splitting the fall into two tiers (the water itself is animated in waterfall) */
