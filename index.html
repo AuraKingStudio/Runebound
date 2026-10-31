@@ -3723,6 +3723,30 @@
           c.fillRect(x + 3 * s, y - 6 * s, 1 * s, 3 * s);
         }
       }
+      /* puffCloud(x, y, sz, a, seed): one fluffy cloud made of overlapping puffs, lit from above with a soft lavender shadow below */
+      function puffCloud(x, y, sz, a, seed) {
+        const r = rng(seed),
+          puffs = [];
+        for (let i = 0; i < 6; i++) puffs.push([(i - 2.5) * sz * 0.55 + (r() - 0.5) * sz * 0.3, -Math.sin((i / 5) * Math.PI) * sz * 0.45, sz * (0.38 + r() * 0.22)]);
+        c.fillStyle = "rgba(196,200,230," + a * 0.55 + ")";
+        for (const [dx, dy, pr] of puffs) {
+          c.beginPath();
+          c.ellipse(x + dx, y + dy + pr * 0.25, pr * 1.15, pr * 0.8, 0, 0, 6.3);
+          c.fill();
+        }
+        c.fillStyle = "rgba(255,255,255," + a + ")";
+        for (const [dx, dy, pr] of puffs) {
+          c.beginPath();
+          c.ellipse(x + dx, y + dy, pr * 1.1, pr * 0.75, 0, 0, 6.3);
+          c.fill();
+        }
+        c.fillStyle = "rgba(255,246,232," + a * 0.7 + ")";
+        for (const [dx, dy, pr] of puffs) {
+          c.beginPath();
+          c.ellipse(x + dx - pr * 0.2, y + dy - pr * 0.3, pr * 0.55, pr * 0.32, 0, 0, 6.3);
+          c.fill();
+        }
+      }
       function skyClouds(t) {
         c.save();
         skyClip(c);
