@@ -2,12 +2,12 @@
 const fs=require('fs'),vm=require('vm'),path=require('path');
 const SRC=fs.readFileSync(path.join(__dirname,'..','index.html'),'utf8').match(/<script>([\s\S]*)<\/script>/)[1];
 const el=()=>new Proxy(function(){},{get:(t,k)=>k==='style'?{}:k==='children'?[{style:{}}]:k==='dataset'?{}:k==='classList'?{add(){},remove(){}}:k==='getContext'?()=>new Proxy({}, {get:()=>()=>({addColorStop(){}}) ,set:()=>true}):k==='complete'?false:k==='hidden'?el._h:()=>{} ,set:()=>true,apply:()=>undefined});
-const els={};const doc={addEventListener(){},getElementById:id=>els[id]||(els[id]={style:{},dataset:{},children:[{style:{}}],value:'',addEventListener(){},append(){},setPointerCapture(){},getContext:()=>new Proxy({},{get:()=>()=>({addColorStop(){}}),set:()=>true}),set innerHTML(v){this._h=v},get innerHTML(){return this._h||''},hidden:false,textContent:''}),querySelectorAll:()=>[],body:{className:'',appendChild(){}},createElement:()=>({style:{},remove(){},append(){},classList:{add(){},remove(){}}}),documentElement:{cls:new Set(),classList:{add(c){doc.documentElement.cls.add(c)},remove(c){doc.documentElement.cls.delete(c)}},style:{setProperty(){}}}};
+const els={};const doc={addEventListener(){},createTextNode:t=>t,getElementById:id=>els[id]||(els[id]={style:{},dataset:{},children:[{style:{}}],value:'',addEventListener(){},append(){},setPointerCapture(){},getContext:()=>new Proxy({},{get:()=>()=>({addColorStop(){}}),set:()=>true}),set innerHTML(v){this._h=v},get innerHTML(){return this._h||''},hidden:false,textContent:''}),querySelectorAll:()=>[],body:{className:'',appendChild(){}},createElement:()=>({style:{},remove(){},append(){},classList:{add(){},remove(){}}}),documentElement:{cls:new Set(),classList:{add(c){doc.documentElement.cls.add(c)},remove(c){doc.documentElement.cls.delete(c)}},style:{setProperty(){}}}};
 const store={};
 const ctx={document:doc,window:{},innerWidth:900,innerHeight:600,performance:{now:()=>0},requestAnimationFrame(){},addEventListener(){},localStorage:{getItem:k=>store[k]||null,setItem:(k,v)=>store[k]=v,removeItem:k=>delete store[k]},Image:function(){this.complete=false},location:{search:''},console,setTimeout:f=>0,Math,JSON,Object,Array,Date,Number,parseInt,isNaN};
 ctx.window=ctx;vm.createContext(ctx);
 vm.runInContext(SRC+`
-;globalThis.devMin=devMin;globalThis.devFs=devFs;globalThis.T={V:()=>V,P:()=>P,S:()=>S,start,devAdd,devUp,devUI,devCls,devHeal,devWipe,devResetQ,devArena,devBoss,devHub,DEV,hurt,act,step,pauseGame,resumeGame,isPaused:()=>paused,QUESTS,UPG,toggleDev,buy,shopUI,qAct,togglePause,dailyCheck,saveName,lvlInfo,gainXP,lvlCol,loreReward,isUnl,tutNext,bjVal,bjDeal,guildFound,guildRecruit,gBonus,bountyDay,bountyAdd,bountyClaim,guildJoin,guildTab,rankPool,rankRefresh,rankSort,dm,dash,dashStep,setIn,padPoll,inMode:()=>INMODE,KEYHINT,FX:()=>FX,FT:()=>FT,shk:()=>shk,els:null};`,ctx);
+;globalThis.devMin=devMin;globalThis.devFs=devFs;globalThis.T={V:()=>V,P:()=>P,S:()=>S,start,devAdd,devUp,devUI,devCls,devHeal,devWipe,devResetQ,devArena,devBoss,devHub,DEV,hurt,act,step,pauseGame,resumeGame,isPaused:()=>paused,QUESTS,UPG,toggleDev,buy,shopUI,qAct,togglePause,dailyCheck,saveName,lvlInfo,gainXP,lvlCol,loreReward,isUnl,tutNext,bjVal,bjDeal,guildFound,guildRecruit,gBonus,bountyDay,bountyAdd,bountyClaim,guildJoin,guildTab,rankPool,rankRefresh,rankSort,dm,dash,dashStep,setIn,padPoll,inMode:()=>INMODE,KEYHINT,HUBV:()=>HUBV,hubJoin,hubLeave,hubCount,HUB_MAX,hubVisitStep,botName,botLook,chatSend,COS,cosOwn,cosV,cosBuyGold,cosEquip,shopPay,myEmote,streamPts,crossFrame,bridgeAt,riverNear,clampW,WF,STATUE,PORTAL,SET,keyLabel,EDGE,inIsle,FX:()=>FX,FT:()=>FT,shk:()=>shk,els:null};`,ctx);
 const T=ctx.T;let f=0;const ok=(c,m)=>{console.log((c?'PASS ':'FAIL ')+m);if(!c)f++};
 T.start();ok(T.S().sc=='hub','start -> hub');
 ctx.document.getElementById('dlg').hidden=true;const pausedAt=T.S().tm;T.pauseGame();T.step(.1);ok(T.isPaused()&&T.S().tm===pausedAt,'pause freezes the game');T.resumeGame();ok(!T.isPaused(),'resume re-enables play');
@@ -89,4 +89,36 @@ T.P().cls='tank';T.P().ar=1;T.P().inv=0;T.DEV.god=0;T.P().hp=100;T.hurt(T.P(),20
 T.P().ar=0;T.P().inv=1;T.hurt(T.P(),20);ok(T.P().hp==90,'dash: dps dodge ignores damage');T.P().inv=0;
 T.padPoll();ok(true,'input: no controller connected is safe');
 T.togglePause();ok(T.isPaused(),'P toggles pause on');T.togglePause();ok(!T.isPaused(),'P toggles pause off');
+/* ---------- hub population: bots, joins, cap ---------- */
+T.devHub();ctx.document.getElementById('dlg').hidden=true;for(let i=0;i<120;i++)T.step(1/60);
+ok(T.hubCount()>=3&&T.hubCount()<=7,'hub: bots fill to 3-7 people (you + 2-6 bots)');
+ok(T.HUBV().every(v=>v.bot&&v.name&&v.lv>=1&&v.ti),'hub: bots have names, levels and titles');
+ok(new Set(T.HUBV().map(v=>v.name)).size==T.HUBV().length,'hub: bot names are unique');
+ok(/^[A-Za-z0-9_]{2,15}$/.test(T.botName()),'hub: bot names look like player handles');
+let lv=[];for(let i=0;i<400;i++){const v={};T.botLook(v);lv.push(v.lv);}
+ok(lv.filter(l=>l>=40).length<lv.length*0.25&&Math.max(...lv)<=60,'hub: high-level bots are rare');
+for(let i=0;i<12;i++)T.hubJoin('real'+i,{name:'Real'+i});
+ok(T.hubCount()<=T.HUB_MAX,'hub: never more than HUB_MAX people');
+ok(T.HUBV().filter(v=>!v.bot).length>=1&&T.HUBV().some(v=>v.out||!v.bot),'hub: real players bump bots, who teleport out');
+ok(T.hubJoin('real0',{})===null,'hub: the same player cannot join twice');
+for(let i=0;i<12;i++)T.hubLeave('real'+i);ok(!T.HUBV().some(v=>!v.bot),'hub: leaving removes the player');
+/* ---------- chat and emotes ---------- */
+T.chatSend('hello there');ok(T.P().say&&T.P().say.t=='hello there','chat: your line shows as a bubble');
+T.chatSend('/wave');ok(T.P().emo&&T.P().emo.e=='👋','chat: /wave plays the emote');
+T.P().emo=null;T.myEmote('💀');ok(!T.P().emo||(T.V().wins||0)>=25,'emotes: locked ones cannot be used');
+/* ---------- cosmetics ---------- */
+const ember=T.COS.find(i=>i.id=='r_ember');T.V().gold=1000;T.cosBuyGold('r_ember');
+ok(T.cosOwn(ember)&&T.V().gold==700&&T.cosV().ring=='r_ember','cosmetics: buy with gold and equip');
+T.cosEquip('', 'ring');ok(!T.cosV().ring,'cosmetics: unequip back to none');
+T.shopPay('r_void');ok(!T.cosV().own.r_void,'cosmetics: paid items are not granted without checkout');
+ok(T.COS.filter(i=>i.eur).every(i=>i.eur>=1&&i.eur<=2),'cosmetics: paid items cost 1-2 EUR');
+/* ---------- hub layout: crossing, canal, cistern, statue ---------- */
+const q=T.crossFrame().q;ok(Math.hypot(q.x-T.PORTAL.x,q.y-T.PORTAL.y)<10,'hub: the Rune Crossing sits at the centre');
+const ws=T.streamPts().filter(p=>!p.drop).map(p=>p.w);ok(Math.max(...ws)-Math.min(...ws)<1,'hub: the canal is an even width');
+const pp={x:T.WF.px,y:T.WF.py,hp:1};T.clampW(pp);ok(Math.hypot(pp.x-T.WF.px,pp.y-T.WF.py)>T.WF.pry,'hub: the cistern is solid');
+const sp={x:T.STATUE.x,y:T.STATUE.y-6};T.clampW(sp);ok(Math.hypot(sp.x-T.STATUE.x,sp.y-T.STATUE.y)>8,'hub: the statue is solid');
+ok(T.EDGE.length>100&&T.inIsle(450,350,0)&&!T.inIsle(5,5,0),'hub: the island is round, the corners are sky');
+/* ---------- dash and controls ---------- */
+T.P().dcd=0;T.P().dx=1;T.P().dy=0;T.dash(T.P());ok(T.P().dcd>0,'dash: works in the hub and starts its cooldown');
+ok(T.keyLabel('Mouse0')=='MB1','controls: main attack shows as MB1');
 console.log(f?f+' FAILED':'ALL PASSED');process.exit(f?1:0);
