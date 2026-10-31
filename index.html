@@ -320,11 +320,8 @@
         background-color: #1b2a33;
         border-color: #d9a40099;
       }
-      #btns #bq { left: calc(50% - 206px); }
-      #btns #bg { left: calc(50% + 80px); }
-      /* RAID: centered between Quests and Guild, a bit bigger */
-      #btns #br { left: calc(50% - 66px); width: 132px; height: 46px; top: 1%; font-size: 17px; letter-spacing: 1px;
-        background: linear-gradient(180deg, #ff8a5c, #b8402e); border-color: #ffd84a; color: #fff; }
+      #btns #bq { left: calc(50% - 126px); }
+      #btns #bg { left: calc(50% + 8px); }
       #btns #bq.hot { box-shadow: 0 0 14px #ffd84a; border-color: #ffd84a; }
       #btns #bt {
         /* under the gold counter (game y ≈ 80 of 600) */
@@ -719,7 +716,7 @@
     <div id="jb"><div id="jk"></div></div>
     <div id="btns">
       <button id="b0"></button><button id="b1"></button><button id="b2"></button
-      ><button id="bi" hidden>Enter arena</button><button id="bt">🏷 Titles</button><button id="bq" class="hb">📜 Quests</button><button id="bg" class="hb">🛡 Guild</button><button id="br" class="hb raid">⚔ Raid</button>
+      ><button id="bi" hidden>Enter arena</button><button id="bt">🏷 Titles</button><button id="bq" class="hb">📜 Quests</button><button id="bg" class="hb">🛡 Guild</button>
     </div>
     <script>
       const W = 900,
@@ -1431,13 +1428,30 @@
         burst(n.x, n.y, n.col || "#5af0dc", 40, 220);
         RINGS.push({ x: n.x, y: n.y, col: n.col || "#5af0dc", t: 0 });
         sfx("win", 1.1);
-        popMsg(V.tut >= 4 ? "⚔ Tutorial complete! Press RAID to fight the Warden." : "✨ " + TUT_TXT[V.tut], 1.1, 3500);
+        popMsg(V.tut >= 4 ? "⚔ Tutorial complete! Step onto the Rune Crossing to teleport to the raid." : "✨ " + TUT_TXT[V.tut], 1.1, 3500);
       }
       /* step(dt): advance the whole game by dt seconds. In: dt (s). Out: mutates S, P. */
+      const TP_TIME = 1.6;
+      /* startTeleport(): runes flare, a pillar of light lifts the player, then the raid starts (see step and teleportFx) */
+      function startTeleport() {
+        if (S.tp || S.sc != "hub") return;
+        S.tp = S.tm || 1e-6; /* never 0, so "is teleporting" stays true */
+        sfx("phase", 1.6);
+        setTimeout(() => sfx("win", 1.4), 700);
+        shake(0.15);
+      }
       function step(dt) {
         if (paused) return;
         S.tm += dt;
         if (!P || S.sc == "lobby") return;
+        if (S.tp) {
+          P.dx = P.dy = 0;
+          if (S.tm - S.tp > TP_TIME) {
+            S.tp = 0;
+            toArena();
+          }
+          return;
+        }
         if (P.hp > 0) {
           const k = CL[P.cls];
           if (!dlgOpen()) {
@@ -1462,7 +1476,8 @@
         }
       }
       function nearby() {
-        if (S.sc != "hub" || !P) return null;
+        if (S.sc != "hub" || !P || S.tp) return null;
+        if (tut() >= 4 && bridgeAt(P)) return "raid"; /* on the Rune Crossing: teleport to the raid */
         let hit = null,
           best = 1e9;
         for (const n of [
@@ -1484,6 +1499,7 @@
       function inter() {
         const n = nearby();
         if (!n || dlgOpen()) return;
+        if (n == "raid") return startTeleport();
         openDlg(n);
       }
       function start() {
@@ -2615,11 +2631,6 @@
         inter();
       });
       /* Quests / Guild HUD buttons open the same menus the boards used to */
-      /* RAID button: starts the Warden fight from anywhere in the hub */
-      $("br").addEventListener("pointerdown", (e) => {
-        e.preventDefault();
-        if (P && !dlgOpen() && S.sc == "hub") { sfx("ui"); toArena(); }
-      });
       for (const [id, w] of [["bq", "qboard"], ["bg", "gboard"]])
         $(id).addEventListener("pointerdown", (e) => {
           e.preventDefault();
@@ -2702,7 +2713,7 @@
       function uiUpd() {
         document.body.classList.toggle("hub", S.sc == "hub"); /* hub: skill buttons shrink and fade */
         $("bt").hidden = tut() < 4; /* Titles button appears after the tutorial */
-        $("bq").hidden = $("bg").hidden = $("br").hidden = tut() < 4 || S.sc != "hub";
+        $("bq").hidden = $("bg").hidden = tut() < 4 || S.sc != "hub";
         $("bq").classList.toggle("hot", bountyReady()); /* glows when a bounty can be claimed */
         loreBonusTick();
         const m = P;
@@ -2735,7 +2746,7 @@
         const n = nearby();
         $("bi").hidden = !n || dlgOpen();
         if (n) {
-          const lb = n == "elder" ? "TALK" : n == "lore" ? "LISTEN" : ["class", "maiden", "smith", "herald"].includes(n) && !isUnl(n) ? "???" : n == "class" ? "CLASS" : n == "maiden" ? "PRAY" : n == "smith" ? "FORGE" : n == "herald" ? "RECORDS" : n == "barkeep" ? "BLACKJACK" : n == "qboard" ? "QUESTS" : n == "gboard" ? "GUILD" : "SHOP",
+          const lb = n == "raid" ? "TELEPORT TO RAID" : n == "elder" ? "TALK" : n == "lore" ? "LISTEN" : ["class", "maiden", "smith", "herald"].includes(n) && !isUnl(n) ? "???" : n == "class" ? "CLASS" : n == "maiden" ? "PRAY" : n == "smith" ? "FORGE" : n == "herald" ? "RECORDS" : n == "barkeep" ? "BLACKJACK" : n == "qboard" ? "QUESTS" : n == "gboard" ? "GUILD" : "SHOP",
             ht = KEYHINT[INMODE][3],
             h = lb + (ht ? ` <span class="kh k3">${ht}</span>` : "");
           if ($("bi")._h != h) { $("bi")._h = h; $("bi").innerHTML = h; $("bi").classList.add("small"); } /* only touch the DOM when it changes */
@@ -3001,6 +3012,11 @@
         c.save();
         c.translate(p.x, p.y);
         c.globalAlpha = p.hp <= 0 ? 0.35 : p.inv > 0 ? 0.55 + 0.45 * Math.sin(S.tm * 60) : 1;
+        if (S.tp && p === P) {
+          const k = Math.min(1, (S.tm - S.tp) / TP_TIME);
+          c.globalAlpha *= Math.max(0, 1 - Math.max(0, k - 0.45) * 2.2);
+          c.translate(0, -k * k * 26); /* rises into the light */
+        }
         /* ground shadow */
         c.fillStyle = "#0008";
         c.beginPath();
@@ -3144,6 +3160,7 @@
         g.scale(k, k);
         forest(g, r);
         cliff(g);
+        outflowGround(g);
         /* platform side wall: stacked stone blocks, darker at the bottom */
         g.fillStyle = "#6b5a44";
         g.beginPath();
@@ -3708,7 +3725,6 @@
             g.stroke();
           }
         }
-        lowPool(g);
         pondWater(g);
       }
       /* the river's end: it pours off the platform's stone lip, down the side wall, then runs away through the forest off screen.
@@ -3716,33 +3732,28 @@
       function outflowPath(ctx) {
         const e = streamPts()[streamPts().length - 1];
         ctx.beginPath();
-        ctx.moveTo(e.x, e.y + 20);
-        ctx.quadraticCurveTo(e.x + 20, e.y + 60, W + 30, e.y + 110);
+        ctx.moveTo(e.x, e.y + 8);
+        ctx.quadraticCurveTo(e.x + 6, e.y + 60, W + 30, e.y + 110);
       }
-      function lowPool(g) {
+      /* outflowGround(g): the stream on the forest floor. Painted before the platform so it starts hidden under the side wall
+         and comes out at the wall's foot, the same width as the river. */
+      function outflowGround(g) {
         const e = streamPts()[streamPts().length - 1];
-        g.lineCap = "round";
         outflowPath(g);
         g.strokeStyle = "#3d6b3a";
-        g.lineWidth = e.w * 2 + 10;
+        g.lineWidth = e.w * 2 + 6;
         g.stroke();
         outflowPath(g);
         g.strokeStyle = "#5aa7a6";
-        g.lineWidth = e.w * 2 - 2;
+        g.lineWidth = e.w * 2;
         g.stroke();
-        g.lineCap = "butt";
-        /* worn stone lip where the water leaves the platform */
-        g.fillStyle = "#c9b18a";
-        g.beginPath();
-        g.ellipse(e.x, e.y + 2, e.w * 0.9, 5, 0, 0, 6.3);
-        g.fill();
       }
       /* riverEnd(t): the river pours over the stone lip and runs down the platform's curved side wall into the pool below */
       function riverEnd(t) {
         const e = streamPts()[streamPts().length - 1],
           top = e.y - 2,
           bot = e.y + 22,
-          hw = e.w * 0.85;
+          hw = e.w;
         c.save();
         /* clip to the side face: inside the side wall ellipse, outside the top surface */
         c.beginPath();
@@ -3984,6 +3995,68 @@
         }
         g.restore();
       }
+      /* teleportFx(): while standing on the crossing the runes brighten; during a teleport, rings rush inward,
+         a pillar of light grows around the player, motes spiral up and the screen flashes white at the end. */
+      function teleportFx() {
+        if (!P || S.sc != "hub") return;
+        const { q, R, Ry } = crossFrame(),
+          on = bridgeAt(P),
+          k = S.tp ? Math.min(1, (S.tm - S.tp) / TP_TIME) : 0;
+        c.save();
+        c.globalCompositeOperation = "lighter";
+        /* idle: soft glow on the crossing while you stand on it */
+        if (on || S.tp) {
+          const gl = c.createRadialGradient(q.x, q.y, 6, q.x, q.y, R);
+          gl.addColorStop(0, `rgba(120,255,235,${0.18 + 0.1 * Math.sin(S.tm * 4) + k * 0.4})`);
+          gl.addColorStop(1, "rgba(90,220,210,0)");
+          c.fillStyle = gl;
+          c.beginPath();
+          c.ellipse(q.x, q.y, R, Ry, 0, 0, 6.3);
+          c.fill();
+        }
+        if (S.tp) {
+          /* rings rushing in toward the player */
+          for (let i = 0; i < 4; i++) {
+            const p = (k * 2.2 + i / 4) % 1,
+              sc = 1 - p;
+            c.strokeStyle = `rgba(160,255,240,${0.7 * p})`;
+            c.lineWidth = 2.5;
+            c.beginPath();
+            c.ellipse(P.x, P.y + 4, R * sc, Ry * sc, 0, 0, 6.3);
+            c.stroke();
+          }
+          /* pillar of light */
+          const pw = 8 + k * 26,
+            ph = 60 + k * 340,
+            col = c.createLinearGradient(0, P.y - ph, 0, P.y + 6);
+          col.addColorStop(0, "rgba(160,255,240,0)");
+          col.addColorStop(0.6, `rgba(170,255,245,${0.35 + k * 0.4})`);
+          col.addColorStop(1, `rgba(220,255,255,${0.6 + k * 0.3})`);
+          c.fillStyle = col;
+          c.beginPath();
+          c.ellipse(P.x, P.y + 4, pw, pw * 0.5, 0, 0, 6.3);
+          c.fill();
+          c.fillRect(P.x - pw, P.y - ph, pw * 2, ph + 4);
+          /* motes spiraling up around the player */
+          for (let i = 0; i < 18; i++) {
+            const a = S.tm * 6 + i * 0.35,
+              up = ((k * 1.5 + i / 18) % 1) * 110,
+              rr = 26 - up * 0.15;
+            c.fillStyle = `rgba(200,255,250,${0.9 - up / 130})`;
+            c.beginPath();
+            c.arc(P.x + Math.cos(a) * rr, P.y - up + Math.sin(a) * rr * 0.4, 2, 0, 6.3);
+            c.fill();
+          }
+        }
+        c.restore();
+        /* white flash as the raid loads */
+        if (S.tp && k > 0.75) {
+          c.save();
+          c.fillStyle = `rgba(235,255,252,${(k - 0.75) * 4})`;
+          c.fillRect(-W, -H, W * 3, H * 3);
+          c.restore();
+        }
+      }
       const HUB_ANIM = 0.55; /* hub scenery animation speed (1 = original) */
       function drawHub() {
         if (!HUBC) paintHub();
@@ -4003,6 +4076,7 @@
         riverEnd(t);
         waterfall(t);
         bridges(c, t);
+        teleportFx();
         /* mist drifting around the platform rim */
         for (let i = 0; i < 18; i++) {
           const a = (i / 18) * 6.283 + t * 0.03 * (i % 2 ? 1 : -1),
