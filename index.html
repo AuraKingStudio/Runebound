@@ -990,17 +990,17 @@
       const PORTAL = { x: 450, y: 352 } /* hub center: where the tutorial's final burst plays (raids start from the RAID button) */,
         /* NPCs. g = emblem path (SVG path syntax, drawn on a 40x40 box centered at 0,0), gs = stroke instead of fill */
         /* Elder: wizard hat (wide brim + bent cone) */
-        ELDER = { tu: 1, x: 238, y: 224, ic: "🧙", nm: "The Elder", col: "#b48cff",
+        ELDER = { tu: 2, x: 238, y: 224, ic: "🧙", nm: "The Elder", col: "#b48cff",
           g: "M-14 9q14 6 28 0q-2 4-14 5q-12-1-14-5zM-9 8L-1-12q3-5 9-3q-4 1-5 4L9 8q-9 3-18 0z" },
         /* Merchant: round coin bag with a tied neck and a coin mark */
-        SHOP = { tu: 2, x: 450, y: 172, ic: "💰", nm: "The Merchant", col: "#ffcf4d",
+        SHOP = { tu: 3, x: 450, y: 172, ic: "💰", nm: "The Merchant", col: "#ffcf4d",
           g: "M-3-8q-6 3-10 10q-3 10 7 11h12q10-1 7-11q-4-7-10-10zM-3-9l-4-5q7 2 14 0l-4 5zM-1 0h4a2 2 0 0 1 0 4h-2a2 2 0 0 0 0 4h4" },
-        LORE = { tu: 3, x: 662, y: 224, ic: "📜", nm: "The Archivist", col: "#5ad7ff", gs: 1,
+        LORE = { tu: 4, x: 662, y: 224, ic: "📜", nm: "The Archivist", col: "#5ad7ff", gs: 1,
           /* Archivist: rolled scroll with text lines */
           g: "M-10-13h20a3 3 0 0 1 0 6h-20a3 3 0 0 1 0-6M-8-7v13M8-7v13M-10 6h20a3 3 0 0 1 0 6h-20a3 3 0 0 1 0-6M-4-3h8M-4 1h6" },
         /* the 4 NPCs standing where the old torches were */
         /* Class Master (green): three class orbs */
-        CLASSN = { lk: "class", x: 662, y: 476, ic: "⚔", nm: "The Class Master", col: "#5dff8a",
+        CLASSN = { lk: "class", tu: 1, x: 662, y: 476, ic: "⚔", nm: "The Class Master", col: "#5dff8a",
           g: "M-4-6a4 4 0 1 0 8 0a4 4 0 1 0-8 0zM-11 5a4 4 0 1 0 8 0a4 4 0 1 0-8 0zM3 5a4 4 0 1 0 8 0a4 4 0 1 0-8 0z" },
         /* The Maiden (rose): a rose bloom */
         MAIDEN = { lk: "maiden", x: 450, y: 528, ic: "🌹", nm: "The Maiden", col: "#ff8fc8",
@@ -2715,19 +2715,28 @@
       /* ---------- tutorial: reveals the starter NPCs one by one ----------
          0 move -> Elder, 1 talk to Elder -> Merchant, 2 open shop -> Archivist, 3 listen -> portal, 4 done */
       const tut = () => (V.tut == null ? 0 : V.tut);
-      const TUT_TXT = ["Move with WASD, the joystick or the stick", "Talk to the Elder", "Visit the Merchant", "Listen to the Archivist", ""];
+      const TUT_DONE = 6;
+      const TUT_TXT = ["Move with WASD, the joystick or the stick", "Choose your class at the Class Master", "Talk to the Elder", "Visit the Merchant", "Listen to the Archivist", "Play a hand of blackjack with the Barkeep", ""];
+      /* tutMigrate(): saves from the old 4-step tutorial (move, Elder, Merchant, Archivist) map onto the new steps */
+      function tutMigrate() {
+        if (V.tv == 2) return;
+        if (V.tut != null) V.tut = V.tut >= 4 ? TUT_DONE : V.tut == 0 ? 0 : V.tut + 1;
+        if (tut() >= 1) (V.ul = V.ul || {}), (V.ul.class = true);
+        V.tv = 2;
+      }
       let tutWalk = 0;
       /* tutNext(from): if the player is on step "from", go to the next step and reveal the next NPC. */
       function tutNext(from) {
         if (tut() != from) return;
         V.tut = from + 1;
         save();
-        const n = [ELDER, SHOP, LORE, PORTAL][from];
+        if (from == 0) (V.ul = V.ul || {}), (V.ul.class = true); /* the Class Master is there from the start of the tutorial */
+        const n = [CLASSN, ELDER, SHOP, LORE, BARKEEP, PORTAL][from];
         n._rv = S.tm; /* slow fade-in */
         burst(n.x, n.y, n.col || "#5af0dc", 40, 220);
         RINGS.push({ x: n.x, y: n.y, col: n.col || "#5af0dc", t: 0 });
         sfx("win", 1.1);
-        popMsg(V.tut >= 4 ? "⚔ Tutorial complete! Step onto the Rune Crossing to teleport to the raid." : "✨ " + TUT_TXT[V.tut], 1.1, 3500);
+        popMsg(V.tut >= TUT_DONE ? "⚔ Tutorial complete! Step onto the Rune Crossing to teleport to the raid." : "✨ " + TUT_TXT[V.tut], 1.1, 3500);
       }
       /* step(dt): advance the whole game by dt seconds. In: dt (s). Out: mutates S, P. */
       const TP_TIME = 1.6;
@@ -2777,7 +2786,7 @@
       }
       function nearby() {
         if (S.sc != "hub" || !P || S.tp) return null;
-        if (tut() >= 4 && bridgeAt(P)) return "raid"; /* on the Rune Crossing: teleport to the raid */
+        if (tut() >= TUT_DONE && bridgeAt(P)) return "raid"; /* on the Rune Crossing: teleport to the raid */
         let hit = null,
           best = 1e9;
         for (const n of [
@@ -2803,6 +2812,7 @@
         openDlg(n);
       }
       function start() {
+        tutMigrate();
         const k = CL[V.cls] ? V.cls : selK; /* last class picked at the Class Master */
         P = mkP(k);
         S.ps = [P];
@@ -3053,7 +3063,13 @@
         if (Math.random() < 0.25) { V.lbx = now + 120e3; save(); }
       }
       function loreUI() {
-        tutNext(3);
+        if (tut() == 4) {
+          tutNext(4);
+          $("dp").innerHTML = `<h2>📜 The Archivist</h2><p>"Ah, a new face. I keep the tales of this place."</p>
+            <p class="sm">Every tale you hear may carry a reward: gold, experience, a blessing for your next raid… and sometimes a <b>name</b>. Hidden figures wander the mist around the hub, and my tales are how you find them. My voice tires: tales come back over time, so visit often.</p>
+            <button onclick="loreUI()">Hear a tale</button><button class="alt" onclick="closeDlg()">Farewell</button>`;
+          return;
+        }
         const bonus = V.lbx > Date.now(); /* guaranteed secret: skips the pool and the 15s gap */
         if (bonus) { V.lbx = 0; V.lta = 0; V.lp = Math.max(1, lorePool()); }
         if (lorePool() < 1) {
@@ -3140,17 +3156,25 @@
       };
       /* classUI(): three class cards with stats and a CHOOSE button. */
       function classUI() {
+        const ms = classWait(),
+          locked = tut() >= TUT_DONE && ms > 0,
+          wait = Math.floor(ms / 60000) + ":" + String(Math.ceil((ms % 60000) / 1000) % 60).padStart(2, "0");
         const cards = Object.keys(CL).map((k) => {
           const c0 = CL[k], on = P && P.cls == k;
           return `<div class="up" style="--uc:${SKC[k]}"><svg viewBox="-20 -20 40 40" width="46" height="46"><circle r="18" fill="#0b1218" stroke="${SKC[k]}" stroke-width="2"/><g fill="${SKC[k]}" stroke="${SKC[k]}" stroke-linecap="round" stroke-linejoin="round">${SKI[k][0]}</g></svg>
             <div style="min-width:0"><span class="nm">${c0.n}</span><div class="sm">❤ ${c0.hp} · 👟 ${c0.sp}</div><div class="sm">${ROLE[k]}</div></div>
-            <button ${on ? "disabled" : ""} onclick="pickClass('${k}')">${on ? "YOURS" : "CHOOSE"}</button></div>`;
+            <button ${on || locked ? "disabled" : ""} onclick="pickClass('${k}')">${on ? "YOURS" : locked ? "🔒 " + wait : "CHOOSE"}</button></div>`;
         }).join("");
-        $("dp").innerHTML = `<h2>⚔ The Class Master</h2><p class="sm">"Every raid needs a shield, a blade and a blessing. Which are you?"</p>${cards}<button class="alt" onclick="closeDlg()">Farewell</button>`;
+        const intro = tut() == 1 ? "Choose your starting class. You can change it here later." : "Every raid needs a shield, a blade and a blessing. Which are you?";
+        $("dp").innerHTML = `<h2>⚔ The Class Master</h2><p class="sm">"${intro}"</p>${locked ? `<p class="sm">Your training holds a while: you can change class again in <b>${wait}</b>.</p>` : ""}${cards}<button class="alt" onclick="closeDlg()">Farewell</button>`;
       }
       /* pickClass(k): switches the player to class k (saved for next time). */
+      const CLASS_LOCK = 5 * 60e3; /* a class change holds for 5 minutes */
+      const classWait = () => Math.max(0, (V.clsAt || 0) + CLASS_LOCK - Date.now());
       function pickClass(k) {
-        if (!P || !CL[k]) return;
+        if (!P || !CL[k] || (tut() >= TUT_DONE && classWait() > 0)) return;
+        V.clsAt = Date.now();
+        tutNext(1);
         P.cls = k;
         P.mh = Math.round(CL[k].hp * hpm());
         P.hp = P.mh;
@@ -3211,7 +3235,7 @@
       }
       /* ---------- The Barkeep (bar, right wall) + the two wall boards ---------- */
       /* Barkeep: a mug. Shown after the tutorial (tu: 4). Quests and Guild open from the top HUD buttons. */
-      const BARKEEP = { tu: 4, x: 750, y: 350, ic: "🍺", nm: "The Barkeep", col: "#ffb347",
+      const BARKEEP = { tu: 5, x: 750, y: 350, ic: "🍺", nm: "The Barkeep", col: "#ffb347",
           g: "M-9-9h13v18h-13zM4-5h3a4 4 0 0 1 0 9h-3M-9-9q0-4 4-4h5q4 0 4 4" };
       /* ---------- Quest Board: main quest + 3 daily bounties ---------- */
       /* bounty: id, text, n = amount needed, g = gold, x = XP */
@@ -3387,6 +3411,7 @@
       }
       function bjDeal(bet) {
         if (V.gold < bet) return;
+        tutNext(5);
         V.gold -= bet;
         BJ = { bet, p: [bjCard(), bjCard()], d: [bjCard(), bjCard()], end: "", win: 0 };
         sfx("ui");
@@ -3424,7 +3449,7 @@
       const qHead = (st, q, tag) =>
         `<div class="qh"><span class="qm ${st}"><b>${QM[st].g}</b></span><div><div class="qtag">${tag}</div><div class="qn">${q.n}</div></div></div>`;
       function elderUI() {
-        tutNext(1);
+        tutNext(2);
         const q = QUESTS[V.q];
         let h = `<h2>🧙 The Elder</h2>`;
         if (!q)
@@ -3459,7 +3484,7 @@
       /* shop screen. In: V.gold, V.up. justBought = key of the card to flash after a purchase. */
       let justBought = "";
       function shopUI() {
-        tutNext(2);
+        tutNext(3);
         const total = UPG.reduce((a, u) => a + V.up[u.k], 0),
           all = UPG.length * MAXL;
         let h = `<h2>💰 The Merchant</h2><div class="purse"><span class="coin"></span><b id="pg">${V.gold}</b></div>
@@ -4036,10 +4061,10 @@
         document.body.classList.toggle("hub", S.sc == "hub"); /* hub: skill buttons shrink and fade */
         document.body.classList.toggle("tch", INMODE == "touch"); /* touch: chat sits above the joystick */
         $("chat").hidden = S.sc != "hub" || !P;
-        $("bt").hidden = tut() < 4; /* Titles button appears after the tutorial */
+        $("bt").hidden = tut() < TUT_DONE; /* Titles button appears after the tutorial */
         $("tlbar").hidden = !P || S.sc == "lobby";
         if ($("gn").textContent != V.gold) $("gn").textContent = V.gold;
-        $("bq").hidden = $("bg").hidden = $("bs").hidden = tut() < 4 || S.sc != "hub";
+        $("bq").hidden = $("bg").hidden = $("bs").hidden = tut() < TUT_DONE || S.sc != "hub";
         $("bq").classList.toggle("hot", bountyReady()); /* glows when a bounty can be claimed */
         loreBonusTick();
         const m = P;
@@ -7738,17 +7763,17 @@
         if (P && S.sc != "lobby") {
           /* no HP readout up here: your health bar floats over your character. Gold lives in the HTML bar (#gp). */
           /* tutorial: step text at the top + bouncing arrow over the next target */
-          if (S.sc == "hub" && tut() < 4) {
+          if (S.sc == "hub" && tut() < TUT_DONE) {
             c.save();
             c.textAlign = "center";
             c.font = 'bold 14px "Cinzel", Georgia';
             c.lineWidth = 3;
             c.strokeStyle = "#000";
             c.fillStyle = "#ffd84a";
-            const tx = "TUTORIAL " + (tut() + 1) + "/4 · " + TUT_TXT[tut()];
+            const tx = "TUTORIAL " + (tut() + 1) + "/" + TUT_DONE + " · " + TUT_TXT[tut()];
             c.strokeText(tx, 450, 24);
             c.fillText(tx, 450, 24);
-            const tg = [null, ELDER, SHOP, LORE][tut()];
+            const tg = [null, CLASSN, ELDER, SHOP, LORE, BARKEEP][tut()];
             if (tg) {
               /* arrow position converted from world to screen-fixed units (HUD transform is active here) */
               const ax = (tg.x - CAM.x),
@@ -7776,7 +7801,7 @@
             c.fillText(BL[0] + " blessing", 14, 62);
             c.restore();
           }
-          if (tut() >= 4) qTrack(ar ? 62 : 12);
+          if (tut() >= TUT_DONE) qTrack(ar ? 62 : 12);
         }
         if (ar && b) {
           bar(250, 16, 400, 14, b.hp / b.mh, b.ph == 2 ? "#ff4d8d" : "#a78bff");

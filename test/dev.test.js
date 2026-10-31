@@ -70,7 +70,7 @@ T.V().gd=null;T.guildJoin('Dawn Lanterns');ok(T.V().gd&&T.V().gd.name=='Dawn Lan
 /* ---- ranks ---- */
 ok(T.rankPool().length>=100,'ranks: top-100 pool is 100 guilds');T.rankRefresh();ok(true,'ranks: refresh moves to the next page');
 /* ---- tutorial ---- */
-T.V().tut=0;T.tutNext(0);ok(T.V().tut==1,'tutorial: walking reveals the Elder (step 2)');T.tutNext(2);ok(T.V().tut==1,'tutorial: steps cannot be skipped');T.tutNext(1);T.tutNext(2);T.tutNext(3);ok(T.V().tut==4,'tutorial: Elder -> Merchant -> Archivist -> portal open');
+T.V().tut=0;T.tutNext(0);ok(T.V().tut==1&&T.V().ul.class,'tutorial: walking reveals the Class Master (step 2)');T.tutNext(2);ok(T.V().tut==1,'tutorial: steps cannot be skipped');for(let i=1;i<6;i++)T.tutNext(i);ok(T.V().tut==6,'tutorial: class -> Elder -> Merchant -> Archivist -> blackjack -> raid open');
 /* ---- NPC unlocks ---- */
 T.V().ul={};T.V().lt=5;ok(!T.isUnl('class'),'unlock: Class Master starts locked');
 for(let i=0;i<50;i++)T.loreReward(true);ok(!T.isUnl('class'),'unlock: secret pages never unlock the Class Master (luck per tale only)');
