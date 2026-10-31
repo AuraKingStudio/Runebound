@@ -3660,24 +3660,86 @@
           c.fillRect(x + 12 * s, y + 2 * s, 2.5 * s, 22 * s);
         }
       }
+      /* puffCloud(x, y, sz, a, seed): one fluffy cloud made of overlapping puffs, lit from above with a soft lavender shadow below */
+      function puffCloud(x, y, sz, a, seed) {
+        const r = rng(seed),
+          puffs = [];
+        for (let i = 0; i < 6; i++) puffs.push([(i - 2.5) * sz * 0.55 + (r() - 0.5) * sz * 0.3, -Math.sin((i / 5) * Math.PI) * sz * 0.45, sz * (0.38 + r() * 0.22)]);
+        c.fillStyle = `rgba(196,200,230,${a * 0.55})`;
+        for (const [dx, dy, pr] of puffs) {
+          c.beginPath();
+          c.ellipse(x + dx, y + dy + pr * 0.25, pr * 1.15, pr * 0.8, 0, 0, 6.3);
+          c.fill();
+        }
+        c.fillStyle = `rgba(255,255,255,${a})`;
+        for (const [dx, dy, pr] of puffs) {
+          c.beginPath();
+          c.ellipse(x + dx, y + dy, pr * 1.1, pr * 0.75, 0, 0, 6.3);
+          c.fill();
+        }
+        c.fillStyle = `rgba(255,246,232,${a * 0.7})`;
+        for (const [dx, dy, pr] of puffs) {
+          c.beginPath();
+          c.ellipse(x + dx - pr * 0.2, y + dy - pr * 0.3, pr * 0.55, pr * 0.32, 0, 0, 6.3);
+          c.fill();
+        }
+      }
+      /* skyClouds(t): the living far background. Back to front: light rays, slow far clouds along the horizon,
+         rolling light on the sea of clouds, bobbing floating islands, mid clouds drifting past, distant birds. */
       function skyClouds(t) {
         c.save();
         skyClip(c);
         c.clip();
-        /* floating islands at different distances, bobbing slowly */
-        for (const [ix, iy, is, k] of [[660, 34, 0.45, 1], [760, 96, 0.8, 3], [880, 160, 1.1, 2], [520, 22, 0.35, 4], [860, 60, 0.55, 0], [120, 8, 0.3, 5]])
-          floatIsle(ix + Math.sin(t * 0.2 + k) * 3, iy + Math.sin(t * 0.5 + k * 1.7) * 2.5 * is, is, k);
+        /* soft light rays falling from the top-right, slowly breathing */
+        c.globalCompositeOperation = "lighter";
         for (let i = 0; i < 5; i++) {
-          const cx = ((t * (4 + i) + i * 90) % 460) + 520,
-            cy = 20 + i * 34 + Math.sin(t * 0.3 + i) * 4,
-            cr = 14 + (i % 3) * 6;
-          c.fillStyle = "rgba(255,255,255,.55)";
-          for (const [dx, dy, k] of [[0, 0, 1], [-cr, 3, 0.7], [cr, 4, 0.75], [cr * 0.4, -cr * 0.4, 0.65]]) {
-            c.beginPath();
-            c.ellipse(cx + dx, cy + dy, cr * k * 1.4, cr * k * 0.7, 0, 0, 6.3);
-            c.fill();
-          }
+          const a = 0.05 + 0.03 * Math.sin(t * 0.4 + i * 1.3),
+            x0 = 940 - i * 70;
+          c.fillStyle = `rgba(255,236,200,${a})`;
+          c.beginPath();
+          c.moveTo(x0, -30);
+          c.lineTo(x0 + 30, -30);
+          c.lineTo(x0 - 200, H + 30);
+          c.lineTo(x0 - 260, H + 30);
+          c.closePath();
+          c.fill();
         }
+        c.globalCompositeOperation = "source-over";
+        /* far clouds: big, faint, drifting very slowly along the horizon (they wrap around) */
+        for (let i = 0; i < 7; i++) {
+          const span = W + 240,
+            cx = ((i * 157 + t * (2 + (i % 3))) % span) - 120,
+            cy = horizonY(cx) - 6 + (i % 3) * 7;
+          puffCloud(cx, cy, 34 + (i % 3) * 10, 0.45, 300 + i);
+        }
+        /* rolling light drifting over the sea of clouds */
+        c.globalCompositeOperation = "lighter";
+        for (let i = 0; i < 4; i++) {
+          const bx = ((t * 6 + i * 240) % (W + 300)) - 150,
+            by = horizonY(bx) + 40 + i * 30,
+            gl = c.createRadialGradient(bx, by, 4, bx, by, 120);
+          gl.addColorStop(0, "rgba(255,240,225,.18)");
+          gl.addColorStop(1, "rgba(255,240,225,0)");
+          c.fillStyle = gl;
+          c.save();
+          c.translate(bx, by);
+          c.scale(1, 0.35);
+          c.translate(-bx, -by);
+          c.fillRect(bx - 120, by - 120, 240, 240);
+          c.restore();
+        }
+        c.globalCompositeOperation = "source-over";
+        /* floating islands at different distances, bobbing slowly */
+        for (const [ix, iy, is, k] of [[660, 34, 0.45, 1], [760, 96, 0.8, 3], [880, 160, 1.1, 2], [520, 22, 0.35, 4], [860, 60, 0.55, 0], [120, 8, 0.3, 5], [880, 470, 0.9, 6]])
+          floatIsle(ix + Math.sin(t * 0.2 + k) * 3, iy + Math.sin(t * 0.5 + k * 1.7) * 2.5 * is, is, k);
+        /* mid clouds: closer, crisper, drifting past a little faster */
+        for (let i = 0; i < 5; i++) {
+          const span = W + 200,
+            cx = ((i * 211 + t * (6 + i)) % span) - 100,
+            cy = 60 + i * 95 + Math.sin(t * 0.3 + i) * 4;
+          puffCloud(cx, cy, 16 + (i % 3) * 6, 0.8, 400 + i);
+        }
+        /* distant birds */
         c.strokeStyle = "rgba(60,70,90,.5)";
         c.lineWidth = 1;
         for (let i = 0; i < 3; i++) {
