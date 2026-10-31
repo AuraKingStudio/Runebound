@@ -3612,60 +3612,61 @@
           c.restore();
         }
       }
-      /* magic teleport fountain in the middle of the platform. FOUNT = basin footprint, also used to block walking through it. */
+      /* magic spring in the middle of the platform: the brook pours into a sunken stone pool, the pool is the portal.
+         FOUNT = pool footprint, also used to block walking through it. SPRING_IN = angle where the brook enters. */
       const FOUNT = { x: 450, y: 352, rx: 74, ry: 42 };
-      /* fountain(g): static parts. Carved sandstone basin with glowing rune notches, flower pots and lily pads, a tiered pedestal. */
+      const SPRING_IN = -2.54;
+      /* fountain(g): static parts. Ring of rough stones with a gap for the brook, the pool, lily pads. */
       function fountain(g) {
-        const { x, y, rx, ry } = FOUNT;
-        /* soft shadow */
-        g.fillStyle = "#00000044";
+        const { x, y, rx, ry } = FOUNT,
+          r = rng(5);
+        /* sunken shadow */
+        g.fillStyle = "rgba(60,40,20,.35)";
         g.beginPath();
-        g.ellipse(x, y + 14, rx + 8, ry + 8, 0, 0, 6.3);
+        g.ellipse(x, y + 4, rx + 10, ry + 8, 0, 0, 6.3);
         g.fill();
-        /* basin wall with carved panels */
-        const wall = g.createLinearGradient(0, y, 0, y + ry + 12);
-        wall.addColorStop(0, "#c9ab7f");
-        wall.addColorStop(1, "#9c7f58");
-        g.fillStyle = wall;
-        g.beginPath();
-        g.ellipse(x, y + 12, rx, ry, 0, 0, 6.3);
-        g.fill();
-        g.strokeStyle = "#8a6e4a";
-        g.lineWidth = 1.2;
-        for (let i = 1; i < 10; i++) {
-          const a = (i / 10) * Math.PI;
-          g.beginPath();
-          g.moveTo(x + Math.cos(a) * rx * 0.98, y + Math.sin(a) * ry + 2);
-          g.lineTo(x + Math.cos(a) * rx * 0.98, y + Math.sin(a) * ry + 12);
-          g.stroke();
-        }
-        /* rim */
-        g.fillStyle = "#f0dfbf";
+        /* pool water, same color as the brook, deeper in the middle */
+        const pool = g.createRadialGradient(x, y + 4, 4, x, y, rx);
+        pool.addColorStop(0, "#3d8f93");
+        pool.addColorStop(1, "#5aa7a6");
+        g.fillStyle = pool;
         g.beginPath();
         g.ellipse(x, y, rx, ry, 0, 0, 6.3);
         g.fill();
-        g.strokeStyle = "#b39570";
-        g.lineWidth = 2;
-        g.stroke();
-        /* rune notches carved in the rim (they glow in fountainWater) */
-        g.fillStyle = "#3aa89a";
-        for (let i = 0; i < 16; i++) {
-          const a = (i / 16) * 6.283;
+        /* rough rim stones, leaving a gap where the brook pours in */
+        for (let i = 0; i < 26; i++) {
+          const a = (i / 26) * 6.283,
+            gap = Math.abs(Math.atan2(Math.sin(a - SPRING_IN), Math.cos(a - SPRING_IN)));
+          if (gap < 0.32) continue;
+          const sx = x + Math.cos(a) * (rx + 2),
+            sy = y + Math.sin(a) * (ry + 2),
+            sr = 8 + r() * 4;
+          g.fillStyle = "rgba(0,0,0,.25)";
           g.beginPath();
-          g.arc(x + Math.cos(a) * (rx - 4.5), y + Math.sin(a) * (ry - 3.5), 1.8, 0, 6.3);
+          g.ellipse(sx + 1, sy + 3, sr, sr * 0.65, 0, 0, 6.3);
           g.fill();
+          g.fillStyle = r() < 0.5 ? "#a8957a" : "#b9a585";
+          g.beginPath();
+          g.ellipse(sx, sy, sr, sr * 0.65, a, 0, 6.3);
+          g.fill();
+          g.fillStyle = "rgba(255,248,230,.25)";
+          g.beginPath();
+          g.ellipse(sx - sr * 0.2, sy - sr * 0.25, sr * 0.5, sr * 0.3, 0, 0, 6.3);
+          g.fill();
+          /* moss and grass on some stones */
+          if (r() < 0.4) {
+            g.strokeStyle = "#5f9a43";
+            g.lineWidth = 1.2;
+            for (let k = 0; k < 3; k++) {
+              g.beginPath();
+              g.moveTo(sx + k * 2 - 2, sy - sr * 0.4);
+              g.lineTo(sx + k * 2 - 2 + (r() - 0.5) * 3, sy - sr * 0.4 - 4 - r() * 4);
+              g.stroke();
+            }
+          }
         }
-        /* deep pool */
-        const pool = g.createRadialGradient(x, y, 4, x, y, rx - 8);
-        pool.addColorStop(0, "#2be0d0");
-        pool.addColorStop(0.55, "#167b8c");
-        pool.addColorStop(1, "#0f3f5a");
-        g.fillStyle = pool;
-        g.beginPath();
-        g.ellipse(x, y, rx - 9, ry - 7, 0, 0, 6.3);
-        g.fill();
         /* lily pads with little pink flowers */
-        for (const [lx, ly, rot] of [[-44, 8, 0.4], [40, -12, 2.2], [26, 18, 4.1]]) {
+        for (const [lx, ly, rot] of [[34, 10, 0.4], [-20, 18, 2.2], [44, -14, 4.1]]) {
           g.fillStyle = "#4f8f3f";
           g.beginPath();
           g.ellipse(x + lx, y + ly, 9, 5, 0, rot, rot + 5.6);
@@ -3676,108 +3677,93 @@
           g.arc(x + lx + 2, y + ly - 1, 2.2, 0, 6.3);
           g.fill();
         }
-        /* tiered pedestal that holds the floating orb */
-        g.fillStyle = "#e6d2ab";
-        g.beginPath();
-        g.ellipse(x, y - 2, 18, 8, 0, 0, 6.3);
-        g.fill();
-        g.fillStyle = "#c9ab7f";
-        g.fillRect(x - 7, y - 26, 14, 24);
-        g.fillStyle = "#b39570";
-        g.fillRect(x - 7, y - 26, 4, 24);
-        g.fillStyle = "#f0dfbf";
-        g.beginPath();
-        g.ellipse(x, y - 27, 14, 6, 0, 0, 6.3);
-        g.fill();
-        g.strokeStyle = "#b39570";
-        g.lineWidth = 1.5;
-        g.stroke();
-        /* two flower pots on the rim, front corners */
-        for (const s of [-1, 1]) {
-          const px = x + s * (rx - 6),
-            py = y + 6;
-          g.fillStyle = "#b5653a";
-          g.beginPath();
-          g.moveTo(px - 7, py - 6);
-          g.lineTo(px + 7, py - 6);
-          g.lineTo(px + 5, py + 4);
-          g.lineTo(px - 5, py + 4);
-          g.fill();
-          for (let i = 0; i < 5; i++) {
-            g.fillStyle = ["#ffd84a", "#ff8fc8", "#fff3f8", "#b48cff", "#ff8fc8"][i];
-            g.beginPath();
-            g.arc(px - 6 + i * 3, py - 9 - (i % 2) * 3, 2.4, 0, 6.3);
-            g.fill();
-          }
-        }
       }
-      /* fountainWater(t): the magic. Swirling water, glowing runes, floating orb, soft light column, rising sparkles. */
+      /* fountainWater(t): the magic. Inflow cascade, swirling pool, glow, a hovering runestone and rising sparkles. */
       function fountainWater(t) {
-        const { x, y, rx, ry } = FOUNT;
+        const { x, y, rx, ry } = FOUNT,
+          ix = x + Math.cos(SPRING_IN) * rx,
+          iy = y + Math.sin(SPRING_IN) * ry;
         c.save();
         c.globalCompositeOperation = "lighter";
-        /* breathing glow in the pool */
+        /* breathing magic glow in the pool */
         const pg = c.createRadialGradient(x, y, 4, x, y, rx);
-        pg.addColorStop(0, `rgba(120,255,235,${0.35 + 0.12 * Math.sin(t * 1.8)})`);
-        pg.addColorStop(1, "rgba(90,200,255,0)");
+        pg.addColorStop(0, `rgba(120,255,235,${0.3 + 0.1 * Math.sin(t * 1.8)})`);
+        pg.addColorStop(1, "rgba(90,200,220,0)");
         c.fillStyle = pg;
         c.beginPath();
-        c.ellipse(x, y, rx - 9, ry - 7, 0, 0, 6.3);
+        c.ellipse(x, y, rx - 4, ry - 3, 0, 0, 6.3);
         c.fill();
-        /* swirl: spiral arcs turning slowly around the pedestal */
-        c.lineWidth = 1.8;
+        /* inflow: foam where the brook tumbles over the lip */
+        for (let i = 0; i < 8; i++) {
+          const p = (t * 1.8 + i / 8) % 1;
+          c.fillStyle = `rgba(240,255,255,${0.6 * (1 - p)})`;
+          c.beginPath();
+          c.arc(ix + (x - ix) * p * 0.35 + Math.sin(t * 4 + i) * 3, iy + (y - iy) * p * 0.35, 2 + p * 3, 0, 6.3);
+          c.fill();
+        }
+        /* swirl: the inflow spirals slowly around the pool */
+        c.lineWidth = 1.6;
         for (let i = 0; i < 4; i++) {
-          const a0 = t * 0.9 + (i / 4) * 6.283;
-          c.strokeStyle = `rgba(190,255,250,${0.32})`;
+          const a0 = t * 0.7 + (i / 4) * 6.283;
+          c.strokeStyle = "rgba(200,255,250,.28)";
           c.beginPath();
           for (let s = 0; s <= 1.0001; s += 0.08) {
             const a = a0 + s * 2.4,
-              rr = 20 + s * (rx - 34);
-            const px = x + Math.cos(a) * rr,
+              rr = 14 + s * (rx - 26),
+              px = x + Math.cos(a) * rr,
               py = y + Math.sin(a) * rr * (ry / rx);
             s ? c.lineTo(px, py) : c.moveTo(px, py);
           }
           c.stroke();
         }
-        /* rune notches glow one after another around the rim */
-        for (let i = 0; i < 16; i++) {
-          const a = (i / 16) * 6.283,
-            on = Math.max(0, Math.sin(t * 2 - i * 0.6));
-          c.fillStyle = `rgba(120,255,235,${0.25 + 0.6 * on})`;
-          c.beginPath();
-          c.arc(x + Math.cos(a) * (rx - 4.5), y + Math.sin(a) * (ry - 3.5), 2 + on, 0, 6.3);
-          c.fill();
-        }
-        /* soft light column rising from the orb */
-        const lc = c.createLinearGradient(0, y - 110, 0, y - 30);
-        lc.addColorStop(0, "rgba(140,255,240,0)");
-        lc.addColorStop(1, `rgba(140,255,240,${0.16 + 0.05 * Math.sin(t * 2.4)})`);
-        c.fillStyle = lc;
-        c.fillRect(x - 12, y - 110, 24, 80);
-        /* floating orb with halo, bobbing above the pedestal */
-        const oy = y - 44 + Math.sin(t * 1.6) * 4,
-          halo = c.createRadialGradient(x, oy, 2, x, oy, 34);
-        halo.addColorStop(0, "rgba(200,255,250,.9)");
-        halo.addColorStop(0.3, "rgba(120,240,255,.4)");
-        halo.addColorStop(1, "rgba(120,200,255,0)");
+        /* glow under the hovering runestone */
+        const sy0 = y - 26 + Math.sin(t * 1.4) * 4,
+          halo = c.createRadialGradient(x, sy0, 2, x, sy0, 40);
+        halo.addColorStop(0, "rgba(150,255,240,.55)");
+        halo.addColorStop(1, "rgba(120,220,255,0)");
         c.fillStyle = halo;
-        c.fillRect(x - 34, oy - 34, 68, 68);
-        c.globalCompositeOperation = "source-over";
-        const orb = c.createRadialGradient(x - 3, oy - 3, 1, x, oy, 9);
-        orb.addColorStop(0, "#ffffff");
-        orb.addColorStop(0.5, "#8ff7ea");
-        orb.addColorStop(1, "#3aa8c8");
-        c.fillStyle = orb;
+        c.fillRect(x - 40, sy0 - 40, 80, 80);
+        c.restore();
+        /* runestone: a flat slate stone floating above the water, slowly turning, rune glowing */
+        c.save();
+        c.translate(x, sy0);
+        c.rotate(Math.sin(t * 0.6) * 0.15);
+        c.fillStyle = "rgba(0,0,0,.18)";
         c.beginPath();
-        c.arc(x, oy, 8, 0, 6.3);
+        c.ellipse(0, y - sy0 + 4, 14, 5, 0, 0, 6.3);
         c.fill();
+        c.fillStyle = "#4b5a5e";
+        c.beginPath();
+        c.moveTo(-9, -15);
+        c.lineTo(8, -17);
+        c.lineTo(11, 12);
+        c.lineTo(-10, 14);
+        c.closePath();
+        c.fill();
+        c.fillStyle = "#62767a";
+        c.beginPath();
+        c.moveTo(-9, -15);
+        c.lineTo(8, -17);
+        c.lineTo(6, -11);
+        c.lineTo(-7, -9);
+        c.closePath();
+        c.fill();
+        c.shadowColor = "#5af0dc";
+        c.shadowBlur = 8 + 4 * Math.sin(t * 2.4);
+        c.fillStyle = "#8ff7ea";
+        c.font = "bold 16px Georgia";
+        c.textAlign = "center";
+        c.textBaseline = "middle";
+        c.fillText("ᛟ", 0, 1);
+        c.restore();
+        /* sparkles rising from the water */
+        c.save();
         c.globalCompositeOperation = "lighter";
-        /* sparkles drifting up from the water */
         for (let i = 0; i < 14; i++) {
           const p = (t * 0.35 + i / 14) % 1,
             a = i * 2.39,
             sx = x + Math.cos(a) * (rx - 20) * ((i % 5) / 5 + 0.2),
-            sy = y + Math.sin(a) * (ry - 12) * 0.6 - p * 70;
+            sy = y + Math.sin(a) * (ry - 12) * 0.6 - p * 60;
           c.fillStyle = `rgba(${i % 3 ? "170,255,240" : "255,220,160"},${0.8 * (1 - p)})`;
           c.beginPath();
           c.arc(sx + Math.sin(t * 2 + i) * 3, sy, 1.5, 0, 6.3);
