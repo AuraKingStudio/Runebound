@@ -3770,35 +3770,23 @@
         sh.addColorStop(1, "#5aa7a6");
         c.fillStyle = sh;
         c.fillRect(e.x - hw, top, hw * 2, bot - top);
-        c.globalCompositeOperation = "lighter";
-        for (let i = 0; i < 6; i++) {
-          const sx = e.x - hw + (i + 0.5) * ((hw * 2) / 6),
-            head = ((t * 60 + i * 13) % 30) + top - 8,
-            gr = c.createLinearGradient(0, head, 0, head + 8);
-          gr.addColorStop(0, "rgba(255,255,255,0)");
-          gr.addColorStop(1, "rgba(235,255,255,.6)");
-          c.fillStyle = gr;
-          c.fillRect(sx - 1, head, 2, 8);
-        }
         c.restore();
-        /* foam at the foot of the wall, then current lines running away off screen */
+        /* the river's own current lines simply keep going: down the wall and along the ground stream, off screen */
         c.save();
         c.globalCompositeOperation = "lighter";
-        for (let i = 0; i < 6; i++) {
-          const p = (t * 1.2 + i / 6) % 1,
-            fx = e.x + (i / 5 - 0.5) * hw * 1.6;
-          c.fillStyle = `rgba(240,255,255,${0.55 * (1 - p)})`;
-          c.beginPath();
-          c.arc(fx, bot + 2 - p * 5, 2 + p * 3, 0, 6.3);
-          c.fill();
-        }
         c.lineCap = "round";
-        c.setLineDash([8, 18]);
-        c.lineDashOffset = -t * 30;
+        c.setLineDash([10, 16]);
+        c.lineDashOffset = -t * 50;
         c.strokeStyle = "rgba(210,250,255,.4)";
-        c.lineWidth = 2.5;
-        outflowPath(c);
-        c.stroke();
+        c.lineWidth = 1.6;
+        for (const lane of [-0.45, 0, 0.45]) {
+          const ox = lane * hw;
+          c.beginPath();
+          c.moveTo(e.x + ox, top);
+          c.lineTo(e.x + ox, e.y + 8);
+          c.quadraticCurveTo(e.x + ox, e.y + 74 + lane * 10, W + 30, e.y + 104 + lane * 16);
+          c.stroke();
+        }
         c.restore();
       }
       /* streamFlow(t): current lines and glints drifting downstream toward the fountain */
