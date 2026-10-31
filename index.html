@@ -983,7 +983,7 @@
         heal: ["Bolt", "Heal", "Circle"],
       };
       /* hub plaza: ellipse center + radii. Sized for ~10 players, 3 NPC daises and the portal arch at the top. */
-      const HUB = { x: 450, y: 350, rx: 395, ry: 232 };
+      const HUB = { x: 450, y: 350, rx: 380, ry: 244 };
       const PORTAL = { x: 450, y: 352 } /* hub center: where the tutorial's final burst plays (raids start from the RAID button) */,
         /* NPCs. g = emblem path (SVG path syntax, drawn on a 40x40 box centered at 0,0), gs = stroke instead of fill */
         /* Elder: wizard hat (wide brim + bent cone) */
@@ -4516,7 +4516,7 @@
       let HUBC = null;
       /* rng(seed): seeded random so cracks and moss look the same every load. Out: () -> 0..1 */
       const rng = (s) => () => (s = (s * 16807) % 2147483647) / 2147483647;
-      const PLAT = { x: 450, y: 350, rx: 405, ry: 238 }; /* platform top surface */
+      const PLAT = { x: 450, y: 350, rx: 390, ry: 250 }; /* platform top surface */
       const RUNES_HUB = "ᚠᚢᚦᚨᚱᚲᚷᚹᚺᚾᛁᛃᛇᛈᛉᛊᛏᛒᛖᛗᛚᛜᛞᛟ";
       function paintHub() {
         const k = 2,
@@ -4530,7 +4530,7 @@
         forest(g, r);
         skyEdge(g);
         outflowGround(g);
-        forestTrees(g, r); /* trees after the pond and stream, so their canopies overlap the water */
+        forestTrees(g, r, false); /* far trees: behind the platform */
         /* platform side wall: stacked stone blocks, darker at the bottom */
         g.fillStyle = "#6b5a44";
         g.beginPath();
@@ -4673,6 +4673,7 @@
           g.fillStyle = "#00000055";
           g.fillRect(392 - i * 10, y + ry + 11 + i * 9, 116 + i * 20, 2);
         }
+        forestTrees(g, rng(9), true); /* near trees: in front, allowed to overlap the platform edge */
         HUBC = cv2;
       }
       /* forest(g, r): forest floor, grass, bushes with flowers and a ring of trees around the platform */
@@ -4758,11 +4759,11 @@
         }
       }
       /* forestTrees(g, r): trees around the platform, painted after the pond so they sit on top of it */
-      function forestTrees(g, r) {
+      function forestTrees(g, r, near) {
         const { x, y, rx, ry } = PLAT,
           out = (px, py, m) => ((px - x) / (rx * m)) ** 2 + ((py - y) / (ry * m)) ** 2 > 1;
         /* trees: round canopies with a shadow and a highlight, only outside the platform */
-        const trees = [[30, 400, 34], [88, 498, 50], [160, 590, 44], [752, 598, 44], [872, 372, 30]];
+        const trees = [[30, 400, 34], [88, 498, 50], [160, 590, 44], [752, 598, 44], [872, 372, 30]].filter(([, ty]) => ty > PLAT.y + 60 == near);
         trees.sort((p, q) => p[1] - q[1]);
         for (const [tx, ty, tr] of trees) {
           const bloom = r() < 0.18,
@@ -4819,7 +4820,7 @@
       /* the hub is a floating island. Its round edge curves across the top-right; beyond it we look down
          onto a fantasy skyscape: a sea of clouds, floating islands, a crystal citadel and mountains on the horizon.
          EDGE = the jagged rim of the island, following a big ellipse around the hub. */
-      const ISLE = { x: 450, y: 372, rx: 448, ry: 282 };
+      const ISLE = { x: 450, y: 372, rx: 448, ry: 292 };
       /* edgeY(x) / edgeLowY(x): y of the island's rim on its upper / lower curve */
       function edgeY(x) {
         const k = (x - ISLE.x) / ISLE.rx;
@@ -5701,7 +5702,7 @@
             [WF.px + 6, WF.py + WF.pry + 4, 130, 304, 250, 292],
             [250, 292, 350, 284, 450, 352],
             [450, 352, 540, 412, 640, 405],
-            [640, 405, 826, 372, 826, 444], /* turns to run straight down where it leaves the platform */
+            [640, 405, 810, 372, 810, 444], /* turns to run straight down where it leaves the platform */
           ],
           pts = [];
         for (const [x0, y0, cx, cy, x1, y1] of segs)
