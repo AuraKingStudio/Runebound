@@ -4014,6 +4014,26 @@
           c.ellipse(q.x, q.y, R, Ry, 0, 0, 6.3);
           c.fill();
         }
+        /* standing on it: motes drift up from the runes all around the crossing, and a soft ring breathes under the player */
+        if (on && !S.tp) {
+          for (let i = 0; i < 26; i++) {
+            const life = (S.tm * 0.45 + i / 26) % 1,
+              a = i * 2.39 + Math.floor(S.tm * 0.45 + i / 26) * 1.3,
+              d = 0.25 + ((i * 0.37) % 0.7),
+              mx = q.x + Math.cos(a) * R * d + Math.sin(S.tm * 2 + i) * 3,
+              my = q.y + Math.sin(a) * Ry * d - life * 70;
+            c.fillStyle = `rgba(${i % 4 ? "170,255,240" : "255,225,160"},${0.85 * Math.sin(life * Math.PI)})`;
+            c.beginPath();
+            c.arc(mx, my, 1.4 + (i % 3) * 0.6, 0, 6.3);
+            c.fill();
+          }
+          const br = 0.5 + 0.5 * Math.sin(S.tm * 3);
+          c.strokeStyle = `rgba(160,255,240,${0.35 + 0.3 * br})`;
+          c.lineWidth = 2;
+          c.beginPath();
+          c.ellipse(P.x, P.y + 6, 18 + br * 6, 8 + br * 3, 0, 0, 6.3);
+          c.stroke();
+        }
         if (S.tp) {
           /* rings rushing in toward the player */
           for (let i = 0; i < 4; i++) {
