@@ -3118,7 +3118,6 @@
         g.scale(k, k);
         forest(g, r);
         cliff(g);
-        inn(g);
         /* platform side wall (drum) */
         g.fillStyle = "#6e6152";
         g.beginPath();
@@ -3240,159 +3239,6 @@
             g.fill();
           }
         }
-      }
-      /* cozy inn in the top-right corner. Its door faces the stone circle, with a stepping-stone path to it. */
-      const INN = { x: 742, y: 58, w: 136, h: 72, door: 802 };
-      function inn(g) {
-        const { x, y, w, h, door } = INN;
-        /* stepping-stone path from the door to the platform edge */
-        for (let i = 0; i < 6; i++) {
-          const p = i / 5,
-            sx = door + 8 + (738 - door - 8) * p,
-            sy = y + h + 10 + (186 - y - h - 10) * p;
-          g.fillStyle = "#00000033";
-          g.beginPath();
-          g.ellipse(sx + 1, sy + 2, 9, 5, 0, 0, 6.3);
-          g.fill();
-          g.fillStyle = "#cdb894";
-          g.beginPath();
-          g.ellipse(sx, sy, 9, 5, 0, 0, 6.3);
-          g.fill();
-        }
-        /* ground shadow + stone foundation */
-        g.fillStyle = "#00000055";
-        g.fillRect(x + 6, y + h - 2, w, 12);
-        g.fillStyle = "#8d877b";
-        g.fillRect(x - 2, y + h - 8, w + 4, 12);
-        /* timber-framed cream walls */
-        g.fillStyle = "#efe0c0";
-        g.fillRect(x, y, w, h - 6);
-        g.fillStyle = "#6b4426";
-        for (const bx of [0, 44, 88, w - 6]) g.fillRect(x + bx, y, 6, h - 6);
-        g.fillRect(x, y, w, 5);
-        g.fillRect(x, y + h - 12, w, 5);
-        /* windows (the warm glow animates in innLife) */
-        for (const wx of [x + 14, x + 106]) {
-          g.fillStyle = "#4a2e18";
-          g.fillRect(wx - 2, y + 18, 22, 22);
-          g.fillStyle = "#ffcf6a";
-          g.fillRect(wx, y + 20, 18, 18);
-          g.fillStyle = "#4a2e18";
-          g.fillRect(wx + 8, y + 20, 2, 18);
-          g.fillRect(wx, y + 28, 18, 2);
-          g.fillStyle = "#ff8fc8";
-          for (let i = 0; i < 4; i++) {
-            g.beginPath();
-            g.arc(wx + 2 + i * 5, y + 42, 2.2, 0, 6.3);
-            g.fill();
-          }
-        }
-        /* round wooden door, facing the circle */
-        g.fillStyle = "#4a2e18";
-        g.beginPath();
-        g.moveTo(door - 13, y + h - 6);
-        g.lineTo(door - 13, y + 30);
-        g.arc(door, y + 30, 13, Math.PI, 0);
-        g.lineTo(door + 13, y + h - 6);
-        g.fill();
-        g.fillStyle = "#8a5a32";
-        g.beginPath();
-        g.moveTo(door - 10, y + h - 6);
-        g.lineTo(door - 10, y + 31);
-        g.arc(door, y + 31, 10, Math.PI, 0);
-        g.lineTo(door + 10, y + h - 6);
-        g.fill();
-        g.fillStyle = "#ffd84a";
-        g.beginPath();
-        g.arc(door + 6, y + 50, 1.8, 0, 6.3);
-        g.fill();
-        /* roof with overhang and shingle rows */
-        g.fillStyle = "#9a3f2e";
-        g.beginPath();
-        g.moveTo(x - 12, y + 4);
-        g.lineTo(x + 18, y - 44);
-        g.lineTo(x + w - 18, y - 44);
-        g.lineTo(x + w + 12, y + 4);
-        g.closePath();
-        g.fill();
-        g.strokeStyle = "#7a2f22";
-        g.lineWidth = 1.5;
-        for (let i = 1; i < 6; i++) {
-          const ry2 = y + 4 - i * 8,
-            ins = i * 5;
-          g.beginPath();
-          g.moveTo(x - 12 + ins, ry2);
-          g.lineTo(x + w + 12 - ins, ry2);
-          g.stroke();
-        }
-        g.fillStyle = "#b8523c";
-        g.fillRect(x + 18, y - 46, w - 36, 5);
-        /* chimney */
-        g.fillStyle = "#7d776c";
-        g.fillRect(x + w - 40, y - 62, 16, 26);
-        g.fillStyle = "#5c574e";
-        g.fillRect(x + w - 42, y - 64, 20, 5);
-        /* hanging sign with a mug, beside the door */
-        g.strokeStyle = "#4a2e18";
-        g.lineWidth = 2;
-        g.beginPath();
-        g.moveTo(door - 20, y + 22);
-        g.lineTo(door - 40, y + 22);
-        g.stroke();
-        g.fillStyle = "#6b4426";
-        g.fillRect(door - 44, y + 24, 22, 15);
-        g.fillStyle = "#ffd84a";
-        g.fillRect(door - 38, y + 27, 8, 9);
-        g.fillRect(door - 30, y + 29, 3, 5);
-        /* barrel and flower box by the door */
-        g.fillStyle = "#7a5030";
-        g.beginPath();
-        g.ellipse(door + 24, y + h - 6, 8, 9, 0, 0, 6.3);
-        g.fill();
-        g.strokeStyle = "#3a2414";
-        g.beginPath();
-        g.moveTo(door + 16, y + h - 9);
-        g.lineTo(door + 32, y + h - 9);
-        g.stroke();
-      }
-      /* innLife(t): warm flicker in the windows, a door lantern and chimney smoke */
-      function innLife(t) {
-        const { x, y, w, door } = INN;
-        c.save();
-        c.globalCompositeOperation = "lighter";
-        const fl = 0.75 + 0.25 * Math.sin(t * 7) * Math.sin(t * 3.1);
-        for (const wx of [x + 23, x + 115]) {
-          const wg = c.createRadialGradient(wx, y + 29, 2, wx, y + 29, 34);
-          wg.addColorStop(0, `rgba(255,200,110,${0.45 * fl})`);
-          wg.addColorStop(1, "rgba(255,180,90,0)");
-          c.fillStyle = wg;
-          c.fillRect(wx - 34, y - 5, 68, 68);
-        }
-        /* lantern beside the door */
-        const lx = door + 18,
-          ly = y + 26,
-          lg = c.createRadialGradient(lx, ly, 1, lx, ly, 26);
-        lg.addColorStop(0, `rgba(255,214,140,${0.6 * fl})`);
-        lg.addColorStop(1, "rgba(255,180,90,0)");
-        c.fillStyle = lg;
-        c.fillRect(lx - 26, ly - 26, 52, 52);
-        c.fillStyle = "rgba(255,236,190,.95)";
-        c.beginPath();
-        c.arc(lx, ly, 2.6, 0, 6.3);
-        c.fill();
-        c.restore();
-        /* chimney smoke puffs rising and fading */
-        c.save();
-        for (let i = 0; i < 5; i++) {
-          const p = (t * 0.25 + i / 5) % 1,
-            sx = x + w - 32 + Math.sin(t + i * 2) * 6 + p * 22,
-            sy = y - 66 - p * 70;
-          c.fillStyle = `rgba(225,225,220,${0.45 * (1 - p)})`;
-          c.beginPath();
-          c.arc(sx, sy, 6 + p * 12, 0, 6.3);
-          c.fill();
-        }
-        c.restore();
       }
       /* waterfall in the top-left corner: rocky cliff, falling water and a pond. WF = fall position. */
       const WF = { x: 86, top: 0, bot: 92, w: 46, px: 92, py: 118, prx: 78, pry: 30 };
@@ -3707,7 +3553,6 @@
         fountainWater(t);
         streamFlow(t);
         waterfall(t);
-        innLife(t);
         /* mist drifting around the platform rim */
         for (let i = 0; i < 18; i++) {
           const a = (i / 18) * 6.283 + t * 0.03 * (i % 2 ? 1 : -1),
