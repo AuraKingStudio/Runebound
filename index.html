@@ -3204,7 +3204,7 @@
           g.stroke();
         }
         /* grass and tiny flowers creeping between the edge stones */
-        for (let i = 0; i < 90; i++) {
+        for (let i = 0; i < 240; i++) {
           const ga = r() * 6.283,
             d = 0.9 + r() * 0.1,
             gx = x + Math.cos(ga) * rx * d,
@@ -3318,7 +3318,7 @@
       function pondWater(g) {
         const { px, py, prx, pry } = WF,
           pond = g.createRadialGradient(px, py - 6, 4, px, py, prx);
-        pond.addColorStop(0, "#6fb3b0");
+        pond.addColorStop(0, "#5aa7a6");
         pond.addColorStop(1, "#5aa7a6");
         g.fillStyle = pond;
         g.beginPath();
@@ -3466,11 +3466,11 @@
         g.fill();
         const wg = g.createLinearGradient(80, 150, 450, 352);
         wg.addColorStop(0, "#5aa7a6");
-        wg.addColorStop(1, "#3d8a92");
+        wg.addColorStop(1, "#5aa7a6");
         g.fillStyle = wg;
         bank(g, pts, -1, 3, r);
         g.fill();
-        g.fillStyle = "rgba(30,96,110,.55)";
+        g.fillStyle = "rgba(40,110,112,.18)";
         bank(g, pts.map((p) => ({ ...p, w: p.w * 0.38 })), 0, 2, r);
         g.fill();
         /* rounded river stones along both banks */
@@ -3494,6 +3494,30 @@
             g.beginPath();
             g.ellipse(sx - sr * 0.25, sy - sr * 0.25, sr * 0.45, sr * 0.3, 0, 0, 6.3);
             g.fill();
+          }
+        }
+        /* grass tufts and little flowers along both banks */
+        for (let i = 0; i < pts.length - 4; i++) {
+          for (const side of [-1, 1]) {
+            if (r() < 0.35) continue;
+            const p = pts[i],
+              d = p.w + 6 + r() * 8,
+              gx = p.x + p.nx * d * side,
+              gy = p.y + p.ny * d * side;
+            g.strokeStyle = r() < 0.5 ? "#6aa84a" : "#4f8a3a";
+            g.lineWidth = 1.2;
+            for (let k = 0; k < 4; k++) {
+              g.beginPath();
+              g.moveTo(gx + k * 2 - 3, gy);
+              g.lineTo(gx + k * 2 - 3 + (r() - 0.5) * 3, gy - 4 - r() * 5);
+              g.stroke();
+            }
+            if (r() < 0.25) {
+              g.fillStyle = ["#ff9fcf", "#ffe27a", "#fff3f8", "#c4a8ff"][(r() * 4) | 0];
+              g.beginPath();
+              g.arc(gx, gy - 7, 1.8, 0, 6.3);
+              g.fill();
+            }
           }
         }
         /* a few stones poking out of the water, and reeds on the bends */
