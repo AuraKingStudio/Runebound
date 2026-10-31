@@ -82,7 +82,7 @@ Small raid 3, large raid 6, hub and epic raid **12** (the most the game will eve
 - Epic raid (12) content; a phone as master in a raid.
 
 **Concerns**
-- `npm run bench` once failed 1 check out of 4 runs (not reproduced); watch for flakiness.
+- Bench CPU is wall-clock time: a run over 80% of the phone budget is rerun and the faster run is kept (a busy PC once failed 1 check). Passes with 3 benches running at once. If a non-CPU check ever fails at random, that's a real bug.
 - Bots don't stand in Circles on purpose, so the +25% only helps humans for now.
 - A raid member's stats aren't audited during the fight (the leader trusts its own sim; members only send moves and casts).
 
