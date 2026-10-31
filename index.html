@@ -6102,8 +6102,8 @@
          (glow animated in waterfall). Outside the walkable area: decor only. */
       const STATUE = { x: 74, y: 326, k: 2.5 };
       /* statueDraw(g): the goddess of the wellspring, a tall classical sandstone figure beside the cistern.
-         Contrapposto, weight on one hip; one arm lifts the orb high (its glow is animated in waterfall), the other reaches
-         out over the basin with a silk veil trailing from her hand across the water. Hair gathered in a bun with loose
+         Contrapposto, weight on one hip; her head turned and lowered, one arm hanging with a spray of blossoms (a soft glow
+         animated in waterfall), the other resting at her waist. Hair gathered in a bun with loose
          locks, a one-shoulder gown clinging to an hourglass figure in deep folds, one leg stepping forward through the drape.
          Lit from the left. Local units: ground at 0, plinth top at by. */
       function statueDraw(g) {
@@ -6168,10 +6168,6 @@
         const by = -23;
         /* she turns toward the cistern: the figure (not the plinth) is drawn three-quarter on, leaning into the reach */
         g.transform(0.88, 0, -0.14, 1, 0, 0);
-        /* the veil, behind her: from the outstretched hand, falling and trailing out over the basin */
-        P([33, by - 63, 40, by - 56, 38, by - 46, 46, by - 38, 54, by - 31, 63, by - 33, 70, by - 28, 64, by - 27, 56, by - 25, 47, by - 31, 37, by - 40, 33, by - 52, 31, by - 61], D);
-        P([33, by - 63, 39, by - 57, 37, by - 47, 44, by - 40, 51, by - 35, 58, by - 35, 64, by - 32, 54, by - 31, 45, by - 36, 36, by - 44, 32, by - 54, 33, by - 63], L);
-        line([35, by - 58, 38, by - 48, 44, by - 41, 52, by - 35, 60, by - 33], "rgba(255,248,225,.6)", 0.6);
         /* back leg (weight-bearing), under the gown */
         P([1, by - 36, 4, by - 24, 5, by - 10, 4, by - 1, 7, by, 9, by - 1, 9, by - 12, 8, by - 26, 7, by - 38], D);
         /* gown: clinging over the hips, deep folds falling to the hem, open at the front where the leg steps forward */
@@ -6224,55 +6220,68 @@
         line([-6.5, by - 64.6, -3.5, by - 64.8, -1.5, by - 64], "rgba(120,95,60,.4)", 0.45);
         /* neck */
         P([-1.6, by - 65, -1.4, by - 68, -1, by - 70, 1.4, by - 70, 1.6, by - 67, 1.6, by - 65], L);
-        /* raised arm: shoulder, elbow, forearm and hand lifting the orb */
-        P([-8.5, by - 66, -12, by - 70, -13.5, by - 76, -12.5, by - 82, -11, by - 84, -10, by - 82, -10.6, by - 76, -9.5, by - 71, -6.5, by - 66.5], L);
-        P([-12.5, by - 82, -12, by - 87, -10.5, by - 92, -8.5, by - 95, -7, by - 94, -8.6, by - 91, -10, by - 86, -10.6, by - 83], L);
-        line([-12.6, by - 74, -11.6, by - 80], "rgba(120,95,60,.35)", 0.5);
-        P([-9.2, by - 94, -10, by - 96.5, -8.5, by - 98, -6.4, by - 97.4, -6, by - 95.5, -7.4, by - 94.4], M); /* hand cupping the orb */
-        /* outstretched arm reaching over the basin, hand open */
-        P([6.5, by - 66, 11, by - 67.5, 16, by - 67, 21, by - 66.5, 26, by - 65.5, 30, by - 64.5, 33, by - 64, 33, by - 62, 29, by - 62.2, 24, by - 63, 18, by - 63.6, 12, by - 63.8, 7, by - 63], L);
-        line([7, by - 63.4, 15, by - 63.8, 24, by - 63.2], "rgba(120,95,60,.35)", 0.5);
-        P([32.5, by - 64.5, 35, by - 65.5, 37.5, by - 65, 38.5, by - 63.6, 36.5, by - 62.6, 34, by - 62.4, 32.5, by - 62.4], M); /* hand, palm down */
-        line([35.5, by - 64, 37.6, by - 63.4], "rgba(120,95,60,.4)", 0.4);
-        /* head: turned toward her outstretched hand; brow, nose, lips in profile shading */
-        P([-3.2, by - 72, -3.6, by - 76.5, -1.5, by - 80.5, 1.8, by - 80.3, 4, by - 78.5, 4.2, by - 75, 3.8, by - 72.6, 2.5, by - 70.5, 0, by - 70, -2, by - 70.6, -3.2, by - 72], L);
-        P([1.5, by - 80.3, 4, by - 78.5, 4.2, by - 75, 3.8, by - 72.6, 2.5, by - 70.5, 2.2, by - 72.6, 2.8, by - 75.2, 2.8, by - 78, 1.5, by - 80.3], M);
-        g.fillStyle = HL; /* nose ridge and cheek light */
+        /* near arm hanging down along the gown, holding a spray of blossoms at the hip */
+        P([-8.5, by - 66, -11, by - 62, -12, by - 55, -12.5, by - 48, -13, by - 42, -12, by - 38, -10.5, by - 40, -10.5, by - 47, -10, by - 54, -9.4, by - 60, -6.5, by - 65], L);
+        line([-11.8, by - 60, -11.6, by - 52], "rgba(120,95,60,.35)", 0.5);
+        P([-13, by - 38.5, -14, by - 36, -12.6, by - 34, -10.6, by - 35, -10.4, by - 37.5], M); /* hand */
+        /* far arm bent, hand resting at her waist */
+        P([7, by - 65, 9.5, by - 61, 9.8, by - 56, 8.6, by - 51, 6, by - 49.5, 5, by - 51, 7, by - 53, 7.6, by - 57, 6.4, by - 61, 5, by - 64], M);
+        P([5, by - 51, 3.6, by - 50, 3, by - 48.6, 4.6, by - 48.2, 6, by - 49.5], D); /* hand */
+        /* the spray of blossoms: twigs and soft pink and white flowers spilling down from her hand */
+        g.strokeStyle = "#7a5a3a";
+        g.lineWidth = 0.6;
+        for (const [ex, ey] of [[-20, -30], [-17, -24], [-14, -27], [-22, -36], [-18, -40]]) {
+          g.beginPath();
+          g.moveTo(-12.5, by - 36);
+          g.quadraticCurveTo(-14, by - 32, -12.5 + (ex + 12.5) * 0.9, by + ey * 0.9 + 6);
+          g.stroke();
+        }
+        const blossom = (bx, by2, sz, col) => {
+          g.fillStyle = col;
+          for (let k = 0; k < 5; k++) {
+            const a = (k / 5) * 6.283;
+            g.beginPath();
+            g.arc(bx + Math.cos(a) * sz, by2 + Math.sin(a) * sz * 0.8, sz * 0.75, 0, 6.3);
+            g.fill();
+          }
+          g.fillStyle = "#ffe9a8";
+          g.beginPath();
+          g.arc(bx, by2, sz * 0.4, 0, 6.3);
+          g.fill();
+        };
+        for (const [bx, b2, sz, col] of [[-19, -27, 1.6, "#ffd0e2"], [-16, -22, 1.3, "#fff4f8"], [-21, -33, 1.4, "#f7b6cf"], [-14.5, -26, 1.1, "#fff4f8"], [-18, -37, 1.2, "#ffd0e2"], [-22.5, -24, 1.1, "#f7b6cf"], [-15, -31, 1, "#ffd0e2"]])
+          blossom(bx, by + b2 + 6, sz, col);
+        /* head: turned to her right and slightly lowered, a calm profile */
+        P([-3, by - 72, -3.4, by - 76.5, -1.2, by - 80.5, 2, by - 80, 4.2, by - 78, 4.6, by - 74.6, 4, by - 72, 2.6, by - 70.2, 0.2, by - 70, -1.8, by - 70.6, -3, by - 72], L);
+        P([1.8, by - 80, 4.2, by - 78, 4.6, by - 74.6, 4, by - 72, 2.6, by - 70.2, 2.4, by - 72.4, 3.2, by - 75, 3, by - 78, 1.8, by - 80], M);
+        g.fillStyle = HL;
         g.beginPath();
-        g.ellipse(2.9, by - 75.4, 0.5, 1.3, 0.2, 0, 6.3);
-        g.ellipse(-1.2, by - 74.5, 1.3, 1.6, 0, 0, 6.3);
+        g.ellipse(3.3, by - 75, 0.5, 1.3, 0.25, 0, 6.3);
+        g.ellipse(-1, by - 74.4, 1.3, 1.6, 0, 0, 6.3);
         g.fill();
-        line([0.4, by - 76.4, 1.6, by - 76.6, 2.3, by - 76.2], "rgba(90,70,45,.7)", 0.45); /* lowered eyelid */
-        line([1.1, by - 72.6, 2, by - 72.9, 2.7, by - 72.5], "rgba(130,90,70,.6)", 0.45); /* lips */
-        /* hair: gathered high in a bun with a ribbon, a soft wave over the brow, long locks down the back and shoulder */
-        P([-3.6, by - 76.5, -4.2, by - 80, -1.5, by - 82.5, 2.5, by - 82, 4.6, by - 79.4, 4.2, by - 77.6, 2.5, by - 80, -0.5, by - 80.6, -2.5, by - 78.6], D);
+        line([0.8, by - 75.8, 1.9, by - 75.5, 2.6, by - 75.1], "rgba(90,70,45,.7)", 0.45); /* lowered eyelid */
+        line([1.5, by - 72.2, 2.3, by - 72.3, 3, by - 72], "rgba(130,90,70,.6)", 0.45); /* lips */
+        /* hair: a mass of curls piled up and back, a few falling at the nape, little white flowers tucked in */
         g.fillStyle = D;
-        g.beginPath();
-        g.ellipse(-2.6, by - 84, 3.1, 2.6, -0.3, 0, 6.3);
-        g.fill();
+        for (const [hx, hy, hr] of [[-3, -79, 2.4], [-1, -81.5, 2.5], [1.6, -81.8, 2.2], [3.6, -80, 1.8], [-4.4, -76.5, 2], [-4.6, -73, 1.8], [-3.6, -70, 1.6], [-0.6, -84, 2.2], [-3.2, -83, 2]]) {
+          g.beginPath();
+          g.arc(hx, by + hy, hr, 0, 6.3);
+          g.fill();
+        }
         g.fillStyle = M;
-        g.beginPath();
-        g.ellipse(-3.3, by - 84.8, 1.8, 1.4, -0.3, 0, 6.3);
-        g.fill();
-        line([-5.2, by - 82.6, -0.4, by - 85.6], "rgba(110,240,220,.8)", 0.6); /* ribbon */
-        P([-3.6, by - 77, -6, by - 73, -6.5, by - 67, -5.6, by - 60, -4.6, by - 62, -4.6, by - 67, -3.8, by - 72, -3.2, by - 75], D);
-        line([-4.8, by - 75, -5.8, by - 69, -5, by - 62], "rgba(255,240,210,.45)", 0.5);
-        line([3.4, by - 74.5, 4.6, by - 70, 4, by - 67], D, 1.1); /* a loose lock */
-        /* diadem: a thin crescent band with a teal stone */
-        line([-2.8, by - 80.4, 0.5, by - 81.8, 3.6, by - 80.2], "#f4e2ad", 0.7);
-        g.fillStyle = "rgba(110,240,220,.95)";
-        g.beginPath();
-        g.arc(0.5, by - 81.6, 0.6, 0, 6.3);
-        g.fill();
-        /* the orb, held high */
-        g.fillStyle = "#3fd6c6";
-        g.beginPath();
-        g.arc(-7.8, by - 100.5, 3.2, 0, 6.3);
-        g.fill();
-        g.fillStyle = "#d8fff8";
-        g.beginPath();
-        g.arc(-8.8, by - 101.5, 1.1, 0, 6.3);
-        g.fill();
+        for (const [hx, hy, hr] of [[-2.8, -80, 1.2], [-0.4, -82.4, 1.3], [1.8, -82.4, 1.1], [-4, -77, 1], [-1, -84.6, 1.1]]) {
+          g.beginPath();
+          g.arc(hx - 0.4, by + hy - 0.4, hr, 0, 6.3);
+          g.fill();
+        }
+        g.strokeStyle = "rgba(95,75,50,.5)";
+        g.lineWidth = 0.4;
+        for (const [hx, hy] of [[-3, -79], [-1, -81.5], [1.6, -81.8], [-4.4, -76.5], [-0.6, -84]]) {
+          g.beginPath();
+          g.arc(hx, by + hy, 1.3, 0.5, 3.6);
+          g.stroke();
+        }
+        for (const [fx, fy] of [[2.6, -83.5], [-2, -86], [4.4, -81.5]]) blossom(fx, by + fy, 0.8, "#fffaf2");
         /* weathering: moss on the plinth, ivy curling up the back of the gown */
         g.fillStyle = "#5c9e45";
         g.beginPath();
@@ -6603,8 +6612,8 @@
         c.globalCompositeOperation = "source-over";
         /* the statue's staff crystal glows in time with the cistern */
         {
-          const sx = STATUE.x + (0.88 * -7.8 + 0.14 * 123.5) * STATUE.k, /* the orb, after her turn */
-            sy = STATUE.y - 123.5 * STATUE.k,
+          const sx = STATUE.x + (0.88 * -18 + 0.14 * 50) * STATUE.k, /* the blossoms, after her turn */
+            sy = STATUE.y - 50 * STATUE.k,
             gl = c.createRadialGradient(sx, sy, 1, sx, sy, 16);
           gl.addColorStop(0, `rgba(120,255,235,${0.3 + 0.15 * Math.sin(t * 2.2)})`);
           gl.addColorStop(1, "rgba(120,255,235,0)");
