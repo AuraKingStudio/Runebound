@@ -104,6 +104,7 @@ function createDirectoryServer(options = {}) {
       res.setHeader("vary", "Origin");
       res.setHeader("access-control-allow-methods", "GET, POST, OPTIONS");
       res.setHeader("access-control-allow-headers", "content-type");
+      res.setHeader("access-control-allow-private-network", "true"); /* lets the public game page reach a hub service on this PC */
     }
     if (req.method === "OPTIONS") {
       res.writeHead(204);

@@ -1212,7 +1212,7 @@
           directoryHeartbeat,
           directoryLeave,
           directoryConfig,
-          defaultConfig: () => ({ signalingUrl: NETWORK_CONFIG.signalingUrl || hubFromLink() || (["localhost", "127.0.0.1"].includes(location.hostname) ? "http://localhost:8787" : ""), iceServers: NETWORK_CONFIG.iceServers.map((server) => ({ ...server })) }),
+          defaultConfig: () => ({ signalingUrl: NETWORK_CONFIG.signalingUrl || hubFromLink() || "http://localhost:8787" /* no public hub yet: use the hub service on this PC (npm run signaling) */, iceServers: NETWORK_CONFIG.iceServers.map((server) => ({ ...server })) }),
           createPeerOffer,
           createPeerAnswer,
           acceptPeerAnswer,
