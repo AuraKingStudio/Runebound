@@ -3606,23 +3606,6 @@
           }
         }
         c.restore();
-        /* petals and leaves floating downstream, swaying across the current */
-        for (let k = 0; k < 7; k++) {
-          const head = (t * 3.2 + k * (n / 7)) % (n - 1),
-            i = Math.floor(head),
-            p = pts[i],
-            sway = Math.sin(t * 1.5 + k * 2) * p.w * 0.45,
-            px = p.x + p.nx * sway,
-            py = p.y + p.ny * sway;
-          c.save();
-          c.translate(px, py);
-          c.rotate(t * 0.8 + k);
-          c.fillStyle = k % 3 ? "#ff9fcf" : "#7fbf5a";
-          c.beginPath();
-          c.ellipse(0, 0, 3.4, 1.8, 0, 0, 6.3);
-          c.fill();
-          c.restore();
-        }
       }
       /* magic spring in the middle of the platform: the brook pours into a sunken stone pool, the pool is the portal.
          FOUNT = pool footprint, also used to block walking through it. SPRING_IN = angle where the brook enters. */
