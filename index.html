@@ -3604,7 +3604,7 @@
             [96, 258, 150, 300, 250, 292],
             [250, 292, 350, 284, 450, 352],
             [450, 352, 540, 412, 640, 405],
-            [640, 405, 826, 372, 826, 438], /* turns to run straight down where it leaves the platform */
+            [640, 405, 826, 372, 826, 444], /* turns to run straight down where it leaves the platform */
           ],
           pts = [];
         for (const [x0, y0, cx, cy, x1, y1] of segs)
@@ -3613,6 +3613,7 @@
               u = 1 - t;
             pts.push({ x: u * u * x0 + 2 * u * t * cx + t * t * x1, y: u * u * y0 + 2 * u * t * cy + t * t * y1 });
           }
+        pts.push({ x: segs[segs.length - 1][4], y: segs[segs.length - 1][5] }); /* the true end point */
         /* normals + a width that swells and narrows like a real brook */
         for (let i = 0; i < pts.length; i++) {
           const p = pts[i],
@@ -3624,6 +3625,11 @@
           p.nx = -dy / l;
           p.ny = dx / l;
           p.w = 15 + 6 * Math.sin(i * 0.23) + 4 * Math.sin(i * 0.61 + 1) + (r() - 0.5) * 3;
+        }
+        /* the last stretch settles to an even width so it meets the fall down the wall cleanly */
+        for (let i = pts.length - 14; i < pts.length; i++) {
+          const k = Math.min(1, (i - (pts.length - 14)) / 8);
+          pts[i].w = pts[i].w * (1 - k) + 20 * k;
         }
         return (STREAM = pts);
       }
