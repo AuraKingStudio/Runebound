@@ -975,7 +975,7 @@
         const MAX_MESSAGE_LENGTH = 4096;
         const MAX_MESSAGES_PER_SECOND = 40;
         const NETWORK_CONFIG = Object.freeze({
-          signalingUrl: "https://judy-pichunter-man-angela.trycloudflare.com",
+          signalingUrl: "https://schedules-cal-grass-toolkit.trycloudflare.com",
           iceServers: [{ urls: "stun:stun.l.google.com:19302" }],
         });
         const peers = new Map();
@@ -1815,7 +1815,7 @@
       }
       const NET = window.RBNet || null, NET_CONFIG = NET?.defaultConfig?.() || { signalingUrl: "", iceServers: [] };
       const NET_LOCAL_ID = "player-" + (window.crypto?.randomUUID ? window.crypto.randomUUID() : Math.random().toString(36).slice(2));
-      let NET_ROLE = "", NET_LAST_SEND = 0, NET_LAST_SIM = 0, NET_SIM_ACC = 0, NET_STATUS = "Offline", NET_SESSION = null, NET_AUTO_STARTED = false, NET_CONNECTED = false;
+      let NET_ROLE = "", NET_LAST_SEND = 0, NET_LAST_SIM = 0, NET_SIM_ACC = 0, NET_STATUS = "Offline", NET_SESSION = null, NET_AUTO_STARTED = false, NET_CONNECTED = false, NET_DIRECTORY_STATE = "idle";
       let NET_POLL_TIMER = 0, NET_HEARTBEAT_TIMER = 0, NET_GUEST_POLLING = false;
       const NET_CLIENTS = new Map();
       function netBadgeUpdate() {
@@ -1827,7 +1827,9 @@
           badge.textContent = `HUB ${NET_SESSION.hubId} · ${connection}\n${NET_SESSION.reason}`;
           badge.title = `${NET_SESSION.reason} ${role == "HOST" ? "You host this player-run hub." : "You joined its host."}`;
         } else {
-          badge.textContent = `ONLINE · NO HUB\n${NET_STATUS}`;
+          const label = NET_DIRECTORY_STATE == "joining" ? "ONLINE · FINDING HUB" :
+            NET_DIRECTORY_STATE == "unavailable" ? "ONLINE · HUB UNAVAILABLE" : "ONLINE · HUB NOT CONNECTED";
+          badge.textContent = `${label}\n${NET_STATUS}`;
           badge.title = NET_STATUS;
         }
       }
@@ -1842,13 +1844,18 @@
       async function networkAutoJoin() {
         if (NET_AUTO_STARTED || !NET || !P || !V.name) return;
         NET_AUTO_STARTED = true;
-        if (!NET_CONFIG.signalingUrl) return netStatus("Signaling service URL is not configured in index.html.");
+        NET_DIRECTORY_STATE = "joining";
+        if (!NET_CONFIG.signalingUrl) {
+          NET_DIRECTORY_STATE = "unavailable";
+          return netStatus("Signaling service URL is not configured in index.html.");
+        }
         try {
           NET.setIceServers(NET_CONFIG.iceServers || []);
           NET.configureDirectory(NET_CONFIG.signalingUrl);
           netStatus("Finding the first hub with an open seat…");
           NET_SESSION = await NET.directoryJoin(netProfile());
           NET_ROLE = NET_SESSION.role;
+          NET_DIRECTORY_STATE = "assigned";
           netPrepareHub(NET_ROLE);
           netStatus(`Assigned to hub ${NET_SESSION.hubId}; connecting…`);
           if (NET_ROLE == "guest") {
@@ -1860,6 +1867,7 @@
           NET_HEARTBEAT_TIMER = setInterval(netHeartbeat, 10000);
         } catch (error) {
           NET_AUTO_STARTED = false;
+          NET_DIRECTORY_STATE = "unavailable";
           netStatus("Automatic hub connection failed: " + error.message);
         }
       }
@@ -1903,6 +1911,7 @@
         NET_ROLE = "";
         NET_CONNECTED = false;
         NET_AUTO_STARTED = false;
+        NET_DIRECTORY_STATE = "idle";
         NET_CLIENTS.clear();
         HUB_MIN = 3;
         HUB_AIM = 5;
@@ -2014,8 +2023,8 @@
       if (NET) NET.setHandlers({
         onOpen: (id) => {
           if (NET_ROLE == "guest") NET.send(id, { type: "join", profile: netProfile() });
-          netStatus(`Connected to hub ${NET_SESSION?.hubId || ""}.`);
           NET_CONNECTED = true;
+          netStatus(`Connected to hub ${NET_SESSION?.hubId || ""}.`);
         },
         onMessage: netReceive,
         onClose: (id) => {

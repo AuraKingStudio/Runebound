@@ -19,7 +19,7 @@ T.start();ok(T.S().sc=='hub','start -> hub');
 ctx.document.getElementById('dlg').hidden=true;const pausedAt=T.S().tm;T.pauseGame();T.step(.1);ok(T.isPaused()&&T.S().tm===pausedAt,'pause freezes the game');T.resumeGame();ok(!T.isPaused(),'resume re-enables play');
 ok(!T.V().name&&T.V().ds===undefined,'first start asks for a name before the daily bonus');
 T.saveName('<b>x</b>');ok(T.V().name=='bxb','name: strips markup characters');
-ok(ctx.document.getElementById('netBadge').textContent.includes('ONLINE · NO HUB')&&ctx.document.getElementById('netBadge').textContent.includes('index.html'),'network: reports missing online service instead of implying a connection');
+ok(ctx.document.getElementById('netBadge').textContent.includes('ONLINE · HUB UNAVAILABLE')&&ctx.document.getElementById('netBadge').textContent.includes('index.html'),'network: reports the hub service as unavailable instead of implying a connection');
 T.saveName('Tester1');ok(T.V().name=='Tester1','name: saved');
 ok(T.V().ds==1&&T.V().dl.length==10&&T.V().gold==125,'daily bonus: day 1 pays 25 on first start');
 const gd=T.V().gold;T.dailyCheck();ok(T.V().gold==gd,'daily bonus: only once per day');
