@@ -1225,7 +1225,7 @@
       }
       /* botOut(v): the bot heads off to a raid: stops, rises into a pillar of light, then disconnects */
       function botOut(v) {
-        if (Math.random() < 0.35) say(v, pick(BOT_BYE));
+        if (v.chatty && Math.random() < 0.4) say(v, pick(BOT_BYE));
         chatSys(v.name + " left for a raid", "out");
         v.out = S.tm || 1e-6;
         v.tx = v.x;
@@ -1248,6 +1248,7 @@
         if (!v) return null;
         botLook(v);
         v.life = rnd(...BOT_STAY);
+        v.chatty = Math.random() < 0.3; /* most players never say a word */
         botN++;
         return v;
       }
@@ -1313,7 +1314,7 @@
         BOT_REPLY = ["hey!", "o/", "hi :)", "hello", "yo", "sup"],
         CHAT_MAX = 40,
         chatQ = []; /* bot lines waiting to be said: { at, v, t } */
-      let chatNext = 20;
+      let chatNext = 45;
       function chatLine(html) {
         const L = $("chlog");
         if (!L) return;
@@ -1350,24 +1351,37 @@
         if (/^(hi+|hey+|hello|yo|sup|o\/|hiya)\b/i.test(t)) botReply(BOT_REPLY);
         else if (/raid/i.test(t) && Math.random() < 0.5) botReply(["sure", "im in", "maybe later", "need a healer?", "1 sec"]);
       }
+      /* typeTime(n): how long a person takes to notice a message and type n characters */
+      const typeTime = (n) => rnd(1.5, 4) + n / rnd(4, 7);
       /* a bot answers in a moment, like someone typing */
       function botReply(lines) {
         const bots = HUBV.filter((v) => v.bot && !v.out);
-        if (!bots.length || Math.random() < 0.3) return;
-        chatQ.push({ at: S.tm + rnd(1.2, 3.5), v: pick(bots), t: pick(lines) });
+        if (!bots.length || Math.random() < 0.5) return;
+        const t = pick(lines);
+        chatQ.push({ at: S.tm + typeTime(t.length), v: pick(bots), t });
       }
       function botGreet(nv) {
         const bots = HUBV.filter((v) => v.bot && !v.out && v !== nv);
-        if (bots.length && Math.random() < 0.4) chatQ.push({ at: S.tm + rnd(1.5, 4), v: pick(bots), t: pick(BOT_HI) });
+        if (bots.length && Math.random() < 0.2) chatQ.push({ at: S.tm + typeTime(2), v: pick(bots), t: pick(BOT_HI) });
       }
       /* chatStep(): due bot lines, plus now and then a random bot says something */
       function chatStep() {
         for (const q of chatQ.filter((q) => S.tm >= q.at)) if (HUBV.includes(q.v) && !q.v.out) say(q.v, q.t);
         chatQ.splice(0, chatQ.length, ...chatQ.filter((q) => S.tm < q.at));
         if (HUB_T < chatNext) return;
-        chatNext = HUB_T + rnd(20, 60);
-        const bots = HUBV.filter((v) => v.bot && !v.out && !(v.inn && S.tm - v.inn < ARRIVE));
-        if (bots.length) say(pick(bots), pick(BOT_LINES));
+        /* like a real hub: long quiet stretches, then a line now and then. Only chatty ones start talk;
+           a question or a raid call sometimes gets an answer from someone else a little later */
+        chatNext = HUB_T + rnd(70, 200);
+        const bots = HUBV.filter((v) => v.bot && v.chatty && !v.out && !(v.inn && S.tm - v.inn < ARRIVE));
+        if (!bots.length) return;
+        const v = pick(bots),
+          t = pick(BOT_LINES);
+        say(v, t);
+        if (/\?$|^lf|raid/.test(t) && Math.random() < 0.45) {
+          const o = HUBV.filter((o) => o.bot && !o.out && o !== v),
+            a = pick(/raid|^lf/.test(t) ? ["im in", "maybe later", "inv me", "sure", "same"] : ["idk", "no idea lol", "yeah", "not sure tbh", "ask the elder"]);
+          if (o.length) chatQ.push({ at: S.tm + typeTime(a.length) + 2, v: pick(o), t: a });
+        }
       }
       /* sayBubble(p, y): speech bubble with the last thing p said, bottom edge at y (local space). Fades after a few seconds. */
       function sayBubble(p, y) {
@@ -1484,6 +1498,7 @@
           /* lingering: at an NPC keep facing it, chat bubble on and off */
           v.wait -= dt;
           v.talk = v.plan == "npc" && v.npc && v.wait % 7 > 3;
+          if (!v.npc && Math.random() < dt * 0.15) v.f = pick(["u", "d", "l", "r"]); /* now and then turns to look around */
           if (v.npc) {
             const dx = v.npc.x - v.x,
               dy = v.npc.y - v.y;
@@ -1510,6 +1525,7 @@
           v.wait = rnd(4, 10);
           return;
         }
+        if (Math.random() < 0.004) return (v.wt = rnd(0.4, 1.5)); /* a brief stop on the way, like letting go of the stick */
         const g = v.via[0] || v.goal,
           d = Math.hypot(g.x - v.x, g.y - v.y);
         if (d < 6) {
