@@ -389,8 +389,46 @@
         background-color: #1b2a33;
         border-color: #d9a40099;
       }
-      #btns #bq { left: calc(50% - 126px); }
-      #btns #bg { left: calc(50% + 8px); }
+      #btns #bq { left: calc(50% - 196px); }
+      #btns #bg { left: calc(50% - 64px); }
+      #btns #bs { left: calc(50% + 50px); border-color: #ffd84acc; box-shadow: 0 0 10px #ffd84a55; }
+      /* cosmetics shop */
+      .pn.shop { width: min(620px, 94vw); }
+      .ctabs { display: flex; gap: 4px; flex-wrap: wrap; margin: 6px 0 10px; }
+      .ctabs button { background: #1b2a33; border-color: #d9a40066; font-size: 13px; }
+      .ctabs button.on { background: #2b3f4a; border-color: #ffd84a; color: #ffd84a; }
+      .cgrid { display: grid; grid-template-columns: repeat(auto-fill, minmax(132px, 1fr)); gap: 8px; }
+      .ccard {
+        background: #0f171e;
+        border: 1px solid #2c3b48;
+        border-radius: 10px;
+        padding: 8px;
+        text-align: center;
+        display: flex;
+        flex-direction: column;
+        align-items: center;
+        gap: 3px;
+      }
+      .ccard.paid { border-color: #d9a40088; background: linear-gradient(#1d1a10, #0f171e); }
+      .ccard.on { border-color: #5dff8a; box-shadow: 0 0 10px #5dff8a44 inset; }
+      .ccard canvas { width: 80px; height: 80px; }
+      .ccard b { font-size: 13px; }
+      .ccard .sm { font-size: 11px; opacity: 0.8; min-height: 26px; }
+      .ccard button { width: 100%; margin: 2px 0 0; padding: 6px; font-size: 12px; }
+      .ccard button.gold { background: #6b5310; border-color: #ffd84a88; }
+      .ccard button.eur { background: #8a2f5c; border-color: #ff8fc888; }
+      .cpass {
+        border: 1px solid #ffd84a;
+        border-radius: 12px;
+        padding: 12px;
+        background: radial-gradient(circle at 20% 0%, #3a3010, #0f171e 70%);
+        display: flex;
+        gap: 12px;
+        align-items: center;
+      }
+      .cpass ul { margin: 6px 0; padding-left: 18px; font-size: 13px; }
+      .cnote { font-size: 12px; color: #ffd84a; min-height: 16px; margin: 6px 0 0; }
+      .cfoot { font-size: 11px; opacity: 0.6; margin-top: 10px; }
       #btns #bq.hot { box-shadow: 0 0 14px #ffd84a; border-color: #ffd84a; }
       #btns #bt {
         /* under the gold counter (game y ≈ 80 of 600) */
@@ -786,7 +824,7 @@
     <div id="chat" hidden><div id="chlog"></div><div id="chrow"><input id="chin" maxlength="80" autocomplete="off" placeholder="Press Enter to chat" /><div id="emo"></div></div></div>
     <div id="btns">
       <button id="b0"></button><button id="b1"></button><button id="b2"></button
-      ><button id="bi" hidden>Enter arena</button><button id="bt">🏷 Titles</button><button id="bq" class="hb">📜 Quests</button><button id="bg" class="hb">🛡 Guild</button>
+      ><button id="bi" hidden>Enter arena</button><button id="bt">🏷 Titles</button><button id="bq" class="hb">📜 Quests</button><button id="bg" class="hb">🛡 Guild</button><button id="bs" class="hb">✨ Shop</button>
     </div>
     <script>
       const W = 900,
@@ -1193,6 +1231,12 @@
         v.lv = 1 + Math.floor(Math.random() ** 3.5 * 60); /* most are low; ~12% reach 40+, ~6% reach 50+ */
         const ok = TITLES.filter((t) => !["Tester"].includes(t.n) && (v.lv >= 25 || !["Loremaster", "Fully Runed", "Moneybags"].includes(t.n)));
         v.ti = v.lv < 5 || Math.random() < 0.35 ? TITLES[0] : pick(ok);
+        const wear = (t) => {
+          const all = COS.filter((i) => i.t == t);
+          return Math.random() < 0.3 + v.lv / 120 ? pick(all).id : null;
+        };
+        v.ring = wear("ring");
+        v.badge = v.lv >= 5 ? wear("badge") : null;
       }
       let HUBV = [],
         HUB_MIN = 3, /* you + at least 2 bots. ?bots=N raises it to N + 1 for stress tests */
@@ -1243,7 +1287,7 @@
       /* ALUMNI: bots that went raiding. About half come back 3-6 min later: same name, a level or two higher. */
       const ALUMNI = [];
       function botOut(v) {
-        if (v.bot && Math.random() < 0.5) ALUMNI.push({ name: v.name, cls: v.cls, lv: v.lv, ti: v.ti, chatty: v.chatty, back: HUB_T + rnd(180, 360) });
+        if (v.bot && Math.random() < 0.5) ALUMNI.push({ name: v.name, cls: v.cls, lv: v.lv, ti: v.ti, ring: v.ring, badge: v.badge, chatty: v.chatty, back: HUB_T + rnd(180, 360) });
         if (v.chatty && Math.random() < 0.4) say(v, pick(BOT_BYE));
         chatSys(v.name + " left for a raid", "out");
         v.out = S.tm || 1e-6;
@@ -1273,6 +1317,8 @@
           /* back from the raid: a bit stronger, maybe says how it went */
           v.lv = Math.min(60, al.lv + Math.floor(rnd(0, 3)));
           v.ti = al.ti;
+          v.ring = al.ring;
+          v.badge = al.badge;
           v.chatty = al.chatty;
           if (v.chatty && Math.random() < 0.6) botSay(v, pick(["gg ez", "back", "that raid was rough", "warden down o/", "ez clap", "almost died lol"]), 1);
           else if (Math.random() < 0.3) emoteLater(v, "🎉", 1.5);
@@ -1430,10 +1476,429 @@
           if (o.length) emoteLater(pick(o), pick(["😂", "👍", "❤️"]), 4 + t.length / 5);
         }
       }
+      /* ---------- cosmetics ----------
+         COS: every cosmetic. t = ring (border around your character) | badge (frame around the level badge) | emote.
+         How you get it: free, gold (bought with in-game gold), need() (earned by playing; how = the goal),
+         eur (real money, price in euros) or pass (comes with the Rune Pass).
+         Saved in V.cos = { own: {id: 1}, ring, badge }. V.pass = Rune Pass owned. */
+      const COS = [
+        { id: "r_ember", t: "ring", n: "Ember Ring", gold: 300, col: "#ff9f43" },
+        { id: "r_verdant", t: "ring", n: "Verdant Ring", need: () => lvlInfo().L >= 15, how: "Reach level 15", col: "#6fdc6f" },
+        { id: "r_frost", t: "ring", n: "Frost Halo", gold: 800, col: "#9fe8ff" },
+        { id: "r_champ", t: "ring", n: "Champion's Ring", need: () => (V.wins || 0) >= 20, how: "Win 20 raids", col: "#ffd84a" },
+        { id: "r_star", t: "ring", n: "Starlight", eur: 1.49, col: "#fff3c4" },
+        { id: "r_void", t: "ring", n: "Void Crown", eur: 1.99, col: "#b48cff" },
+        { id: "r_phoenix", t: "ring", n: "Phoenix Flame", eur: 1.99, col: "#ff6a3d" },
+        { id: "r_rune", t: "ring", n: "Rune Aura", pass: 1, col: "#5af0d8" },
+        { id: "b_bronze", t: "badge", n: "Bronze Frame", need: () => lvlInfo().L >= 5, how: "Reach level 5", col: "#c98a4b" },
+        { id: "b_silver", t: "badge", n: "Silver Frame", gold: 400, col: "#dfe8f0" },
+        { id: "b_lore", t: "badge", n: "Lorekeeper", need: () => (V.lt || 0) >= 50, how: "Hear 50 tales", col: "#5ad7ff" },
+        { id: "b_crystal", t: "badge", n: "Crystal Frame", eur: 1.29, col: "#9ff7ff" },
+        { id: "b_wings", t: "badge", n: "Gilded Wings", eur: 1.49, col: "#ffd84a" },
+        { id: "b_thorns", t: "badge", n: "Crimson Thorns", eur: 1.79, col: "#ff4d6d" },
+        { id: "b_crest", t: "badge", n: "Rune Crest", pass: 1, col: "#5af0d8" },
+        { id: "e_wave", t: "emote", k: "wave", e: "👋", n: "Wave", free: 1 },
+        { id: "e_lol", t: "emote", k: "lol", e: "😂", n: "Laugh", free: 1 },
+        { id: "e_love", t: "emote", k: "love", e: "❤️", n: "Love", free: 1 },
+        { id: "e_gg", t: "emote", k: "gg", e: "👍", n: "Thumbs up", free: 1 },
+        { id: "e_wow", t: "emote", k: "wow", e: "😮", n: "Wow", need: () => lvlInfo().L >= 3, how: "Reach level 3" },
+        { id: "e_party", t: "emote", k: "party", e: "🎉", n: "Party", need: () => (V.wins || 0) >= 5, how: "Win 5 raids" },
+        { id: "e_fire", t: "emote", k: "fire", e: "🔥", n: "On fire", need: () => lvlInfo().L >= 10, how: "Reach level 10" },
+        { id: "e_cool", t: "emote", k: "cool", e: "😎", n: "Cool", gold: 250 },
+        { id: "e_skull", t: "emote", k: "skull", e: "💀", n: "Skull", need: () => (V.wins || 0) >= 25, how: "Win 25 raids" },
+        { id: "e_pray", t: "emote", k: "pray", e: "🙏", n: "Thanks", need: () => (V.ds || 0) >= 7, how: "7-day login streak" },
+        { id: "e_crown", t: "emote", k: "crown", e: "👑", n: "Crown", eur: 1.29 },
+        { id: "e_dragon", t: "emote", k: "dragon", e: "🐉", n: "Dragon", eur: 1.49 },
+        { id: "e_bolt", t: "emote", k: "bolt", e: "⚡", n: "Rune Bolt", pass: 1 },
+      ];
+      const PASS = { eur: 2.99, bonus: 0.25 }; /* Rune Pass: +25% gold and XP from raids, plus its exclusive cosmetics */
+      const cosV = () => (V.cos = V.cos || { own: {} });
+      const cosOwn = (it) => !!(it && (it.free || cosV().own[it.id] || (it.pass && V.pass) || (it.need && it.need())));
+      const cosGet = (id) => COS.find((i) => i.id == id);
+      const passMul = () => (V.pass ? 1 + PASS.bonus : 1);
+      /* drawRing(g, id, t): border around a character (local space, body radius PR) */
+      function drawRing(g, id, t) {
+        if (!id) return;
+        const r = PR + 4;
+        g.save();
+        if (id == "r_ember") {
+          g.strokeStyle = "rgba(255,159,67,.6)";
+          g.lineWidth = 1.5;
+          g.beginPath();
+          g.arc(0, 0, r, 0, 6.3);
+          g.stroke();
+          for (let i = 0; i < 8; i++) {
+            const a = t * 1.4 + (i * 6.28) / 8,
+              fl = 0.6 + 0.4 * Math.sin(t * 9 + i * 2);
+            g.fillStyle = i % 2 ? "#ffcf4d" : "#ff7a2f";
+            g.beginPath();
+            g.arc(Math.cos(a) * r, Math.sin(a) * r, 1.6 + fl, 0, 6.3);
+            g.fill();
+          }
+        } else if (id == "r_verdant") {
+          g.rotate(t * 0.5);
+          for (let i = 0; i < 10; i++) {
+            g.rotate(6.28 / 10);
+            g.fillStyle = i % 2 ? "#6fdc6f" : "#3f9f4a";
+            g.beginPath();
+            g.ellipse(r, 0, 3.6, 1.7, 0.8, 0, 6.3);
+            g.fill();
+          }
+        } else if (id == "r_frost") {
+          g.strokeStyle = "rgba(159,232,255,.55)";
+          g.lineWidth = 1;
+          g.beginPath();
+          g.arc(0, 0, r - 1, 0, 6.3);
+          g.stroke();
+          g.rotate(-t * 0.4);
+          g.fillStyle = "#dff7ff";
+          for (let i = 0; i < 6; i++) {
+            g.rotate(6.28 / 6);
+            g.beginPath();
+            g.moveTo(r - 2, -2);
+            g.lineTo(r + 5 + Math.sin(t * 3 + i), 0);
+            g.lineTo(r - 2, 2);
+            g.fill();
+          }
+        } else if (id == "r_champ") {
+          g.strokeStyle = "#ffd84a";
+          g.lineWidth = 1.5;
+          for (const rr of [r, r + 3]) {
+            g.beginPath();
+            g.arc(0, 0, rr, 0, 6.3);
+            g.stroke();
+          }
+          g.fillStyle = "#fff3c4";
+          for (let i = 0; i < 4; i++) {
+            const a = i * 1.571 + Math.PI / 4;
+            g.save();
+            g.translate(Math.cos(a) * (r + 1.5), Math.sin(a) * (r + 1.5));
+            g.rotate(a);
+            g.fillRect(-2, -2, 4, 4);
+            g.restore();
+          }
+        } else if (id == "r_star") {
+          g.globalCompositeOperation = "lighter";
+          g.strokeStyle = "rgba(255,243,196,.5)";
+          g.lineWidth = 1.2;
+          g.beginPath();
+          g.arc(0, 0, r, 0, 6.3);
+          g.stroke();
+          for (let i = 0; i < 5; i++) {
+            const a = t * 0.9 + (i * 6.28) / 5,
+              tw = 0.5 + 0.5 * Math.sin(t * 5 + i * 1.7),
+              x = Math.cos(a) * (r + 1),
+              y = Math.sin(a) * (r + 1),
+              k = 2 + tw * 2.5;
+            g.fillStyle = `rgba(255,250,220,${0.5 + tw * 0.5})`;
+            g.beginPath();
+            g.moveTo(x, y - k);
+            g.lineTo(x + k * 0.3, y);
+            g.lineTo(x, y + k);
+            g.lineTo(x - k * 0.3, y);
+            g.moveTo(x - k, y);
+            g.lineTo(x, y + k * 0.3);
+            g.lineTo(x + k, y);
+            g.lineTo(x, y - k * 0.3);
+            g.fill();
+          }
+        } else if (id == "r_void") {
+          g.fillStyle = "rgba(40,10,70,.35)";
+          g.beginPath();
+          g.arc(0, 0, r + 4, 0, 6.3);
+          g.fill();
+          g.globalCompositeOperation = "lighter";
+          g.lineWidth = 2.2;
+          g.lineCap = "round";
+          for (let i = 0; i < 3; i++) {
+            g.strokeStyle = i % 2 ? "#e0b8ff" : "#8a4dff";
+            g.beginPath();
+            g.arc(0, 0, r + 1 + i * 1.5, t * (1.6 - i * 0.5) + i * 2, t * (1.6 - i * 0.5) + i * 2 + 1.6);
+            g.stroke();
+          }
+        } else if (id == "r_phoenix") {
+          g.globalCompositeOperation = "lighter";
+          for (let i = 0; i < 12; i++) {
+            const a = (i * 6.28) / 12 + t * 0.6,
+              h = 4 + 3 * Math.sin(t * 10 + i * 1.9);
+            g.save();
+            g.rotate(a);
+            g.fillStyle = i % 3 ? "rgba(255,106,61,.8)" : "rgba(255,207,77,.9)";
+            g.beginPath();
+            g.moveTo(r - 1, -2.4);
+            g.quadraticCurveTo(r + h, 0, r - 1, 2.4);
+            g.fill();
+            g.restore();
+          }
+        } else if (id == "r_rune") {
+          g.strokeStyle = "rgba(90,240,216,.5)";
+          g.lineWidth = 1;
+          g.beginPath();
+          g.arc(0, 0, r + 2, 0, 6.3);
+          g.stroke();
+          g.fillStyle = "#5af0d8";
+          g.font = "7px serif";
+          g.textAlign = "center";
+          g.textBaseline = "middle";
+          for (let i = 0; i < 8; i++) {
+            const a = -t * 0.7 + (i * 6.28) / 8;
+            g.globalAlpha = 0.6 + 0.4 * Math.sin(t * 3 + i);
+            g.fillText(RUNES_HUB[i * 3], Math.cos(a) * (r + 2), Math.sin(a) * (r + 2));
+          }
+        }
+        g.restore();
+      }
+      /* badgeFrame(g, id, h, t): frame around the diamond level badge (half-diagonal h), in the badge's local space */
+      function badgeFrame(g, id, h, t) {
+        if (!id) return;
+        const dia = (k) => {
+          g.beginPath();
+          g.moveTo(0, -k);
+          g.lineTo(k, 0);
+          g.lineTo(0, k);
+          g.lineTo(-k, 0);
+          g.closePath();
+        };
+        g.save();
+        if (id == "b_bronze") {
+          g.strokeStyle = "#c98a4b";
+          g.lineWidth = 1.6;
+          dia(h + 3);
+          g.stroke();
+        } else if (id == "b_silver") {
+          g.strokeStyle = "#dfe8f0";
+          g.lineWidth = 1.2;
+          dia(h + 3);
+          g.stroke();
+          dia(h + 5.5);
+          g.stroke();
+        } else if (id == "b_lore") {
+          g.strokeStyle = "#5ad7ff";
+          g.lineWidth = 1.2;
+          dia(h + 3);
+          g.stroke();
+          g.fillStyle = "#bff0ff";
+          for (const [x, y] of [[0, -h - 5], [h + 5, 0], [0, h + 5], [-h - 5, 0]]) {
+            g.beginPath();
+            g.arc(x, y, 1.6, 0, 6.3);
+            g.fill();
+          }
+        } else if (id == "b_crystal") {
+          g.fillStyle = "rgba(159,247,255,.85)";
+          for (const [x, y, a] of [[0, -h - 2, 0], [h + 2, 0, 1.571], [0, h + 2, 3.14], [-h - 2, 0, -1.571]]) {
+            g.save();
+            g.translate(x, y);
+            g.rotate(a);
+            g.beginPath();
+            g.moveTo(0, -6 - Math.sin(t * 3) * 0.8);
+            g.lineTo(2.5, 0);
+            g.lineTo(0, 2);
+            g.lineTo(-2.5, 0);
+            g.fill();
+            g.restore();
+          }
+        } else if (id == "b_wings") {
+          g.fillStyle = "#ffd84a";
+          const fl = Math.sin(t * 4) * 0.12;
+          for (const sx of [-1, 1]) {
+            g.save();
+            g.scale(sx, 1);
+            g.translate(h + 1, -1);
+            g.rotate(-0.25 + fl);
+            g.beginPath();
+            g.moveTo(0, 0);
+            g.quadraticCurveTo(7, -9, 13, -6);
+            g.quadraticCurveTo(9, -3, 11, -1);
+            g.quadraticCurveTo(7, 0, 9, 3);
+            g.quadraticCurveTo(4, 3, 0, 3);
+            g.fill();
+            g.restore();
+          }
+        } else if (id == "b_thorns") {
+          g.fillStyle = "#ff4d6d";
+          for (let i = 0; i < 8; i++) {
+            const a = (i * 6.28) / 8 + 0.39,
+              d = h * (Math.abs(Math.cos(a)) + Math.abs(Math.sin(a))) ** -1 + 1;
+            g.save();
+            g.rotate(a);
+            g.beginPath();
+            g.moveTo(d, -1.8);
+            g.lineTo(d + 5, 0);
+            g.lineTo(d, 1.8);
+            g.fill();
+            g.restore();
+          }
+          g.strokeStyle = "#a01836";
+          g.lineWidth = 1;
+          dia(h + 2.5);
+          g.stroke();
+        } else if (id == "b_crest") {
+          g.strokeStyle = "#5af0d8";
+          g.lineWidth = 1.4;
+          g.shadowColor = "#5af0d8";
+          g.shadowBlur = 6;
+          dia(h + 3.5);
+          g.stroke();
+          g.shadowBlur = 0;
+          g.fillStyle = "#ffd84a";
+          g.beginPath(); /* little crown on top */
+          g.moveTo(-4, -h - 4);
+          g.lineTo(-4, -h - 9);
+          g.lineTo(-1.5, -h - 6.5);
+          g.lineTo(0, -h - 10);
+          g.lineTo(1.5, -h - 6.5);
+          g.lineTo(4, -h - 9);
+          g.lineTo(4, -h - 4);
+          g.fill();
+        }
+        g.restore();
+      }
+      /* emoBar(): the emote buttons next to the chat, one per emote you own */
+      function emoBar() {
+        const bar = $("emo");
+        if (!bar) return;
+        bar.innerHTML = "";
+        for (const it of COS.filter((i) => i.t == "emote" && cosOwn(i))) {
+          const b = document.createElement("button");
+          b.textContent = it.e;
+          b.title = "/" + it.k;
+          b.onclick = () => myEmote(it.e);
+          bar.append(b);
+        }
+      }
+      /* ---------- shop: Rune Pass, borders, badge frames, emotes ---------- */
+      let shopTab = "pass",
+        shopMsg = "";
+      const eur = (n) => n.toFixed(2).replace(".", ",") + " €";
+      function cosShopUI() {
+        const tabs = [["pass", "⭐ Rune Pass"], ["ring", "◯ Borders"], ["badge", "◆ Level frames"], ["emote", "😀 Emotes"]],
+          head = `<h2>✨ Shop</h2><p class="sm">Cosmetics only: they change how you look, never how strong you are. 💰 ${V.gold} gold</p>
+            <div class="ctabs">${tabs.map(([k, n]) => `<button class="${shopTab == k ? "on" : ""}" onclick="shopTab='${k}';shopMsg='';cosShopUI()">${n}</button>`).join("")}</div>`;
+        let body = "";
+        if (shopTab == "pass") {
+          const ex = COS.filter((i) => i.pass);
+          body = `<div class="cpass"><canvas width="160" height="160" data-pv="r_rune" style="width:80px;height:80px"></canvas><div>
+            <b style="color:#ffd84a;font-size:16px">⭐ Rune Pass</b>
+            <ul><li>+25% gold from raids</li><li>+25% XP from raids</li><li>Exclusive: ${ex.map((i) => (i.e ? i.e + " " : "") + i.n).join(", ")}</li></ul>
+            ${V.pass ? '<button disabled>Active ✓</button>' : `<button class="eur" style="background:#8a2f5c" onclick="shopPay('pass')">Get it · ${eur(PASS.eur)}</button>`}</div></div>`;
+        } else {
+          const cards = COS.filter((i) => i.t == shopTab).map((it) => {
+            const own = cosOwn(it),
+              on = it.t != "emote" && cosV()[it.t] == it.id;
+            let how = it.free ? "Free" : it.gold ? `${it.gold} gold` : it.eur ? eur(it.eur) : it.pass ? "Rune Pass" : it.how;
+            let btn;
+            if (own) btn = it.t == "emote" ? `<button disabled>Owned · /${it.k}</button>` : `<button ${on ? "disabled" : ""} onclick="cosEquip('${it.id}')">${on ? "Equipped" : "Equip"}</button>`;
+            else if (it.gold) btn = `<button class="gold" ${V.gold >= it.gold ? "" : "disabled"} onclick="cosBuyGold('${it.id}')">💰 ${it.gold}</button>`;
+            else if (it.eur) btn = `<button class="eur" onclick="shopPay('${it.id}')">${eur(it.eur)}</button>`;
+            else if (it.pass) btn = `<button onclick="shopTab='pass';cosShopUI()">Rune Pass</button>`;
+            else btn = `<button disabled>🔒 Locked</button>`;
+            return `<div class="ccard ${it.eur || it.pass ? "paid" : ""} ${on ? "on" : ""}"><canvas width="160" height="160" data-pv="${it.id}"></canvas>
+              <b style="color:${it.col || "#fff"}">${it.n}</b><div class="sm">${how}</div>${btn}</div>`;
+          });
+          const none = shopTab != "emote" ? `<div class="ccard ${!cosV()[shopTab] ? "on" : ""}"><canvas width="160" height="160" data-pv=""></canvas><b>None</b><div class="sm">Plain</div>
+            <button ${!cosV()[shopTab] ? "disabled" : ""} onclick="cosEquip('', '${shopTab}')">${!cosV()[shopTab] ? "Equipped" : "Equip"}</button></div>` : "";
+          body = `<div class="cgrid">${none}${cards.join("")}</div>`;
+        }
+        $("dp").className = "pn shop";
+        $("dp").innerHTML = head + body + `<div class="cnote">${shopMsg}</div>
+          <p class="cfoot">Some players you meet in the hub are AI companions.</p><button class="alt" onclick="closeDlg()">Close</button>`;
+        shopAnim();
+      }
+      /* shopAnim(): animate the previews while the shop is open */
+      function shopAnim() {
+        const cvs = [...document.querySelectorAll("canvas[data-pv]")];
+        if (!cvs.length || $("dlg").hidden) return;
+        const t = performance.now() / 1000;
+        for (const el of cvs) {
+          const g = el.getContext("2d"),
+            id = el.dataset.pv,
+            it = cosGet(id);
+          g.setTransform(1, 0, 0, 1, 0, 0);
+          g.clearRect(0, 0, el.width, el.height);
+          g.setTransform(el.width / 80, 0, 0, el.width / 80, 0, 0);
+          if (it && it.t == "emote") {
+            g.font = "34px sans-serif";
+            g.textAlign = "center";
+            g.textBaseline = "middle";
+            g.globalAlpha = cosOwn(it) ? 1 : 0.45;
+            g.fillText(it.e, 40, 42 + Math.sin(t * 3) * 2);
+            g.globalAlpha = 1;
+            continue;
+          }
+          const cls = P ? P.cls : "tank";
+          if (it && it.t == "badge") {
+            /* a badge preview: diamond with a sample level */
+            g.translate(40, 40);
+            g.scale(2, 2);
+            const h = 9;
+            g.fillStyle = "#0b1218";
+            g.strokeStyle = lvlCol(24);
+            g.lineWidth = 2;
+            g.beginPath();
+            g.moveTo(0, -h);
+            g.lineTo(h, 0);
+            g.lineTo(0, h);
+            g.lineTo(-h, 0);
+            g.closePath();
+            g.fill();
+            g.stroke();
+            badgeFrame(g, id, h, t);
+            g.fillStyle = lvlCol(24);
+            g.font = 'bold 10px "Trebuchet MS", Arial, sans-serif';
+            g.textAlign = "center";
+            g.textBaseline = "middle";
+            g.fillText("24", 0, 1);
+            continue;
+          }
+          g.translate(40, 40);
+          g.scale(1.9, 1.9);
+          drawRing(g, id, t);
+          const bs = PR + BODY_PAD;
+          g.drawImage(bodySprite(cls), -bs, -bs, bs * 2, bs * 2);
+        }
+        requestAnimationFrame(shopAnim);
+      }
+      function cosEquip(id, t) {
+        const it = cosGet(id);
+        if (it && !cosOwn(it)) return;
+        cosV()[it ? it.t : t] = id || null;
+        save();
+        sfx("coin", 1.3);
+        if (P && it) burst(P.x, P.y, it.col || "#fff", 16, 110);
+        shopMsg = "";
+        cosShopUI();
+      }
+      function cosBuyGold(id) {
+        const it = cosGet(id);
+        if (!it || !it.gold || cosOwn(it) || V.gold < it.gold) return;
+        V.gold -= it.gold;
+        cosV().own[id] = 1;
+        save();
+        sfx("coin", 1);
+        shopMsg = "✓ " + it.n + " unlocked";
+        emoBar();
+        if (it.t != "emote") return cosEquip(id);
+        cosShopUI();
+      }
+      /* shopPay(id): real-money purchase. Needs a payment provider + server to confirm the payment (not connected yet).
+         With ?dev in the url it grants the item so the cosmetics can be tested. */
+      function shopPay(id) {
+        if (/[?&]dev\b/.test(location.search)) {
+          if (id == "pass") V.pass = 1;
+          else cosV().own[id] = 1;
+          save();
+          emoBar();
+          shopMsg = "Dev: granted";
+          return cosShopUI();
+        }
+        shopMsg = "Secure checkout is coming soon: payments aren't connected yet.";
+        cosShopUI();
+      }
       /* ---------- emotes: a pop-up icon over someone's head for a couple of seconds ----------
          Yours from the bar next to the chat (or /wave /lol /love /gg /wow /party in chat). Bots wave at newcomers,
          react to your emotes and celebrate. hubEmote(id, e) is the network hook. */
-      const EMOTES = { wave: "👋", lol: "😂", love: "❤️", gg: "👍", wow: "😮", party: "🎉" },
+      /* EMOTES: chat command -> icon, for every emote in COS (owned or not) */
+      const EMOTES = Object.fromEntries(COS.filter((i) => i.t == "emote").map((i) => [i.k, i.e])),
         EMO_LIFE = 2.6,
         emoQ = [];
       function emote(p, e) {
@@ -1448,6 +1913,8 @@
       }
       function myEmote(e) {
         if (!P || S.sc != "hub") return;
+        const it = COS.find((i) => i.t == "emote" && i.e == e);
+        if (!it || !cosOwn(it)) return;
         emote(P, e);
         /* network: send the emote to the hub here once there is a server */
         const bots = HUBV.filter((v) => v.bot && !v.out);
@@ -1460,15 +1927,15 @@
         if (age > EMO_LIFE) return (p.emo = null);
         const pop = age < 0.25 ? 0.4 + (age / 0.25) * 0.8 : 1.2 - Math.min(0.2, (age - 0.25) * 0.8);
         c.save();
-        c.globalAlpha *= Math.min(1, (EMO_LIFE - age) * 2.5);
+        c.globalAlpha = Math.min(1, (EMO_LIFE - age) * 2.5); /* full strength, not faded with the body */
         c.translate(0, y - age * 6 + Math.sin(age * 7) * 1.5);
         c.scale(pop, pop);
-        c.fillStyle = "rgba(11,18,24,.55)";
+        c.fillStyle = "rgba(11,18,24,.9)";
         c.beginPath();
         c.arc(0, 0, 13, 0, 6.3);
         c.fill();
-        c.strokeStyle = "rgba(217,164,0,.6)";
-        c.lineWidth = 1.2;
+        c.strokeStyle = "#ffd84a";
+        c.lineWidth = 1.6;
         c.stroke();
         c.font = "16px sans-serif";
         c.textAlign = "center";
@@ -1731,6 +2198,7 @@
         v.ty = v.y + uy * step;
       }
       function toHub() {
+        emoBar(); /* emotes earned in the raid show up */
         S.sc = "hub";
         S.b = null;
         S.pr = [];
@@ -1853,11 +2321,11 @@
         V.best = V.best ? Math.min(V.best, S.at) : S.at;
         S.end = "win";
         S.res = 5;
-        const g = Math.round((60 + (S.at < 90 ? 20 : 0)) * (1 + gBonus())); /* guild bonus */
+        const g = Math.round((60 + (S.at < 90 ? 20 : 0)) * (1 + gBonus()) * passMul()); /* guild bonus, Rune Pass */
         bountyAdd("raid");
         V.gold += g;
         coin = g;
-        gainXP(Math.round((S.at < 90 ? 160 : 120) * (1 + gBonus())), "raid");
+        gainXP(Math.round((S.at < 90 ? 160 : 120) * (1 + gBonus()) * passMul()), "raid");
         burst(S.b.x, S.b.y, "#ffd84a", 40, 260);
         burst(S.b.x, S.b.y, "#a78bff", 30, 200);
         shake(0.6);
@@ -2162,6 +2630,7 @@
       function closeDlg() {
         CUR_DLG = "";
         $("dlg").hidden = true;
+        $("dp").className = "pn"; /* the shop widens the panel */
       }
       let CUR_DLG = ""; /* which NPC menu is open ("elder" | "shop" | "lore"), kept across hot reloads */
       function openDlg(w) {
@@ -3257,12 +3726,17 @@
           e.preventDefault();
           if (P && !dlgOpen()) { openDlg(w); sfx("ui"); }
         });
+      $("bs").addEventListener("pointerdown", (e) => {
+        e.preventDefault();
+        if (P && !dlgOpen()) { $("dlg").hidden = false; cosShopUI(); sfx("ui"); }
+      });
       $("bt").addEventListener("pointerdown", (e) => {
         e.preventDefault();
         if (P && !dlgOpen()) { $("dlg").hidden = false; titleUI(); sfx("ui"); }
       });
       /* titles menu: list every title, locked ones show how to unlock */
       function titleUI() {
+        $("dp").className = "pn";
         const rows = TITLES.map((t, i) => {
           const ok = t.ok(), on = myTitle() === t;
           return `<div class="tt ${ok ? "" : "lk"}" style="--tc:${t.col}"><div><b>${ok ? "" : "🔒 "}${t.n}</b><div class="sm">${t.how}</div></div>
@@ -3326,13 +3800,7 @@
           for (const k in kk) kk[k] = 0;
         };
         inp.onblur = () => box.classList.remove("op");
-        for (const [k, e] of Object.entries(EMOTES)) {
-          const b = document.createElement("button");
-          b.textContent = e;
-          b.title = "/" + k;
-          b.onclick = () => myEmote(e);
-          $("emo").append(b);
-        }
+        emoBar();
         inp.onkeydown = (e) => {
           e.stopPropagation();
           if (e.key == "Enter") {
@@ -3366,7 +3834,7 @@
         document.body.classList.toggle("tch", INMODE == "touch"); /* touch: chat sits above the joystick */
         $("chat").hidden = S.sc != "hub" || !P;
         $("bt").hidden = tut() < 4; /* Titles button appears after the tutorial */
-        $("bq").hidden = $("bg").hidden = tut() < 4 || S.sc != "hub";
+        $("bq").hidden = $("bg").hidden = $("bs").hidden = tut() < 4 || S.sc != "hub";
         $("bq").classList.toggle("hot", bountyReady()); /* glows when a bounty can be claimed */
         loreBonusTick();
         const m = P;
@@ -3735,6 +4203,7 @@
           c.rotate(cl(p.dx, -1, 1) * 0.14);
           c.scale(1 + 0.07 * Math.abs(step), 1 - 0.07 * Math.abs(step));
         }
+        drawRing(c, p === P ? cosV().ring : p.ring, S.tm); /* cosmetic border */
         /* body disc, ring and class emblem (cached sprite) */
         const bs = PR + BODY_PAD;
         c.drawImage(bodySprite(p.cls), -bs, -bs, bs * 2, bs * 2);
@@ -3762,7 +4231,7 @@
         /* health bar turns white while armored (tank dash); thin strip above = armor time left */
         if (p.name && p !== P) {
           /* hub visitor: just a name tag, no health bar */
-          nameplate(p.lv, p.name, p.ti, 1 + (p.lvp || 0) * 1.2, "#dfe8f0");
+          nameplate(p.lv, p.name, p.ti, 1 + (p.lvp || 0) * 1.2, "#dfe8f0", p.badge);
           drawEmote(p, -PR - 22);
           if (!sayBubble(p, -PR - 6) && (p.talk || p.typing)) {
             /* chat bubble with three bouncing dots */
@@ -3794,7 +4263,7 @@
           c.shadowBlur = 0;
         }
         if (p === P) {
-          nameplate(lvlInfo().L, pname(), myTitle(), 1 + p.lvp * 1.2, "#fff");
+          nameplate(lvlInfo().L, pname(), myTitle(), 1 + p.lvp * 1.2, "#fff", cosV().badge);
           sayBubble(p, -PR - 17);
           drawEmote(p, -PR - 32);
         }
@@ -3802,7 +4271,7 @@
       }
       /* nameplate(L, name, tl, pop, col): level badge on the left (grows with level, tier color, pop = level-up bounce),
          name below the body and the equipped title under it. Drawn in the player's local space. */
-      function nameplate(L, name, tl, pop, col) {
+      function nameplate(L, name, tl, pop, col, frame) {
         const lc = lvlCol(L),
           fs = L >= 50 ? 11 : 10,
           t = S.tm;
@@ -3855,6 +4324,7 @@
         c.fill();
         c.stroke();
         c.shadowBlur = 0;
+        badgeFrame(c, frame, h, t); /* cosmetic level frame */
         if (L >= 30) {
           /* 30+: two sparks orbiting the badge */
           c.fillStyle = "#fff";
