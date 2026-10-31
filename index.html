@@ -821,6 +821,95 @@
         border-radius: 50%;
         background: #fffa;
       }
+      /* ---------- fantasy theme: walnut and leather panels, gilded edges, parchment text, river-teal actions ----------
+         Sits last so it restyles the older slate-blue rules above. Palette: */
+      :root, :root[data-theme="dark"] {
+        --wood: #2a1c11; /* panel */
+        --wood2: #3a2817; /* panel top light */
+        --wood3: #1a110a; /* wells, inputs */
+        --gild: #c9a14a; /* gold trim */
+        --gild2: #f0c35a; /* bright gold (headings, highlights) */
+        --parch: #f3e6c8; /* main text */
+        --muted: #bfa77e; /* secondary text */
+        --seam: #5a3f22; /* inner lines */
+        --rune: #3f9a85; /* action buttons: the river's teal */
+        --rune2: #2a6a5b;
+        --pn: var(--wood);
+        --ln: var(--seam);
+        --fg: var(--parch);
+        --ac: var(--rune);
+      }
+      #dlg { background: radial-gradient(ellipse at center, #1a0f0799, #0a0603e6); }
+      .pn {
+        color: var(--parch);
+        background:
+          radial-gradient(ellipse at 50% 0%, #4a331c 0%, transparent 60%),
+          linear-gradient(180deg, var(--wood2), var(--wood) 40%, #20150c);
+        border: 1px solid var(--gild);
+        border-radius: 10px;
+        box-shadow:
+          0 0 0 3px #140c06,
+          0 0 0 4px #c9a14a55,
+          inset 0 0 0 1px #00000066,
+          inset 0 0 0 4px #c9a14a1f,
+          0 18px 50px #000c;
+      }
+      h2 { color: var(--gild2); text-shadow: 0 1px 0 #000, 0 0 14px #f0c35a33; }
+      .pn h2 { padding-bottom: 8px; border-bottom: 1px solid var(--seam); box-shadow: 0 1px 0 #ffffff0d; }
+      .sm, .pn .sm { color: var(--muted); opacity: 1; }
+      button {
+        background: linear-gradient(180deg, var(--rune), var(--rune2));
+        border: 1px solid #c9a14a99;
+        color: #fff6e0;
+        text-shadow: 0 1px 1px #0008;
+        box-shadow: inset 0 1px 0 #ffffff26;
+      }
+      button:disabled { background: #2e2216; border-color: var(--seam); color: #8d7a5c; box-shadow: none; text-shadow: none; }
+      button.alt { color: #f0d9a0; background: linear-gradient(180deg, #f0c35a99, #8a5c1a99); }
+      button.alt::before { background: linear-gradient(180deg, var(--wood2), #1c120a); }
+      .tt { border-top-color: var(--seam); }
+      input.nm { background: var(--wood3); border-color: var(--seam); color: var(--parch); }
+      input.nm:focus { border-color: var(--gild); outline: none; }
+      /* HUD buttons */
+      #btns .hb, #btns #bt {
+        background: linear-gradient(180deg, #3a2817f2, #24170df2);
+        border: 1px solid var(--gild);
+        color: var(--parch);
+        box-shadow: 0 0 0 2px #140c0699, inset 0 1px 0 #ffffff1a, 0 4px 12px #0008;
+        font-family: "Cinzel", Georgia, serif;
+        letter-spacing: 0.5px;
+      }
+      #btns .hb:not(:disabled):hover, #btns #bt:not(:disabled):hover { border-color: var(--gild2); color: var(--gild2); }
+      #btns #bs { border-color: var(--gild2); box-shadow: 0 0 0 2px #140c0699, 0 0 12px #f0c35a55, inset 0 1px 0 #ffffff1a; }
+      /* chat */
+      #chat.op #chlog { background: #24170de6; border: 1px solid #c9a14a66; }
+      #chlog .sys { color: var(--gild2); }
+      #chlog .sys.out { color: #7fe6d2; }
+      #chlog .sys.bye { color: var(--muted); }
+      #chin, #emo button { background: #24170dcc; border-color: #c9a14a66; color: var(--parch); }
+      #chin:focus { background: #24170df2; border-color: var(--gild2); }
+      #chin::placeholder { color: var(--muted); }
+      #emo button:hover { border-color: var(--gild2); }
+      /* shop */
+      .purse2 { background: var(--wood3); border-color: #c9a14a66; color: var(--gild2); }
+      .ctabs { border-bottom-color: var(--seam); }
+      .ctabs button { background: none; box-shadow: none; text-shadow: none; color: var(--muted); }
+      .ctabs button:hover { color: var(--parch); }
+      .ctabs button.on { color: var(--gild2); border-bottom-color: var(--gild2); }
+      .ccard { background: linear-gradient(180deg, #2a1c11, #1d130b); border-color: var(--seam); }
+      .ccard.paid { border-color: #8a6d2c; }
+      .ccard.on { border-color: var(--gild2); box-shadow: 0 0 10px #f0c35a33; }
+      .ccard .sub { color: var(--muted); }
+      .ccard .tag { color: var(--gild2); }
+      .ccard button { background: linear-gradient(180deg, #3a2817, #2a1c11); border-color: var(--seam); }
+      .ccard button.gold { background: linear-gradient(180deg, #6b4d16, #4a340c); border-color: var(--gild); color: #ffe7a8; }
+      .ccard button.eur, .cpass button { background: linear-gradient(180deg, #f6d27a, #d9a43a); border-color: #f6d27a; color: #2a1806; text-shadow: none; }
+      .cpass { background: radial-gradient(ellipse at 15% 50%, #4a3418, #24170d 70%); border-color: #8a6d2c; }
+      .cpass h3 { color: var(--gild2); }
+      .cpass p { color: var(--parch); }
+      .cpass button:disabled { background: #2e2216; border-color: var(--seam); color: #8d7a5c; }
+      .cnote { color: var(--gild2); }
+      .cfoot { color: #8d7a5c; }
     </style>
   </head>
   <body>
