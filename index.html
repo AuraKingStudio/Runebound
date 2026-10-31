@@ -923,7 +923,7 @@
           V.xp = Math.max(0, +s.xp | 0);
           /* Archivist state: pool (lp, lpt), last tale time (lta), bonus window (lbx, lbn), blessing (bl), title flag (af) */
           for (const k of ["lp", "lpt", "lta", "lbx", "lbn", "cr"]) if (typeof s[k] == "number") V[k] = s[k];
-          V.bl = ["might", "stone", "swift"].includes(s.bl) ? s.bl : null;
+          V.bl = ["stone", "swift"].includes(s.bl) ? s.bl : null;
           V.af = s.af ? 1 : 0;
           if (s.sk) for (const k of Object.keys(V.sk)) if (Array.isArray(s.sk[k])) V.sk[k] = s.sk[k].slice(0, 3).map((x) => cl(+x | 0, 0, 5)); /* skill levels 0-5 */
           /* new NPCs: class choice, Maiden day, raid records */
@@ -1016,9 +1016,9 @@
           localStorage.setItem("runebound1", JSON.stringify(V));
         } catch (e) {}
       };
-      /* blessing from the Archivist (V.bl = "might" | "stone" | "swift"), lasts until the next raid ends */
+      /* blessing from the Archivist (V.bl = "stone" | "swift"), lasts until the next raid ends */
       const bless = (k) => V.bl == k;
-      const dm = () => (1 + 0.12 * V.up.dmg) * (bless("might") ? 1.25 : 1),
+      const dm = () => 1 + 0.12 * V.up.dmg,
         hpm = () => (1 + 0.15 * V.up.vit) * (bless("stone") ? 1.3 : 1),
         spm = () => 1 + 0.06 * V.up.spd,
         cdm = () => 1 - 0.08 * V.up.cdr;
@@ -1729,7 +1729,6 @@
       const LORE_REW = [
         { w: 30, big: 15, give: (b) => { const g = Math.round(rnd(50, b ? 150 : 100)); V.gold += g; return `💰 +${g} gold`; } },
         { w: 25, big: 15, give: (b) => { const x = Math.round(rnd(60, b ? 150 : 100)); gainXP(x, "lore"); return `✨ +${x} XP`; } },
-        { w: 12, big: 18, give: () => { V.bl = "might"; return "⚔ Blessing of Might: +25% damage next raid"; } },
         { w: 12, big: 18, give: () => { V.bl = "stone"; return "🛡 Blessing of Stone: +30% max HP next raid"; } },
         { w: 12, big: 18, give: () => { V.bl = "swift"; return "💨 Swift Blessing: dash cooldown halved next raid"; } },
         { w: 6, big: 12, give: () => {
@@ -1864,7 +1863,6 @@
       }
       /* ---------- The Maiden: one free blessing per day ---------- */
       const BLESS = [
-        ["might", "⚔ Might", "+25% damage next raid", "#ff7a5c"],
         ["stone", "🛡 Stone", "+30% max HP next raid", "#4da3ff"],
         ["swift", "💨 Swift", "Dash cooldown halved next raid", "#5ad7ff"],
       ];
@@ -5104,7 +5102,7 @@
           }
           /* active Archivist blessing, right of the gold counter */
           if (V.bl) {
-            const BL = { might: ["⚔ Might", "#ff7a5c"], stone: ["🛡 Stone", "#4da3ff"], swift: ["💨 Swift", "#5ad7ff"] }[V.bl];
+            const BL = { stone: ["🛡 Stone", "#4da3ff"], swift: ["💨 Swift", "#5ad7ff"] }[V.bl];
             c.save();
             c.font = "bold 12px Georgia";
             c.textAlign = "left";

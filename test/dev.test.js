@@ -78,8 +78,7 @@ for(let i=0;i<200;i++)T.loreReward(true);ok(!T.isUnl('maiden'),'unlock: Maiden s
 T.V().lt=100;for(let i=0;i<400&&!T.isUnl('maiden');i++)T.loreReward(true);ok(T.isUnl('maiden')&&!T.isUnl('smith'),'unlock: Maiden at 100 tales, Smith still locked');
 /* ---- Archivist rewards ---- */
 {const seen=new Set();for(let i=0;i<300;i++){const s=T.loreReward(i%2==0);seen.add(s.split(' ')[0]);}
-ok(seen.size>=5,'lore: secret pages give varied rewards ('+[...seen].join(' ')+')');}
-T.V().bl='might';const dmB=T.dm();T.V().bl=null;ok(dmB>T.dm(),'lore: Blessing of Might raises damage');
+ok(seen.size>=4,'lore: secret pages give varied rewards ('+[...seen].join(' ')+')');}
 /* ---- input mode ---- */
 T.setIn('pad');ok(T.inMode()=='pad'&&T.KEYHINT.pad[0]=='A','input: controller mode shows A/X/Y/B');
 T.setIn('kb');ok(T.inMode()=='kb'&&T.KEYHINT.kb.join(',')=='Space,Q,E,F,Shift','input: keyboard badges follow binds (Space, Q, E, F, Shift)');
