@@ -2396,6 +2396,7 @@
         S.sc = "arena";
         S.end = 0;
         S.at = 0;
+        for (const p of S.ps) p.fury = 0; /* fury starts from nothing each raid */
         S.pr = [];
         S.ao = [];
         S.zo = [];
@@ -2560,6 +2561,11 @@
       }
       /* SKM: damage multiplier from the skill level (+15% per level). Set at the start of act(), 1 in the arena loop. */
       let SKM = 1;
+      /* FURY: the DPS warms up over a raid. p.fury goes 0 -> 1 over FURY.time seconds of fighting; at full the main attack
+         fires FURY.atk faster and the other skills recover FURY.cdr faster. The DPS is the raid's main damage source.
+         furyMul(p, a): cooldown multiplier for skill a (1 for other classes). */
+      const FURY = { time: 40, atk: 0.55, cdr: 0.4 };
+      const furyMul = (p, a) => (p.cls == "dps" ? 1 - (a == 0 ? FURY.atk : FURY.cdr) * (p.fury || 0) : 1);
       function act(p, a) {
         SKM = 1 + 0.15 * ((V.sk[p.cls] || [])[a] || 0);
         if (p === P && p.cd[a] <= 0 && p.hp > 0) bountyAdd("skill");
@@ -2591,13 +2597,20 @@
             p.hp < p.mh ? heal(p, 45) : (ok = 0);
           } else S.zo.push({ x: p.x, y: p.y, r: 90, l: 5, t: 0 });
         }
-        if (ok && !DEV.nocd) p.cd[a] = CL[p.cls].cd[a] * cdm();
+        if (ok && !DEV.nocd) p.cd[a] = CL[p.cls].cd[a] * cdm() * furyMul(p, a);
       }
       function arena(dt) {
         SKM = 1; /* projectiles already carry their level bonus from shoot() */
         const b = S.b;
         if (S.end) return;
         S.at += dt;
+        /* DPS fury builds while the fight goes on, and is lost if you fall */
+        for (const p of S.ps)
+          if (p.cls == "dps") {
+            const was = p.fury || 0;
+            p.fury = p.hp > 0 ? Math.min(1, was + dt / FURY.time) : 0;
+            if (p === P && was < 1 && p.fury >= 1) popMsg("🔥 FURY! Attacks at full speed", 1.3);
+          }
         for (const q of S.rq) {
           q.t -= dt;
           if (q.t <= 0 && q.n > 0) {
@@ -3122,7 +3135,7 @@
       /* ---------- The Class Master: switch class in the hub ---------- */
       const ROLE = {
         tank: "Holds the Warden's eye. Shield Bash stuns. Dash grants armor.",
-        dps: "Ends the fight. Long-range arrows. Dash dodges every hit.",
+        dps: "Ends the fight. Fury builds through the raid: the longer you fight, the faster you shoot. Dash dodges every hit.",
         heal: "Keeps the raid standing. Heals and a healing circle. Dash heals you.",
       };
       /* classUI(): three class cards with stats and a CHOOSE button. */
@@ -4034,7 +4047,7 @@
         for (let a = 0; a < 3; a++) {
           const b = $("b" + a),
             cd = m.cd[a],
-            mx = CL[m.cls].cd[a] * cdm();
+            mx = CL[m.cls].cd[a] * cdm() * furyMul(m, a);
           /* rebuild the button only when the class changes; per frame we only touch the cooldown */
           if (b.dataset.cls != m.cls) {
             b.dataset.cls = m.cls;
@@ -4386,6 +4399,27 @@
           c.scale(1 + 0.07 * Math.abs(step), 1 - 0.07 * Math.abs(step));
         }
         drawRing(c, p === P ? cosV().ring : p.ring, S.tm); /* cosmetic border */
+        if (p.cls == "dps" && S.sc == "arena" && p.fury > 0) {
+          /* fury: a burning ring filling up round the body, flaring when full */
+          const full = p.fury >= 1;
+          c.save();
+          c.globalCompositeOperation = "lighter";
+          c.strokeStyle = full ? `rgba(255,${140 + 60 * Math.sin(S.tm * 12)},60,.9)` : "rgba(255,120,60,.75)";
+          c.lineWidth = full ? 3.5 : 2.5;
+          c.beginPath();
+          c.arc(0, 0, PR + 7, -Math.PI / 2, -Math.PI / 2 + 6.283 * p.fury);
+          c.stroke();
+          if (full)
+            for (let k = 0; k < 5; k++) {
+              const ph = (S.tm * 1.8 + k / 5) % 1,
+                a = k * 1.26 + S.tm;
+              c.fillStyle = `rgba(255,170,80,${0.8 * (1 - ph)})`;
+              c.beginPath();
+              c.arc(Math.cos(a) * (PR + 7), Math.sin(a) * (PR + 7) - ph * 14, 1.6, 0, 6.3);
+              c.fill();
+            }
+          c.restore();
+        }
         /* body disc, ring and class emblem (cached sprite) */
         const bs = PR + BODY_PAD;
         c.drawImage(bodySprite(p.cls), -bs, -bs, bs * 2, bs * 2);
