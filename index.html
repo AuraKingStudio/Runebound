@@ -48,6 +48,12 @@
         width: calc(100% - var(--dw, 0px));
         height: calc(100% - var(--dh, 0px));
       }
+      /* small party invite popup: top center, does not stop the game */
+      #pinv { position: fixed; top: 64px; left: 50%; transform: translateX(-50%); z-index: 30; display: flex; gap: 8px; align-items: center;
+        padding: 6px 8px 6px 12px; border-radius: 10px; background: #0b1218e6; border: 1px solid #c9a14a; color: #f3e6c4; font-size: 13px; }
+      #pinv[hidden] { display: none; }
+      #pinv button { padding: 4px 12px; border-radius: 6px; border: 0; font: inherit; font-weight: 700; cursor: pointer; }
+      #pinv .y { background: #3fbf6a; color: #06140a; } #pinv .n { background: #5a2a2a; color: #f3e6c4; }
       #dlg {
         position: fixed;
         inset: 0;
@@ -916,6 +922,7 @@
   <body>
     <canvas id="cv"></canvas>
     <div id="dlg" hidden><div class="pn" id="dp"></div></div>
+    <div id="pinv" hidden></div>
     <div id="dev" hidden></div>
     <div id="jz"></div>
     <div id="jb"><div id="jk"></div></div>
@@ -1531,15 +1538,18 @@
         const mh = Math.round(CL[k].hp * hpm());
         return { id: 0, cls: k, x: 450, y: 380, hp: mh, mh, cd: [0, 0, 0], dx: 0, dy: 0 };
       }
+      /* ARENA: the raid floor (circle). The background picture is scaled so its floor ring matches r (art floor = 162 px).
+         RAID_SPEED: everyone walks slower in raids (dash distance unchanged). */
+      const ARENA = { x: 450, y: 312, r: 240, art: 162 }, RAID_SPEED = 0.75;
       function clampW(p) {
         if (S.sc == "arena") {
-          const dx = p.x - 450,
-            dy = p.y - 312,
+          const dx = p.x - ARENA.x,
+            dy = p.y - ARENA.y,
             l = Math.hypot(dx, dy),
-            m = 162;
+            m = ARENA.r;
           if (l > m) {
-            p.x = 450 + (dx / l) * m;
-            p.y = 312 + (dy / l) * m;
+            p.x = ARENA.x + (dx / l) * m;
+            p.y = ARENA.y + (dy / l) * m;
           }
         } else {
           /* walkable hub plaza = ellipse HUB (inset so players stay on the stones) */
@@ -2172,18 +2182,20 @@
             v.lv = lv;
             v.netInfo = [lv, spd].join();
             if (was && was != v.netInfo) netTell({ type: "u", e: [v.netSlot, lv, spd] }); /* level-up or speed upgrade */
-          } else if (["pi", "pa", "pp", "pl", "pg"].includes(message.type) && typeof message.to == "string") {
-            /* party traffic between two players: the master stamps the sender, checks the size, forwards or handles it */
-            const v = HUBV.find((o) => o.id == id && !o.bot);
-            if (!v || JSON.stringify(message).length > 1500) return;
-            const now = performance.now();
-            v.netPartyN = now - (v.netPartyAt || 0) > 1000 ? 1 : (v.netPartyN || 0) + 1;
-            v.netPartyAt = now;
-            if (v.netPartyN > 6) return netStrike(v, 1, "spamming party requests");
+          } else if (NET_RELAY_T.includes(message.type) && (typeof message.to == "string" || (Array.isArray(message.to) && message.to.length <= 11))) {
+            /* party and raid traffic between players: the master stamps the sender, checks size and rate, then forwards it
+               (bundled per receiver, see netRelay) or handles it when it is the receiver */
+            const v = HUBV.find((o) => o.id == id && !o.bot), raid = ["rm", "ra", "rs"].includes(message.type);
+            if (!v || JSON.stringify(message).length > (message.type == "rs" ? 3500 : 1500)) return;
+            const now = performance.now(), k = raid ? "netRaid" : "netParty";
+            if (now - (v[k + "At"] || 0) > 1000) { v[k + "At"] = now; v[k + "N"] = 0; } /* a fixed 1 s window per sender */
+            v[k + "N"]++;
+            if (v[k + "N"] > (raid ? 40 : 6)) return raid ? undefined : netStrike(v, 1, "spamming party requests");
             const { to, ...rest } = message;
-            if (to == "host-player") return partyMessage(v.netClientId, rest);
-            const target = HUBV.find((o) => o.netClientId == to && !o.bot);
-            if (target) NET.send(target.id, { ...rest, from: v.netClientId });
+            for (const t of [].concat(to)) {
+              if (t == "host-player") partyMessage(v.netClientId, rest);
+              else { const target = HUBV.find((o) => o.netClientId == t && !o.bot); if (target) netRelay(target.id, { ...rest, from: v.netClientId }); }
+            }
           } else if (message.type == "chat" || message.type == "emote") {
             const v = HUBV.find((item) => item.id == id && !item.bot);
             if (!v) return;
@@ -2260,8 +2272,11 @@
           } else if (message.type == "emote" && message.id != NET_LOCAL_ID && Object.values(EMOTES).includes(message.e)) {
             const v = HUBV.find((other) => other.id == message.id);
             if (v) emote(v, message.e);
-          } else if (["pi", "pa", "pp", "pl", "pg"].includes(message.type) && typeof message.from == "string") {
+          } else if (NET_RELAY_T.includes(message.type) && typeof message.from == "string") {
             partyMessage(message.from, message);
+          } else if (message.type == "rb" && Array.isArray(message.m) && message.m.length <= 40) {
+            /* a bundle of forwarded party/raid messages from the master */
+            for (const x of message.m) if (x && NET_RELAY_T.includes(x.type) && typeof x.from == "string") partyMessage(x.from, x);
           } else if (message.type == "q" && Number.isInteger(message.n)) {
             if (performance.now() - NET_ANSWERED_AT < 1000) return;
             NET_ANSWERED_AT = performance.now();
@@ -2335,6 +2350,7 @@
         }
       }
       if (typeof setInterval == "function") setInterval(netStep, 50);
+      if (typeof setInterval == "function") setInterval(() => { if (NET && NET_RELAY_Q.size) netRelayFlush(); raidNetStep(performance.now()); }, 50);
       /* closing or reloading the tab frees the seat at once (keepalive request) instead of leaving a dead hub for 30 s */
       addEventListener("pagehide", () => { if (NET_SESSION) netDisconnect(); });
       /* botOut(v): the bot heads off to a raid: stops, rises into a pillar of light, then disconnects */
@@ -2569,9 +2585,9 @@
         { id: "e_cool", t: "emote", k: "cool", e: "😎", n: "Cool", gold: 250 },
         { id: "e_skull", t: "emote", k: "skull", e: "💀", n: "Skull", need: () => (V.wins || 0) >= 25, how: "Win 25 raids" },
         { id: "e_pray", t: "emote", k: "pray", e: "🙏", n: "Thanks", need: () => (V.ds || 0) >= 7, how: "7-day login streak" },
-        { id: "e_crown", t: "emote", k: "crown", e: "👑", n: "Crown", eur: 1.29 },
-        { id: "e_dragon", t: "emote", k: "dragon", e: "🐉", n: "Dragon", eur: 1.49 },
-        { id: "e_bolt", t: "emote", k: "bolt", e: "⚡", n: "Rune Bolt", pass: 1 },
+        { id: "e_crown", t: "emote", k: "crown", e: "👑", n: "Crown", gold: 400 },
+        { id: "e_dragon", t: "emote", k: "dragon", e: "🐉", n: "Dragon", gold: 500 },
+        { id: "e_bolt", t: "emote", k: "bolt", e: "⚡", n: "Rune Bolt", gold: 600 }, /* emotes never cost real money (owner) */
       ];
       const PASS = { eur: 2.99, bonus: 0.25 }; /* Rune Pass: +25% gold and XP from raids, plus its exclusive cosmetics */
       const cosV = () => (V.cos = V.cos || { own: {} });
@@ -3302,6 +3318,8 @@
         emoBar(); /* emotes earned in the raid show up */
         S.sc = "hub";
         S.ps = [P]; /* raid allies stay behind */
+        S.net = null;
+        P.id = 0;
         S.b = null;
         S.pr = [];
         S.ao = [];
@@ -3331,7 +3349,7 @@
       const SPELLS = {
         slam: (b, f) => { S.ao.push({ x: b.x, y: b.y, r: 110, t: 1.6, m: 1.6, d: 30 * f, n: "Rune Slam" }); b.cd = 3; },
         hex: (b, f) => { const t = pick(raidAlive().filter((p) => p.cls != "tank")) || raidAlive()[0]; S.ao.push({ x: t.x, y: t.y, r: 44, t: 1.1, m: 1.1, d: 28 * f, n: "Hex" }); b.cd = 2.2; },
-        rain: (b, f) => { for (let i = 0; i < 5; i++) { const a = rnd(0, 6.28), r = rnd(0, 140); S.ao.push({ x: 450 + Math.cos(a) * r, y: 312 + Math.sin(a) * r, r: 40, t: 1.4, m: 1.4, d: 30 * f, n: "Void Rain" }); } b.cd = 2.4; },
+        rain: (b, f) => { for (let i = 0; i < 5; i++) { const a = rnd(0, 6.28), r = rnd(0, ARENA.r * 0.85); S.ao.push({ x: ARENA.x + Math.cos(a) * r, y: ARENA.y + Math.sin(a) * r, r: 40, t: 1.4, m: 1.4, d: 30 * f, n: "Void Rain" }); } b.cd = 2.4; },
         split: (b, f, tg) => { S.ao.push({ ln: 1, x: b.x, y: b.y, a: Math.atan2(tg.y - b.y, tg.x - b.x), len: 340, w: 46, t: 1.4, m: 1.4, d: 38 * f, n: "Earthsplitter" }); b.cd = 2.6; },
         nova: (b, f) => { for (let i = 0; i < 8; i++) { const a = (i / 8) * 6.283; S.ao.push({ x: b.x + Math.cos(a) * 120, y: b.y + Math.sin(a) * 120, r: 34, t: 1.5, m: 1.5, d: 30 * f, n: "Thorn Nova" }); } b.cd = 2.8; },
         charge: (b, f) => { const far = raidAlive().reduce((m, p) => (dist(p, b) > dist(m, b) ? p : m)); S.ao.push({ ln: 1, x: b.x, y: b.y, a: Math.atan2(far.y - b.y, far.x - b.x), len: Math.min(320, dist(far, b) + 30), w: 54, t: 1.2, m: 1.2, d: 40 * f, n: "Rampage", charge: 1 }); b.cd = 3.2; },
@@ -3371,7 +3389,7 @@
         return { id, cls: m.cls, name: m.name, lv: m.lv || 1, ti: m.ti || TITLES[0], ring: m.ring, badge: m.badge, filler: m.filler, ally: 1,
           x: 450, y: 430, hp: mh, mh, cd: [rnd(0, 0.5), rnd(0, 2), rnd(0, 0.5)], dx: 0, dy: 0, f: "u", dmgM: 1 + 0.12 * tier, eng: 1, life: 0 };
       }
-      function toArena(key = "small", team = raidTeam(key).team) {
+      function toArena(key = "small", team = raidTeam(key).team, net = null) {
         S.sc = "arena";
         S.raid = RAIDS[key] && !RAIDS[key].locked ? key : "small";
         S.end = 0;
@@ -3382,12 +3400,19 @@
         S.zo = [];
         S.rq = [];
         place(1);
-        P.id = 0; P.eng = 1; P.life = 0;
-        S.ps = [P];
-        (team || raidTeam(S.raid).team || []).filter((m) => !m.me).forEach((m, i) => S.ps.push(mkAlly(m, i + 1)));
-        S.ps.forEach((p, i) => { const n = S.ps.length, a = Math.PI * (0.25 + (0.5 * (i + 0.5)) / n); p.x = 450 + Math.cos(a) * 120; p.y = 312 + Math.sin(a) * 120; });
+        P.eng = 1; P.life = 0;
+        /* ids follow the team order, so every screen in a networked raid agrees on who is who */
+        S.ps = (team || raidTeam(S.raid).team || [{ me: 1 }]).map((m, i) => {
+          if (m.me) { P.id = i; return P; }
+          const a = mkAlly(m, i);
+          if (m.real && m.key) { a.remote = m.key; a.heard = performance.now(); } /* a real player: moved by their messages */
+          return a;
+        });
+        if (!S.ps.includes(P)) { P.id = S.ps.length; S.ps.push(P); }
+        S.net = net || (S.ps.some((a) => a.remote) ? { role: "lead", t: 0 } : null);
+        S.ps.forEach((p, i) => { const n = S.ps.length, a = Math.PI * (0.25 + (0.5 * (i + 0.5)) / n); p.x = ARENA.x + Math.cos(a) * ARENA.r * 0.7; p.y = ARENA.y + Math.sin(a) * ARENA.r * 0.7; });
         const D = BOSSES[RAIDS[S.raid].boss];
-        S.b = { def: D, x: 450, y: 220, r: D.r, hp: D.hp, mh: D.hp, ph: 1, stun: 0, tt: 0, tg: -1, cur: -1, fl: 0, cd: 2.5, n: 0, hf: 0, atk: D.atkT, thr: {},
+        S.b = { def: D, x: 450, y: 220, tx: 450, ty: 220, r: D.r, hp: D.hp, mh: D.hp, ph: 1, stun: 0, tt: 0, tg: -1, cur: -1, fl: 0, cd: 2.5, n: 0, hf: 0, atk: D.atkT, thr: {},
           wk: 0, weak: 0, brk: 0, enr: 0, doom: null, doomed: false };
         popMsg(`⚔ ${RAIDS[S.raid].n}: ${D.n}`, 1.2, 2500);
       }
@@ -3455,8 +3480,26 @@
       /* netParty(to, message): party messages travel through the hub master (it adds who sent them) */
       function netParty(to, message) {
         if (!NET_SESSION || !NET) return;
-        if (NET_ROLE == "host") { const v = HUBV.find((o) => vKey(o) == to && !o.bot); if (v) NET.send(v.id, { ...message, from: "host-player" }); }
+        if (NET_ROLE == "host") { for (const t of [].concat(to)) { const v = HUBV.find((o) => vKey(o) == t && !o.bot); if (v) netRelay(v.id, { ...message, from: "host-player" }); } }
         else NET.send(NET_SESSION.peerId, { ...message, to });
+      }
+      /* netRelay(peer, message): the master queues forwarded messages per receiver and sends them as one "rb" bundle every
+         50 ms, so a player getting moves from 5 raid members still receives only ~20 messages a second */
+      const NET_RELAY_T = ["pi", "pa", "pp", "pl", "pg", "rm", "ra", "rs"], NET_RELAY_Q = new Map();
+      function netRelay(peer, message) {
+        const size = JSON.stringify(message).length;
+        if (NET_RELAY_Q.has(peer) && JSON.stringify(NET_RELAY_Q.get(peer)).length + size > 3500) netRelayFlush(peer); /* stay under the 4 KB message cap */
+        const q = NET_RELAY_Q.get(peer) || [];
+        q.push(message);
+        NET_RELAY_Q.set(peer, q);
+      }
+      function netRelayFlush(only) {
+        for (const [peer, q] of NET_RELAY_Q) {
+          if (only && peer != only) continue;
+          if (q.length == 1) NET.send(peer, q[0]);
+          else if (q.length) NET.send(peer, { type: "rb", m: q });
+          NET_RELAY_Q.delete(peer);
+        }
       }
       /* partyMessage(from, message): an invite, an answer, the party list, a leave or a raid start from another player */
       function partyMessage(from, message) {
@@ -3464,35 +3507,38 @@
         if (!v) return;
         if (message.type == "pi") {
           if (PARTY.m.length || PARTY.lead != "me") return netParty(from, { type: "pa", ok: false }); /* already in a party */
+          if ([...PARTY_INV.keys()].some((k) => k.startsWith("from:") && k != "from:" + from)) return netParty(from, { type: "pa", ok: false, busy: true }); /* one invite at a time */
           PARTY_INV.set("from:" + from, S.tm);
-          $("dlg").hidden = false;
-          CUR_DLG = "invite";
-          $("dp").innerHTML = `<h2>👥 Party invite</h2><p><b>${esc(v.name)}</b> (Lv ${v.lv} ${CL[v.cls].n}) invites you to their party.</p>
-            <div class="row"><button class="claim" onclick="partyAnswer('${esc(from)}', true)">ACCEPT</button><button class="alt" onclick="partyAnswer('${esc(from)}', false)">Decline</button></div>`;
+          const box = $("pinv");
+          box.hidden = false;
+          box.innerHTML = `<span>👥 <b style="color:${SKC[v.cls]}">${esc(v.name)}</b> invites you</span><button class="y" onclick="partyAnswer('${esc(from)}', true)">Yes</button><button class="n" onclick="partyAnswer('${esc(from)}', false)">No</button>`;
+          clearTimeout(box.tm);
+          box.tm = setTimeout(() => PARTY_INV.has("from:" + from) && partyAnswer(from, false), 20000); /* unanswered: declined after 20 s */
         } else if (message.type == "pa" && PARTY_INV.has(from)) {
           PARTY_INV.delete(from);
-          message.ok === true ? partyAdd(from) : chatSys(v.name + " declined your invite", "bye");
+          message.ok === true ? partyAdd(from) : chatSys(v.name + (message.busy ? " already has a pending invite" : " declined your invite"), "bye");
         } else if (message.type == "pp" && Array.isArray(message.m) && message.m.length <= PARTY_MAX && message.m.every((k) => typeof k == "string" && k.length <= 56)) {
           if (PARTY.lead != from && PARTY.lead != "me") return; /* only my leader can change my party */
           const mine = netMyId();
           if (!message.m.includes(mine)) { if (PARTY.lead == from) { PARTY = { lead: "me", m: [] }; chatSys("You are no longer in a party", "bye"); } return; }
           PARTY = { lead: from, m: message.m.filter((k) => k != mine && k != from) };
         } else if (message.type == "pl" && isLeader() && PARTY.m.includes(from)) partyRemove(from);
+        else if (["rm", "ra", "rs"].includes(message.type)) raidNet(from, message);
         else if (message.type == "pg" && PARTY.lead == from && RAIDS[message.raid] && Array.isArray(message.team) && message.team.length <= PARTY_MAX * 2) {
-          /* the leader started a raid: everyone in the party goes (each screen runs the fight; see AgentInstruction) */
+          /* the leader started a raid: everyone in the party goes; the leader's screen runs the fight, ours mirrors it */
           const mine = netMyId(), team = message.team.filter((m) => m && CL[m.cls] && typeof m.name == "string").slice(0, RAIDS[message.raid].size)
-            .map((m) => (m.key == mine ? { me: 1, cls: P.cls } : { cls: m.cls, name: String(m.name).slice(0, 16), lv: cl(m.lv | 0, 1, 60), ti: TITLES[m.ti | 0] || TITLES[0], filler: m.filler }));
+            .map((m) => (m.key == mine ? { me: 1, cls: P.cls } : { cls: m.cls, name: String(m.name).slice(0, 16), lv: cl(m.lv | 0, 1, 60), ti: TITLES[m.ti | 0] || TITLES[0], filler: m.filler, key: m.key }));
           if (dlgOpen()) closeDlg();
-          startTeleport(message.raid, team);
+          if (team.some((m) => m.me)) startTeleport(message.raid, team, { role: "member", lead: from, heard: performance.now(), seq: 0, key: "", at: 0 });
         }
       }
       function partyAnswer(from, ok) {
         PARTY_INV.delete("from:" + from);
         netParty(from, { type: "pa", ok });
-        closeDlg();
+        $("pinv").hidden = true;
         if (ok) chatSys("You accepted the invite", "in");
       }
-      /* playerUI(v): inspect another player: class, level, title, cosmetics, and the party buttons */
+      /* playerUI(v): inspect a party member (click their name in the party menu): class, level, title, cosmetics */
       function playerUI(v) {
         CUR_DLG = "player";
         $("dlg").hidden = false;
@@ -3508,7 +3554,7 @@
       function partyUI() {
         CUR_DLG = "party";
         $("dlg").hidden = false;
-        const rows = partyMembers().map((m) => `<div class="up" style="--uc:${SKC[m.cls]}"><div style="min-width:0"><span class="nm">${esc(m.name)}${m.me ? " (you)" : ""}${(!m.me && m.key == PARTY.lead) || (m.me && isLeader() && PARTY.m.length) ? " 👑" : ""}</span>
+        const rows = partyMembers().map((m) => `<div class="up" style="--uc:${SKC[m.cls]}"><div style="min-width:0"><span class="nm"${m.me ? "" : ` style="cursor:pointer" onclick="playerUI(partyFind('${esc(m.key)}'))"`}>${esc(m.name)}${m.me ? " (you)" : ""}${(!m.me && m.key == PARTY.lead) || (m.me && isLeader() && PARTY.m.length) ? " 👑" : ""}</span>
           <div class="sm">Lv ${m.lv} ${CL[m.cls].n}${m.real ? " · online" : m.me ? "" : " · bot"}</div></div>${isLeader() && !m.me ? `<button class="alt" onclick="partyRemove('${esc(m.key)}');partyUI()">Remove</button>` : ""}</div>`).join("");
         $("dp").innerHTML = `<h2>👥 Party (${partyMembers().length}/${PARTY_MAX})</h2>${rows}<p class="sm">Walk up to a player and press interact to invite them. Missing raid roles are filled by bots.</p>
           ${PARTY.m.length || !isLeader() ? `<button class="alt" onclick="partyLeave()">Leave party</button>` : ""}<button class="alt" onclick="closeDlg()">Close</button>`;
@@ -3541,7 +3587,7 @@
         const t = raidTeam(key);
         if (t.err) return toast(t.err);
         closeDlg();
-        const wire = t.team.map((m) => ({ key: m.me ? netMyId() : m.key || "", cls: m.cls, name: m.me ? pname() : m.name, lv: m.lv, ti: Math.max(0, TITLES.indexOf(m.ti)), filler: m.filler ? 1 : 0 }));
+        const wire = t.team.map((m) => ({ key: m.me ? netMyId() : m.key || "", cls: m.cls, name: m.me ? pname() : m.name, lv: m.lv, ti: Math.max(0, TITLES.indexOf(m.ti)), filler: m.filler ? 1 : 0, real: m.me || m.real ? 1 : 0 }));
         for (const k of PARTY.m) { const v = partyFind(k); if (v && !v.bot) netParty(k, { type: "pg", raid: key, team: wire }); }
         startTeleport(key, t.team);
       }
@@ -3630,6 +3676,7 @@
       }
       function win() {
         V.bl = null; /* blessings last one raid */
+        raidEvent(["end", "win"]);
         V.wins = (V.wins || 0) + 1; /* Herald records */
         V.best = V.best ? Math.min(V.best, S.at) : S.at;
         S.end = "win";
@@ -3648,11 +3695,13 @@
         if (q && V.qs == 1 && (V.q == 1 || (V.q == 2 && S.raid == "large"))) V.qs = 2;
         save();
       }
+      const ZONE_DMG = 1.25; /* damage bonus while standing in a healer's Circle */
       function hitB(d, src = P) {
         d = d * SKM; /* skill level bonus for direct hits */
         const b = S.b;
         if (!b || S.end) return;
-        const v = Math.min(b.hp, d * aDm(src) * (b.brk > 0 ? 1.5 : 1)); /* broken poise: everyone hits 50% harder */
+        const z = S.zo && S.zo.some((o) => dist(src, o) < o.r) ? ZONE_DMG : 1; /* standing in a healer's Circle: hits harder */
+        const v = Math.min(b.hp, d * aDm(src) * z * (b.brk > 0 ? 1.5 : 1)); /* broken poise: everyone hits 50% harder */
         b.hp -= v;
         b.hf = 0.08;
         b.thr[src.id] = (b.thr[src.id] || 0) + v;
@@ -3695,6 +3744,14 @@
         if (p === P && p.cd[a] <= 0 && p.hp > 0) bountyAdd("skill");
         if (S.sc == "hub" && p.hp > 0 && p.cd[a] <= 0) return hubSkill(p, a);
         if (S.sc != "arena" || S.end || p.hp <= 0 || p.cd[a] > 0 || !S.b) return;
+        if (S.net && S.net.role == "member") {
+          /* a member shows its own press at once; the leader decides what it does */
+          if (p !== P) return;
+          p.cd[a] = Math.max(ENGINE.minCd, CL[p.cls].cd[a] * aCdm(p) * cdMul(p, a));
+          raidFx(p, a);
+          return netParty(S.net.lead, { type: "ra", a, s: ++S.net.seq });
+        }
+        raidEvent(["fx", p.id, a]);
         const b = S.b,
           d = dist(p, b),
           eng = p.cls == "dps" ? p.eng || 1 : 1; /* DPS skills scale with the Engine */
@@ -3721,7 +3778,7 @@
         b.stun = Math.max(b.stun, 2);
         if (b.weak > 0) {
           b.weak = 0; b.stun = 4; b.brk = 8;
-          popMsg("💥 POISE BROKEN! Everyone deals +50% damage", 1.3, 2500);
+          raidMsg("💥 POISE BROKEN! Everyone deals +50% damage", 1.3, 2500);
           RINGS.push({ x: b.x, y: b.y, col: "#ffe066", t: 0 });
           burst(b.x, b.y, "#ffe066", 40, 240);
           shake(0.4);
@@ -3739,6 +3796,123 @@
       /* healTarget(p): the most hurt living ally within 260 px (yourself included) */
       function healTarget(p) {
         return raidAlive().filter((a) => a.hp < a.mh && dist(a, p) < 260).sort((x, y) => x.hp / x.mh - y.hp / y.mh)[0] || null;
+      }
+      /* ---------- networked raids ----------
+         The party leader's screen runs the fight (S.net.role "lead"); members mirror it (S.net.role "member").
+         Member -> leader: "rm" {x, y, f, d, s} moves (15/s while moving), "ra" {a, s} skill presses. The leader checks moves with a
+         refilling speed budget and plays skills through act(), so cooldowns and damage are the leader's.
+         Leader -> members: "rs" 10/s: t, boss [x, y, hp, phase, target, taunt, weak, broken, enraged, stun, phase-flash] (tenths),
+         players [[id, x, y, hp, maxHp, engine*10, facing]], doom [id, t*10, x, y, got, ...], new telegraphs and circles, events
+         (fx: someone used a skill; msg: banner; end: win/lose). Everything goes through the hub master, which bundles it. */
+      const RAID_SILENT_MS = 5000;
+      function raidNet(from, m) {
+        const N = S.net;
+        if (!N || S.sc != "arena") return;
+        if (N.role == "lead" && (m.type == "rm" || m.type == "ra")) {
+          const a = S.ps.find((o) => o.remote == from);
+          if (!a || !Number.isInteger(m.s) || m.s <= (a.seq || 0)) return;
+          a.seq = m.s;
+          a.heard = performance.now(); /* even a fallen member is still there: it keeps getting the fight to watch */
+          if (a.hp <= 0) return;
+          if (m.type == "ra") { if (Number.isInteger(m.a) && m.a >= 0 && m.a <= 2) act(a, m.a); return; }
+          if (!Number.isFinite(m.x) || !Number.isFinite(m.y) || !NET_F[m.f]) return;
+          /* same refilling budget as the hub: 1.3x class speed, 0.5 s of slack, plus a dash when off cooldown */
+          const now = performance.now(), rate = CL[a.cls].sp * RAID_SPEED * 1.3, cap = rate * 0.5 + 24, D = DASH[a.cls];
+          a.budget = Math.min(cap, (a.budget ?? cap) + (rate * (now - (a.movedAt || now))) / 1000);
+          a.movedAt = now;
+          const dash = m.d === 1 && now - (a.dashAt || -1e9) >= D.cd * 900, mx = m.x - (a.tx ?? a.x), my = m.y - (a.ty ?? a.y), dd = Math.hypot(mx, my), allow = a.budget + (dash ? D.d : 0);
+          if (dash && dd > a.budget) { a.dashAt = now; if (D.ar) a.ar = D.ar; if (D.inv) a.inv = D.inv; }
+          const k = dd > allow ? allow / dd : 1, pos = { x: (a.tx ?? a.x) + mx * k, y: (a.ty ?? a.y) + my * k, hp: 1 };
+          a.budget = Math.max(0, a.budget - Math.max(0, dd * k - (dash ? D.d : 0)));
+          clampW(pos);
+          a.tx = pos.x; a.ty = pos.y; a.f = NET_F[m.f];
+        } else if (N.role == "member" && m.type == "rs" && from == N.lead) raidApply(m);
+      }
+      /* raidState(): the leader's 10/s snapshot for its members (new telegraphs, circles and events go out once) */
+      function raidState() {
+        const b = S.b, N = S.net, r = (v) => Math.round(v), tn = (v) => Math.round(v * 10);
+        const m = { type: "rs", t: tn(S.at),
+          b: [r(b.x), r(b.y), r(b.hp), b.ph, b.cur, tn(b.tt), tn(b.weak), tn(b.brk), tn(b.enr), tn(b.stun), tn(b.fl)],
+          p: S.ps.map((a) => [a.id, r(a.x), r(a.y), r(a.hp), r(a.mh), tn(a.eng || 1), NET_F.indexOf(a.f || "d")]) };
+        if (b.doom) m.d = [b.doom.id, tn(b.doom.t), ...b.doom.orbs.flatMap((o) => [r(o.x), r(o.y), o.got ? 1 : 0])];
+        const ao = S.ao.filter((a) => !a.sent).map((a) => { a.sent = 1; return a.ln ? [1, r(a.x), r(a.y), Math.round(a.a * 1000), r(a.len), r(a.w), tn(a.t), tn(a.m)] : [0, r(a.x), r(a.y), r(a.r), tn(a.t), tn(a.m)]; });
+        if (ao.length) m.ao = ao;
+        const zo = S.zo.filter((z) => !z.sent).map((z) => { z.sent = 1; return [r(z.x), r(z.y)]; });
+        if (zo.length) m.zo = zo;
+        if (N.ev && N.ev.length) { m.ev = N.ev; N.ev = []; }
+        return m;
+      }
+      /* raidEvent(e): a leader-side moment the members should see (skill visuals, banners, the end) */
+      function raidEvent(e) { if (S.net && S.net.role == "lead") (S.net.ev = S.net.ev || []).push(e); }
+      function raidMsg(t, z, ms) { popMsg(t, z, ms); raidEvent(["msg", String(t).slice(0, 80)]); }
+      /* raidApply(m): a member applies the leader's snapshot: positions glide, health/boss/doom snap, telegraphs and events play */
+      function raidApply(m) {
+        const b = S.b, N = S.net;
+        if (!b || !Array.isArray(m.b) || m.b.length != 11 || !Array.isArray(m.p) || m.p.length > 12) return;
+        N.heard = performance.now();
+        const [bx, by, hp, ph, cur, tt, weak, brk, enr, stun, fl] = m.b;
+        if (hp < b.hp - 0.5) ftxt(b.x, b.y - b.r - 4, Math.round(b.hp - hp), "#fff");
+        b.tx = bx; b.ty = by; b.hp = cl(hp, 0, b.mh); b.ph = ph == 2 ? 2 : 1; b.cur = cur; b.tt = tt / 10; b.weak = weak / 10; b.brk = brk / 10; b.enr = enr / 10; b.stun = stun / 10; b.fl = fl / 10;
+        S.at = (m.t | 0) / 10;
+        for (const [id, x, y, ahp, amh, eng, f] of m.p) {
+          const a = S.ps.find((o) => o.id == id);
+          if (!a || !Number.isFinite(x) || !Number.isFinite(y)) continue;
+          if (ahp < a.hp - 0.5) { ftxt(a.x, a.y - 24, "-" + Math.round(a.hp - ahp), "#ff6070"); if (a === P) { shake(0.25); sfx("hurt"); } }
+          if (ahp > a.hp + 0.5) ftxt(a.x, a.y - 24, "+" + Math.round(ahp - a.hp), "#7dff9a");
+          a.hp = cl(ahp, 0, 1e5); a.mh = Math.max(1, amh); a.eng = eng / 10;
+          if (a === P) { if (Math.hypot(P.x - x, P.y - y) > 70) { P.x = x; P.y = y; } } /* the leader disagrees a lot: trust it */
+          else { a.tx = x; a.ty = y; a.f = NET_F[f] || "d"; }
+        }
+        if (Array.isArray(m.d) && m.d.length == 11) {
+          const [id, t, ...o] = m.d;
+          b.doom = { id, t: t / 10, m: 12, orbs: [0, 1, 2].map((i) => ({ x: o[i * 3], y: o[i * 3 + 1], got: !!o[i * 3 + 2] })) };
+        } else b.doom = null;
+        for (const a of m.ao || []) S.ao.push(a[0] ? { ln: 1, x: a[1], y: a[2], a: a[3] / 1000, len: a[4], w: a[5], t: a[6] / 10, m: a[7] / 10 } : { x: a[1], y: a[2], r: a[3], t: a[4] / 10, m: a[5] / 10 });
+        for (const z of m.zo || []) S.zo.push({ x: z[0], y: z[1], r: 90, l: 5, t: 0 });
+        for (const e of m.ev || []) {
+          if (e[0] == "fx") { const a = S.ps.find((o) => o.id == e[1]); if (a && a !== P) raidFx(a, e[2]); }
+          else if (e[0] == "msg") popMsg(String(e[1]).slice(0, 80), 1.1, 2500);
+          else if (e[0] == "end" && !S.end) e[1] == "win" ? win() : raidEnd(String(e[2] || "Your party fell.").slice(0, 80));
+        }
+      }
+      /* raidFx(a, skill): what a skill looks like, without its effect (members draw others' and their own presses) */
+      function raidFx(a, k) {
+        const b = S.b;
+        if ((a.cls == "dps" && k < 2) || (a.cls == "heal" && k == 0)) { const ang = Math.atan2(b.y - a.y, b.x - a.x); S.pr.push({ x: a.x, y: a.y, vx: Math.cos(ang) * 360, vy: Math.sin(ang) * 360, d: 0, l: 2, c: a.cls, o: a.id, vis: 1 }); }
+        else if (a.cls == "tank" && k == 2) RINGS.push({ x: a.x, y: a.y, col: SKC.tank, t: 0 });
+        else burst(a.x, a.y, SKC[a.cls], 12, 120);
+      }
+      /* raidPuppet(dt): a member's arena: glide everyone toward the leader's positions, play telegraphs as visuals only */
+      function raidPuppet(dt) {
+        const b = S.b;
+        if (S.end || !b) return;
+        const k = 1 - Math.exp(-dt * 12);
+        for (const a of S.ps) if (a !== P && a.tx != null) { const ox = a.x, oy = a.y; a.x += (a.tx - a.x) * k; a.y += (a.ty - a.y) * k; a.dx = (a.x - ox) / Math.max(1e-3, dt * 200); a.dy = (a.y - oy) / Math.max(1e-3, dt * 200); }
+        b.x += (b.tx - b.x) * k; b.y += (b.ty - b.y) * k;
+        b.hf = Math.max(0, (b.hf || 0) - dt);
+        for (const o of S.pr) { o.x += o.vx * dt; o.y += o.vy * dt; o.l -= dt; if (dist(o, b) < b.r) { o.l = 0; burst(o.x, o.y, CL[o.c].col, 4, 80); } }
+        S.pr = S.pr.filter((o) => o.l > 0);
+        for (const z of S.zo) z.l -= dt;
+        S.zo = S.zo.filter((z) => z.l > 0);
+        for (const a of S.ao) { a.t -= dt; if (a.t <= 0) { burst(a.x, a.y, "#ff5560", 10, (a.r || 40) * 2); shake(0.12); } }
+        S.ao = S.ao.filter((a) => a.t > 0);
+        if (performance.now() - S.net.heard > RAID_SILENT_MS * 1.5) raidEnd("Lost contact with the raid leader.");
+      }
+      /* raidNetStep(): the raid side of the 50 ms network timer: the leader sends snapshots, a member sends its moves */
+      function raidNetStep(now) {
+        const N = S.net;
+        if (!N || S.sc != "arena") return;
+        if (N.role == "lead") {
+          if (now - (N.t || 0) < 100) return;
+          N.t = now;
+          const to = S.ps.filter((a) => a.remote && now - (a.heard || 0) < RAID_SILENT_MS * 3).map((a) => a.remote);
+          if (to.length) netParty(to, raidState());
+        } else if (!S.end) {
+          const x = Math.round(P.x), y = Math.round(P.y), f = Math.max(0, NET_F.indexOf(P.f || "d")), d = P.ds > 0 ? 1 : 0, key = [x, y, f, d].join();
+          if (now - N.at < 66 || (key == N.key && now - N.at < 1000)) return;
+          N.at = now; N.key = key;
+          netParty(N.lead, { type: "rm", x, y, f, d, s: ++N.seq });
+        }
       }
       /* inTele(p, a, pad): is p inside telegraph a (circle or line), with pad px of margin */
       function inTele(p, a, pad = 0) {
@@ -3791,14 +3965,16 @@
         if (!tg) return;
         const orbs = [];
         while (orbs.length < 3) {
-          const a = rnd(0, 6.28), r = rnd(50, 145), o = { x: 450 + Math.cos(a) * r, y: 312 + Math.sin(a) * r, got: false };
+          const a = rnd(0, 6.28), r = rnd(50, ARENA.r - 25), o = { x: ARENA.x + Math.cos(a) * r, y: ARENA.y + Math.sin(a) * r, got: false };
           if (orbs.every((q) => dist(q, o) > 85) && dist(o, tg) > 60) orbs.push(o);
         }
         b.doom = { id: tg.id, t: 12, m: 12, orbs };
         popMsg(tg === P ? "☠ DOOM is on you: touch the 3 runes!" : `☠ DOOM on ${tg.name}: they must touch the 3 runes`, 1.3, 3000);
+        raidEvent(["msg", `☠ DOOM on ${tg === P ? pname() : tg.name}: touch the 3 runes!`]);
         sfx("phase", 0.7);
       }
       function raidEnd(why) {
+        raidEvent(["end", "lose", why]);
         S.end = "lose";
         S.why = why;
         S.res = 5;
@@ -3812,6 +3988,7 @@
         SKM = 1; /* projectiles already carry their level bonus from shoot() */
         const b = S.b;
         if (S.end || !b) return;
+        if (S.net && S.net.role == "member") return raidPuppet(dt);
         S.at += dt;
         /* DPS Engine: attack speed grows for as long as the DPS stays alive */
         for (const p of S.ps) {
@@ -3825,9 +4002,19 @@
         for (const p of S.ps) {
           if (p === P && !P.auto) continue;
           if (p.hp <= 0) { p.dx = p.dy = 0; continue; }
+          if (p.remote && performance.now() - (p.heard || 0) < RAID_SILENT_MS) {
+            /* a real party member: glide to where their messages put them; only their cooldowns tick here */
+            const k = 1 - Math.exp(-dt * 14), ox = p.x, oy = p.y;
+            if (p.tx != null) { p.x += (p.tx - p.x) * k; p.y += (p.ty - p.y) * k; }
+            p.dx = (p.x - ox) / Math.max(1e-3, dt * 200); p.dy = (p.y - oy) / Math.max(1e-3, dt * 200);
+            p.ar = Math.max(0, (p.ar || 0) - dt); p.inv = Math.max(0, (p.inv || 0) - dt);
+            for (let i = 0; i < 3; i++) p.cd[i] = Math.max(0, p.cd[i] - dt);
+            continue;
+          }
+          if (p.remote && p.tx != null) { p.tx = p.ty = null; } /* went silent: the AI plays them */
           raidAI(p, dt);
           if (p !== P) {
-            if (!dashStep(p, dt)) { p.x += p.dx * CL[p.cls].sp * dt; p.y += p.dy * CL[p.cls].sp * dt; clampW(p); }
+            if (!dashStep(p, dt)) { p.x += p.dx * CL[p.cls].sp * RAID_SPEED * dt; p.y += p.dy * CL[p.cls].sp * RAID_SPEED * dt; clampW(p); }
             for (let i = 0; i < 3; i++) p.cd[i] = Math.max(0, p.cd[i] - dt);
           }
         }
@@ -3868,7 +4055,7 @@
             shake(a.r > 100 || a.ln ? 0.3 : 0.12);
             if (a.ln) for (let k = 0; k <= 8; k++) burst(a.x + Math.cos(a.a) * a.len * (k / 8), a.y + Math.sin(a.a) * a.len * (k / 8), "#ff5560", 4, 80);
             else burst(a.x, a.y, "#ff5560", a.r > 100 ? 24 : 10, a.r * 2);
-            if (a.charge) { b.x = cl(a.x + Math.cos(a.a) * a.len, 300, 600); b.y = cl(a.y + Math.sin(a.a) * a.len, 170, 460); }
+            if (a.charge) { const e = { x: a.x + Math.cos(a.a) * a.len, y: a.y + Math.sin(a.a) * a.len, hp: 1 }; clampW(e); b.x = e.x; b.y = e.y; }
             if (a.lunge) { b.x = a.x; b.y = a.y; }
             sfx("slam");
             for (const p of raidAlive()) if (inTele(p, a)) hurt(p, a.d);
@@ -3890,22 +4077,22 @@
           shake(0.8);
           burst(b.x, b.y, b.def.ring[1], 40, 260);
           sfx("phase");
-          popMsg(`${b.def.n}: PHASE 2`, 1.2);
+          raidMsg(`${b.def.n}: PHASE 2`, 1.2);
         }
         /* poise windows: twice per boss it staggers; the tank's Shield Bash in time breaks it */
         if (b.wk < b.def.weak.length && b.hp <= b.mh * b.def.weak[b.wk]) {
           b.wk++;
           b.weak = 5;
-          popMsg(P.cls == "tank" ? "⚠ WEAKENED: Shield Bash it now!" : "⚠ The boss is WEAKENED: tank, Shield Bash!", 1.2, 2500);
+          raidMsg("⚠ The boss is WEAKENED: tank, Shield Bash!", 1.2, 2500);
         }
-        if (b.weak > 0) { b.weak -= dt; if (b.weak <= 0) { b.enr = 8; popMsg("The boss recovered its poise and is ENRAGED", 1, 2500); } }
+        if (b.weak > 0) { b.weak -= dt; if (b.weak <= 0) { b.enr = 8; raidMsg("The boss recovered its poise and is ENRAGED", 1, 2500); } }
         /* Doom: once per boss, on the healer */
         if (!b.doomed && b.hp <= b.mh * b.def.doom) startDoom();
         if (b.doom) {
           const tg = actor(b.doom.id);
           b.doom.t -= dt;
           if (tg && tg.hp > 0) for (const o of b.doom.orbs) if (!o.got && dist(tg, o) < 24) { o.got = true; burst(o.x, o.y, "#c9a3ff", 18, 150); sfx("coin", 1.4); }
-          if (b.doom.orbs.every((o) => o.got)) { b.doom = null; b.stun = Math.max(b.stun, 2.5); popMsg("✨ Doom cleansed!", 1.2); RINGS.push({ x: tg.x, y: tg.y, col: "#c9a3ff", t: 0 }); }
+          if (b.doom.orbs.every((o) => o.got)) { b.doom = null; b.stun = Math.max(b.stun, 2.5); raidMsg("✨ Doom cleansed!", 1.2); RINGS.push({ x: tg.x, y: tg.y, col: "#c9a3ff", t: 0 }); }
           else if (b.doom.t <= 0 || !tg || tg.hp <= 0) {
             for (const p of S.ps) p.hp = 0;
             burst(b.x, b.y, "#c9a3ff", 60, 320);
@@ -3989,9 +4176,9 @@
       /* step(dt): advance the whole game by dt seconds. In: dt (s). Out: mutates S, P. */
       const TP_TIME = 1.6;
       /* startTeleport(): runes flare, a pillar of light lifts the player, then the raid starts (see step and teleportFx) */
-      function startTeleport(key = "small", team) {
+      function startTeleport(key = "small", team, net = null) {
         if (S.tp || S.sc != "hub") return;
-        S.next = { key, team };
+        S.next = { key, team, net };
         S.tp = S.tm || 1e-6; /* never 0, so "is teleporting" stays true */
         sfx("phase", 1.6);
         setTimeout(() => sfx("win", 1.4), 700);
@@ -4005,7 +4192,7 @@
           P.dx = P.dy = 0;
           if (S.tm - S.tp > TP_TIME) {
             S.tp = 0;
-            toArena(S.next ? S.next.key : "small", S.next ? S.next.team : undefined);
+            toArena(S.next ? S.next.key : "small", S.next ? S.next.team : undefined, S.next ? S.next.net : null);
             S.next = null;
           }
           return;
@@ -4022,8 +4209,9 @@
           if (P.dx || P.dy) P.f = Math.abs(P.dx) > Math.abs(P.dy) ? (P.dx > 0 ? "r" : "l") : P.dy > 0 ? "d" : "u";
           if ((P.dx || P.dy) && tut() == 0 && (tutWalk += dt) > 0.8) tutNext(0); /* tutorial step 1: walk a bit */
           if (!dashStep(P, dt)) {
-            P.x += P.dx * k.sp * spm() * dt;
-            P.y += P.dy * k.sp * spm() * dt;
+            const rs = S.sc == "arena" ? RAID_SPEED : 1;
+            P.x += P.dx * k.sp * spm() * rs * dt;
+            P.y += P.dy * k.sp * spm() * rs * dt;
             clampW(P);
           }
           for (let i = 0; i < 3; i++) P.cd[i] = Math.max(0, P.cd[i] - dt);
@@ -4055,7 +4243,7 @@
             if (d < (n[1].ir || 75) && d < best) (best = d), (hit = n[0]);
           }
         if (hit) return hit;
-        /* other players (bots and real ones): walk up to them to inspect and invite */
+        /* other players (bots and real ones): walk up to them and press interact to invite */
         for (const v of HUBV) if (!v.out && !(v.inn && S.tm - v.inn < ARRIVE)) { const d = dist(P, v); if (d < 36 && d < best) (best = d), (hit = "player:" + v.id); }
         return hit;
       }
@@ -4063,7 +4251,7 @@
         const n = nearby();
         if (!n || dlgOpen()) return;
         if (n == "raid") return raidUI();
-        if (n.startsWith("player:")) { const v = HUBV.find((o) => "player:" + o.id == n); return v && playerUI(v); }
+        if (n.startsWith("player:")) { const v = HUBV.find((o) => "player:" + o.id == n); return v && (inParty(v) ? toast(v.name + " is already in your party.") : partyInvite(v)); } /* F near a player: invite at once */
         openDlg(n);
       }
       function start() {
@@ -4193,7 +4381,7 @@
         ["T", "Tip: DPS, keep your distance. Your arrows fly far; your health does not stretch."],
         ["T", "Tip: Rapid Fire sends five arrows. Loose it while the Warden is stunned for free damage."],
         ["T", "Tip: Heavy Shot hits for 45. Save it for when the Warden's cooldown just ended."],
-        ["T", "Tip: Healers, the Circle heals everyone standing in it every second. Drop it where the raid gathers."],
+        ["T", "Tip: Healers, the Circle heals everyone standing in it every second, and they hit 25% harder. Drop it where the raid gathers."],
         ["T", "Tip: Heal only works when someone is hurt, so you never waste it on full health."],
         ["T", "Tip: Rune Edge boosts healing too, not only damage. Healers, buy it."],
         ["T", "Tip: Stoneheart restores you to full health the moment you buy it. Shopping is healing."],
@@ -4408,7 +4596,7 @@
       const ROLE = {
         tank: "Holds the boss. Taunt keeps it on you (press it every 8 s); Shield Bash breaks its poise when it is weakened. Takes half damage from boss blows.",
         dps: "The win condition. Engine: attack speed and cooldowns grow forever, and your skills scale with it. Survive long enough and you delete the boss.",
-        heal: "Keeps the party alive: heal the lowest ally, drop a healing circle, dodge the boss's spells. The boss's Doom lands on you: touch its 3 runes.",
+        heal: "Keeps the party alive: heal the lowest ally, drop a healing circle (allies inside also hit 25% harder), dodge the boss's spells. The boss's Doom lands on you: touch its 3 runes.",
       };
       /* classUI(): three class cards with stats and a CHOOSE button. */
       function classUI() {
@@ -5361,7 +5549,7 @@
         const n = nearby();
         $("bi").hidden = !n || dlgOpen();
         if (n) {
-          const lb = n == "raid" ? "CHOOSE RAID" : n.startsWith("player:") ? "PLAYER · " + (HUBV.find((o) => "player:" + o.id == n)?.name || "") : n == "elder" ? "TALK" : n == "lore" ? "LISTEN" : ["class", "maiden", "smith", "herald"].includes(n) && !isUnl(n) ? "???" : n == "class" ? "CLASS" : n == "maiden" ? "PRAY" : n == "smith" ? "FORGE" : n == "herald" ? "RECORDS" : n == "barkeep" ? "BLACKJACK" : n == "qboard" ? "QUESTS" : n == "gboard" ? "GUILD" : "SHOP",
+          const lb = n == "raid" ? "CHOOSE RAID" : n.startsWith("player:") ? "INVITE · " + (HUBV.find((o) => "player:" + o.id == n)?.name || "") : n == "elder" ? "TALK" : n == "lore" ? "LISTEN" : ["class", "maiden", "smith", "herald"].includes(n) && !isUnl(n) ? "???" : n == "class" ? "CLASS" : n == "maiden" ? "PRAY" : n == "smith" ? "FORGE" : n == "herald" ? "RECORDS" : n == "barkeep" ? "BLACKJACK" : n == "qboard" ? "QUESTS" : n == "gboard" ? "GUILD" : "SHOP",
             ht = KEYHINT[INMODE][3],
             h = lb + (ht ? ` <span class="kh k3">${ht}</span>` : "");
           if ($("bi")._h != h) { $("bi")._h = h; $("bi").innerHTML = h; $("bi").classList.add("small"); } /* only touch the DOM when it changes */
@@ -8896,7 +9084,7 @@
         c.clip();
         const ar = S.sc == "arena",
           b = S.b;
-        if (ar) c.drawImage(IM.arena, 0, 0, W, H);
+        if (ar) { const z = ARENA.r / ARENA.art; c.drawImage(IM.arena, ARENA.x - ARENA.x * z, ARENA.y - ARENA.y * z, W * z, H * z); } /* scaled so its floor matches the bigger arena */
         else {
           /* hub: art is placed in world space (fixed to the 900x600 world, 16:9 kept), so it never moves with the window size */
           drawHub();

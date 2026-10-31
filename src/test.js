@@ -9,11 +9,11 @@ let netClock=0,fakePeers=[],fakeHandlers={},fakeBroadcast=[],fakeDirectory=[];
 const fakeNet={directorySend:(path,data)=>{fakeDirectory.push({path,data});return Promise.resolve({ok:true});},setHandlers:h=>fakeHandlers=h,peerIds:()=>fakePeers.slice(),send:(id,msg)=>{fakeBroadcast.push({id,msg});return fakePeers.includes(id)},broadcast:msg=>{fakeBroadcast.push({id:'all',msg});return fakePeers.length},disconnect:id=>{fakePeers=fakePeers.filter(p=>p!=id);fakeHandlers.onClose?.(id)},disconnectAll:()=>{const old=fakePeers.slice();fakePeers=[];old.forEach(id=>fakeHandlers.onClose?.(id));}};
 const els={};const doc={addEventListener(){},createTextNode:t=>t,getElementById:id=>els[id]||(els[id]={style:{},dataset:{},children:[{style:{}}],value:'',addEventListener(){},append(){},setPointerCapture(){},getContext:()=>new Proxy({},{get:()=>()=>({addColorStop(){}}),set:()=>true}),set innerHTML(v){this._h=v},get innerHTML(){return this._h||''},hidden:false,textContent:''}),querySelectorAll:()=>[],body:{className:'',appendChild(){}},createElement:()=>({style:{},remove(){},append(){},classList:{add(){},remove(){}}}),documentElement:{cls:new Set(),classList:{add(c){doc.documentElement.cls.add(c)},remove(c){doc.documentElement.cls.delete(c)}},style:{setProperty(){}}}};
 const store={};
-const ctx={document:doc,window:{},innerWidth:900,innerHeight:600,performance:{now:()=>netClock},requestAnimationFrame(){},addEventListener(){},localStorage:{getItem:k=>store[k]||null,setItem:(k,v)=>store[k]=v,removeItem:k=>delete store[k]},Image:function(){this.complete=false},location:{search:''},console,setTimeout:f=>0,Math,JSON,Object,Array,Date,Number,parseInt,isNaN};
+const ctx={document:doc,window:{},innerWidth:900,innerHeight:600,performance:{now:()=>netClock},requestAnimationFrame(){},addEventListener(){},localStorage:{getItem:k=>store[k]||null,setItem:(k,v)=>store[k]=v,removeItem:k=>delete store[k]},Image:function(){this.complete=false},location:{search:''},console,setTimeout:f=>0,clearTimeout(){},Math,JSON,Object,Array,Date,Number,parseInt,isNaN};
 ctx.RBNet=fakeNet;
 ctx.window=ctx;vm.createContext(ctx);
 vm.runInContext(SRC+`
-;globalThis.devMin=devMin;globalThis.devFs=devFs;globalThis.T={V:()=>V,P:()=>P,S:()=>S,start,devAdd,devUp,devUI,devCls,devHeal,devWipe,devResetQ,devArena,devBoss,devHub,DEV,hurt,act,step,pauseGame,resumeGame,isPaused:()=>paused,QUESTS,UPG,toggleDev,buy,shopUI,qAct,togglePause,dailyCheck,saveName,lvlInfo,gainXP,lvlCol,loreReward,isUnl,tutNext,bjVal,bjDeal,bjHit,bjStand,guildFound,guildRecruit,gBonus,bountyDay,bountyAdd,bountyClaim,guildJoin,guildTab,rankPool,rankRefresh,rankSort,dm,dash,dashStep,setIn,padPoll,inMode:()=>INMODE,KEYHINT,HUBV:()=>HUBV,ENGINE,cdMul,RAIDS,BOSSES,raidTeam,raidAI,partyMembers,partyAdd,partyRemove,raidUI,playerUI,partyMessage,bash,taunt,inTele,toArena,PARTY:()=>PARTY,arena,toArena,HUB_NPCS,BOT_NPC_LV,BARKEEP,CLASSN,SKC,PEMB,hubJoin,hubLeave,hubCount,HUB_MAX,hubVisitStep,botName,botLook,chatSend,COS,cosOwn,cosV,cosBuyGold,cosEquip,shopPay,myEmote,streamPts,crossFrame,bridgeAt,riverNear,clampW,WF,STATUE,PORTAL,SET,keyLabel,EDGE,inIsle,netReceive,netPrepareHub,netStep,netPack,netUnpack,netAudit,auditRules,goldAdd,gainXP,netStats,LEDGER:()=>LEDGER,FX:()=>FX,FT:()=>FT,shk:()=>shk,els:null};`,ctx);
+;globalThis.devMin=devMin;globalThis.devFs=devFs;globalThis.T={V:()=>V,P:()=>P,S:()=>S,start,devAdd,devUp,devUI,devCls,devHeal,devWipe,devResetQ,devArena,devBoss,devHub,DEV,hurt,act,step,pauseGame,resumeGame,isPaused:()=>paused,QUESTS,UPG,toggleDev,buy,shopUI,qAct,togglePause,dailyCheck,saveName,lvlInfo,gainXP,lvlCol,loreReward,isUnl,tutNext,bjVal,bjDeal,bjHit,bjStand,guildFound,guildRecruit,gBonus,bountyDay,bountyAdd,bountyClaim,guildJoin,guildTab,rankPool,rankRefresh,rankSort,dm,dash,dashStep,setIn,padPoll,inMode:()=>INMODE,KEYHINT,HUBV:()=>HUBV,ENGINE,cdMul,inter,hitB,DASH,ZONE_DMG,RAIDS,BOSSES,raidTeam,raidAI,partyMembers,partyAdd,partyRemove,raidUI,playerUI,partyMessage,bash,taunt,inTele,toArena,PARTY:()=>PARTY,netRelayFlush,raidNet,raidState,raidApply,raidNetStep,arena,toArena,HUB_NPCS,BOT_NPC_LV,BARKEEP,CLASSN,SKC,PEMB,hubJoin,hubLeave,hubCount,HUB_MAX,hubVisitStep,botName,botLook,chatSend,COS,cosOwn,cosV,cosBuyGold,cosEquip,shopPay,myEmote,streamPts,crossFrame,bridgeAt,riverNear,clampW,WF,STATUE,PORTAL,SET,keyLabel,EDGE,inIsle,netReceive,netPrepareHub,netStep,netPack,netUnpack,netAudit,auditRules,goldAdd,gainXP,netStats,LEDGER:()=>LEDGER,FX:()=>FX,FT:()=>FT,shk:()=>shk,els:null};`,ctx);
 const T=ctx.T,BENCH_ONLY=process.argv.includes('--bench');let f=0;const ok=(c,m)=>{if(!c||!BENCH_ONLY)console.log((c?'PASS ':'FAIL ')+m);if(!c)f++};
 T.start();ok(T.S().sc=='hub','start -> hub');
 ctx.document.getElementById('dlg').hidden=true;const pausedAt=T.S().tm;T.pauseGame();T.step(.1);ok(T.isPaused()&&T.S().tm===pausedAt,'pause freezes the game');T.resumeGame();ok(!T.isPaused(),'resume re-enables play');
@@ -166,14 +166,16 @@ ok(fakeBroadcast.some(x=>x.msg.type=='ack'&&x.msg.seq==51&&!x.msg.ok),'network h
 fakeBroadcast=[];T.netReceive('peer-one',{type:'emote',e:'not-an-emote',seq:52});
 ok(fakeBroadcast.some(x=>x.msg.type=='ack'&&x.msg.seq==52&&!x.msg.ok),'network hub: host rejects unknown emotes');
 fakePeers=[];T.netPrepareHub('');T.netDisconnect?.();
+ok(T.COS.filter(i=>i.t=='emote').every(i=>!i.eur&&!i.pass),'shop: no emote costs real money (gold, free or unlocked by playing)');
 /* ---------- raids: party, raid select, bosses, mechanics, role bots ----------
    raidSim(key, setup): you on autopilot (P.auto) with bots filling the rest; runs the fight at 30 fps for up to 6 min. */
 function raidSim(key,cls,setup){
  T.devHub();T.V().cls=cls;T.P().cls=cls;T.P().auto=true;T.PARTY().m=[];T.PARTY().lead='me';
  T.V().up={dmg:0,vit:0,spd:0,cdr:0};T.V().sk={tank:[0,0,0],dps:[0,0,0],heal:[0,0,0]};T.V().xp=0;T.V().bl=null; /* a fresh level-1 raider */
- T.toArena(key);setup&&setup(T.S());const S=T.S();let ticks=0,minHp=1;
- while(!S.end&&ticks<30*360){T.step(1/30);ticks++;if(S.ps.some(p=>p.hp<=0))minHp=0;}
- const r={key,cls,end:S.end,time:S.at,why:S.why,dead:S.ps.filter(p=>p.hp<=0).map(p=>p.cls).join(','),deaths:S.ps.filter(p=>p.hp<=0).length,size:S.ps.length,boss:S.b.def.n,brk:S.b.wk,doomed:S.b.doomed};
+ T.toArena(key);setup&&setup(T.S());const S=T.S();let ticks=0,minHp=1,rsN=0,rsB=0,rsMax=0;
+ S.net={role:'lead',t:0}; /* measure what the leader would send its members (no real members here) */
+ while(!S.end&&ticks<30*360){T.step(1/30);ticks++;if(S.ps.some(p=>p.hp<=0))minHp=0;if(ticks%3==0){const n=JSON.stringify(T.raidState()).length;rsN++;rsB+=n;rsMax=Math.max(rsMax,n);}}
+ const r={rsAvg:Math.round(rsB/Math.max(1,rsN)),rsMax,key,cls,end:S.end,time:S.at,why:S.why,dead:S.ps.filter(p=>p.hp<=0).map(p=>p.cls).join(','),deaths:S.ps.filter(p=>p.hp<=0).length,size:S.ps.length,boss:S.b.def.n,brk:S.b.wk,doomed:S.b.doomed};
  T.P().auto=false;T.S().res=0.01;T.step(0.02);return r;
 }
 {
@@ -185,7 +187,8 @@ function raidSim(key,cls,setup){
  const tanks=[1,2].map(i=>T.hubJoin('rbt'+i,{name:'RbTank'+i,cls:'tank',quiet:1},1));tanks.forEach(v=>T.partyAdd(v.id));
  ok(T.raidTeam('small').err&&!T.raidTeam('large').err,'party: 2 extra tanks are too many for a small raid, fine for a large one');
  tanks.forEach(v=>T.partyRemove(v.id));ok(T.PARTY().m.length==0,'party: members can be removed');
- const bot=T.hubJoin('rbh1',{name:'RbHeal',cls:'heal',quiet:1},1);T.playerUI(bot);ok(ctx.document.getElementById('dp').innerHTML.includes('INVITE TO PARTY'),'party: walking up to a player shows class, level, cosmetics and an invite');
+ const bot=T.hubJoin('rbh1',{name:'RbHeal',cls:'heal',quiet:1},1);T.playerUI(bot);ok(ctx.document.getElementById('dp').innerHTML.includes(bot.name),'party: inspecting a player shows class, level, cosmetics');
+ {T.closeDlg&&T.closeDlg();ctx.document.getElementById('dlg').hidden=true;bot.inn=0;bot.out=0;T.P().x=bot.x+10;T.P().y=bot.y;T.inter();ok(ctx.document.getElementById('dlg').hidden,'party: interact near a player sends the invite at once, no menu');}
  T.partyAdd(bot.id);const pm=T.partyMembers();ok(pm.length==2&&pm[1].name==bot.name&&pm[1].cls==bot.cls,'party: a party member joins your raid team');
  T.partyRemove(bot.id);
 }
@@ -193,6 +196,8 @@ function raidSim(key,cls,setup){
  T.devHub();T.toArena('small');const b=T.S().b,tank=T.S().ps.find(p=>p.cls=='tank');
  T.taunt(tank);ok(b.tt>0&&b.tg==tank.id,'tank: Taunt holds the boss');
  b.weak=3;tank.x=b.x;tank.y=b.y+30;T.bash(tank);ok(b.brk>0&&b.stun>=4&&b.weak==0,'tank: Shield Bash in the weak window breaks poise (+50% damage)');
+ {const d=T.S().ps.find(p=>p.cls=='dps');d.x=100;d.y=100;b.brk=0;T.S().zo=[];let h=b.hp;T.hitB(10,d);const out=h-b.hp;T.S().zo=[{x:100,y:100,r:90,l:5,t:1}];h=b.hp;T.hitB(10,d);ok(Math.abs((h-b.hp)/out-T.ZONE_DMG)<1e-6&&T.ZONE_DMG>1,'healer: allies standing in the Circle hit harder');}
+ ok(T.DASH.dps.d>T.DASH.heal.d&&T.DASH.heal.d>T.DASH.tank.d,'dash: DPS longest, healer normal, tank shortest');
  ok(T.inTele({x:100,y:0},{ln:1,x:0,y:0,a:0,len:200,w:40})&&!T.inTele({x:100,y:40},{ln:1,x:0,y:0,a:0,len:200,w:40}),'boss: line telegraphs hit only inside the lane');
  T.S().res=0.01;T.step(0.02);
 }
@@ -214,13 +219,54 @@ function raidSim(key,cls,setup){
  T.devHub();netClock+=1000;fakePeers=['peer-a','peer-b'];fakeBroadcast=[];T.netPrepareHub('host');T.PARTY().m=[];T.PARTY().lead='me';
  const prof=(n)=>({id:'player-party'+n+'x',name:'Pa'+n,cls:'dps',lv:2,ti:0,spd:1});
  T.netReceive('peer-a',{type:'join',profile:prof(1),x:400,y:420});T.netReceive('peer-b',{type:'join',profile:prof(2),x:420,y:420});fakeBroadcast=[];
- T.netReceive('peer-a',{type:'pi',to:'player-party2x',cls:'dps',lv:2});
+ T.netReceive('peer-a',{type:'pi',to:'player-party2x',cls:'dps',lv:2});T.netRelayFlush();
  const fw=fakeBroadcast.find(x=>x.id=='peer-b'&&x.msg.type=='pi');ok(fw&&fw.msg.from=='player-party1x'&&!('to' in fw.msg),'party: the master forwards an invite and stamps who sent it');
- fakeBroadcast=[];for(let i=0;i<10;i++)T.netReceive('peer-a',{type:'pi',to:'player-party2x'});ok(fakeBroadcast.filter(x=>x.msg.type=='pi').length<=6,'party: invite spam is capped');
+ fakeBroadcast=[];for(let i=0;i<10;i++)T.netReceive('peer-a',{type:'pi',to:'player-party2x'});T.netRelayFlush();ok(fakeBroadcast.filter(x=>x.msg.type=='rb').flatMap(x=>x.msg.m).filter(m=>m.type=='pi').length<=6,'party: invite spam is capped');
  /* guest side: an invite opens a prompt; the leader's list makes you a member; an empty list removes you */
  fakePeers=['host-peer'];T.netPrepareHub('guest');T.PARTY().m=[];T.PARTY().lead='me';
  T.netReceive('host-peer',{type:'r',p:[[0,'host-player','Boss','tank',9,0,1],[1,'player-party3x','Pb3','heal',4,0,1]]});
- T.partyMessage('player-party3x',{type:'pi'});ok(ctx.document.getElementById('dp').innerHTML.includes('ACCEPT'),'party: an invite from a real player asks you to accept');
+ T.partyMessage('player-party3x',{type:'pi'});ok(!ctx.document.getElementById('pinv').hidden&&ctx.document.getElementById('pinv').innerHTML.includes('Yes'),'party: an invite from a real player shows a small Yes/No popup');
+ fakeBroadcast=[];T.partyMessage('host-player',{type:'pi'});T.netRelayFlush&&T.netRelayFlush();
+ ok(ctx.document.getElementById('pinv').innerHTML.includes('Pb3')&&!ctx.document.getElementById('pinv').innerHTML.includes('Boss'),'party: a second invite while one is pending is refused (first popup stays)');
+}
+/* ---------- networked raids: the leader runs the fight, members mirror it ---------- */
+{
+ /* relay: moves from several raid members to one leader arrive as one bundle */
+ T.devHub();netClock+=1000;fakePeers=['peer-l','peer-m1','peer-m2'];fakeBroadcast=[];T.netPrepareHub('host');
+ const prof=(n)=>({id:'player-raid'+n+'xx',name:'Rn'+n,cls:'dps',lv:2,ti:0,spd:1});
+ ['l','m1','m2'].forEach(n=>T.netReceive('peer-'+n,{type:'join',profile:prof(n),x:400,y:420}));fakeBroadcast=[];
+ T.netReceive('peer-m1',{type:'rm',to:'player-raidlxx',x:400,y:400,f:0,d:0,s:1});T.netReceive('peer-m2',{type:'rm',to:'player-raidlxx',x:410,y:400,f:0,d:0,s:1});
+ T.netRelayFlush();const toL=fakeBroadcast.filter(x=>x.id=='peer-l');
+ ok(toL.length==1&&toL[0].msg.type=='rb'&&toL[0].msg.m.length==2&&toL[0].msg.m[0].from=='player-raidm1xx','raid net: the master bundles members\' moves for the leader into one message');
+ let got=0;for(let i=1;i<=150;i++){netClock+=66;fakeBroadcast=[];T.netReceive('peer-m1',{type:'rm',to:'player-raidlxx',x:400,y:400,f:0,d:0,s:i});T.netRelayFlush();got+=fakeBroadcast.filter(x=>x.id=='peer-l').length;}
+ ok(got==150,`raid net: a member's steady 15/s moves keep flowing for 10 s (${got}/150 forwarded)`);
+ fakeBroadcast=[];T.netReceive('peer-l',{type:'rs',to:['player-raidm1xx','player-raidm2xx'],t:1,b:[],p:[]});T.netRelayFlush();
+ ok(fakeBroadcast.filter(x=>x.msg.type=='rs').length==2,'raid net: one leader snapshot reaches every member (multicast)');
+ fakePeers=[];T.netPrepareHub('');
+ /* leader: a real member is moved by its messages (speed-checked) and its skills go through the leader's cooldowns */
+ T.devHub();T.P().cls='tank';T.P().auto=false;
+ const team=[{me:1,cls:'tank'},{cls:'heal',name:'Mem',lv:3,real:1,key:'player-mem1'},{cls:'dps',name:'Botty',lv:3,filler:1}];
+ T.toArena('small',team);const S=T.S(),mem=S.ps.find(p=>p.remote=='player-mem1');
+ ok(S.net&&S.net.role=='lead'&&mem&&mem.id==1&&S.ps.find(p=>p.cls=='dps').id==2,'raid net: the leader marks real members; ids follow the team order');
+ netClock+=100;T.raidNet('player-mem1',{type:'rm',x:mem.x+10,y:mem.y,f:3,d:0,s:1});ok(Math.abs(mem.tx-(mem.x+10))<0.01,'raid net: a member\'s legal move is accepted');
+ netClock+=100;T.raidNet('player-mem1',{type:'rm',x:mem.tx+400,y:mem.y,f:3,d:0,s:2});ok(mem.tx-mem.x<150,'raid net: a member\'s speed hack is clamped by the leader');
+ T.raidNet('player-mem1',{type:'rm',x:0,y:0,f:3,d:0,s:2});ok(mem.tx>100,'raid net: replayed moves are ignored');
+ mem.cd=[0,0,0];T.raidNet('player-mem1',{type:'ra',a:0,s:3});ok(mem.cd[0]>0,'raid net: a member\'s skill runs on the leader (cooldown started)');
+ const cdBefore=mem.cd[0];T.raidNet('player-mem1',{type:'ra',a:0,s:4});ok(mem.cd[0]==cdBefore,'raid net: a skill on cooldown is refused by the leader');
+ const st=T.raidState();ok(st.type=='rs'&&st.b.length==11&&st.p.length==3&&JSON.stringify(st).length<1200,`raid net: the leader snapshot is small (${JSON.stringify(st).length} B)`);
+ ok(st.ev&&st.ev.some(e=>e[0]=='fx'&&e[1]==1),'raid net: members see each other\'s skills (fx events)');
+ fakePeers=[];S.res=0.01;T.step(0.02);
+ /* member: mirrors the leader's snapshot */
+ T.devHub();T.P().cls='heal';
+ const mteam=[{cls:'tank',name:'Lead',lv:5,key:'host-player'},{me:1,cls:'heal'},{cls:'dps',name:'Botty',lv:3,filler:1}];
+ T.toArena('small',mteam,{role:'member',lead:'host-player',heard:netClock,seq:0,key:'',at:0});
+ const M=T.S();ok(M.net.role=='member'&&T.P().id==1,'raid net: a member\'s own id matches the leader\'s order');
+ const bossHp=M.b.hp;M.b.hp=bossHp;
+ T.raidApply({type:'rs',t:123,b:[460,230,M.b.mh-500,1,1,0,30,0,0,0,0],p:[[0,440,300,180,200,10,1],[1,T.P().x,T.P().y,80,120,10,0],[2,500,330,90,100,25,3]],ao:[[0,450,220,110,16,16],[1,450,220,1570,340,46,14,14]],ev:[['msg','test banner']]});
+ ok(M.b.hp==M.b.mh-500&&M.b.weak==3&&T.P().hp==80&&M.ao.length==2&&M.ao[1].ln&&M.ps[2].eng==2.5,'raid net: the member applies boss, health, telegraphs and Engine from the leader');
+ T.DEV.nocd=0;T.P().cd=[0,0,0];fakePeers=['host-peer'];T.netPrepareHub('guest');M.sc='arena';
+ T.act(T.P(),1);ok(T.P().cd[1]>0&&M.b.hp==M.b.mh-500,'raid net: a member\'s press starts its cooldown but does no damage locally');
+ fakePeers=[];T.netPrepareHub('');M.res=0.01;T.step(0.02);
 }
 /* ---------- player details travel once: full list to a newcomer, small join/leave/update messages to the rest ---------- */
 {
@@ -527,7 +573,7 @@ function raidBench(n){
  const rows=[];
  for(const key of ['small','large'])for(const cls of ['tank','heal','dps']){
   const runs=Array.from({length:n},()=>raidSim(key,cls)),wins=runs.filter(r=>r.end=='win'),avg=(f,rs)=>rs.length?Math.round(rs.reduce((a,r)=>a+r[f],0)/rs.length):0;
-  rows.push({raid:key,you:cls,runs:n,'win %':Math.round(wins.length/n*100),'avg win s':avg('time',wins),'min s':wins.length?Math.round(Math.min(...wins.map(r=>r.time))):0,'max s':wins.length?Math.round(Math.max(...wins.map(r=>r.time))):0,'avg deaths':+(runs.reduce((a,r)=>a+r.deaths,0)/n).toFixed(1),'who died':[...new Set(runs.flatMap(r=>r.dead?r.dead.split(','):[]))].join(','),losses:runs.filter(r=>r.end!='win').map(r=>r.why||r.end).join('; ')});
+  rows.push({raid:key,you:cls,runs:n,'win %':Math.round(wins.length/n*100),'avg win s':avg('time',wins),'min s':wins.length?Math.round(Math.min(...wins.map(r=>r.time))):0,'max s':wins.length?Math.round(Math.max(...wins.map(r=>r.time))):0,'avg deaths':+(runs.reduce((a,r)=>a+r.deaths,0)/n).toFixed(1),'who died':[...new Set(runs.flatMap(r=>r.dead?r.dead.split(','):[]))].join(','),'leader→member B/s':Math.round(runs.reduce((a,r)=>a+r.rsAvg,0)/n*10),'biggest snapshot B':Math.max(...runs.map(r=>r.rsMax)),losses:runs.filter(r=>r.end!='win').map(r=>r.why||r.end).join('; ')});
  }
  const nt=Array.from({length:n},()=>raidSim('small','dps',S=>S.ps.forEach(p=>{if(p.cls=='tank')p.noTaunt=true;})));
  rows.push({raid:'small',you:'dps','note':'tank never taunts',runs:n,'win %':Math.round(nt.filter(r=>r.end=='win').length/n*100),'avg deaths':+(nt.reduce((a,r)=>a+r.deaths,0)/n).toFixed(1),'who died':[...new Set(nt.flatMap(r=>r.dead?r.dead.split(','):[]))].join(','),losses:nt.filter(r=>r.end!='win').map(r=>r.why).join('; ')});

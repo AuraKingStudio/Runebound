@@ -60,7 +60,33 @@ Small raid 3, large raid 6, hub and epic raid **12** (the most the game will eve
   - `?player=N` (localhost only) gives each tab its own save, so two VS Code Simple Browser tabs are two players.
   - Run `npm run signaling` and `npm run dev`.
 
-## Latest (2026-10-31)
+## Latest (2026-10-31, networked raids)
+
+**Done**
+- **Networked raids:** the party leader's screen runs the fight (`S.net.role` `lead`); members mirror it (`member`, `raidPuppet`/`raidApply`).
+  - Member → leader: `rm` moves (15/s, budget-checked like the hub), `ra` skill casts.
+  - Leader → members: `rs` snapshot 10/s (players, boss, new telegraphs/circles/events once).
+  - Messages are relayed by the master, bundled per receiver every 50 ms (`rb`), multicast via `to: [keys]`.
+  - 5 s with no contact (`RAID_SILENT_MS`) ends the raid for that side.
+- **Relay rate limit fix:** fixed 1 s window per sender (it never reset before, so members went silent after 40 messages).
+- **Party invite:** F near a player sends the invite at once. The invited player gets a small Yes/No popup (`#pinv`, top center), declined after 20 s. A second invite while one is pending is refused (`pa` `busy`; the sender sees "already has a pending invite"). Inspect (`playerUI`, existing data only) opens by clicking a name in the party menu.
+- **Healer Circle:** allies inside deal +25% damage (`ZONE_DMG`).
+- **Dash distance:** DPS 150 > healer 105 > tank 60 (tested).
+- **Arena:** floor radius 240 with the background scaled to fit; raid walking speed ×0.75 (`RAID_SPEED`).
+- **Emotes:** all bought with gold.
+- **2-browser test (headless Chrome, real directory + WebRTC):** invite popup → party → Small Raid → won on both screens; Bravo's position gap ≤ 19 px, boss HP gap ≤ 0.4%; leader sent 1.35 KB/s, member 0.69 KB/s; no page errors (boss started at 25% HP).
+
+**Upcoming**
+- Random levels on the paid shop's preview characters.
+- Ultimates: healer revive (once per raid per healer), tank shield-all + boss stun, DPS Engine burst (spends stacks; damage scales with stacks).
+- Epic raid (12) content; a phone as master in a raid.
+
+**Concerns**
+- `npm run bench` once failed 1 check out of 4 runs (not reproduced); watch for flakiness.
+- Bots don't stand in Circles on purpose, so the +25% only helps humans for now.
+- A raid member's stats aren't audited during the fight (the leader trusts its own sim; members only send moves and casts).
+
+## Earlier (2026-10-31)
 
 **Done: raids, party, bosses**
 - **Party (hub):**
@@ -90,14 +116,12 @@ Small raid 3, large raid 6, hub and epic raid **12** (the most the game will eve
 - **Bench:** `npm run bench -- --raids=N` → win %, time, deaths and who died per raid × your role, plus a no-Taunt row. Last run (N=4): every raid/role 100% at ~140 s with 0 deaths; no Taunt 0% (party wiped by ~47 s).
 
 **Upcoming**
-- Networked co-op raids: today each party member's screen runs the fight with the others played by the AI (`pg` starts everyone at once). Next: the master runs the raid and sends the state, with hits and boss events riding in the 10/s position message; add matching bench scenarios and the phone budget.
-- Epic raid (12) content; the hub's real-player party test in 2 browsers.
+- See the newer Latest section.
 
 **Concerns**
 - Bot teams never die with Taunt held; humans will, but difficulty for real players is untested.
 - Lore tales and tips still talk about the Rune Warden and its old moves.
 - While a guest is in a raid, it stops sending hub positions (others see it frozen).
-- Party messages and raid UI are unit-tested, not tested with 2 real browsers yet.
 - Earlier concerns still stand: no real-browser or phone test of the newer netcode.
 
 ## Verified (2026-10-31)
@@ -159,7 +183,7 @@ Built and tested (unit tests plus the `cheat`, `flood`, `econ`, `hphack`, `chat`
 ## Not done / open
 
 - Host migration and reconnect: a hub dies when its host leaves.
-- Raid co-op is not networked yet (each screen runs the fight; see Latest). Next: master-run raids for 3/6/12 players (movement, hitscan, hitboxes) with hit events in the same tick message as positions, measured with bench scenarios and the phone budget.
+- Raids are run by the party leader's screen (see Latest); no leader migration, so the raid ends if the leader leaves.
 - Not tested on a real phone as master; the 5× phone slowdown is an estimate. On phones the browser pauses when the screen locks or the app is switched, so a phone master needs host migration.
 - Accounts, PC > console > phone host preference (must be measured or opt-in, not trusted), TURN relay.
 - Public hosting: GitHub Pages can't run `src/app.js`. A stable Cloudflare named tunnel or server is needed; Quick Tunnel URLs expire. `cloudflared` is installed at `%LOCALAPPDATA%\Runebound\cloudflared\cloudflared.exe`.
