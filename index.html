@@ -5047,100 +5047,250 @@
         }
       }
       /* skyClouds(t): a few soft clouds drifting slowly across the open sky, and birds far away */
-      /* floatIsle(x, y, s, k): a small floating island at scale s: grassy top, a tree or two, a rocky underside, maybe a waterfall */
-      function floatIsle(x, y, s, k) {
-        const r = rng(500 + k),
+      /* floatIsle(x, y, s, k): a floating island in the distance at scale s, island k picks its look.
+         The detailed art is painted once into a sprite (ISLE_SPR); each frame only blits it and adds the moving bits
+         (its little waterfall and the glow of its crystals). */
+      const ISLE_SPR = {},
+        ISLE_K = 3; /* sprite resolution */
+      function isleSprite(s, k) {
+        const key = k + ":" + s;
+        if (ISLE_SPR[key]) return ISLE_SPR[key];
+        const W2 = 64,
+          H2 = 92,
+          cv2 = document.createElement("canvas");
+        cv2.width = W2 * 2 * s * ISLE_K;
+        cv2.height = H2 * s * ISLE_K;
+        const g = cv2.getContext("2d"),
+          r = rng(600 + k * 17),
           bloom = k % 2 == 0;
-        /* soft shadow glow below so it reads as floating */
-        const sg = c.createRadialGradient(x, y + 34 * s, 1, x, y + 34 * s, 22 * s);
-        sg.addColorStop(0, "rgba(120,140,170,.18)");
-        sg.addColorStop(1, "rgba(120,140,170,0)");
-        c.fillStyle = sg;
-        c.fillRect(x - 22 * s, y + 12 * s, 44 * s, 44 * s);
-        /* rocky underside: layered, lit on the left, shaded on the right, tapering to a point */
-        const tip = [x + (r() - 0.5) * 6 * s, y + 34 * s];
-        c.fillStyle = "#9a8670";
-        c.beginPath();
-        c.moveTo(x - 22 * s, y);
-        c.lineTo(x - 15 * s, y + 12 * s);
-        c.lineTo(x - 7 * s, y + 22 * s);
-        c.lineTo(tip[0], tip[1]);
-        c.lineTo(x + 9 * s, y + 18 * s);
-        c.lineTo(x + 18 * s, y + 8 * s);
-        c.lineTo(x + 22 * s, y);
-        c.closePath();
-        c.fill();
-        c.fillStyle = "#7b6956";
-        c.beginPath();
-        c.moveTo(tip[0], tip[1]);
-        c.lineTo(x + 9 * s, y + 18 * s);
-        c.lineTo(x + 18 * s, y + 8 * s);
-        c.lineTo(x + 22 * s, y);
-        c.lineTo(x + 3 * s, y + 3 * s);
-        c.closePath();
-        c.fill();
-        c.strokeStyle = "rgba(255,235,210,.25)";
-        c.lineWidth = Math.max(0.6, s);
-        for (const yy of [7, 14]) {
-          c.beginPath();
-          c.moveTo(x - 18 * s, y + yy * s);
-          c.lineTo(x + 14 * s, y + (yy - 1) * s);
-          c.stroke();
+        g.scale(s * ISLE_K, s * ISLE_K);
+        g.translate(W2, 30); /* origin = centre of the grass top */
+        /* underside: a big jagged cone of layered rock, two smaller lobes, lit on the left */
+        const cone = (cx, top, hw, depth, seed, lit, dark) => {
+          const rr = rng(seed),
+            pts = [[cx - hw, top]];
+          for (let n = 1; n < 6; n++) pts.push([cx - hw + (hw * n) / 6 + (rr() - 0.5) * 3, top + (depth * n) / 6 + (rr() - 0.5) * 3]);
+          const tip = [cx + (rr() - 0.5) * hw * 0.3, top + depth];
+          pts.push(tip);
+          for (let n = 5; n > 0; n--) pts.push([cx + hw - (hw * n) / 6 + (rr() - 0.5) * 3, top + (depth * n) / 6 + (rr() - 0.5) * 3]);
+          pts.push([cx + hw, top]);
+          g.fillStyle = lit;
+          g.beginPath();
+          pts.forEach(([a, b], n) => (n ? g.lineTo(a, b) : g.moveTo(a, b)));
+          g.closePath();
+          g.fill();
+          g.fillStyle = dark; /* shaded right half */
+          g.beginPath();
+          g.moveTo(cx + hw * 0.1, top);
+          pts.slice(6).forEach(([a, b]) => g.lineTo(a, b));
+          g.closePath();
+          g.fill();
+          return tip;
+        };
+        cone(-15, 2, 12, 26, 610 + k, "#8e7a63", "#6e5c4a");
+        cone(17, 2, 11, 22, 620 + k, "#8e7a63", "#6e5c4a");
+        const tip = cone(0, 0, 24, 46, 630 + k, "#9c8770", "#76634f");
+        /* strata bands across the rock */
+        g.save();
+        g.beginPath();
+        g.moveTo(-26, 0);
+        g.lineTo(26, 0);
+        g.lineTo(tip[0], tip[1]);
+        g.closePath();
+        g.clip();
+        for (let b = 6; b < 46; b += 6 + r() * 3) {
+          g.strokeStyle = "rgba(40,28,18,.35)";
+          g.lineWidth = 1;
+          g.beginPath();
+          g.moveTo(-26, b);
+          g.quadraticCurveTo(0, b + 3, 26, b - 2);
+          g.stroke();
+          g.strokeStyle = "rgba(255,235,205,.18)";
+          g.beginPath();
+          g.moveTo(-26, b + 1.2);
+          g.quadraticCurveTo(0, b + 4.2, 26, b - 0.8);
+          g.stroke();
         }
-        /* hanging moss */
-        c.strokeStyle = "#6aa84a";
-        c.lineWidth = Math.max(0.6, 0.9 * s);
-        for (let i = 0; i < 4; i++) {
-          const hx = x + (-14 + i * 9) * s;
-          c.beginPath();
-          c.moveTo(hx, y + 2 * s);
-          c.lineTo(hx + 1 * s, y + (6 + r() * 7) * s);
-          c.stroke();
+        g.restore();
+        /* glowing crystals growing from the underside (some islands) */
+        if (k % 3 == 1)
+          for (const [cx, cy, ch, a] of [[-6, 24, 9, -0.3], [3, 30, 7, 0.2], [9, 20, 6, 0.5], [-12, 16, 5, -0.6]]) {
+            g.save();
+            g.translate(cx, cy);
+            g.rotate(a + Math.PI);
+            g.fillStyle = "#3fd6c6";
+            g.beginPath();
+            g.moveTo(-2, 0);
+            g.lineTo(0, -ch);
+            g.lineTo(2, 0);
+            g.closePath();
+            g.fill();
+            g.fillStyle = "#c8fff6";
+            g.beginPath();
+            g.moveTo(-0.6, -0.5);
+            g.lineTo(0, -ch + 1);
+            g.lineTo(0.8, -0.5);
+            g.fill();
+            g.restore();
+          }
+        /* hanging roots and vines */
+        for (let n = 0; n < 7; n++) {
+          const rx0 = -22 + n * 7 + (r() - 0.5) * 3,
+            len = 10 + r() * 22;
+          g.strokeStyle = n % 2 ? "#5a4330" : "#4f8f3f";
+          g.lineWidth = n % 2 ? 0.9 : 0.7;
+          g.beginPath();
+          g.moveTo(rx0, 3);
+          g.bezierCurveTo(rx0 + 3, 3 + len * 0.4, rx0 - 3, 3 + len * 0.7, rx0 + (r() - 0.5) * 4, 3 + len);
+          g.stroke();
+          if (n % 2 == 0) {
+            g.fillStyle = "#6aad4c";
+            for (let l = 1; l < 4; l++) {
+              g.beginPath();
+              g.ellipse(rx0 + (l % 2 ? 1.5 : -1.5), 3 + (len * l) / 4, 1.5, 0.8, l % 2 ? 0.6 : -0.6, 0, 6.3);
+              g.fill();
+            }
+          }
         }
-        /* grassy cap with a bright edge */
-        c.fillStyle = "#6fae4a";
-        c.beginPath();
-        c.ellipse(x, y, 23 * s, 6 * s, 0, 0, 6.3);
-        c.fill();
-        c.fillStyle = "#8fcf63";
-        c.beginPath();
-        c.ellipse(x - 2 * s, y - 1.2 * s, 20 * s, 4.2 * s, 0, 0, 6.3);
-        c.fill();
-        /* a little tree (pink blossom or green) with a trunk, and a second smaller bush */
-        c.fillStyle = "#6b4a2e";
-        c.fillRect(x - 7 * s, y - 9 * s, 2.2 * s, 8 * s);
+        /* small rock shards floating under it */
+        for (const [fx, fy, fr] of [[-20, 40, 3], [16, 46, 2.4], [-4, 58, 2]]) {
+          g.fillStyle = "#8e7a63";
+          g.beginPath();
+          g.moveTo(fx - fr, fy);
+          g.lineTo(fx, fy - fr * 0.6);
+          g.lineTo(fx + fr, fy);
+          g.lineTo(fx, fy + fr * 1.4);
+          g.closePath();
+          g.fill();
+          g.fillStyle = "#5c9e45";
+          g.beginPath();
+          g.ellipse(fx, fy - fr * 0.4, fr * 0.8, fr * 0.3, 0, 0, 6.3);
+          g.fill();
+        }
+        /* earth lip and grassy cap with a lit edge and tufts hanging over */
+        g.fillStyle = "#6b5338";
+        g.beginPath();
+        g.ellipse(0, 2, 26, 6.5, 0, 0, 6.3);
+        g.fill();
+        g.fillStyle = "#5c9e45";
+        g.beginPath();
+        g.ellipse(0, 0, 26, 6.5, 0, 0, 6.3);
+        g.fill();
+        g.fillStyle = "#8fcf63";
+        g.beginPath();
+        g.ellipse(-2, -1.3, 22, 4.6, 0, 0, 6.3);
+        g.fill();
+        for (let n = 0; n < 14; n++) {
+          const a = (n / 14) * Math.PI,
+            ex = Math.cos(a) * 25,
+            ey = Math.sin(a) * 6.2 + 1;
+          g.strokeStyle = n % 2 ? "#4f8f3f" : "#6aad4c";
+          g.lineWidth = 0.8;
+          g.beginPath();
+          g.moveTo(ex, ey);
+          g.lineTo(ex + (r() - 0.5) * 2, ey + 2 + r() * 3);
+          g.stroke();
+        }
+        /* what stands on top */
+        const tree = (tx, ty, sz, pal) => {
+          g.fillStyle = "#6b4a2e";
+          g.fillRect(tx - 1.1 * sz, ty - 9 * sz, 2.2 * sz, 9 * sz);
+          [[0, 0, 7.5], [-4, 2, 5.5], [4, 2, 5], [-1, -4, 5], [2, -2, 3.5]].forEach(([dx, dy, rr], n) => {
+            g.fillStyle = pal[n % 3];
+            g.beginPath();
+            g.arc(tx + dx * sz, ty - 13 * sz + dy * sz, rr * sz, 0, 6.3);
+            g.fill();
+          });
+          g.fillStyle = "rgba(255,255,255,.25)";
+          g.beginPath();
+          g.arc(tx - 2.5 * sz, ty - 16 * sz, 2.5 * sz, 0, 6.3);
+          g.fill();
+        };
         const pal = bloom ? ["#c86a8f", "#e98fb0", "#ffc7da"] : ["#3f7a34", "#56a046", "#86cc62"];
-        [[0, 0, 8], [-3, -2, 5.5], [-5, -3.5, 3]].forEach(([dx, dy, rr], i) => {
-          c.fillStyle = pal[i];
-          c.beginPath();
-          c.arc(x - 6 * s + dx * s, y - 13 * s + dy * s, rr * s, 0, 6.3);
-          c.fill();
-        });
-        c.fillStyle = pal[1];
-        c.beginPath();
-        c.arc(x + 8 * s, y - 3 * s, 4 * s, 0, 6.3);
-        c.fill();
-        /* tiny flowers */
-        for (let i = 0; i < 4; i++) {
-          c.fillStyle = ["#ffe27a", "#fff3f8", "#c4a8ff", "#ff9fcf"][i];
-          c.beginPath();
-          c.arc(x + (-12 + i * 7) * s, y + (r() - 0.5) * 3 * s, Math.max(0.7, 1.2 * s), 0, 6.3);
-          c.fill();
+        if (k % 4 == 2) {
+          /* ruins: a broken arch */
+          g.fillStyle = "#b0a28c";
+          g.fillRect(-12, -16, 4, 15);
+          g.fillRect(6, -11, 4, 10);
+          g.strokeStyle = "#b0a28c";
+          g.lineWidth = 3.5;
+          g.beginPath();
+          g.arc(-1, -16, 9, Math.PI, Math.PI * 1.55);
+          g.stroke();
+          g.fillStyle = "#5c9e45";
+          g.beginPath();
+          g.ellipse(-10, -16, 3, 1.2, 0, 0, 6.3);
+          g.fill();
+          tree(16, -1, 0.7, pal);
+        } else if (k % 4 == 1) {
+          /* a rune obelisk beside a tree */
+          g.fillStyle = "#7a8794";
+          g.beginPath();
+          g.moveTo(6, -1);
+          g.lineTo(7, -16);
+          g.lineTo(9, -19);
+          g.lineTo(11, -16);
+          g.lineTo(12, -1);
+          g.fill();
+          g.fillStyle = "#9aa7b4";
+          g.fillRect(7, -15, 1.5, 13);
+          tree(-8, -1, 0.95, pal);
+        } else {
+          tree(-6, -1, 1, pal);
+          tree(10, 0, 0.7, pal);
         }
-        /* some carry a little waterfall spilling off the edge into mist */
+        /* bushes and flowers */
+        for (let n = 0; n < 5; n++) {
+          const bx = -20 + n * 10 + (r() - 0.5) * 3;
+          g.fillStyle = n % 2 ? "#4f8f3f" : "#62a34a";
+          g.beginPath();
+          g.arc(bx, 1, 2.6, Math.PI, 0);
+          g.fill();
+        }
+        for (let n = 0; n < 7; n++) {
+          g.fillStyle = ["#ffe27a", "#fff3f8", "#c4a8ff", "#ff9fcf"][n % 4];
+          g.beginPath();
+          g.arc(-18 + n * 6 + (r() - 0.5) * 2, (r() - 0.5) * 4, 0.9, 0, 6.3);
+          g.fill();
+        }
+        return (ISLE_SPR[key] = cv2);
+      }
+      function floatIsle(x, y, s, k) {
+        /* soft glow below so it reads as floating */
+        const sg = c.createRadialGradient(x, y + 40 * s, 1, x, y + 40 * s, 26 * s);
+        sg.addColorStop(0, "rgba(150,140,200,.16)");
+        sg.addColorStop(1, "rgba(150,140,200,0)");
+        c.fillStyle = sg;
+        c.fillRect(x - 26 * s, y + 14 * s, 52 * s, 52 * s);
+        const spr = isleSprite(s, k);
+        c.drawImage(spr, x - 64 * s, y - 30 * s, 128 * s, 92 * s);
+        const t = S.tm;
+        /* crystals pulse */
+        if (k % 3 == 1) {
+          c.save();
+          c.globalCompositeOperation = "lighter";
+          const gl = c.createRadialGradient(x, y + 24 * s, 1, x, y + 24 * s, 16 * s);
+          gl.addColorStop(0, `rgba(120,255,235,${0.25 + 0.15 * Math.sin(t * 2 + k)})`);
+          gl.addColorStop(1, "rgba(120,255,235,0)");
+          c.fillStyle = gl;
+          c.fillRect(x - 16 * s, y + 8 * s, 32 * s, 32 * s);
+          c.restore();
+        }
+        /* a thin waterfall spilling off the edge, streaks running down it, fading into mist */
         if (k % 3 == 0) {
-          const wf = c.createLinearGradient(0, y, 0, y + 30 * s);
-          wf.addColorStop(0, "rgba(150,215,225,.85)");
-          wf.addColorStop(1, "rgba(220,240,248,0)");
+          const wx = x + 20 * s,
+            wy = y + 2 * s,
+            len = 46 * s,
+            wf = c.createLinearGradient(0, wy, 0, wy + len);
+          wf.addColorStop(0, "rgba(160,220,228,.9)");
+          wf.addColorStop(1, "rgba(225,242,250,0)");
           c.fillStyle = wf;
-          c.fillRect(x + 15 * s, y + 1 * s, 2.6 * s, 30 * s);
-        }
-        /* a faint glowing rune stone on the cap */
-        if (k % 4 == 1) {
-          c.fillStyle = "#7a8794";
-          c.fillRect(x + 2 * s, y - 7 * s, 3 * s, 6 * s);
-          c.fillStyle = "rgba(120,240,225,.9)";
-          c.fillRect(x + 3 * s, y - 6 * s, 1 * s, 3 * s);
+          c.fillRect(wx - 1.6 * s, wy, 3.2 * s, len);
+          c.fillStyle = "rgba(255,255,255,.7)";
+          for (let n = 0; n < 2; n++) {
+            const p = (t * 0.8 + n * 0.5) % 1;
+            c.fillRect(wx - 0.5 * s, wy + p * len * 0.8, 1 * s, 5 * s);
+          }
         }
       }
       /* puffCloud(x, y, sz, a, seed): one fluffy cloud made of overlapping puffs, lit from above with a soft lavender shadow below */
