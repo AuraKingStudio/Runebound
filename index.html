@@ -2164,8 +2164,8 @@
         if (HUB_T < G.next) return;
         G.next = HUB_T + rnd(120, 300);
         const free = HUBV.filter((v) => v.bot && !v.out && !v.outAt && v.plan != "raid" && !(v.inn && S.tm - v.inn < ARRIVE) && HUB_T - v.born > 30);
-        if (free.length < 2) return;
-        const n = Math.min(free.length, Math.random() < 0.5 ? 2 : 3);
+        const n = Math.min(free.length - 2, Math.random() < 0.5 ? 2 : 3); /* at least 2 others stay behind */
+        if (n < 2) return;
         G.mem = free.sort(() => Math.random() - 0.5).slice(0, n);
         G.at = HUB_T;
         G.mem.forEach((v, i) => toCrossing(v, i, n));
