@@ -3581,6 +3581,18 @@
           c.ellipse(p.x, p.y, p.w * 0.8, p.w * 0.35, Math.atan2(p.ny, p.nx) + 1.57, 0, 6.3);
           c.fill();
         }
+        /* tiny bubbles riding the current and popping */
+        for (let k = 0; k < 12; k++) {
+          const head = (t * 5 + k * (n / 12)) % (n - 1),
+            p = pts[Math.floor(head)],
+            life = head % 1,
+            off = ((k % 4) - 1.5) * p.w * 0.35;
+          c.strokeStyle = `rgba(235,255,255,${0.55 * (1 - life)})`;
+          c.lineWidth = 0.9;
+          c.beginPath();
+          c.arc(p.x + p.nx * off, p.y + p.ny * off, 1.2 + life * 1.8, 0, 6.3);
+          c.stroke();
+        }
         /* white foam curling around the stones in the water */
         for (const i of [14, 33, 51]) {
           const p = pts[i];
@@ -3756,6 +3768,28 @@
         c.textBaseline = "middle";
         c.fillText("ᛟ", 0, 1);
         c.restore();
+        /* rings spreading from under the runestone, plus drops landing on the pool */
+        c.save();
+        c.globalCompositeOperation = "lighter";
+        for (let i = 0; i < 3; i++) {
+          const p = (t * 0.45 + i / 3) % 1;
+          c.strokeStyle = `rgba(190,250,255,${0.3 * (1 - p)})`;
+          c.lineWidth = 1.3;
+          c.beginPath();
+          c.ellipse(x, y + 2, 8 + p * (rx - 18), 4 + p * (ry - 10), 0, 0, 6.3);
+          c.stroke();
+        }
+        for (let i = 0; i < 4; i++) {
+          const cyc = (t * 0.7 + i * 0.37) % 1,
+            a = Math.floor(t * 0.7 + i * 0.37) * 2.39 + i,
+            dx = x + Math.cos(a) * rx * 0.55,
+            dy = y + Math.sin(a) * ry * 0.55;
+          c.strokeStyle = `rgba(220,255,255,${0.45 * (1 - cyc)})`;
+          c.beginPath();
+          c.ellipse(dx, dy, 2 + cyc * 12, 1 + cyc * 6, 0, 0, 6.3);
+          c.stroke();
+        }
+        c.restore();
         /* sparkles rising from the water */
         c.save();
         c.globalCompositeOperation = "lighter";
@@ -3832,6 +3866,106 @@
           c.beginPath();
           c.arc(fx, fy, 1.7, 0, 6.3);
           c.fill();
+        }
+        c.restore();
+        ambient(t);
+      }
+      /* ambient(t): life around the hub. Leaves falling from the trees, butterflies, dragonflies over the brook,
+         pollen drifting in the light and a bird flying over now and then. Everything is a pure function of time. */
+      function ambient(t) {
+        c.save();
+        /* falling leaves: drift down and sway, wrap around the screen */
+        for (let i = 0; i < 9; i++) {
+          const sp = 14 + (i % 4) * 5,
+            ly = ((t * sp + i * 97) % (H + 40)) - 20,
+            lx = ((i * 131 + t * 8) % (W + 40)) - 20 + Math.sin(t * 1.2 + i) * 22;
+          c.save();
+          c.translate(lx, ly);
+          c.rotate(Math.sin(t * 2 + i) * 0.9);
+          c.fillStyle = ["#7fbf5a", "#c9a24a", "#9acf6a", "#d98a4a"][i % 4];
+          c.beginPath();
+          c.ellipse(0, 0, 4.5, 2.2, 0, 0, 6.3);
+          c.fill();
+          c.strokeStyle = "rgba(60,80,30,.5)";
+          c.lineWidth = 0.6;
+          c.beginPath();
+          c.moveTo(-4, 0);
+          c.lineTo(4, 0);
+          c.stroke();
+          c.restore();
+        }
+        /* butterflies: flutter along looping paths, wings flap */
+        for (let i = 0; i < 4; i++) {
+          const bx = 450 + Math.sin(t * 0.23 + i * 1.6) * 360 + Math.sin(t * 1.1 + i) * 18,
+            by = 330 + Math.sin(t * 0.31 + i * 2.4) * 220 + Math.cos(t * 1.4 + i) * 12,
+            flap = Math.abs(Math.sin(t * 14 + i * 3)),
+            col = ["#ff9fcf", "#ffd84a", "#b48cff", "#8fd8ff"][i];
+          c.save();
+          c.translate(bx, by);
+          c.rotate(Math.sin(t * 0.7 + i) * 0.4);
+          c.fillStyle = col;
+          for (const s of [-1, 1]) {
+            c.beginPath();
+            c.ellipse(s * 3.2 * flap, -1.5, 3.6 * flap + 0.6, 2.8, 0, 0, 6.3);
+            c.fill();
+            c.beginPath();
+            c.ellipse(s * 2.4 * flap, 2, 2.4 * flap + 0.4, 1.9, 0, 0, 6.3);
+            c.fill();
+          }
+          c.fillStyle = "#3a2a1a";
+          c.fillRect(-0.6, -3, 1.2, 6);
+          c.restore();
+        }
+        /* dragonflies darting along the brook */
+        const pts = streamPts();
+        for (let i = 0; i < 2; i++) {
+          const k = Math.floor(((t * 0.6 + i * 0.5) % 1) * (pts.length - 1)),
+            p = pts[k],
+            hover = Math.sin(t * 9 + i * 4),
+            dx = p.x + p.nx * 18 * Math.sin(t * 0.9 + i * 3),
+            dy = p.y + p.ny * 18 * Math.sin(t * 0.9 + i * 3) - 14 + hover * 1.5;
+          c.save();
+          c.translate(dx, dy);
+          c.rotate(Math.atan2(p.ny, p.nx) - 1.57);
+          c.fillStyle = "rgba(220,255,255,.55)";
+          for (const s of [-1, 1]) {
+            c.beginPath();
+            c.ellipse(s * 5, -1, 5, 1.3, s * 0.2, 0, 6.3);
+            c.fill();
+            c.beginPath();
+            c.ellipse(s * 4.5, 1.5, 4.5, 1.1, -s * 0.2, 0, 6.3);
+            c.fill();
+          }
+          c.fillStyle = i ? "#3fb4c8" : "#6fbf5a";
+          c.fillRect(-0.9, -3, 1.8, 10);
+          c.restore();
+        }
+        /* pollen motes drifting slowly in the warm light */
+        c.globalCompositeOperation = "lighter";
+        for (let i = 0; i < 30; i++) {
+          const px = (i * 73 + t * (4 + (i % 5))) % W,
+            py = (i * 151 + Math.sin(t * 0.4 + i) * 30 - t * 3) % H,
+            a = 0.25 + 0.25 * Math.sin(t * 2 + i * 1.3);
+          c.fillStyle = `rgba(255,245,200,${a})`;
+          c.beginPath();
+          c.arc(px, (py + H) % H, 1.1, 0, 6.3);
+          c.fill();
+        }
+        c.globalCompositeOperation = "source-over";
+        /* a bird gliding across the top every ~20s */
+        const cyc = t % 20;
+        if (cyc < 6) {
+          const p = cyc / 6,
+            bx = -40 + p * (W + 80),
+            by = 70 + Math.sin(p * 6) * 12,
+            wing = Math.sin(t * 10) * 5;
+          c.strokeStyle = "rgba(40,40,50,.75)";
+          c.lineWidth = 2;
+          c.beginPath();
+          c.moveTo(bx - 9, by - wing);
+          c.quadraticCurveTo(bx - 4, by - 4, bx, by);
+          c.quadraticCurveTo(bx + 4, by - 4, bx + 9, by - wing);
+          c.stroke();
         }
         c.restore();
       }
