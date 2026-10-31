@@ -2714,7 +2714,7 @@
           const lb = n == "portal" ? "ENTER ARENA" : n == "elder" ? "TALK" : n == "lore" ? "LISTEN" : ["class", "maiden", "smith", "herald"].includes(n) && !isUnl(n) ? "???" : n == "class" ? "CLASS" : n == "maiden" ? "PRAY" : n == "smith" ? "FORGE" : n == "herald" ? "RECORDS" : n == "barkeep" ? "BLACKJACK" : n == "qboard" ? "QUESTS" : n == "gboard" ? "GUILD" : "SHOP",
             ht = KEYHINT[INMODE][3],
             h = lb + (ht ? ` <span class="kh k3">${ht}</span>` : "");
-          if ($("bi")._h != h) { $("bi")._h = h; $("bi").innerHTML = h; $("bi").classList.toggle("small", n == "portal"); } /* only touch the DOM when it changes */
+          if ($("bi")._h != h) { $("bi")._h = h; $("bi").innerHTML = h; $("bi").classList.toggle("small", ["portal", "lore", "barkeep"].includes(n)); } /* only touch the DOM when it changes */
         }
       }
       /* ---------- rendering ---------- */
