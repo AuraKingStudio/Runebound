@@ -4105,6 +4105,12 @@
         ctx.moveTo(e.x, e.y + 8);
         ctx.lineTo(e.x, spill().y + 4);
       }
+      const MAIN_AFTER = 0.55; /* main stream width after the two branches take their share */
+      const junctionY = () => {
+        const e = streamPts()[streamPts().length - 1];
+        return (e.y + 8 + spill().y) / 2;
+      };
+      const pathLen = (pts) => pts.reduce((a, p, i) => (i ? a + Math.hypot(p.x - pts[i - 1].x, p.y - pts[i - 1].y) : 0), 0);
       /* BRANCHES: two rivulets leaving the main stream, each running to the rim where a thin fall drops off.
          dx = where along the rim the thin fall is (relative to the main fall), w = half width. */
       const BRANCHES = [{ dx: -50, w: 5 }, { dx: -96, w: 4 }]; /* both downhill (left): the rim rises to the right, water cannot run up to it */
@@ -4112,7 +4118,7 @@
       function branchPts(b) {
         const e = streamPts()[streamPts().length - 1],
           sx = e.x + Math.sign(b.dx) * (e.w - 4),
-          sy = (e.y + 8 + spill().y) / 2,
+          sy = junctionY(),
           tx = e.x + b.dx,
           ty = edgeLowY(tx) + 3,
           cx = e.x + b.dx * 0.65,
@@ -4146,14 +4152,26 @@
       /* outflowGround(g): the stream on the forest floor. Painted before the platform so it starts hidden under the side wall
          and comes out at the wall's foot, the same width as the river. */
       function outflowGround(g) {
-        const e = streamPts()[streamPts().length - 1];
-        outflowPath(g);
+        const e = streamPts()[streamPts().length - 1],
+          jy = junctionY(),
+          seg = (y0, y1) => {
+            g.beginPath();
+            g.moveTo(e.x, y0);
+            g.lineTo(e.x, y1);
+          };
         g.strokeStyle = "#5d8a4a";
+        seg(e.y + 8, jy + 2);
         g.lineWidth = e.w * 2 + 6;
         g.stroke();
-        outflowPath(g);
+        seg(jy, spill().y + 4);
+        g.lineWidth = e.w * 2 * MAIN_AFTER + 6;
+        g.stroke();
         g.strokeStyle = "#5aa7a6";
+        seg(e.y + 8, jy + 2);
         g.lineWidth = e.w * 2 - 2;
+        g.stroke();
+        seg(jy, spill().y + 4);
+        g.lineWidth = e.w * 2 * MAIN_AFTER - 2;
         g.stroke();
         const rb = rng(57);
         for (const b of BRANCHES) {
@@ -4193,7 +4211,7 @@
       }
       function riverEnd(t) {
         const e = streamPts()[streamPts().length - 1],
-          bot = e.y + 38,
+          bot = junctionY() + 2,
           hw = e.w - 1;
         /* plain water from inside the river's end, over the last bit of stone up to the rim (the rim is lower on the left),
            down the wall and into the ground stream, so no part of the river is missing */
@@ -4251,9 +4269,9 @@
         const SP = spill(),
           fb = H + 30,
           FALLS = [
-            { x: SP.x, w: e.w - 1, streaks: 7, sp: 70 },
-            { x: SP.x + BRANCHES[0].dx, w: BRANCHES[0].w, streaks: 2, sp: 60 },
-            { x: SP.x + BRANCHES[1].dx, w: BRANCHES[1].w, streaks: 2, sp: 55 },
+            { x: SP.x, w: (e.w - 1) * MAIN_AFTER, feed: SP.y + 4 - (e.y + 8), lanes: [-0.5, 0.5] },
+            { x: SP.x + BRANCHES[0].dx, w: BRANCHES[0].w, feed: pathLen(branchPts(BRANCHES[0])), lanes: [0] },
+            { x: SP.x + BRANCHES[1].dx, w: BRANCHES[1].w, feed: pathLen(branchPts(BRANCHES[1])), lanes: [0] },
           ];
         c.save();
         skyClip(c);
@@ -4320,19 +4338,23 @@
           c.restore();
         });
         c.globalCompositeOperation = "lighter";
-        FALLS.forEach((F, n) => {
+        /* current lines continue straight down each fall: same dash pattern and speed as the streams above,
+           offset by the feeding stream's length so the dashes run on without a jump */
+        c.lineCap = "round";
+        c.strokeStyle = "rgba(225,252,255,.5)";
+        for (const F of FALLS) {
           const fy = edgeLowY(F.x);
-          for (let k = 0; k < F.streaks; k++) {
-            const lx = F.x - F.w + (k + 0.5) * ((F.w * 2) / F.streaks),
-              len = 14,
-              head = fy - len + ((t * F.sp + k * 23 + n * 41) % (fb - fy + len)),
-              gr = c.createLinearGradient(0, head, 0, head + len);
-            gr.addColorStop(0, "rgba(255,255,255,0)");
-            gr.addColorStop(1, "rgba(235,255,255,.55)");
-            c.fillStyle = gr;
-            c.fillRect(lx - 1, head, 2, len);
+          c.lineWidth = F.w > 8 ? 1.6 : 1;
+          c.setLineDash(F.w > 8 ? [10, 16] : [5, 9]);
+          c.lineDashOffset = -t * 50 + F.feed;
+          for (const o of F.lanes) {
+            c.beginPath();
+            c.moveTo(F.x + o * F.w, fy - 1);
+            c.lineTo(F.x + o * F.w * 1.2, fb);
+            c.stroke();
           }
-        });
+        }
+        c.setLineDash([]);
         c.restore();
         /* spray where each one tips over the lip (smaller for the thin falls) */
         c.save();
