@@ -4679,7 +4679,7 @@
         /* the meadow creeping over the edge stones in a few places: soft lobes of grass with a darker border,
            blades leaning onto the stone and a few flowers; moss in some of the flagstone joints (all in the platform's perspective) */
         const at = (a, d) => [x + Math.cos(a) * rx * d, y + Math.sin(a) * ry * d];
-        for (const [a0, a1, deep] of [[-46, 44, 0.27], [-58, -50, 0.05], [50, 57, 0.05]]) {
+        for (const [a0, a1, deep] of [[-30, 24, 0.14], [-44, -38, 0.04]]) {
           const A0 = (a0 * Math.PI) / 180,
             A1 = (a1 * Math.PI) / 180,
             N = 26,
@@ -4785,6 +4785,7 @@
           g.fillStyle = "#00000055";
           g.fillRect(392 - i * 10, y + ry + 11 + i * 9, 116 + i * 20, 2);
         }
+        gardenDraw(g);
         rimDecor(g);
         statueDraw(g);
         forestTrees(g, rng(9), true); /* near trees: in front, allowed to overlap the platform edge */
@@ -5711,6 +5712,188 @@
             for (let n = 0; n < 3; n++) g.fillText(RUNES_HUB[(n * 5 + a + 300) % RUNES_HUB.length], 0, -26 + n * 7);
           }
           g.restore();
+        }
+      }
+      /* flower(g, x, y, kind, s): a small flower on a stem with a leaf. kind 0 daisy, 1 tulip, 2 bluebell, 3 pink cluster, 4 buttercup */
+      function flower(g, x, y, kind, s = 1) {
+        g.strokeStyle = "#4f8f3f";
+        g.lineWidth = 0.9 * s;
+        g.beginPath();
+        g.moveTo(x, y);
+        g.quadraticCurveTo(x + 1 * s, y - 3 * s, x, y - 6 * s);
+        g.stroke();
+        g.fillStyle = "#62a34a";
+        g.beginPath();
+        g.ellipse(x + 1.6 * s, y - 2.5 * s, 1.8 * s, 0.8 * s, -0.6, 0, 6.3);
+        g.fill();
+        const fy = y - 6.5 * s;
+        if (kind == 0) {
+          g.fillStyle = "#fffaf0";
+          for (let k = 0; k < 6; k++) {
+            const a = (k / 6) * 6.283;
+            g.beginPath();
+            g.ellipse(x + Math.cos(a) * 1.5 * s, fy + Math.sin(a) * 1.1 * s, 1.1 * s, 0.6 * s, a, 0, 6.3);
+            g.fill();
+          }
+          g.fillStyle = "#ffd84a";
+          g.beginPath();
+          g.arc(x, fy, 0.8 * s, 0, 6.3);
+          g.fill();
+        } else if (kind == 1) {
+          g.fillStyle = ["#ff7a8a", "#ffb84a", "#c78bff"][(x * 7 + y) % 3 | 0];
+          g.beginPath();
+          g.moveTo(x - 1.6 * s, fy - 1.4 * s);
+          g.lineTo(x - 0.6 * s, fy - 0.2 * s);
+          g.lineTo(x, fy - 1.6 * s);
+          g.lineTo(x + 0.6 * s, fy - 0.2 * s);
+          g.lineTo(x + 1.6 * s, fy - 1.4 * s);
+          g.quadraticCurveTo(x + 1.7 * s, fy + 1.4 * s, x, fy + 1.5 * s);
+          g.quadraticCurveTo(x - 1.7 * s, fy + 1.4 * s, x - 1.6 * s, fy - 1.4 * s);
+          g.fill();
+        } else if (kind == 2) {
+          g.fillStyle = "#7f9cff";
+          for (let k = 0; k < 3; k++) {
+            g.beginPath();
+            g.ellipse(x + (k - 1) * 1.4 * s, fy + Math.abs(k - 1) * 1.2 * s, 0.9 * s, 1.2 * s, 0, 0, 6.3);
+            g.fill();
+          }
+        } else if (kind == 3) {
+          g.fillStyle = "#ff9fcf";
+          for (let k = 0; k < 5; k++) {
+            g.beginPath();
+            g.arc(x + Math.cos(k * 1.26) * 1.4 * s, fy + Math.sin(k * 1.26) * 1.1 * s, 0.9 * s, 0, 6.3);
+            g.fill();
+          }
+          g.fillStyle = "#fff3f8";
+          g.beginPath();
+          g.arc(x, fy, 0.6 * s, 0, 6.3);
+          g.fill();
+        } else {
+          g.fillStyle = "#ffe27a";
+          for (let k = 0; k < 5; k++) {
+            const a = (k / 5) * 6.283;
+            g.beginPath();
+            g.arc(x + Math.cos(a) * 1.1 * s, fy + Math.sin(a) * 0.9 * s, 0.9 * s, 0, 6.3);
+            g.fill();
+          }
+          g.fillStyle = "#ff9f43";
+          g.beginPath();
+          g.arc(x, fy, 0.5 * s, 0, 6.3);
+          g.fill();
+        }
+      }
+      /* fern(g, x, y, s) and mushroom(g, x, y, s): little extras in the grass */
+      function fern(g, x, y, s = 1) {
+        g.strokeStyle = "#4f8f3f";
+        g.lineWidth = 0.8 * s;
+        for (const sd of [-1, -0.4, 0.3, 1]) {
+          const ex = x + sd * 7 * s,
+            ey = y - 6 * s + Math.abs(sd) * 3 * s;
+          g.beginPath();
+          g.moveTo(x, y);
+          g.quadraticCurveTo(x + sd * 3 * s, y - 8 * s, ex, ey);
+          g.stroke();
+          for (let k = 1; k < 4; k++) {
+            const u = k / 4,
+              px = x + (ex - x) * u,
+              py = y - 7 * s * Math.sin(u * 2.4) + (ey - y + 7 * s) * u * 0.4;
+            g.beginPath();
+            g.moveTo(px, py);
+            g.lineTo(px + 1.5 * s, py - 1.8 * s);
+            g.moveTo(px, py);
+            g.lineTo(px - 1.5 * s, py - 1.4 * s);
+            g.stroke();
+          }
+        }
+      }
+      function mushroom(g, x, y, s = 1) {
+        g.fillStyle = "#f3e6c8";
+        g.fillRect(x - 0.8 * s, y - 3 * s, 1.6 * s, 3 * s);
+        g.fillStyle = "#d9534f";
+        g.beginPath();
+        g.arc(x, y - 3 * s, 2.6 * s, Math.PI, 0);
+        g.fill();
+        g.fillStyle = "#fff";
+        for (const [dx, dy] of [[-1.2, -4], [1, -4.6], [0.2, -3.6]]) {
+          g.beginPath();
+          g.arc(x + dx * s, y + dy * s, 0.45 * s, 0, 6.3);
+          g.fill();
+        }
+      }
+      /* gardenDraw(g): the meadow around and over the platform's edge. Grass bites into the rim at irregular places so the
+         disc no longer reads as a perfect oval, a few edge stones lie loose and tipped, and flowers, ferns, mushrooms and
+         pebbles fill the grass ring. Keeps clear of the cistern, the steps and the water portal. */
+      function gardenDraw(g) {
+        const r = rng(321),
+          { x, y, rx, ry } = PLAT,
+          at = (a, d) => [x + Math.cos(a) * rx * d, y + Math.sin(a) * ry * d],
+          clear = (a) => {
+            const deg = (((a * 180) / Math.PI) % 360 + 360) % 360;
+            return !(deg > 196 && deg < 224) && !(deg > 74 && deg < 106) && !(deg > 48 && deg < 66);
+          };
+        /* grass bites over the rim: irregular lobes of different sizes */
+        for (let i = 0; i < 46; i++) {
+          const a = r() * 6.283;
+          if (!clear(a)) continue;
+          const d = 0.985 + r() * 0.03,
+            [bx, by] = at(a, d),
+            br = 6 + r() * 12,
+            tilt = Math.atan2(Math.sin(a) * ry, Math.cos(a) * rx);
+          g.fillStyle = "#4f8f3f";
+          g.beginPath();
+          g.ellipse(bx, by + 1.2, br, br * 0.55, tilt + 1.57, 0, 6.3);
+          g.fill();
+          g.fillStyle = r() < 0.5 ? "#62a34a" : "#6aad4c";
+          g.beginPath();
+          g.ellipse(bx, by, br * 0.92, br * 0.5, tilt + 1.57, 0, 6.3);
+          g.fill();
+          for (let k = 0; k < br * 0.8; k++) {
+            const gx = bx + (r() - 0.5) * br * 1.4,
+              gy = by + (r() - 0.5) * br * 0.6;
+            g.strokeStyle = r() < 0.5 ? "#8fcf63" : "#3f7a34";
+            g.lineWidth = 1;
+            g.beginPath();
+            g.moveTo(gx, gy);
+            g.lineTo(gx + (r() - 0.5) * 2, gy - 2.5 - r() * 3);
+            g.stroke();
+          }
+          if (r() < 0.6) flower(g, bx + (r() - 0.5) * br, by + (r() - 0.5) * 3, (r() * 5) | 0, 0.9);
+        }
+        /* loose, tipped edge stones */
+        for (let i = 0; i < 9; i++) {
+          const a = r() * 6.283;
+          if (!clear(a)) continue;
+          const [sx, sy] = at(a, 1.03 + r() * 0.03);
+          g.save();
+          g.translate(sx, sy);
+          g.rotate((r() - 0.5) * 0.8);
+          g.fillStyle = "#8c7556";
+          g.fillRect(-7, -2, 14, 6);
+          g.fillStyle = "#d3bb90";
+          g.fillRect(-7, -4, 14, 3);
+          g.fillStyle = "#5c9e45";
+          g.beginPath();
+          g.ellipse(4, -4, 3, 1.2, 0, 0, 6.3);
+          g.fill();
+          g.restore();
+        }
+        /* flowers, ferns, mushrooms and pebbles across the grass ring */
+        for (let i = 0; i < 420; i++) {
+          const fx = r() * W,
+            fy = r() * H;
+          if (((fx - x) / (rx * 1.02)) ** 2 + ((fy - y) / (ry * 1.03)) ** 2 < 1 || !inIsle(fx, fy, 10)) continue;
+          const roll = r();
+          if (roll < 0.72) {
+            const kind = (r() * 5) | 0; /* flowers grow in little clumps of one kind */
+            for (let k = 0; k < 1 + ((r() * 3) | 0); k++) flower(g, fx + (r() - 0.5) * 9, fy + (r() - 0.5) * 4, kind, 0.9 + r() * 0.3);
+          } else if (roll < 0.84) fern(g, fx, fy, 0.8 + r() * 0.4);
+          else if (roll < 0.9) mushroom(g, fx, fy, 0.8 + r() * 0.4);
+          else {
+            g.fillStyle = ["#9a8670", "#b3a089", "#857259"][(r() * 3) | 0];
+            g.beginPath();
+            g.ellipse(fx, fy, 2 + r() * 2, 1.2 + r(), r() * 3, 0, 6.3);
+            g.fill();
+          }
         }
       }
       /* rimFlames(t): teal arcane fire dancing in the braziers */
