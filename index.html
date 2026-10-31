@@ -1316,13 +1316,22 @@
           p._rs = 0;
           return;
         }
-        const { d: best, bx, by, bw, bnx, bny, side } = riverNear(p.x, p.y),
-          lim = bw + PR + 6;
-        if (best < lim) {
+        /* push straight out from the closest point on the river (smooth along bends, no snapping to a segment's normal).
+           Two passes settle inside bends where two stretches are close. _rs remembers your bank, so you never pop across. */
+        for (let pass = 0; pass < 2; pass++) {
+          const { d, bx, by, bw, bnx, bny, side } = riverNear(p.x, p.y),
+            lim = bw + PR + 6;
+          if (d >= lim) {
+            p._rs = side;
+            return;
+          }
           const sd = p._rs || side;
-          p.x = bx + bnx * lim * sd;
-          p.y = by + bny * lim * sd;
-        } else p._rs = side;
+          let ux = (p.x - bx) / (d || 1),
+            uy = (p.y - by) / (d || 1);
+          if (d < 0.5 || (ux * bnx + uy * bny) * sd < 0) (ux = bnx * sd), (uy = bny * sd); /* on or past the centreline: back to your bank */
+          p.x = bx + ux * lim;
+          p.y = by + uy * lim;
+        }
       }
       function place(a) {
         P.mh = Math.round(CL[P.cls].hp * hpm());
