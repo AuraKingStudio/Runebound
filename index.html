@@ -4108,14 +4108,40 @@
       /* BRANCHES: two rivulets leaving the main stream, each running to the rim where a thin fall drops off.
          dx = where along the rim the thin fall is (relative to the main fall), w = half width. */
       const BRANCHES = [{ dx: -52, w: 5 }, { dx: 40, w: 4 }];
-      function branchPath(ctx, b) {
+      /* branchPts(b): sampled centerline of a rivulet with a natural wobble, plus a width that tapers from the junction to the rim */
+      function branchPts(b) {
         const e = streamPts()[streamPts().length - 1],
+          sx = e.x + Math.sign(b.dx) * (e.w - 4),
           sy = (e.y + 8 + spill().y) / 2,
           tx = e.x + b.dx,
-          ty = edgeLowY(tx) + 3;
+          ty = edgeLowY(tx) + 3,
+          cx = e.x + b.dx * 0.65,
+          cy = sy + 10,
+          pts = [];
+        for (let i = 0; i <= 16; i++) {
+          const t = i / 16,
+            u = 1 - t,
+            x = u * u * sx + 2 * u * t * cx + t * t * tx,
+            y = u * u * sy + 2 * u * t * cy + t * t * ty,
+            dx = 2 * u * (cx - sx) + 2 * t * (tx - cx),
+            dy = 2 * u * (cy - sy) + 2 * t * (ty - cy),
+            l = Math.hypot(dx, dy) || 1,
+            wob = Math.sin(t * 9 + b.dx) * 3 * Math.sin(t * Math.PI);
+          pts.push({ x: x + (-dy / l) * wob, y: y + (dx / l) * wob, nx: -dy / l, ny: dx / l, w: b.w * (1.7 - 0.7 * t) + Math.sin(t * 13 + b.dx) * 0.8 });
+        }
+        return pts;
+      }
+      function branchPath(ctx, b) {
         ctx.beginPath();
-        ctx.moveTo(e.x, sy);
-        ctx.quadraticCurveTo(e.x + b.dx * 0.6, sy + 6, tx, ty);
+        branchPts(b).forEach((p, i) => (i ? ctx.lineTo(p.x, p.y) : ctx.moveTo(p.x, p.y)));
+      }
+      /* branchShape(ctx, b, grow): the rivulet's outline, grow = extra half width (for the grassy bank) */
+      function branchShape(ctx, b, grow) {
+        const pts = branchPts(b);
+        ctx.beginPath();
+        pts.forEach((p, i) => (i ? ctx.lineTo(p.x + p.nx * (p.w + grow), p.y + p.ny * (p.w + grow)) : ctx.moveTo(p.x + p.nx * (p.w + grow), p.y + p.ny * (p.w + grow))));
+        for (let i = pts.length - 1; i >= 0; i--) ctx.lineTo(pts[i].x - pts[i].nx * (pts[i].w + grow), pts[i].y - pts[i].ny * (pts[i].w + grow));
+        ctx.closePath();
       }
       /* outflowGround(g): the stream on the forest floor. Painted before the platform so it starts hidden under the side wall
          and comes out at the wall's foot, the same width as the river. */
@@ -4129,18 +4155,35 @@
         g.strokeStyle = "#5aa7a6";
         g.lineWidth = e.w * 2 - 2;
         g.stroke();
-        g.lineCap = "round";
+        const rb = rng(57);
         for (const b of BRANCHES) {
-          branchPath(g, b);
-          g.strokeStyle = "#5d8a4a";
-          g.lineWidth = b.w * 2 + 5;
-          g.stroke();
-          branchPath(g, b);
-          g.strokeStyle = "#5aa7a6";
-          g.lineWidth = b.w * 2;
-          g.stroke();
+          g.fillStyle = "#5d8a4a";
+          branchShape(g, b, 3);
+          g.fill();
+          g.fillStyle = "#5aa7a6";
+          branchShape(g, b, 0);
+          g.fill();
+          /* pebbles and grass along the rivulet */
+          for (const p of branchPts(b))
+            for (const sd of [-1, 1]) {
+              if (rb() < 0.55) continue;
+              const px = p.x + p.nx * (p.w + 4) * sd,
+                py = p.y + p.ny * (p.w + 4) * sd;
+              if (rb() < 0.5) {
+                g.fillStyle = rb() < 0.5 ? "#8f8a80" : "#a59f92";
+                g.beginPath();
+                g.ellipse(px, py, 2.5 + rb() * 2, 1.8 + rb(), 0, 0, 6.3);
+                g.fill();
+              } else {
+                g.strokeStyle = "#6aa84a";
+                g.lineWidth = 1;
+                g.beginPath();
+                g.moveTo(px, py);
+                g.lineTo(px + (rb() - 0.5) * 3, py - 4 - rb() * 4);
+                g.stroke();
+              }
+            }
         }
-        g.lineCap = "butt";
       }
       /* riverEnd(t): the river pours over the stone lip and runs down the platform's curved side wall into the pool below */
       /* rimY(x): y of the platform's front rim at x (where the top surface ends and the side wall begins) */
