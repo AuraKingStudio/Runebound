@@ -1208,6 +1208,7 @@
         save();
         if (P) ftxt(P.x, P.y - 44, "+" + n + " XP", "#9fe8ff");
         const after = lvlInfo().L;
+        if (after >= SMITH_LV && !isUnl("smith")) setTimeout(() => unlockNpc("smith"), 1200); /* the Smith arrives at level SMITH_LV */
         if (after > before) {
           const rankUp = Math.floor(after / 10) > Math.floor(before / 10);
           popMsg("⬆ Level " + after + "!" + (rankUp ? " New rank color!" : ""), rankUp ? 1.6 : 1.2);
@@ -2794,6 +2795,7 @@
         S.ps = [P];
         document.body.className = "g";
         toHub();
+        if (lvlInfo().L >= SMITH_LV && !isUnl("smith")) setTimeout(() => unlockNpc("smith"), 1500); /* already past the level */
         if (!V.name) nameUI(); /* first login: ask the name, daily bonus follows */
         else dailyCheck();
       }
@@ -3079,7 +3081,10 @@
       /* ---------- NPC unlocks (revealed by the Archivist) ---------- */
       const UNLOCK_ORDER = ["class", "maiden", "smith", "herald"];
       /* tales heard before each NPC can be revealed (Class Master: first secret page; the rest are a long grind) */
-      const UNLOCK_AT = { class: 0, maiden: 100, smith: 150, herald: 200 }; /* class: luck-based in loreUI, not here */
+      /* how each hidden NPC is found: class and maiden through the Archivist's tales, smith by reaching SMITH_LV,
+         herald is a mystery for later (never unlocks yet) */
+      const UNLOCK_AT = { class: 0, maiden: 100, smith: Infinity, herald: Infinity }; /* class: luck-based in loreUI, not here */
+      const SMITH_LV = 10;
       const isUnl = (k) => !!(V.ul && V.ul[k]);
       /* unlockNpc(k): reveals NPC k with a burst. Out: text for the Archivist dialog. */
       function unlockNpc(k) {
@@ -3105,8 +3110,14 @@
       /* lockedUI(): what a still-hidden NPC says. */
       function lockedUI(k) {
         if (k == "tut") { $("dp").innerHTML = `<h2>❓ ???</h2><p>A figure waits in the mist.</p><p class="sm">Follow the tutorial at the top of the screen.</p><button class="alt" onclick="closeDlg()">Farewell</button>`; return; }
-        const need = UNLOCK_AT[k] || 0;
-        $("dp").innerHTML = `<h2>❓ ???</h2><p>A hooded figure turns away. "Not yet, traveller."</p><p class="sm">Hint: the Archivist knows who this is. Listen to his tales.${need ? ` (${Math.min(V.lt || 0, need)}/${need} tales)` : ""}</p><button class="alt" onclick="closeDlg()">Farewell</button>`;
+        const need = UNLOCK_AT[k] || 0,
+          hint =
+            k == "smith"
+              ? `Hint: a smith only works for the seasoned. Reach level ${SMITH_LV}. (now ${lvlInfo().L})`
+              : k == "herald"
+                ? "Hint: nobody knows who this is. Not even the Archivist… yet."
+                : `Hint: the Archivist knows who this is. Listen to his tales.${need ? ` (${Math.min(V.lt || 0, need)}/${need} tales)` : ""}`;
+        $("dp").innerHTML = `<h2>❓ ???</h2><p>A hooded figure turns away. "Not yet, traveller."</p><p class="sm">${hint}</p><button class="alt" onclick="closeDlg()">Farewell</button>`;
       }
       /* ---------- The Class Master: switch class in the hub ---------- */
       const ROLE = {
@@ -4669,7 +4680,7 @@
         /* the meadow creeping over the edge stones in a few places: soft lobes of grass with a darker border,
            blades leaning onto the stone and a few flowers; moss in some of the flagstone joints (all in the platform's perspective) */
         const at = (a, d) => [x + Math.cos(a) * rx * d, y + Math.sin(a) * ry * d];
-        for (const [a0, a1] of [[-132, -110], [-84, -64], [-30, -8], [6, 28], [104, 130], [150, 174]]) {
+        for (const [a0, a1, deep] of [[-46, 44, 0.27], [-58, -50, 0.05], [50, 57, 0.05]]) {
           const A0 = (a0 * Math.PI) / 180,
             A1 = (a1 * Math.PI) / 180,
             N = 26,
@@ -4678,7 +4689,7 @@
             const u = k / N,
               a = A0 + (A1 - A0) * u,
               reach = Math.sin(u * Math.PI) ** 0.7; /* deepest in the middle of the patch */
-            inner.push([a, 1 - 0.13 * reach - 0.03 * Math.sin(u * 17 + a0) * reach]);
+            inner.push([a, 1 - deep * reach - (deep > 0.1 ? 0.05 : 0.02) * Math.sin(u * 23 + a0) * reach]);
           }
           const lobe = () => {
             g.beginPath();
@@ -4699,9 +4710,9 @@
           g.save();
           lobe();
           g.clip();
-          for (let k = 0; k < 10; k++) {
+          for (let k = 0; k < (a1 - a0) * 0.6; k++) {
             const a = A0 + (A1 - A0) * r(),
-              [px2, py2] = at(a, 0.93 + r() * 0.07);
+              [px2, py2] = at(a, 1 - deep * 0.8 * r());
             g.beginPath();
             g.ellipse(px2, py2, 6 + r() * 8, 2.5 + r() * 3, 0, 0, 6.3);
             g.fill();
@@ -4720,9 +4731,9 @@
             g.lineTo(bx + lean + (r() - 0.5) * 2, by - 3 - r() * 4);
             g.stroke();
           }
-          for (let k = 0; k < 5; k++) {
-            const a = A0 + (A1 - A0) * (0.15 + r() * 0.7),
-              [fx, fy] = at(a, 0.95 + r() * 0.04);
+          for (let k = 0; k < (a1 - a0) * 0.5; k++) {
+            const a = A0 + (A1 - A0) * (0.1 + r() * 0.8),
+              [fx, fy] = at(a, 1 - deep * 0.85 * r());
             g.fillStyle = ["#ff9fcf", "#ffe27a", "#fff3f8", "#c4a8ff"][(r() * 4) | 0];
             g.beginPath();
             g.arc(fx, fy, 1.7, 0, 6.3);
