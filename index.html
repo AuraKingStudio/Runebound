@@ -3770,22 +3770,29 @@
         c.rect(-W, -H, W * 3, H * 3);
         c.ellipse(PLAT.x, PLAT.y, PLAT.rx, PLAT.ry, 0, 0, 6.3);
         c.clip("evenodd");
-        const top = rimY(e.x + hw) - 2,
-          sh = c.createLinearGradient(0, top, 0, bot);
-        sh.addColorStop(0, "#5aa7a6");
-        sh.addColorStop(0.35, "#7cc0bd");
-        sh.addColorStop(0.55, "#a9dcd8");
-        sh.addColorStop(1, "#5aa7a6");
-        c.fillStyle = sh;
+        /* plain water joining the river above and the ground stream below (no seam) */
+        c.fillStyle = "#5aa7a6";
         c.fillRect(e.x - hw, rimY(e.x - hw) - 30, hw * 2, bot - rimY(e.x - hw) + 30);
-        /* falling streaks: each lane starts on the rim right above it */
+        c.restore();
+        /* the falling-water look only on the side wall: between the rim and the wall's bottom edge */
+        c.save();
+        c.beginPath();
+        c.ellipse(PLAT.x, PLAT.y + 18, PLAT.rx, PLAT.ry, 0, 0, 6.3);
+        c.ellipse(PLAT.x, PLAT.y, PLAT.rx, PLAT.ry, 0, 0, 6.3);
+        c.clip("evenodd");
+        const ft = rimY(e.x + hw) - 2,
+          sh = c.createLinearGradient(0, ft, 0, ft + 22);
+        sh.addColorStop(0, "#6fb6b3");
+        sh.addColorStop(1, "#a9dcd8");
+        c.fillStyle = sh;
+        c.fillRect(e.x - hw, ft - 20, hw * 2, 50);
         c.globalCompositeOperation = "lighter";
         for (let k = 0; k < 6; k++) {
           const sx = e.x - hw + (k + 0.5) * ((hw * 2) / 6),
             r0 = rimY(sx),
-            len = 9,
-            span = e.y + 22 - r0,
-            head = r0 - len + ((t * 60 + k * 13) % (span + len)),
+            len = 7,
+            span = 18,
+            head = r0 - len + ((t * 40 + k * 7) % (span + len)),
             gr = c.createLinearGradient(0, head, 0, head + len);
           gr.addColorStop(0, "rgba(255,255,255,0)");
           gr.addColorStop(1, "rgba(235,255,255,.6)");
