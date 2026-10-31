@@ -4666,26 +4666,80 @@
           g.ellipse(x, y, rx * s0, ry * s0, 0, 0, 6.3);
           g.stroke();
         }
-        /* grass and tiny flowers creeping between the edge stones */
-        for (let i = 0; i < 240; i++) {
-          const ga = r() * 6.283,
-            d = 0.9 + r() * 0.1,
-            gx = x + Math.cos(ga) * rx * d,
-            gy = y + Math.sin(ga) * ry * d;
-          g.strokeStyle = r() < 0.5 ? "#6aa84a" : "#4f8a3a";
-          g.lineWidth = 1.2;
-          for (let k = 0; k < 4; k++) {
-            g.beginPath();
-            g.moveTo(gx + k * 2 - 3, gy);
-            g.lineTo(gx + k * 2 - 3 + (r() - 0.5) * 3, gy - 4 - r() * 5);
-            g.stroke();
+        /* the meadow creeping over the edge stones in a few places: soft lobes of grass with a darker border,
+           blades leaning onto the stone and a few flowers; moss in some of the flagstone joints (all in the platform's perspective) */
+        const at = (a, d) => [x + Math.cos(a) * rx * d, y + Math.sin(a) * ry * d];
+        for (const [a0, a1] of [[-132, -110], [-84, -64], [-30, -8], [6, 28], [104, 130], [150, 174]]) {
+          const A0 = (a0 * Math.PI) / 180,
+            A1 = (a1 * Math.PI) / 180,
+            N = 26,
+            inner = [];
+          for (let k = 0; k <= N; k++) {
+            const u = k / N,
+              a = A0 + (A1 - A0) * u,
+              reach = Math.sin(u * Math.PI) ** 0.7; /* deepest in the middle of the patch */
+            inner.push([a, 1 - 0.13 * reach - 0.03 * Math.sin(u * 17 + a0) * reach]);
           }
-          if (r() < 0.3) {
-            g.fillStyle = ["#ff9fcf", "#ffe27a", "#fff3f8", "#c4a8ff"][(r() * 4) | 0];
+          const lobe = () => {
             g.beginPath();
-            g.arc(gx, gy - 7, 1.8, 0, 6.3);
+            inner.forEach(([a, d], k) => (k ? g.lineTo(...at(a, d)) : g.moveTo(...at(a, d))));
+            for (let k = N; k >= 0; k--) g.lineTo(...at(inner[k][0], 1.02));
+            g.closePath();
+          };
+          g.fillStyle = "#4f8f3f"; /* darker border */
+          g.save();
+          g.translate(0, 1.5);
+          lobe();
+          g.fill();
+          g.restore();
+          g.fillStyle = "#62a34a";
+          lobe();
+          g.fill();
+          g.fillStyle = "rgba(150,210,100,.35)"; /* light on the grass */
+          g.save();
+          lobe();
+          g.clip();
+          for (let k = 0; k < 10; k++) {
+            const a = A0 + (A1 - A0) * r(),
+              [px2, py2] = at(a, 0.93 + r() * 0.07);
+            g.beginPath();
+            g.ellipse(px2, py2, 6 + r() * 8, 2.5 + r() * 3, 0, 0, 6.3);
             g.fill();
           }
+          g.restore();
+          /* blades along the border, leaning in onto the stone */
+          for (let k = 0; k < N; k += 0.5) {
+            const kk = Math.floor(k),
+              [a, d] = inner[kk],
+              [bx, by] = at(a, d + 0.004),
+              lean = -Math.cos(a) * 1.5;
+            g.strokeStyle = r() < 0.5 ? "#8fcf63" : "#4f8f3f";
+            g.lineWidth = 1.1;
+            g.beginPath();
+            g.moveTo(bx, by);
+            g.lineTo(bx + lean + (r() - 0.5) * 2, by - 3 - r() * 4);
+            g.stroke();
+          }
+          for (let k = 0; k < 5; k++) {
+            const a = A0 + (A1 - A0) * (0.15 + r() * 0.7),
+              [fx, fy] = at(a, 0.95 + r() * 0.04);
+            g.fillStyle = ["#ff9fcf", "#ffe27a", "#fff3f8", "#c4a8ff"][(r() * 4) | 0];
+            g.beginPath();
+            g.arc(fx, fy, 1.7, 0, 6.3);
+            g.fill();
+          }
+        }
+        /* moss in some flagstone joints near the edge */
+        g.strokeStyle = "rgba(80,140,60,.55)";
+        g.lineWidth = 1.6;
+        g.lineCap = "round";
+        for (let k = 0; k < 40; k++) {
+          const a = r() * 6.283,
+            d0 = 0.82 + r() * 0.1;
+          g.beginPath();
+          g.moveTo(...at(a, d0));
+          g.lineTo(...at(a + (r() - 0.5) * 0.02, d0 + 0.03 + r() * 0.04));
+          g.stroke();
         }
         /* rune ring, painted before the canal so the canal runs over it. Each glyph lies flat on the stone:
            turned to face out from the centre and squashed like the platform, with a soft teal glow. */
@@ -5679,23 +5733,26 @@
       }
       /* STATUE: a robed sandstone guardian on the platform's rim beside the cistern, raising a staff whose crystal glows
          (glow animated in waterfall). Outside the walkable area: decor only. */
-      const STATUE = { x: 80, y: 344, k: 2.2 };
-      /* statueDraw(g): the goddess of the wellspring, carved in sandstone. She stands in an easy contrapposto on a carved
-         plinth, wings folded behind her, a long draped gown falling in folds, hair flowing over one shoulder under a
-         crescent diadem. Her raised hand holds the orb that glows (animated in waterfall); the other gathers her gown. */
+      const STATUE = { x: 74, y: 326, k: 2.5 };
+      /* statueDraw(g): the goddess of the wellspring, a tall classical sandstone figure beside the cistern.
+         Contrapposto, weight on one hip; one arm lifts the orb high (its glow is animated in waterfall), the other reaches
+         out over the basin with a silk veil trailing from her hand across the water. Hair gathered in a bun with loose
+         locks, a one-shoulder gown clinging to an hourglass figure in deep folds, one leg stepping forward through the drape.
+         Lit from the left. Local units: ground at 0, plinth top at by. */
       function statueDraw(g) {
         g.save();
         g.translate(STATUE.x, STATUE.y);
         g.scale(STATUE.k, STATUE.k);
-        const L = "#e3cfa6", /* lit stone */
+        const HL = "#f1e1bd", /* highlight */
+          L = "#e0cba2", /* lit stone */
           M = "#c8b088", /* mid */
-          D = "#a08a64", /* shade */
-          DD = "#76603f"; /* deep shade */
+          D = "#a28b63", /* shade */
+          DD = "#7a6443"; /* deep shade */
+        /* P(pts, col): fill a closed shape: start x,y then cubic groups of 6 (a trailing 4 = quadratic, 2 = line) */
         const P = (pts, col) => {
           g.fillStyle = col;
           g.beginPath();
           g.moveTo(pts[0], pts[1]);
-          /* groups of 6 = cubic curve; a trailing 4 = quadratic, 2 = straight line */
           for (let i = 2; i < pts.length; ) {
             const n = pts.length - i;
             if (n >= 6) g.bezierCurveTo(pts[i], pts[i + 1], pts[i + 2], pts[i + 3], pts[i + 4], pts[i + 5]), (i += 6);
@@ -5705,189 +5762,160 @@
           g.closePath();
           g.fill();
         };
+        const line = (pts, col, w) => {
+          g.strokeStyle = col;
+          g.lineWidth = w;
+          g.beginPath();
+          g.moveTo(pts[0], pts[1]);
+          for (let i = 2; i + 3 < pts.length; i += 4) g.quadraticCurveTo(pts[i], pts[i + 1], pts[i + 2], pts[i + 3]);
+          g.stroke();
+        };
+        g.lineCap = g.lineJoin = "round";
+        /* shadow and plinth: slab, carved die with a rune and a laurel band, moulded cornice */
         g.fillStyle = "rgba(0,0,0,.28)";
         g.beginPath();
-        g.ellipse(4, 3, 19, 6, 0, 0, 6.3);
+        g.ellipse(5, 3, 20, 6, 0, 0, 6.3);
         g.fill();
-        /* plinth: base slab, carved die with a rune, moulded cornice */
         g.fillStyle = DD;
-        g.fillRect(-15, -6, 30, 9);
+        g.fillRect(-16, -6, 32, 9);
         g.fillStyle = M;
-        g.fillRect(-15, -9, 30, 4);
+        g.fillRect(-16, -9, 32, 4);
         g.fillStyle = D;
-        g.fillRect(-11, -20, 22, 12);
+        g.fillRect(-12, -20, 24, 12);
         g.fillStyle = L;
-        g.fillRect(-11, -20, 6, 12);
-        g.fillStyle = "#efdcb5";
-        g.fillRect(-13, -23, 26, 3.5);
+        g.fillRect(-12, -20, 6, 12);
+        g.fillStyle = HL;
+        g.fillRect(-14, -23, 28, 3.5);
+        g.strokeStyle = "rgba(90,110,60,.6)";
+        g.lineWidth = 0.6;
+        for (let k = -9; k <= 9; k += 3) {
+          g.beginPath();
+          g.ellipse(k, -11, 1.4, 0.7, k * 0.3, 0, 6.3);
+          g.stroke();
+        }
         g.fillStyle = "rgba(110,240,220,.9)";
         g.font = "7px " + RUNE_FONT;
         g.textAlign = "center";
         g.textBaseline = "middle";
-        g.fillText("ᛟ", 1, -14);
+        g.fillText("ᛟ", 0, -15);
         const by = -23;
-        /* folded wings behind the shoulders, feathers in layered rows */
-        for (const sd of [-1, 1]) {
-          g.save();
-          g.scale(sd, 1);
-          P([3, by - 38, 9, by - 46, 16, by - 50, 17, by - 40, 18, by - 30, 15, by - 18, 10, by - 12, 7, by - 20, 5, by - 30, 3, by - 38], sd < 0 ? L : D);
-          g.strokeStyle = "rgba(110,90,60,.45)";
-          g.lineWidth = 0.6;
-          for (let k = 0; k < 4; k++) {
-            g.beginPath();
-            g.moveTo(6 + k, by - 40 + k * 6);
-            g.quadraticCurveTo(14, by - 40 + k * 6, 16 - k, by - 32 + k * 6);
-            g.stroke();
-          }
-          g.restore();
-        }
-        /* gown: narrow at the waist, flaring to the hem, the weight on one hip */
-        P([-3.5, by - 30, -8.5, by - 26, -10, by - 18, -9.5, by - 12, -10, by - 6, -11, by - 2, -11, by, 0, by + 2, 6, by + 1, 11, by, 11, by - 4, 10.5, by - 8, 11, by - 14, 10.5, by - 22, 6, by - 27, 3.5, by - 30], D);
-        P([-3.5, by - 30, -8.5, by - 26, -10, by - 18, -9.5, by - 12, -10, by - 6, -11, by - 2, -11, by, -6, by + 1, -3, by + 1, -1, by, -1.5, by - 10, -2, by - 20, -1, by - 26, 0, by - 30], L);
-        /* soft light on the curve of the hip */
-        g.fillStyle = "rgba(255,245,220,.35)";
+        /* the veil, behind her: from the outstretched hand, falling and trailing out over the basin */
+        P([33, by - 63, 40, by - 56, 38, by - 46, 46, by - 38, 54, by - 31, 63, by - 33, 70, by - 28, 64, by - 27, 56, by - 25, 47, by - 31, 37, by - 40, 33, by - 52, 31, by - 61], D);
+        P([33, by - 63, 39, by - 57, 37, by - 47, 44, by - 40, 51, by - 35, 58, by - 35, 64, by - 32, 54, by - 31, 45, by - 36, 36, by - 44, 32, by - 54, 33, by - 63], L);
+        line([35, by - 58, 38, by - 48, 44, by - 41, 52, by - 35, 60, by - 33], "rgba(255,248,225,.6)", 0.6);
+        /* back leg (weight-bearing), under the gown */
+        P([1, by - 36, 4, by - 24, 5, by - 10, 4, by - 1, 7, by, 9, by - 1, 9, by - 12, 8, by - 26, 7, by - 38], D);
+        /* gown: clinging over the hips, deep folds falling to the hem, open at the front where the leg steps forward */
+        P([-5, by - 48, -10, by - 44, -11.5, by - 38, -11, by - 32, -10.5, by - 22, -12.5, by - 8, -13, by, -4, by + 1.5, 2, by + 1, 4, by, 2, by - 12, 1.5, by - 22, 2, by - 30, 3, by - 38, 4, by - 46, 5, by - 48], M);
+        P([5, by - 48, 9, by - 44, 10.5, by - 38, 10, by - 30, 10.5, by - 20, 12, by - 8, 12, by, 9, by + 1, 7, by, 8, by - 12, 7, by - 24, 6, by - 36, 5, by - 48], D);
+        /* lit flank and hip, the light catching the curve */
+        P([-5, by - 48, -10, by - 44, -11.5, by - 38, -11, by - 32, -10.5, by - 26, -9, by - 30, -8, by - 36, -6, by - 42, -5, by - 48], L);
+        g.fillStyle = "rgba(255,248,225,.45)";
         g.beginPath();
-        g.ellipse(-6.5, by - 19, 2.2, 4.5, 0.15, 0, 6.3);
+        g.ellipse(-8.6, by - 37, 1.6, 4.2, 0.12, 0, 6.3);
         g.fill();
-        /* long folds falling from the hip */
+        /* the forward leg through the opening: thigh, knee, calf, bare foot */
+        P([-1, by - 34, -3.5, by - 26, -4.5, by - 19, -3.6, by - 15, -4, by - 9, -5, by - 2, -6, by, -1.5, by + 1, 0, by, 0.5, by - 5, 0.6, by - 12, 1, by - 18, 2, by - 26, 2.5, by - 34], L);
+        line([-3.2, by - 24, -3.9, by - 19, -3.2, by - 15], "rgba(120,95,60,.45)", 0.5);
+        g.fillStyle = HL;
+        g.beginPath();
+        g.ellipse(-2.4, by - 22, 0.9, 3.4, 0.1, 0, 6.3);
+        g.fill();
+        /* folds: long sweeps from the hip, a few catching light */
+        for (const [x0, cx, x1, col] of [[-6, -9, -11, DD], [-4, -6.5, -8, DD], [3, 4.5, 4.5, DD], [6, 8, 10, DD], [8, 10, 11.5, DD], [-5, -7.5, -9.5, HL], [5, 6.8, 8.5, HL]]) {
+          line([x0, by - 34, cx, by - 18, x1, by - 1], col == HL ? "rgba(255,248,225,.55)" : "rgba(95,75,50,.5)", 0.6);
+        }
+        /* hem with a light edge */
+        line([-13, by, -6, by + 2, 1, by + 0.5], HL, 0.9);
+        line([7, by + 0.5, 10, by + 1.2, 12, by], L, 0.9);
+        /* waist: narrow, the gown gathered by a corded belt with a rune clasp */
+        P([-5, by - 48, -4.6, by - 51, -4.4, by - 53, 0, by - 54, 4.4, by - 53, 4.6, by - 51, 5, by - 48, 0, by - 47, -5, by - 48], M);
+        line([-5, by - 49.5, 0, by - 48.5, 5, by - 49.5], DD, 1.2);
+        g.fillStyle = "rgba(110,240,220,.95)";
+        g.beginPath();
+        g.arc(0, by - 49, 0.9, 0, 6.3);
+        g.fill();
+        /* bodice: full bust, the gown over one shoulder, the other bare */
+        P([-4.4, by - 53, -7.4, by - 55, -8, by - 59, -6, by - 62.5, -2, by - 63, 2, by - 62.5, 6, by - 62, 8, by - 59, 7.4, by - 55, 4.4, by - 53, 0, by - 52.5, -4.4, by - 53], M);
+        P([-4.4, by - 53, -7.4, by - 55, -8, by - 59, -6, by - 62.5, -3, by - 63, -1.5, by - 60, -2, by - 56, -1, by - 53, -4.4, by - 53], L);
         g.strokeStyle = "rgba(95,75,50,.5)";
-        g.lineWidth = 0.7;
-        for (const [x0, cx, x1] of [[-3, -5, -8], [-1, -2, -4], [1, 2, 1], [3, 5, 5], [4.5, 7, 8.5]]) {
-          g.beginPath();
-          g.moveTo(x0, by - 20);
-          g.quadraticCurveTo(cx, by - 10, x1, by);
-          g.stroke();
-        }
-        g.strokeStyle = "rgba(255,245,220,.5)";
-        for (const [x0, cx, x1] of [[-2, -4, -6.5], [2, 3.5, 3]]) {
-          g.beginPath();
-          g.moveTo(x0, by - 19);
-          g.quadraticCurveTo(cx, by - 10, x1, by - 1);
-          g.stroke();
-        }
-        /* hem catching the light, a bare foot peeking out */
-        g.fillStyle = L;
-        g.beginPath();
-        g.moveTo(-11, by);
-        g.quadraticCurveTo(0, by + 2.5, 11, by);
-        g.lineTo(11, by - 1.2);
-        g.quadraticCurveTo(0, by + 1, -11, by - 1.2);
-        g.fill();
-        g.fillStyle = M;
-        g.beginPath();
-        g.ellipse(3, by + 0.8, 2.2, 1, 0, 0, 6.3);
-        g.fill();
-        /* bodice and sash under it, tied with a rune knot */
-        P([-3.5, by - 30, -6.5, by - 31.5, -7, by - 35, -5, by - 37.5, 0, by - 38.5, 5, by - 37.5, 7, by - 35, 6.5, by - 31.5, 3.5, by - 30, 0, by - 29, -3.5, by - 30], M);
-        P([-3.5, by - 30, -6.5, by - 31.5, -7, by - 35, -5, by - 37.5, -1.5, by - 38.5, -1, by - 35, -1.5, by - 31, -1, by - 29.5, -3, by - 29.5, -3.5, by - 30], L);
-        /* rounded shading under the bust and a fold of the gown between */
-        g.strokeStyle = "rgba(95,75,50,.45)";
         g.lineWidth = 0.6;
         g.beginPath();
-        g.arc(-3, by - 33.5, 3, 0.3, 2.6);
-        g.moveTo(6, by - 33);
-        g.arc(3.2, by - 33.5, 3, 0.4, 2.8);
+        g.arc(-3.6, by - 57.6, 3.6, 0.35, 2.6);
         g.stroke();
-        g.fillStyle = DD;
-        g.fillRect(-4, by - 30.5, 8, 1.8);
-        g.fillStyle = "rgba(110,240,220,.9)";
         g.beginPath();
-        g.arc(0.5, by - 29.6, 1, 0, 6.3);
+        g.arc(3.8, by - 57.6, 3.6, 0.5, 2.8);
+        g.stroke();
+        line([0.2, by - 60, 0.4, by - 57, 0.2, by - 54], "rgba(95,75,50,.4)", 0.5);
+        /* strap over the right shoulder, bare left shoulder and collarbone */
+        line([5, by - 61, 7, by - 64, 8, by - 66], M, 2);
+        P([-8, by - 60, -10, by - 64, -8.5, by - 66.5, -4, by - 66, -1.5, by - 65, -3, by - 63, -6, by - 62, -8, by - 60], L);
+        line([-6.5, by - 64.6, -3.5, by - 64.8, -1.5, by - 64], "rgba(120,95,60,.4)", 0.45);
+        /* neck */
+        P([-1.6, by - 65, -1.4, by - 68, -1, by - 70, 1.4, by - 70, 1.6, by - 67, 1.6, by - 65], L);
+        /* raised arm: shoulder, elbow, forearm and hand lifting the orb */
+        P([-8.5, by - 66, -12, by - 70, -13.5, by - 76, -12.5, by - 82, -11, by - 84, -10, by - 82, -10.6, by - 76, -9.5, by - 71, -6.5, by - 66.5], L);
+        P([-12.5, by - 82, -12, by - 87, -10.5, by - 92, -8.5, by - 95, -7, by - 94, -8.6, by - 91, -10, by - 86, -10.6, by - 83], L);
+        line([-12.6, by - 74, -11.6, by - 80], "rgba(120,95,60,.35)", 0.5);
+        P([-9.2, by - 94, -10, by - 96.5, -8.5, by - 98, -6.4, by - 97.4, -6, by - 95.5, -7.4, by - 94.4], M); /* hand cupping the orb */
+        /* outstretched arm reaching over the basin, hand open */
+        P([6.5, by - 66, 11, by - 67.5, 16, by - 67, 21, by - 66.5, 26, by - 65.5, 30, by - 64.5, 33, by - 64, 33, by - 62, 29, by - 62.2, 24, by - 63, 18, by - 63.6, 12, by - 63.8, 7, by - 63], L);
+        line([7, by - 63.4, 15, by - 63.8, 24, by - 63.2], "rgba(120,95,60,.35)", 0.5);
+        P([32.5, by - 64.5, 35, by - 65.5, 37.5, by - 65, 38.5, by - 63.6, 36.5, by - 62.6, 34, by - 62.4, 32.5, by - 62.4], M); /* hand, palm down */
+        line([35.5, by - 64, 37.6, by - 63.4], "rgba(120,95,60,.4)", 0.4);
+        /* head: turned toward her outstretched hand; brow, nose, lips in profile shading */
+        P([-3.2, by - 72, -3.6, by - 76.5, -1.5, by - 80.5, 1.8, by - 80.3, 4, by - 78.5, 4.2, by - 75, 3.8, by - 72.6, 2.5, by - 70.5, 0, by - 70, -2, by - 70.6, -3.2, by - 72], L);
+        P([1.5, by - 80.3, 4, by - 78.5, 4.2, by - 75, 3.8, by - 72.6, 2.5, by - 70.5, 2.2, by - 72.6, 2.8, by - 75.2, 2.8, by - 78, 1.5, by - 80.3], M);
+        g.fillStyle = HL; /* nose ridge and cheek light */
+        g.beginPath();
+        g.ellipse(2.9, by - 75.4, 0.5, 1.3, 0.2, 0, 6.3);
+        g.ellipse(-1.2, by - 74.5, 1.3, 1.6, 0, 0, 6.3);
         g.fill();
-        /* a light shawl over one shoulder, falling down the side */
-        P([-5, by - 37, -8, by - 36, -9, by - 28, -8, by - 16, -6, by - 16, -6, by - 28, -4, by - 33, -5, by - 37], L);
-        /* lowered arm gathering the gown at the hip */
-        g.strokeStyle = M;
-        g.lineWidth = 2.4;
-        g.lineCap = "round";
+        line([0.4, by - 76.4, 1.6, by - 76.6, 2.3, by - 76.2], "rgba(90,70,45,.7)", 0.45); /* lowered eyelid */
+        line([1.1, by - 72.6, 2, by - 72.9, 2.7, by - 72.5], "rgba(130,90,70,.6)", 0.45); /* lips */
+        /* hair: gathered high in a bun with a ribbon, a soft wave over the brow, long locks down the back and shoulder */
+        P([-3.6, by - 76.5, -4.2, by - 80, -1.5, by - 82.5, 2.5, by - 82, 4.6, by - 79.4, 4.2, by - 77.6, 2.5, by - 80, -0.5, by - 80.6, -2.5, by - 78.6], D);
+        g.fillStyle = D;
         g.beginPath();
-        g.moveTo(-5, by - 36);
-        g.quadraticCurveTo(-8, by - 29, -6, by - 23);
-        g.stroke();
+        g.ellipse(-2.6, by - 84, 3.1, 2.6, -0.3, 0, 6.3);
+        g.fill();
         g.fillStyle = M;
         g.beginPath();
-        g.ellipse(-5.5, by - 22.5, 1.5, 1.2, 0, 0, 6.3);
+        g.ellipse(-3.3, by - 84.8, 1.8, 1.4, -0.3, 0, 6.3);
         g.fill();
-        /* raised arm holding up the orb */
-        g.strokeStyle = M;
-        g.lineWidth = 2.2;
+        line([-5.2, by - 82.6, -0.4, by - 85.6], "rgba(110,240,220,.8)", 0.6); /* ribbon */
+        P([-3.6, by - 77, -6, by - 73, -6.5, by - 67, -5.6, by - 60, -4.6, by - 62, -4.6, by - 67, -3.8, by - 72, -3.2, by - 75], D);
+        line([-4.8, by - 75, -5.8, by - 69, -5, by - 62], "rgba(255,240,210,.45)", 0.5);
+        line([3.4, by - 74.5, 4.6, by - 70, 4, by - 67], D, 1.1); /* a loose lock */
+        /* diadem: a thin crescent band with a teal stone */
+        line([-2.8, by - 80.4, 0.5, by - 81.8, 3.6, by - 80.2], "#f4e2ad", 0.7);
+        g.fillStyle = "rgba(110,240,220,.95)";
         g.beginPath();
-        g.moveTo(4.5, by - 36);
-        g.quadraticCurveTo(9, by - 40, 10, by - 46);
-        g.stroke();
-        g.strokeStyle = L;
-        g.lineWidth = 0.9;
-        g.beginPath();
-        g.moveTo(4.8, by - 36.8);
-        g.quadraticCurveTo(8.6, by - 40.5, 9.4, by - 45.5);
-        g.stroke();
-        g.fillStyle = M;
-        g.beginPath();
-        g.ellipse(10, by - 47, 1.6, 1.3, 0, 0, 6.3);
+        g.arc(0.5, by - 81.6, 0.6, 0, 6.3);
         g.fill();
-        /* neck and head turned gently toward the orb */
-        g.fillStyle = M;
-        g.fillRect(-1, by - 41, 2.2, 3.5);
-        g.beginPath();
-        g.ellipse(0.6, by - 44, 3, 3.7, 0.15, 0, 6.3);
-        g.fill();
-        g.fillStyle = L;
-        g.beginPath();
-        g.ellipse(-0.2, by - 44.5, 2, 3, 0.15, 0, 6.3);
-        g.fill();
-        g.strokeStyle = "rgba(95,75,50,.6)"; /* closed eyes and a calm mouth */
-        g.lineWidth = 0.45;
-        g.beginPath();
-        g.moveTo(-0.6, by - 44.6);
-        g.lineTo(0.4, by - 44.4);
-        g.moveTo(1.5, by - 44.3);
-        g.lineTo(2.5, by - 44.1);
-        g.moveTo(0.4, by - 42.2);
-        g.lineTo(1.4, by - 42.1);
-        g.stroke();
-        /* hair: gathered high, falling in a long wave over the shoulder and down the back */
-        P([-3, by - 46, -3.5, by - 49, 2, by - 50, 4, by - 47, 4.5, by - 44, 3.5, by - 42, 3.6, by - 44.5, 2, by - 47.5, -1, by - 47, -3, by - 46], D);
-        P([-3, by - 46, -5, by - 42, -6, by - 36, -5, by - 28, -4, by - 30, -4, by - 37, -2.4, by - 42, -2.5, by - 45, -3, by - 46], D);
-        g.strokeStyle = "rgba(255,240,210,.45)";
-        g.lineWidth = 0.5;
-        g.beginPath();
-        g.moveTo(-3.6, by - 44);
-        g.quadraticCurveTo(-5, by - 38, -4.6, by - 31);
-        g.stroke();
-        /* crescent diadem */
-        g.strokeStyle = "#f2dfa8";
-        g.lineWidth = 1;
-        g.beginPath();
-        g.arc(0.6, by - 49.5, 2.6, Math.PI * 0.15, Math.PI * 0.85, true);
-        g.stroke();
-        g.fillStyle = "rgba(110,240,220,.9)";
-        g.beginPath();
-        g.arc(0.6, by - 48.6, 0.7, 0, 6.3);
-        g.fill();
-        /* the orb */
+        /* the orb, held high */
         g.fillStyle = "#3fd6c6";
         g.beginPath();
-        g.arc(10.2, by - 50.5, 3, 0, 6.3);
+        g.arc(-7.8, by - 100.5, 3.2, 0, 6.3);
         g.fill();
         g.fillStyle = "#d8fff8";
         g.beginPath();
-        g.arc(9.3, by - 51.4, 1.1, 0, 6.3);
+        g.arc(-8.8, by - 101.5, 1.1, 0, 6.3);
         g.fill();
-        /* weathering: moss on the plinth and a wing, ivy climbing the gown */
+        /* weathering: moss on the plinth, ivy curling up the back of the gown */
         g.fillStyle = "#5c9e45";
         g.beginPath();
-        g.ellipse(-10, -9, 5, 1.8, 0, 0, 6.3);
-        g.ellipse(8, -22, 4, 1.4, 0, 0, 6.3);
-        g.ellipse(-14, by - 22, 2.5, 1, 0.4, 0, 6.3);
+        g.ellipse(-11, -9, 5, 1.8, 0, 0, 6.3);
+        g.ellipse(9, -22, 4, 1.4, 0, 0, 6.3);
         g.fill();
         g.strokeStyle = "#3f7a34";
         g.lineWidth = 0.8;
         g.beginPath();
-        g.moveTo(-10, by);
-        g.bezierCurveTo(-7, by - 5, -10, by - 9, -8, by - 13);
+        g.moveTo(10, by);
+        g.bezierCurveTo(12, by - 6, 9, by - 10, 11, by - 15);
         g.stroke();
         g.fillStyle = "#6aad4c";
-        for (const [lx, ly] of [[-9, -3], [-8.5, -7], [-9, -10.5], [-8, -13]]) {
+        for (const [lx, ly] of [[11.5, -3], [10, -7], [11.5, -10.5], [10.5, -14]]) {
           g.beginPath();
           g.ellipse(lx, by + ly, 1.3, 0.8, 0.5, 0, 6.3);
           g.fill();
@@ -6132,8 +6160,8 @@
         c.globalCompositeOperation = "source-over";
         /* the statue's staff crystal glows in time with the cistern */
         {
-          const sx = STATUE.x + 10.2 * STATUE.k,
-            sy = STATUE.y - 73.5 * STATUE.k,
+          const sx = STATUE.x - 7.8 * STATUE.k,
+            sy = STATUE.y - 123.5 * STATUE.k,
             gl = c.createRadialGradient(sx, sy, 1, sx, sy, 16);
           gl.addColorStop(0, `rgba(120,255,235,${0.3 + 0.15 * Math.sin(t * 2.2)})`);
           gl.addColorStop(1, "rgba(120,255,235,0)");
@@ -6682,27 +6710,6 @@
           c.closePath();
           c.fill();
         });
-        /* sigils in the canal floor, lighting up in a wave that runs downstream */
-        for (let i = 6; i < pts.length - 12; i += 9) {
-          const p = pts[i];
-          if (p.drop || bridgeAt(p)) continue;
-          const a = Math.max(0, Math.sin(t * 1.4 - i * 0.12));
-          if (a < 0.05) continue;
-          c.save();
-          c.translate(p.x, p.y);
-          c.scale(1, PLAT.ry / PLAT.rx);
-          c.strokeStyle = `rgba(140,255,240,${0.35 * a})`;
-          c.lineWidth = 1;
-          c.beginPath();
-          c.arc(0, 0, 7, 0, 6.3);
-          c.stroke();
-          c.fillStyle = `rgba(160,255,240,${0.45 * a})`;
-          c.font = "8px serif";
-          c.textAlign = "center";
-          c.textBaseline = "middle";
-          c.fillText(RUNES_HUB[(i * 7) % RUNES_HUB.length], 0, 0);
-          c.restore();
-        }
         c.restore();
         /* stone shards drifting around the cistern */
         for (let i = 0; i < 4; i++) {
