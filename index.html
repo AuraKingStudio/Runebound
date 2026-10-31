@@ -4649,23 +4649,33 @@
             g.fill();
           }
         }
-        streams(g);
-        /* rune ring (glow pulses in drawHub) */
-        g.strokeStyle = "rgba(70,140,128,.7)";
-        g.lineWidth = 2;
-        for (const s of [0.6, 0.52]) {
+        /* rune ring, painted before the canal so the canal runs over it. Each glyph lies flat on the stone:
+           turned to face out from the centre and squashed like the platform, with a soft teal glow. */
+        g.save();
+        g.shadowColor = "rgba(90,240,220,.8)";
+        g.shadowBlur = 6;
+        g.strokeStyle = "rgba(70,150,138,.75)";
+        g.lineWidth = 1.6;
+        for (const s2 of [0.6, 0.52]) {
           g.beginPath();
-          g.ellipse(x, y, rx * s, ry * s, 0, 0, 6.3);
+          g.ellipse(x, y, rx * s2, ry * s2, 0, 0, 6.3);
           g.stroke();
         }
-        g.fillStyle = "rgba(60,150,138,.85)";
-        g.font = "bold 13px Georgia";
+        g.fillStyle = "rgba(80,190,175,.95)";
+        g.font = "bold 14px Georgia";
         g.textAlign = "center";
         g.textBaseline = "middle";
-        for (let i = 0; i < 64; i++) {
-          const a = (i / 64) * 6.283;
-          g.fillText(RUNES_HUB[i % RUNES_HUB.length], x + Math.cos(a) * rx * 0.56, y + Math.sin(a) * ry * 0.56);
+        for (let i = 0; i < 60; i++) {
+          const a = (i / 60) * 6.283;
+          g.save();
+          g.translate(x + Math.cos(a) * rx * 0.56, y + Math.sin(a) * ry * 0.56);
+          g.scale(1, ry / rx);
+          g.rotate(a + Math.PI / 2);
+          g.fillText(RUNES_HUB[i % RUNES_HUB.length], 0, 0);
+          g.restore();
         }
+        g.restore();
+        streams(g);
         /* steps down at the front */
         for (let i = 0; i < 3; i++) {
           g.fillStyle = i % 2 ? "#b39a74" : "#c9b18a";
@@ -4673,6 +4683,7 @@
           g.fillStyle = "#00000055";
           g.fillRect(392 - i * 10, y + ry + 11 + i * 9, 116 + i * 20, 2);
         }
+        statueDraw(g);
         forestTrees(g, rng(9), true); /* near trees: in front, allowed to overlap the platform edge */
         HUBC = cv2;
       }
@@ -5441,7 +5452,7 @@
       /* waterfall in the top-left corner: rocky cliff, falling water and a pond. WF = fall position. */
       /* WF: the sky fall. Water pours from an island high above (off screen) in one long column (x, w = width at the bottom)
          straight down into the pond (px, py, prx, pry) on the island's corner. */
-      const WF = { x: 100, w: 18, px: 100, py: 250, prx: 26, pry: 14 }; /* the column lands in the Rune Cistern (px, py, prx, pry) */
+      const WF = { x: 124, w: 22, px: 124, py: 246, prx: 36, pry: 19 }; /* the column lands in the Rune Cistern (px, py, prx, pry) */
       /* pondWater(g): the pond surface, same colors as the brook. Drawn again after the brook so the brook flows out of it. */
       /* pondPath(ctx, grow): an organic, lumpy outline for the pond (a few overlapping waves on the radius), grow = extra size */
       function pondPath(ctx, grow) {
@@ -5458,6 +5469,98 @@
         g.fillStyle = "#3f8a8e"; /* deep middle */
         pondPath(g, -12);
         g.fill();
+      }
+      /* STATUE: a robed sandstone guardian on the platform's rim beside the cistern, raising a staff whose crystal glows
+         (glow animated in waterfall). Outside the walkable area: decor only. */
+      const STATUE = { x: 58, y: 292 };
+      function statueDraw(g) {
+        const { x, y } = STATUE;
+        g.fillStyle = "rgba(0,0,0,.28)";
+        g.beginPath();
+        g.ellipse(x + 5, y + 4, 20, 6, 0, 0, 6.3);
+        g.fill();
+        /* plinth: two stepped blocks */
+        g.fillStyle = "#8a7558";
+        g.fillRect(x - 15, y - 8, 30, 12);
+        g.fillStyle = "#cdb48a";
+        g.fillRect(x - 15, y - 11, 30, 4);
+        g.fillStyle = "#9c8a6c";
+        g.fillRect(x - 11, y - 18, 22, 8);
+        g.fillStyle = "#e2cba0";
+        g.fillRect(x - 11, y - 20, 22, 3);
+        g.fillStyle = "rgba(110,240,220,.85)";
+        g.font = "6px serif";
+        g.textAlign = "center";
+        g.textBaseline = "middle";
+        g.fillText("ᛟ", x, y - 3);
+        /* robed figure: lit left, shaded right */
+        const by = y - 20;
+        g.fillStyle = "#c2aa80";
+        g.beginPath();
+        g.moveTo(x - 9, by);
+        g.quadraticCurveTo(x - 7, by - 22, x - 4, by - 34);
+        g.lineTo(x + 4, by - 34);
+        g.quadraticCurveTo(x + 7, by - 22, x + 9, by);
+        g.closePath();
+        g.fill();
+        g.fillStyle = "#a08a64";
+        g.beginPath();
+        g.moveTo(x + 1, by);
+        g.quadraticCurveTo(x + 4, by - 20, x + 4, by - 34);
+        g.quadraticCurveTo(x + 7, by - 22, x + 9, by);
+        g.closePath();
+        g.fill();
+        g.strokeStyle = "rgba(90,70,45,.4)"; /* robe folds */
+        g.lineWidth = 0.8;
+        for (const fx of [-4, 0, 4]) {
+          g.beginPath();
+          g.moveTo(x + fx * 0.5, by - 26);
+          g.quadraticCurveTo(x + fx, by - 12, x + fx * 1.4, by);
+          g.stroke();
+        }
+        /* hooded head */
+        g.fillStyle = "#b39a72";
+        g.beginPath();
+        g.arc(x, by - 38, 5, 0, 6.3);
+        g.fill();
+        g.fillStyle = "#d6bf95";
+        g.beginPath();
+        g.arc(x - 1.5, by - 39, 3.2, Math.PI * 0.9, Math.PI * 1.9);
+        g.fill();
+        /* arm and staff raised toward the cistern */
+        g.strokeStyle = "#c2aa80";
+        g.lineWidth = 3;
+        g.lineCap = "round";
+        g.beginPath();
+        g.moveTo(x + 3, by - 28);
+        g.lineTo(x + 10, by - 34);
+        g.stroke();
+        g.strokeStyle = "#7a5a3a";
+        g.lineWidth = 2;
+        g.beginPath();
+        g.moveTo(x + 11, by + 2);
+        g.lineTo(x + 11, by - 50);
+        g.stroke();
+        g.fillStyle = "#3fd6c6"; /* crystal on the staff */
+        g.beginPath();
+        g.moveTo(x + 11, by - 58);
+        g.lineTo(x + 14, by - 52);
+        g.lineTo(x + 11, by - 48);
+        g.lineTo(x + 8, by - 52);
+        g.closePath();
+        g.fill();
+        /* moss and ivy */
+        g.fillStyle = "#5c9e45";
+        g.beginPath();
+        g.ellipse(x - 10, y - 10, 5, 2, 0, 0, 6.3);
+        g.ellipse(x + 8, y - 19, 4, 1.6, 0, 0, 6.3);
+        g.fill();
+        g.strokeStyle = "#3f7a34";
+        g.lineWidth = 1;
+        g.beginPath();
+        g.moveTo(x - 8, by);
+        g.bezierCurveTo(x - 4, by - 8, x - 9, by - 14, x - 5, by - 20);
+        g.stroke();
       }
       /* cisternDraw(g): the Rune Cistern, a round carved basin set into the platform's edge that catches the sky fall.
          Thick sandstone ring with a visible front wall, glowing runes in the rim, two short pillars at the back
@@ -5506,11 +5609,11 @@
         pondWater(g);
         /* glowing runes carved round the rim */
         g.fillStyle = "rgba(110,240,220,.85)";
-        g.font = "6px serif";
+        g.font = "7px serif";
         g.textAlign = "center";
         g.textBaseline = "middle";
-        for (let n = 0; n < 8; n++) {
-          const a = (n / 8) * 6.28 + 0.2;
+        for (let n = 0; n < 10; n++) {
+          const a = (n / 10) * 6.28 + 0.2;
           g.fillText(RUNES_HUB[n * 3 + 1], px + Math.cos(a) * (prx + 5), py + Math.sin(a) * (pry + 3));
         }
         /* spout on the near side where the brook pours out */
@@ -5678,6 +5781,18 @@
           c.fillRect(mx - mr, my - mr, mr * 2, mr * 2);
         }
         c.globalCompositeOperation = "source-over";
+        /* the statue's staff crystal glows in time with the cistern */
+        {
+          const sx = STATUE.x + 11,
+            sy = STATUE.y - 72,
+            gl = c.createRadialGradient(sx, sy, 1, sx, sy, 16);
+          gl.addColorStop(0, `rgba(120,255,235,${0.3 + 0.15 * Math.sin(t * 2.2)})`);
+          gl.addColorStop(1, "rgba(120,255,235,0)");
+          c.globalCompositeOperation = "lighter";
+          c.fillStyle = gl;
+          c.fillRect(sx - 16, sy - 16, 32, 32);
+          c.globalCompositeOperation = "source-over";
+        }
         /* the cistern's two crystals: hover over the pillars, pulse, and shed motes */
         for (const [dx, k] of [[-WF.prx - 6, 0], [WF.prx + 6, 1]]) {
           const sx = WF.px + dx,
@@ -5731,6 +5846,7 @@
       /* the waterfall's pond feeds a natural stream that winds across the platform and runs under the fountain.
          STREAM = sampled centerline points {x, y, nx, ny (normal), w (half width)}; built once by streamPts(). */
       let STREAM = null;
+      const WALL_H = 18; /* height of the platform's side wall */
       function streamPts() {
         if (STREAM) return STREAM;
         const r = rng(23),
@@ -5765,6 +5881,8 @@
           const k = Math.min(1, (i - (pts.length - 14)) / 8);
           pts[i].w = pts[i].w * (1 - k) + 20 * k;
         }
+        /* past the platform's edge the brook has dropped down the side wall to the grass (WALL_H lower) */
+        for (const p of pts) if (((p.x - PLAT.x) / PLAT.rx) ** 2 + ((p.y - PLAT.y) / PLAT.ry) ** 2 > 1) (p.y += WALL_H), (p.drop = 1);
         return (STREAM = pts);
       }
       /* bank(ctx, pts, grow, jit): closed outline of the stream, grow = extra half width, jit = edge wobble */
@@ -5786,8 +5904,29 @@
           r = rng(31);
         /* a built canal: an even course of carved curb blocks with a bevelled lip, the inner wall face down to the water,
            rune posts at intervals, and only a little moss in the joints */
-        const edgeI = pts.findIndex((p) => ((p.x - PLAT.x) / PLAT.rx) ** 2 + ((p.y - PLAT.y) / PLAT.ry) ** 2 > 0.97),
-          N = edgeI > 0 ? edgeI : pts.length - 1, /* the curb ends at the platform's edge */
+        const L = pts.findIndex((p) => p.drop),
+          N = L > 0 ? L - 1 : pts.length - 1, /* the curb ends at the platform's lip */
+          canal = pts.slice(0, N + 1),
+          low = L > 0 ? pts.slice(N) : [];
+        /* below the wall: a natural little stream on the grass, running off toward the island's edge */
+        if (low.length > 1) {
+          g.fillStyle = "#3f7a34";
+          bank(g, low, 4, 4, r);
+          g.fill();
+          g.fillStyle = "#5aa7a6";
+          bank(g, low, -1, 2, r);
+          g.fill();
+          for (let i = 1; i < low.length; i += 2)
+            for (const sd of [-1, 1]) {
+              if (r() < 0.5) continue;
+              const p = low[i],
+                d = (p.w + 4 + r() * 4) * sd;
+              g.fillStyle = r() < 0.5 ? "#8f8a80" : "#a59f92";
+              g.beginPath();
+              g.ellipse(p.x + p.nx * d, p.y + p.ny * d, 2.5 + r() * 3, 1.8 + r() * 1.5, r(), 0, 6.3);
+              g.fill();
+            }
+        }
           off = (p, d) => [p.x + p.nx * d, p.y + p.ny * d],
           quad = (p, q, d0, d1, sd) => {
             g.beginPath();
@@ -5798,7 +5937,7 @@
             g.closePath();
           };
         g.fillStyle = "#7d6649"; /* shadow under the curb */
-        bank(g, pts.slice(0, N + 1), 10, 0);
+        bank(g, canal, 10, 0);
         g.fill();
         for (const sd of [-1, 1]) {
           for (let i = 0; i < N; i += 2) {
@@ -5830,18 +5969,37 @@
         }
         /* the inner wall face, wet and dark down to the waterline, then the water */
         g.fillStyle = "#5e5444";
-        bank(g, pts, 0.6, 0);
+        bank(g, canal, 0.6, 0);
         g.fill();
         g.fillStyle = "#4b6a60";
-        bank(g, pts, -1.4, 0);
+        bank(g, canal, -1.4, 0);
         g.fill();
         g.fillStyle = "#5aa7a6";
-        bank(g, pts, -3, 0);
+        bank(g, canal, -3, 0);
         g.fill();
         /* deeper channel down the middle */
         g.fillStyle = "rgba(40,110,112,.2)";
-        bank(g, pts.map((p) => ({ ...p, w: p.w * 0.4 })), 0, 0);
+        bank(g, canal.map((p) => ({ ...p, w: p.w * 0.4 })), 0, 0);
         g.fill();
+        /* the drop over the side wall: a sheet of water from the lip to the grass */
+        if (low.length > 1) {
+          const p = low[0],
+            q = low[1],
+            hw = p.w - 3,
+            sh = g.createLinearGradient(0, p.y, 0, q.y);
+          sh.addColorStop(0, "#5aa7a6");
+          sh.addColorStop(1, "#c9eeea");
+          g.fillStyle = sh;
+          g.beginPath();
+          g.moveTo(p.x - hw, p.y);
+          g.lineTo(p.x + hw, p.y);
+          g.lineTo(q.x + hw + 2, q.y);
+          g.lineTo(q.x - hw - 2, q.y);
+          g.closePath();
+          g.fill();
+          g.fillStyle = "#e9d6ae"; /* the lip */
+          g.fillRect(p.x - hw - 4, p.y - 2, hw * 2 + 8, 3);
+        }
         /* rune posts along both curbs (not on the crossing, not by the cistern) */
         for (let i = 10; i < N - 2; i += 12)
           for (const sd of [-1, 1]) {
@@ -6092,6 +6250,33 @@
           b = pts[i + 1],
           m = (k) => a[k] + (b[k] - a[k]) * f;
         return { x: m("x"), y: m("y"), nx: m("nx"), ny: m("ny"), w: m("w") };
+      }
+      /* wallSpill(t): the canal pouring over the platform's lip: streaks sliding down the short drop, foam where it lands */
+      function wallSpill(t) {
+        const pts = streamPts(),
+          L = pts.findIndex((p) => p.drop);
+        if (L < 1) return;
+        const p = pts[L - 1],
+          q = pts[L],
+          hw = p.w - 3;
+        c.save();
+        c.globalCompositeOperation = "lighter";
+        for (let i = 0; i < 6; i++) {
+          const lx = p.x - hw + ((i + 0.5) / 6) * hw * 2,
+            ph = (t * 1.8 + i * 0.37) % 1,
+            yy = p.y + ph * (q.y - p.y);
+          c.fillStyle = `rgba(235,255,255,${0.55 * (1 - ph)})`;
+          c.fillRect(lx - 0.8, yy - 3, 1.6, 6);
+        }
+        for (let i = 0; i < 7; i++) {
+          const ph = (t * 1.3 + i / 7) % 1,
+            fx = q.x + ((i / 6) - 0.5) * hw * 2.2 + Math.sin(t * 3 + i) * 1.5;
+          c.fillStyle = `rgba(245,255,255,${0.5 * (1 - ph)})`;
+          c.beginPath();
+          c.arc(fx, q.y - ph * 5, 2 + ph * 3.5, 0, 6.3);
+          c.fill();
+        }
+        c.restore();
       }
       function streamFlow(t) {
         const pts = streamPts(),
@@ -6387,13 +6572,27 @@
         c.save();
         /* rune ring glow pulse */
         c.globalCompositeOperation = "lighter";
-        c.strokeStyle = `rgba(90,240,220,${0.07 + 0.06 * Math.sin(t * 2)})`;
-        c.lineWidth = 10;
+        c.strokeStyle = `rgba(90,240,220,${0.06 + 0.05 * Math.sin(t * 2)})`;
+        c.lineWidth = 12;
         c.beginPath();
         c.ellipse(x, y, rx * 0.56, ry * 0.56, 0, 0, 6.3);
         c.stroke();
+        for (let k = 0; k < 2; k++) {
+          const a0 = t * 0.5 + k * Math.PI;
+          c.strokeStyle = "rgba(150,255,240,.28)";
+          c.lineWidth = 8;
+          c.beginPath();
+          c.ellipse(x, y, rx * 0.56, ry * 0.56, 0, a0, a0 + 0.5);
+          c.stroke();
+          c.strokeStyle = "rgba(220,255,250,.35)";
+          c.lineWidth = 3;
+          c.beginPath();
+          c.ellipse(x, y, rx * 0.56, ry * 0.56, 0, a0 + 0.2, a0 + 0.45);
+          c.stroke();
+        }
         c.globalCompositeOperation = "source-over";
         streamFlow(t);
+        wallSpill(t);
         riverEnd(t);
         waterfall(t);
         bridges(c, t);
