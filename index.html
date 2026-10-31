@@ -3159,10 +3159,10 @@
           { x, y, rx, ry } = PLAT;
         g.scale(k, k);
         forest(g, r);
+        skyEdge(g);
         cliff(g);
         outflowGround(g);
         forestTrees(g, r); /* trees after the pond and stream, so their canopies overlap the water */
-        skyEdge(g);
         /* platform side wall: stacked stone blocks, darker at the bottom */
         g.fillStyle = "#6b5a44";
         g.beginPath();
@@ -3355,7 +3355,7 @@
         for (let i = 0; i < 140; i++) {
           const tx = r() * (W + 80) - 40,
             ty = r() * (H + 80) - 40;
-          if (out(tx, ty, 1.18)) trees.push([tx, ty, 26 + r() * 22]);
+          if (out(tx, ty, 1.18) && ty > edgeY(tx) + 24) trees.push([tx, ty, 26 + r() * 22]);
         }
         trees.sort((p, q) => p[1] - q[1]);
         for (const [tx, ty, tr] of trees) {
@@ -3414,14 +3414,19 @@
          onto a far-away landscape (fields, a river, woods, a village) under haze, with mountains on the horizon.
          EDGE = the jagged rim of the island, following a big ellipse around the hub. */
       const ISLE = { x: 470, y: 330, rx: 420, ry: 290 };
+      /* edgeY(x): y of the island's rim. Right of the top it follows the round curve down the right side;
+         to the left it keeps going along the top of the screen, rising gently toward the top-left corner. */
+      function edgeY(x) {
+        if (x < ISLE.x) return ISLE.y - ISLE.ry - (ISLE.x - x) * 0.045;
+        const k = (x - ISLE.x) / ISLE.rx;
+        return ISLE.y - ISLE.ry * Math.sqrt(Math.max(0, 1 - k * k));
+      }
       const EDGE = (() => {
         const r = rng(77),
-          pts = [[430, -14]];
-        for (let i = 0; i <= 30; i++) {
-          const ex = 470 + (i / 30) * 460,
-            k = (ex - ISLE.x) / ISLE.rx,
-            ey = ISLE.y - ISLE.ry * Math.sqrt(Math.max(0, 1 - k * k));
-          pts.push([ex + (r() - 0.5) * 6, ey + (r() - 0.5) * 9]);
+          pts = [];
+        for (let i = 0; i <= 52; i++) {
+          const ex = -20 + (i / 52) * 950;
+          pts.push([ex + (r() - 0.5) * 6, edgeY(ex) + (r() - 0.5) * 8]);
         }
         return pts;
       })();
@@ -3447,13 +3452,13 @@
         land.addColorStop(0.35, "#a9c08f");
         land.addColorStop(1, "#7fa36a");
         g.fillStyle = land;
-        g.fillRect(400, -30, 520, 340);
+        g.fillRect(-30, -30, 960, 340);
         /* patchwork fields in rows, smaller near the horizon (perspective) */
         const FC = ["#9cbf6a", "#b9c97a", "#d6c27a", "#8fb35c", "#c9b06a", "#a7c47e", "#7fa65a"];
         let ry0 = horizonY(660) + 4;
         for (let row = 0; ry0 < 300; row++) {
           const rh = 6 + row * 3.2;
-          let fx = 400 + r() * 20;
+          let fx = -30 + r() * 20;
           while (fx < 930) {
             const fw = (18 + r() * 30) * (0.5 + row * 0.12),
               sk = (fx - 660) * 0.08;
@@ -3520,7 +3525,7 @@
         haze.addColorStop(0, "rgba(236,242,246,.85)");
         haze.addColorStop(1, "rgba(236,242,246,0)");
         g.fillStyle = haze;
-        g.fillRect(400, -30, 520, 190);
+        g.fillRect(-30, -30, 960, 190);
         /* a far lake catching the sky, and a dirt road to the village */
         g.fillStyle = "#b8dbe4";
         g.beginPath();
@@ -3536,7 +3541,7 @@
         const range = (base, amp, step, seed, lit, dark, snow) => {
           const rr = rng(seed),
             peaks = [];
-          for (let x = 380; x <= 960; x += step * (0.7 + rr() * 0.6)) peaks.push([x, base(x) - amp * (0.45 + rr() * 0.55)]);
+          for (let x = -30; x <= 960; x += step * (0.7 + rr() * 0.6)) peaks.push([x, base(x) - amp * (0.45 + rr() * 0.55)]);
           for (let i = 0; i < peaks.length - 1; i++) {
             const [x0, y0] = peaks[i],
               [x1, y1] = peaks[i + 1],
@@ -3579,7 +3584,7 @@
         sk.addColorStop(1, "#e9f1f4");
         g.globalCompositeOperation = "destination-over";
         g.fillStyle = sk;
-        g.fillRect(380, -30, 560, horizonY(940) + 40);
+        g.fillRect(-30, -30, 970, horizonY(940) + 40);
         g.globalCompositeOperation = "source-over";
         range((x) => horizonY(x) - 4, 62, 46, 91, "#c9d6e2", "#b3c3d2", "#f4f8fb");
         range((x) => horizonY(x), 44, 38, 92, "#a9bccb", "#93a8b9", "#eef4f8");
@@ -3589,7 +3594,7 @@
         vh.addColorStop(0, "rgba(240,245,248,.75)");
         vh.addColorStop(1, "rgba(240,245,248,0)");
         g.fillStyle = vh;
-        g.fillRect(380, horizonY(380) - 10, 560, 60);
+        g.fillRect(-30, horizonY(-30) - 10, 970, 60);
         /* wisps of cloud floating between us and the ground */
         for (let i = 0; i < 26; i++) {
           const cx = 440 + r() * 480,
