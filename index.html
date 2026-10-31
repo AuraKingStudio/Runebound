@@ -3844,7 +3844,7 @@
         g.fill();
         pondWater(g);
         /* rocky cliff behind the fall */
-        const rocks = [[10, 34, 54], [62, 18, 46], [124, 34, 44], [20, 70, 36], [156, 66, 30], [-6, 86, 28]]; /* rocky hill the spring comes out of, fully on screen */
+        const rocks = [[90, 6, 36], [24, 36, 40], [-8, 70, 32], [156, 36, 38], [176, 70, 30]]; /* one rock behind the top of the fall, the rest framing it left and right, none in front of the water */
         for (const [rx0, ry0, rr] of rocks) {
           g.fillStyle = "#5c5a55";
           g.beginPath();
