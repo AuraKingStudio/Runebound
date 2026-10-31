@@ -390,6 +390,22 @@
       }
       #btns #bq { left: calc(50% - 196px); }
       #btns #bg { left: calc(50% - 64px); }
+      .net-badge {
+        position: absolute; right: 1.4%; top: 52px; max-width: min(220px, 42vw); padding: 8px 11px;
+        border: 1px solid var(--gild); border-radius: 9px;
+        background: linear-gradient(180deg, #3a2817f2, #24170df2);
+        box-shadow: 0 0 0 2px #140c0699, inset 0 1px 0 #ffffff1a, 0 4px 12px #0008;
+        color: var(--parch); font: bold 11px "Cinzel", Georgia, serif;
+        text-align: center; pointer-events: none; white-space: pre-line; line-height: 1.45;
+      }
+      .net-code {
+        display: block; width: 100%; min-height: 84px; box-sizing: border-box; margin: 6px 0 10px;
+        resize: vertical; border: 1px solid var(--ln); border-radius: 8px; padding: 8px;
+        background: #0008; color: var(--fg); font: 11px/1.35 Consolas, monospace; overflow-wrap: anywhere;
+      }
+      .net-hubs { display: grid; grid-template-columns: repeat(5, 1fr); gap: 6px; margin: 8px 0; }
+      .net-hubs button { margin: 0; padding: 7px 4px; font-size: 12px; }
+      .net-status { min-height: 18px; color: var(--gild2); font-size: 12px; }
       /* top-left: gold and Titles on one row, level with the Quests / Guild / Shop buttons */
       #tlbar { position: absolute; left: 1.4%; top: 1.5%; display: flex; gap: 8px; align-items: center; pointer-events: auto; }
       #btns #tlbar #bt { position: static; top: auto; left: auto; height: 38px; }
@@ -947,9 +963,363 @@
     <div id="chat" hidden><div id="chlog"></div><div id="chrow"><input id="chin" maxlength="80" autocomplete="off" placeholder="Press Enter to chat" /><div id="emo"></div></div></div>
     <div id="btns">
       <button id="bd" class="sk"></button><button id="b0"></button><button id="b1"></button><button id="b2"></button
-      ><button id="bi" hidden>Enter arena</button><div id="tlbar"><span id="gp"><i class="coin"></i><b id="gn">0</b></span><button id="bt">🏷 Titles</button></div><button id="bq" class="hb">📜 Quests</button><button id="bg" class="hb">🛡 Guild</button><button id="bs" class="hb">✨ Shop</button>
+      ><button id="bi" hidden>Enter arena</button><div id="tlbar"><span id="gp"><i class="coin"></i><b id="gn">0</b></span><button id="bt">🏷 Titles</button></div><button id="bq" class="hb">📜 Quests</button><button id="bg" class="hb">🛡 Guild</button><button id="bs" class="hb">✨ Shop</button><div id="netBadge" class="net-badge" title="Trying to join the first available hub">CONNECTING ONLINE…</div>
     </div>
     <script>
+      /* Browser networking block: inputs are hub leases, SDP and game messages; outputs are peer events.
+         Edit NETWORK_CONFIG here for deployment. The game owns validation and simulation. */
+      (() => {
+        "use strict";
+
+        const MAX_CODE_LENGTH = 24000;
+        const MAX_MESSAGE_LENGTH = 4096;
+        const MAX_MESSAGES_PER_SECOND = 40;
+        const NETWORK_CONFIG = Object.freeze({ signalingUrl: "", iceServers: [] });
+        const peers = new Map();
+        const pendingOffers = new Map();
+        let handlers = {};
+        let iceServers = [];
+        let directoryUrl = "";
+        let directorySession = null;
+
+        function randomId() {
+          const bytes = crypto.getRandomValues(new Uint8Array(16));
+          return Array.from(bytes, (b) => b.toString(16).padStart(2, "0")).join("");
+        }
+
+        function encodeCode(value) {
+          const bytes = new TextEncoder().encode(JSON.stringify(value));
+          let binary = "";
+          for (const byte of bytes) binary += String.fromCharCode(byte);
+          const code = btoa(binary).replace(/\+/g, "-").replace(/\//g, "_").replace(/=+$/, "");
+          if (code.length > MAX_CODE_LENGTH) throw new Error("Connection code is too large.");
+          return code;
+        }
+
+        function decodeCode(code, expectedType) {
+          if (typeof code !== "string" || code.length < 8 || code.length > MAX_CODE_LENGTH) {
+            throw new Error("Connection code is invalid or too large.");
+          }
+          try {
+            const base64 = code.replace(/-/g, "+").replace(/_/g, "/");
+            const binary = atob(base64 + "=".repeat((4 - (base64.length % 4)) % 4));
+            const bytes = Uint8Array.from(binary, (char) => char.charCodeAt(0));
+            const value = JSON.parse(new TextDecoder().decode(bytes));
+            if (!value || value.v !== 1 || value.type !== expectedType || typeof value.token !== "string" ||
+                value.token.length > 64 || !value.description || value.description.type !== expectedType ||
+                typeof value.description.sdp !== "string" || value.description.sdp.length > 16000) {
+              throw new Error("Connection code has an invalid format.");
+            }
+            return value;
+          } catch (error) {
+            if (error instanceof Error && error.message === "Connection code has an invalid format.") throw error;
+            throw new Error("Could not read the connection code.");
+          }
+        }
+
+        function makeConnection() {
+          if (!window.RTCPeerConnection) throw new Error("This browser does not support WebRTC.");
+          return new RTCPeerConnection({ iceServers });
+        }
+
+        function configureDirectory(url) {
+          if (typeof url !== "string" || !url.trim()) throw new Error("Signaling directory URL is not configured.");
+          const parsed = new URL(url.trim());
+          if (!["https:", "http:"].includes(parsed.protocol) ||
+              (parsed.protocol === "http:" && !["localhost", "127.0.0.1"].includes(parsed.hostname))) {
+            throw new Error("The signaling directory must use HTTPS, except for localhost testing.");
+          }
+          directoryUrl = parsed.href.replace(/\/+$/, "");
+        }
+
+        async function directoryRequest(path, body) {
+          if (!directoryUrl) throw new Error("Signaling directory URL is not configured.");
+          const response = await fetch(directoryUrl + path, {
+            method: body === undefined ? "GET" : "POST",
+            headers: body === undefined ? undefined : { "content-type": "application/json" },
+            body: body === undefined ? undefined : JSON.stringify(body),
+            cache: "no-store",
+            keepalive: path === "/api/leave",
+          });
+          let result;
+          try { result = await response.json(); }
+          catch { throw new Error("Signaling directory returned an invalid response."); }
+          if (!response.ok) throw new Error(result.error || `Signaling directory failed (${response.status}).`);
+          return result;
+        }
+
+        async function directoryJoin(profile) {
+          if (!profile || typeof profile !== "object") throw new Error("Player display profile is invalid.");
+          const result = await directoryRequest("/api/join", { profile });
+          if (!["host", "guest"].includes(result.role) || !Number.isInteger(result.hubId) ||
+              typeof result.token !== "string" || result.token.length !== 48 ||
+              typeof result.reason !== "string" || result.reason.length > 200 ||
+              (result.role === "guest" && typeof result.peerId !== "string")) {
+            throw new Error("Signaling directory returned an invalid hub assignment.");
+          }
+          directorySession = result;
+          return { ...result };
+        }
+
+        async function directoryPoll() {
+          if (!directorySession) throw new Error("No active signaling directory session.");
+          return directoryRequest("/api/poll", { token: directorySession.token });
+        }
+
+        function directorySend(path, data = {}) {
+          if (!directorySession) throw new Error("No active signaling directory session.");
+          return directoryRequest(path, { ...data, token: directorySession.token });
+        }
+
+        function directoryHeartbeat() {
+          return directorySend("/api/heartbeat");
+        }
+
+        async function directoryLeave() {
+          if (!directorySession) return;
+          const session = directorySession;
+          directorySession = null;
+          await directoryRequest("/api/leave", { token: session.token });
+        }
+
+        async function createPeerOffer(peerId) {
+          if (typeof peerId !== "string" || !peerId) throw new Error("Peer id is invalid.");
+          if (peers.has(peerId)) throw new Error("A connection for this peer already exists.");
+          const pc = makeConnection();
+          const channel = pc.createDataChannel("runebound", { ordered: true });
+          bindPeer(peerId, pc, channel);
+          try {
+            await pc.setLocalDescription(await pc.createOffer());
+            await waitForIce(pc);
+            return pc.localDescription;
+          } catch (error) {
+            const peer = peers.get(peerId);
+            if (peer) closePeer(peerId, peer);
+            throw error;
+          }
+        }
+
+        async function createPeerAnswer(peerId, offer) {
+          if (typeof peerId !== "string" || !peerId || !offer || offer.type !== "offer" ||
+              typeof offer.sdp !== "string" || offer.sdp.length > 16000) throw new Error("Peer offer is invalid.");
+          if (peers.has(peerId)) throw new Error("A connection for this peer already exists.");
+          const pc = makeConnection();
+          pc.ondatachannel = (event) => bindPeer(peerId, pc, event.channel);
+          try {
+            await pc.setRemoteDescription(offer);
+            await pc.setLocalDescription(await pc.createAnswer());
+            await waitForIce(pc);
+            return pc.localDescription;
+          } catch (error) {
+            pc.close();
+            throw error;
+          }
+        }
+
+        async function acceptPeerAnswer(peerId, answer) {
+          const peer = peers.get(peerId);
+          if (!peer || !answer || answer.type !== "answer" || typeof answer.sdp !== "string" || answer.sdp.length > 16000) {
+            throw new Error("Peer answer is invalid or no longer expected.");
+          }
+          await peer.pc.setRemoteDescription(answer);
+        }
+
+        function waitForIce(pc, timeoutMs = 18000) {
+          if (pc.iceGatheringState === "complete") return Promise.resolve();
+          return new Promise((resolve, reject) => {
+            const timer = setTimeout(() => {
+              pc.removeEventListener("icegatheringstatechange", changed);
+              reject(new Error("ICE gathering timed out. Try again on a stable connection."));
+            }, timeoutMs);
+            function changed() {
+              if (pc.iceGatheringState !== "complete") return;
+              clearTimeout(timer);
+              pc.removeEventListener("icegatheringstatechange", changed);
+              resolve();
+            }
+            pc.addEventListener("icegatheringstatechange", changed);
+          });
+        }
+
+        function closePeer(id, peer) {
+          if (!peer || peer.closed) return;
+          peer.closed = true;
+          if (peers.get(id) === peer) peers.delete(id);
+          peer.channel?.close();
+          peer.pc.close();
+          handlers.onClose?.(id);
+        }
+
+        function bindPeer(id, pc, channel) {
+          const peer = { pc, channel, lastSecond: 0, messageCount: 0 };
+          peers.set(id, peer);
+          channel.onopen = () => handlers.onOpen?.(id);
+          channel.onclose = () => closePeer(id, peer);
+          channel.onerror = () => handlers.onError?.(id, new Error("Peer data channel failed."));
+          channel.onmessage = (event) => {
+            if (typeof event.data !== "string" || event.data.length > MAX_MESSAGE_LENGTH) {
+              handlers.onError?.(id, new Error("Peer sent an invalid or oversized message."));
+              closePeer(id, peer);
+              return;
+            }
+            const now = Date.now();
+            if (now - peer.lastSecond >= 1000) {
+              peer.lastSecond = now;
+              peer.messageCount = 0;
+            }
+            if (++peer.messageCount > MAX_MESSAGES_PER_SECOND) {
+              handlers.onError?.(id, new Error("Peer is sending messages too quickly."));
+              closePeer(id, peer);
+              return;
+            }
+            let message;
+            try { message = JSON.parse(event.data); }
+            catch {
+              handlers.onError?.(id, new Error("Peer sent malformed data."));
+              closePeer(id, peer);
+              return;
+            }
+            if (!message || typeof message !== "object" || Array.isArray(message) || typeof message.type !== "string") {
+              handlers.onError?.(id, new Error("Peer sent an invalid message."));
+              closePeer(id, peer);
+              return;
+            }
+            handlers.onMessage?.(id, message);
+          };
+          pc.onconnectionstatechange = () => {
+            if (pc.connectionState === "failed" || pc.connectionState === "closed") closePeer(id, peer);
+            else if (pc.connectionState === "disconnected") handlers.onDisconnected?.(id);
+          };
+        }
+
+        function setHandlers(nextHandlers) {
+          handlers = nextHandlers && typeof nextHandlers === "object" ? nextHandlers : {};
+        }
+
+        function setIceServers(servers) {
+          if (!Array.isArray(servers) || servers.length > 4) throw new Error("Enter an array of up to four ICE servers.");
+          iceServers = servers.map((server) => {
+            if (!server || typeof server !== "object" || Array.isArray(server)) throw new Error("Each ICE server must be an object.");
+            const urls = Array.isArray(server.urls) ? server.urls : [server.urls];
+            if (!urls.length || urls.length > 4 || urls.some((url) => typeof url !== "string" || !/^(stun|stuns|turn|turns):/i.test(url))) {
+              throw new Error("ICE URLs must use stun:, stuns:, turn:, or turns:.");
+            }
+            const entry = { urls };
+            if (server.username != null) {
+              if (typeof server.username !== "string" || server.username.length > 256) throw new Error("ICE username is invalid.");
+              entry.username = server.username;
+            }
+            if (server.credential != null) {
+              if (typeof server.credential !== "string" || server.credential.length > 512) throw new Error("ICE credential is invalid.");
+              entry.credential = server.credential;
+            }
+            return entry;
+          });
+        }
+
+        async function createOffer() {
+          const pc = makeConnection();
+          const token = randomId();
+          const id = "guest-" + token.slice(0, 12);
+          const channel = pc.createDataChannel("runebound", { ordered: true });
+          bindPeer(id, pc, channel);
+          try {
+            await pc.setLocalDescription(await pc.createOffer());
+            await waitForIce(pc);
+            pendingOffers.set(token, id);
+            return encodeCode({ v: 1, type: "offer", token, description: pc.localDescription });
+          } catch (error) {
+            const peer = peers.get(id);
+            if (peer) closePeer(id, peer);
+            throw error;
+          }
+        }
+
+        async function createAnswer(offerCode) {
+          const offer = decodeCode(offerCode.trim(), "offer");
+          const pc = makeConnection();
+          const id = "host";
+          pc.ondatachannel = (event) => {
+            if (peers.has(id)) {
+              event.channel.close();
+              return;
+            }
+            bindPeer(id, pc, event.channel);
+          };
+          try {
+            await pc.setRemoteDescription(offer.description);
+            await pc.setLocalDescription(await pc.createAnswer());
+            await waitForIce(pc);
+            return encodeCode({ v: 1, type: "answer", token: offer.token, description: pc.localDescription });
+          } catch (error) {
+            pc.close();
+            throw error;
+          }
+        }
+
+        async function acceptAnswer(answerCode) {
+          const answer = decodeCode(answerCode.trim(), "answer");
+          const id = pendingOffers.get(answer.token);
+          const peer = peers.get(id);
+          if (!id || !peer) throw new Error("That answer does not match an active invite.");
+          await peer.pc.setRemoteDescription(answer.description);
+          pendingOffers.delete(answer.token);
+        }
+
+        function send(id, message) {
+          const peer = peers.get(id);
+          if (!peer || peer.channel.readyState !== "open") return false;
+          const data = JSON.stringify(message);
+          if (data.length > MAX_MESSAGE_LENGTH || peer.channel.bufferedAmount > 65536) return false;
+          peer.channel.send(data);
+          return true;
+        }
+
+        function broadcast(message) {
+          let sent = 0;
+          for (const id of peers.keys()) if (send(id, message)) sent++;
+          return sent;
+        }
+
+        function disconnect(id) {
+          const peer = peers.get(id);
+          if (peer) closePeer(id, peer);
+        }
+
+        function disconnectAll() {
+          for (const [id, peer] of peers) closePeer(id, peer);
+          pendingOffers.clear();
+        }
+
+        function directoryConfig() {
+          return directoryUrl;
+        }
+
+        window.RBNet = Object.freeze({
+          setHandlers,
+          setIceServers,
+          configureDirectory,
+          directoryJoin,
+          directoryPoll,
+          directorySend,
+          directoryHeartbeat,
+          directoryLeave,
+          directoryConfig,
+          defaultConfig: () => ({ signalingUrl: NETWORK_CONFIG.signalingUrl, iceServers: NETWORK_CONFIG.iceServers.map((server) => ({ ...server })) }),
+          createPeerOffer,
+          createPeerAnswer,
+          acceptPeerAnswer,
+          createOffer,
+          createAnswer,
+          acceptAnswer,
+          send,
+          broadcast,
+          disconnect,
+          disconnectAll,
+          peerIds: () => [...peers.keys()],
+        });
+      })();
+      /* End browser networking block. */
       const W = 900,
         H = 600,
         $ = (i) => document.getElementById(i),
@@ -1009,9 +1379,9 @@
           /* Archivist: rolled scroll with text lines */
           g: "M-10-13h20a3 3 0 0 1 0 6h-20a3 3 0 0 1 0-6M-8-7v13M8-7v13M-10 6h20a3 3 0 0 1 0 6h-20a3 3 0 0 1 0-6M-4-3h8M-4 1h6" },
         /* the 4 NPCs standing where the old torches were */
-        /* Class Master (green): three class orbs */
-        CLASSN = { lk: "class", tu: 1, x: 662, y: 476, ic: "⚔", nm: "The Class Master", col: "#5dff8a",
-          g: "M-4-6a4 4 0 1 0 8 0a4 4 0 1 0-8 0zM-11 5a4 4 0 1 0 8 0a4 4 0 1 0-8 0zM3 5a4 4 0 1 0 8 0a4 4 0 1 0-8 0z" },
+        /* Class Master (green): the three class emblems */
+        CLASSN = { lk: "class", tu: 1, x: 662, y: 476, ic: "⚔", nm: "The Class Master", col: "#5dff8a", icons: ["tank", "dps", "heal"],
+          orbit: { r: 9, a: 0.55, gap: 0.95 } },
         /* The Maiden (rose): a rose bloom */
         MAIDEN = { lk: "maiden", x: 450, y: 528, ic: "🌹", nm: "The Maiden", col: "#ff8fc8",
           g: "M0-11c5 0 8 4 6 8 4 0 5 5 1 7-1 4-6 5-7 2-1 3-6 2-7-2-4-2-3-7 1-7-2-4 1-8 6-8z" },
@@ -1201,6 +1571,7 @@
         if (P) burst(P.x, P.y, "#ffd84a", 30, 180);
         popMsg("Welcome, " + v + "!");
         dailyCheck();
+        networkAutoJoin();
       }
       /* ---------- level / XP (prestige colors) ----------
          XP to go from level L to L+1 = 100 + 40*L. Sources: raid win 120 (+40 fast), raid loss 30, quest 100, daily 20. */
@@ -1439,6 +1810,266 @@
         if (v && !v.out) chatSys(v.name + " left the hub", "bye");
         HUBV = HUBV.filter((v) => v.id != id);
       }
+      const NET = window.RBNet || null, NET_CONFIG = NET?.defaultConfig?.() || { signalingUrl: "", iceServers: [] };
+      const NET_LOCAL_ID = "player-" + (window.crypto?.randomUUID ? window.crypto.randomUUID() : Math.random().toString(36).slice(2));
+      let NET_ROLE = "", NET_LAST_SEND = 0, NET_LAST_SIM = 0, NET_SIM_ACC = 0, NET_STATUS = "Offline", NET_SESSION = null, NET_AUTO_STARTED = false, NET_CONNECTED = false;
+      let NET_POLL_TIMER = 0, NET_HEARTBEAT_TIMER = 0, NET_GUEST_POLLING = false;
+      const NET_CLIENTS = new Map();
+      function netBadgeUpdate() {
+        const badge = $("netBadge");
+        if (!badge) return;
+        if (NET_SESSION) {
+          const role = NET_ROLE == "host" ? "HOST" : "PLAYER";
+          const connection = NET_ROLE == "host" ? "HOSTING" : NET_CONNECTED ? "ONLINE" : "CONNECTING";
+          badge.textContent = `HUB ${NET_SESSION.hubId} · ${connection}\n${NET_SESSION.reason}`;
+          badge.title = `${NET_SESSION.reason} ${role == "HOST" ? "You host this player-run hub." : "You joined its host."}`;
+        } else {
+          badge.textContent = `ONLINE · NO HUB\n${NET_STATUS}`;
+          badge.title = NET_STATUS;
+        }
+      }
+      function netStatus(text) {
+        NET_STATUS = text;
+        netBadgeUpdate();
+      }
+      function netProfile() {
+        return { id: NET_LOCAL_ID, name: String(pname()).replace(/[^A-Za-z0-9 _-]/g, "").slice(0, 16) || "Wanderer",
+          cls: CL[P.cls] ? P.cls : "tank", lv: cl(lvlInfo().L | 0, 1, 60), ti: cl(V.title | 0, 0, TITLES.length - 1), spd: cl(spm(), 1, 1.3) };
+      }
+      async function networkAutoJoin() {
+        if (NET_AUTO_STARTED || !NET || !P || !V.name) return;
+        NET_AUTO_STARTED = true;
+        if (!NET_CONFIG.signalingUrl) return netStatus("Signaling service URL is not configured in index.html.");
+        try {
+          NET.setIceServers(NET_CONFIG.iceServers || []);
+          NET.configureDirectory(NET_CONFIG.signalingUrl);
+          netStatus("Finding the first hub with an open seat…");
+          NET_SESSION = await NET.directoryJoin(netProfile());
+          NET_ROLE = NET_SESSION.role;
+          netPrepareHub(NET_ROLE);
+          netStatus(`Assigned to hub ${NET_SESSION.hubId}; connecting…`);
+          if (NET_ROLE == "guest") {
+            const offer = await NET.createPeerOffer(NET_SESSION.peerId);
+            await NET.directorySend("/api/offer", { description: offer });
+            NET_GUEST_POLLING = true;
+          }
+          NET_POLL_TIMER = setInterval(netPollDirectory, NET_ROLE == "host" ? 800 : 700);
+          NET_HEARTBEAT_TIMER = setInterval(netHeartbeat, 10000);
+        } catch (error) {
+          NET_AUTO_STARTED = false;
+          netStatus("Automatic hub connection failed: " + error.message);
+        }
+      }
+      async function netPollDirectory() {
+        if (!NET_SESSION || (NET_ROLE == "guest" && !NET_GUEST_POLLING)) return;
+        try {
+          const result = await NET.directoryPoll();
+          for (const event of result.events || []) {
+            if (event.type == "offer" && NET_ROLE == "host") {
+              const profile = netSafeProfile(event.profile);
+              if (!profile || NET_CLIENTS.size >= 9) continue;
+              try {
+                const description = await NET.createPeerAnswer(event.peerId, event.description);
+                await NET.directorySend("/api/answer", { peerId: event.peerId, description });
+              } catch (error) {
+                netStatus("Could not connect a joining player: " + error.message);
+              }
+            } else if (event.type == "answer" && NET_ROLE == "guest" && event.peerId == NET_SESSION.peerId) {
+              await NET.acceptPeerAnswer(event.peerId, event.description);
+              NET_GUEST_POLLING = false;
+            } else if (event.type == "peer-left" && NET_ROLE == "host") {
+              NET.disconnect(event.peerId);
+            }
+          }
+        } catch (error) {
+          netStatus("Lobby connection interrupted: " + error.message);
+        }
+      }
+      async function netHeartbeat() {
+        if (!NET_SESSION) return;
+        try { await NET.directoryHeartbeat(); }
+        catch (error) { netStatus("Lobby session expired or disconnected: " + error.message); }
+      }
+      async function netDisconnect() {
+        clearInterval(NET_POLL_TIMER);
+        clearInterval(NET_HEARTBEAT_TIMER);
+        NET_POLL_TIMER = NET_HEARTBEAT_TIMER = 0;
+        NET?.disconnectAll();
+        try { await NET?.directoryLeave(); } catch (error) { netStatus("Could not leave lobby cleanly: " + error.message); }
+        NET_SESSION = null;
+        NET_ROLE = "";
+        NET_CONNECTED = false;
+        NET_AUTO_STARTED = false;
+        NET_CLIENTS.clear();
+        HUB_MIN = 3;
+        HUB_AIM = 5;
+        netStatus("Offline.");
+      }
+      function netPrepareHub(role) {
+        NET_ROLE = role;
+        HUBV = HUBV.filter((v) => !v.bot);
+        HUB_MIN = HUB_AIM = 1;
+        hubSeeded = true;
+        nextJoin = 0;
+        NET_LAST_SEND = NET_LAST_SIM = NET_SIM_ACC = 0;
+      }
+      function netSafeProfile(value) {
+        if (!value || typeof value !== "object" || typeof value.id !== "string" ||
+            !/^player-[a-zA-Z0-9-]{4,48}$/.test(value.id) || typeof value.name !== "string" ||
+            value.name.length < 1 || value.name.length > 16 || !CL[value.cls] ||
+            !Number.isInteger(value.lv) || value.lv < 1 || value.lv > 60 ||
+            !Number.isInteger(value.ti) || value.ti < 0 || value.ti >= TITLES.length ||
+            !Number.isFinite(value.spd) || value.spd < 1 || value.spd > 1.3) return null;
+        return { id: value.id, name: value.name.replace(/[^A-Za-z0-9 _-]/g, "").slice(0, 16) || "Wanderer",
+          cls: value.cls, lv: value.lv, ti: value.ti, spd: value.spd };
+      }
+      function netSnapshot() {
+        const host = netProfile();
+        const players = [{ id: "host-player", name: host.name, cls: P.cls, x: P.x, y: P.y, f: P.f || "d", lv: host.lv, ti: host.ti, spd: host.spd }];
+        for (const v of HUBV) if (!v.bot && !v.out && v.netClientId) players.push({
+          id: v.netClientId, name: v.name, cls: v.cls, x: v.x, y: v.y, f: v.f || "d", lv: v.lv, ti: TITLES.indexOf(v.ti), spd: v.netSpd || 1,
+        });
+        NET?.broadcast({ type: "hub-state", players });
+      }
+      function netReceive(id, message) {
+        if (NET_ROLE == "host") {
+          if (message.type == "join") {
+            const profile = netSafeProfile(message.profile);
+            const existing = HUBV.find((v) => v.id == id && !v.bot);
+            if (existing && profile?.id == existing.netClientId) return netSnapshot();
+            if (!profile || NET_CLIENTS.size >= 9 || hubCount() >= HUB_MAX ||
+                HUBV.some((v) => !v.bot && v.netClientId == profile.id)) {
+              NET.send(id, { type: "reject", reason: "This hub is full or the profile is invalid." });
+              return NET.disconnect(id);
+            }
+            const v = hubJoin(id, profile, 0);
+            if (!v) return NET.disconnect(id);
+            v.netClientId = profile.id;
+            v.netSpd = profile.spd;
+            v.netInputX = v.netInputY = 0;
+            v.netInputAt = performance.now();
+            v.netDashDown = false;
+            NET_CLIENTS.set(id, profile.id);
+            netStatus("Connected players: " + (NET_CLIENTS.size + 1));
+            netSnapshot();
+          } else if (message.type == "hub-input") {
+            const v = HUBV.find((item) => item.id == id && !item.bot && !item.out);
+            if (!v || !Number.isFinite(message.x) || !Number.isFinite(message.y) ||
+                Math.abs(message.x) > 1 || Math.abs(message.y) > 1 ||
+                !["u", "d", "l", "r"].includes(message.f) || typeof message.dash != "boolean" ||
+                !Number.isFinite(message.dashX) || !Number.isFinite(message.dashY) ||
+                Math.abs(message.dashX) > 1 || Math.abs(message.dashY) > 1) return;
+            const magnitude = Math.hypot(message.x, message.y) || 1;
+            v.netInputX = message.x / Math.max(1, magnitude);
+            v.netInputY = message.y / Math.max(1, magnitude);
+            v.netInputAt = performance.now();
+            v.f = message.f;
+            const dashMagnitude = Math.hypot(message.dashX, message.dashY) || 1;
+            if (message.dash && !v.netDashDown && !(v.netDcd > 0)) {
+              const dash = DASH[v.cls];
+              v.netDs = dash.t;
+              v.netDvx = (message.dashX / dashMagnitude) * (dash.d / dash.t);
+              v.netDvy = (message.dashY / dashMagnitude) * (dash.d / dash.t);
+              v.netDcd = dash.cd;
+            }
+            v.netDashDown = message.dash;
+          } else if (message.type == "chat" && typeof message.text == "string" && message.text.length <= 80) {
+            const v = HUBV.find((item) => item.id == id && !item.bot);
+            if (!v) return;
+            say(v, message.text.replace(/[<>]/g, "").slice(0, 80));
+            const text = message.text.replace(/[<>]/g, "").slice(0, 80);
+            for (const peerId of NET.peerIds()) if (peerId != id) NET.send(peerId, { type: "chat", id: v.netClientId, text });
+          }
+        } else if (NET_ROLE == "guest") {
+          if (message.type == "hub-state" && Array.isArray(message.players) && message.players.length <= HUB_MAX) {
+            for (const item of message.players) {
+              if (!item || typeof item.id != "string" || !["u", "d", "l", "r"].includes(item.f) ||
+                  typeof item.name != "string" || item.name.length > 16 || !CL[item.cls] ||
+                  !Number.isFinite(item.x) || !Number.isFinite(item.y) || item.x < 0 || item.x > W || item.y < 0 || item.y > H ||
+                  !Number.isInteger(item.lv) || item.lv < 1 || item.lv > 60 || !Number.isInteger(item.ti) || item.ti < 0 || item.ti >= TITLES.length ||
+                  !Number.isFinite(item.spd) || item.spd < 1 || item.spd > 1.3) continue;
+              if (item.id == NET_LOCAL_ID) {
+                P.netTarget = { x: item.x, y: item.y };
+                continue;
+              }
+              let v = HUBV.find((other) => other.id == item.id);
+              if (!v) v = hubJoin(item.id, item, 0);
+              if (v) {
+                const now = performance.now();
+                v.netSamples = (v.netSamples || []).concat({ x: item.x, y: item.y, at: now }).slice(-3);
+                v.netClientId = item.id; v.f = item.f; v.lv = item.lv; v.ti = TITLES[item.ti]; v.netSpd = item.spd;
+              }
+            }
+          } else if (message.type == "chat" && message.id != NET_LOCAL_ID && typeof message.text == "string" && message.text.length <= 80) {
+            hubChat(message.id, message.text.replace(/[<>]/g, ""));
+          } else if (message.type == "reject" && typeof message.reason == "string") {
+            netStatus("Host rejected connection: " + message.reason.slice(0, 100));
+            NET.disconnect(id);
+          }
+        }
+      }
+      if (NET) NET.setHandlers({
+        onOpen: (id) => {
+          if (NET_ROLE == "guest") NET.send(id, { type: "join", profile: netProfile() });
+          netStatus(`Connected to hub ${NET_SESSION?.hubId || ""}.`);
+          NET_CONNECTED = true;
+        },
+        onMessage: netReceive,
+        onClose: (id) => {
+          const clientId = NET_CLIENTS.get(id);
+          if (clientId) {
+            hubLeave(id);
+            NET_CLIENTS.delete(id);
+          } else if (NET_ROLE == "guest" && id == NET_SESSION?.peerId) {
+            HUBV = HUBV.filter((v) => v.id != "host-player");
+          }
+          if (!NET.peerIds().length) {
+            NET_CONNECTED = false;
+            if (NET_ROLE == "guest" && NET_SESSION) {
+              NET_GUEST_POLLING = false;
+              netStatus("Host connection lost. This pilot does not reconnect automatically.");
+            }
+          }
+          else netStatus("Peer disconnected.");
+        },
+        onDisconnected: () => netStatus("Peer connection interrupted; waiting for reconnection…"),
+        onError: (_id, error) => netStatus("Network error: " + error.message),
+      });
+      function netStep() {
+        if (!NET || !NET.peerIds().length || !P || paused || S.sc != "hub") return;
+        const now = performance.now();
+        if (NET_ROLE == "host") {
+          if (!NET_LAST_SIM) NET_LAST_SIM = now;
+          NET_SIM_ACC += Math.min(250, now - NET_LAST_SIM);
+          NET_LAST_SIM = now;
+          while (NET_SIM_ACC >= 50) {
+            for (const v of HUBV) {
+              if (v.bot || v.out || !v.netClientId) continue;
+              const active = now - (v.netInputAt || 0) <= 300;
+              const x = active ? v.netInputX || 0 : 0, y = active ? v.netInputY || 0 : 0;
+              v.netDcd = Math.max(0, (v.netDcd || 0) - 0.05);
+              if (v.netDs > 0) {
+                const dashDt = Math.min(0.05, v.netDs);
+                v.x += v.netDvx * dashDt; v.y += v.netDvy * dashDt; v.netDs -= dashDt;
+                v.dx = v.netDvx; v.dy = v.netDvy;
+              } else {
+                v.dx = x; v.dy = y;
+                v.x += x * CL[v.cls].sp * (v.netSpd || 1) * 0.05;
+                v.y += y * CL[v.cls].sp * (v.netSpd || 1) * 0.05;
+              }
+              clampW(v);
+              v.tx = v.x; v.ty = v.y;
+            }
+            NET_SIM_ACC -= 50;
+          }
+          if (now - NET_LAST_SEND >= 100) { NET_LAST_SEND = now; netSnapshot(); }
+        } else if (now - NET_LAST_SEND >= 50) {
+          NET_LAST_SEND = now;
+          const dashMagnitude = Math.hypot(P.dvx || 0, P.dvy || 0) || 1;
+          NET.send(NET_SESSION?.peerId, { type: "hub-input", x: cl(P.dx || 0, -1, 1), y: cl(P.dy || 0, -1, 1), f: P.f || "d",
+            dash: P.ds > 0, dashX: P.ds > 0 ? P.dvx / dashMagnitude : 0, dashY: P.ds > 0 ? P.dvy / dashMagnitude : 0 });
+        }
+      }
       /* botOut(v): the bot heads off to a raid: stops, rises into a pillar of light, then disconnects */
       /* ALUMNI: bots that went raiding. About half come back 3-6 min later: same name, a level or two higher. */
       const ALUMNI = [];
@@ -1516,6 +2147,19 @@
         HUBV = HUBV.filter((v) => !v.out || S.tm - v.out < TP_TIME);
         const ease = 1 - Math.exp(-dt * 12);
         for (const v of HUBV) {
+          if (!v.bot && v.netSamples?.length) {
+            const samples = v.netSamples, newest = samples[samples.length - 1];
+            if (samples.length > 1) {
+              const older = samples[samples.length - 2], renderAt = performance.now() - 100,
+                span = Math.max(1, newest.at - older.at), t = cl((renderAt - older.at) / span, 0, 1);
+              v.x = older.x + (newest.x - older.x) * t;
+              v.y = older.y + (newest.y - older.y) * t;
+              v.dx = (newest.x - older.x) / span;
+              v.dy = (newest.y - older.y) / span;
+              if (Math.hypot(v.dx, v.dy) > 0.1) v.f = Math.abs(v.dx) > Math.abs(v.dy) ? (v.dx > 0 ? "r" : "l") : v.dy > 0 ? "d" : "u";
+              continue;
+            }
+          }
           const k = v.bot ? 1 : ease; /* bots move themselves at full speed; remote players glide toward their last update */
           if (v.bot && !v.out && v.outAt && S.tm >= v.outAt) botOut(v); /* raid group: leaving together */
           else if (v.bot && !v.out && !v.outAt && v.plan != "raid" && HUB_T - v.born > v.life) toCrossing(v); /* session over: walk to the crossing */
@@ -1586,8 +2230,10 @@
         const cmd = /^\/(\w+)$/.exec(t);
         if (cmd && EMOTES[cmd[1].toLowerCase()]) return myEmote(EMOTES[cmd[1].toLowerCase()]);
         say(P, t);
-        /* network: send t to the hub here once there is a server */
-        if (/^(hi+|hey+|hello|yo|sup|o\/|hiya)\b/i.test(t)) botReply(BOT_REPLY);
+        if (NET?.peerIds().length && S.sc == "hub") {
+          if (NET_ROLE == "guest") NET.send(NET_SESSION?.peerId, { type: "chat", text: t });
+          else if (NET_ROLE == "host") NET.broadcast({ type: "chat", id: "host-player", text: t });
+        } else if (/^(hi+|hey+|hello|yo|sup|o\/|hiya)\b/i.test(t)) botReply(BOT_REPLY);
         else if (/raid/i.test(t) && Math.random() < 0.5) botReply(["sure", "im in", "maybe later", "need a healer?", "1 sec"]);
       }
       /* botSay(v, t, wait): v says t after noticing (wait + 1.5-4s) and typing it out; the "…" bubble shows while typing */
@@ -2753,6 +3399,7 @@
       /* startTeleport(): runes flare, a pillar of light lifts the player, then the raid starts (see step and teleportFx) */
       function startTeleport() {
         if (S.tp || S.sc != "hub") return;
+        if (NET_SESSION) return popMsg("Raid networking is not enabled yet; you are in an online hub.", 0.9, 3500);
         S.tp = S.tm || 1e-6; /* never 0, so "is teleporting" stays true */
         sfx("phase", 1.6);
         setTimeout(() => sfx("win", 1.4), 700);
@@ -2783,6 +3430,12 @@
           if (!dashStep(P, dt)) {
             P.x += P.dx * k.sp * spm() * dt;
             P.y += P.dy * k.sp * spm() * dt;
+            clampW(P);
+          }
+          if (NET_ROLE == "guest" && P.netTarget) {
+            const dx = P.netTarget.x - P.x, dy = P.netTarget.y - P.y, error = Math.hypot(dx, dy);
+            if (error > 85) { P.x = P.netTarget.x; P.y = P.netTarget.y; }
+            else { const correction = Math.min(1, dt * 5); P.x += dx * correction; P.y += dy * correction; }
             clampW(P);
           }
           for (let i = 0; i < 3; i++) P.cd[i] = Math.max(0, P.cd[i] - dt);
@@ -2830,7 +3483,7 @@
         toHub();
         if (lvlInfo().L >= SMITH_LV && !isUnl("smith")) setTimeout(() => unlockNpc("smith"), 1500); /* already past the level */
         if (!V.name) nameUI(); /* first login: ask the name, daily bonus follows */
-        else dailyCheck();
+        else { dailyCheck(); networkAutoJoin(); }
       }
       let selK = "tank";
       /* ---------- NPC dialogs ---------- */
@@ -3244,9 +3897,9 @@
           <button class="alt" onclick="closeDlg()">Farewell</button>`;
       }
       /* ---------- The Barkeep (bar, right wall) + the two wall boards ---------- */
-      /* Barkeep: a mug. Shown after the tutorial (tu: 4). Quests and Guild open from the top HUD buttons. */
-      const BARKEEP = { tu: 5, x: 750, y: 350, ic: "🍺", nm: "The Barkeep", col: "#ffb347",
-          g: "M-9-9h13v18h-13zM4-5h3a4 4 0 0 1 0 9h-3M-9-9q0-4 4-4h5q4 0 4 4" };
+      /* Barkeep: an orange playing-card emblem. Shown after the tutorial (tu: 4). */
+      const BARKEEP = { tu: 5, x: 750, y: 350, ic: "🃏", nm: "The Barkeep", col: "#ffb347", gs: 1,
+          g: "M-5-10h10q2 0 2 2v16q0 2-2 2h-10q-2 0-2-2v-16q0-2 2-2zM0-4l3 4-3 4-3-4z" };
       /* ---------- Quest Board: main quest + 3 daily bounties ---------- */
       /* bounty: id, text, n = amount needed, g = gold, x = XP */
       const BOUNTIES = [
@@ -3465,18 +4118,22 @@
       }
       function bjDeal(bet) {
         if (V.gold < bet) return;
+        const tutorialHand = tut() == 5;
         tutNext(5);
         V.gold -= bet;
-        BJ = { bet, p: [bjCard(), bjCard()], d: [bjCard(), bjCard()], end: "", win: 0 };
+        BJ = tutorialHand
+          ? { bet, p: [5, 6], d: [10, 7], end: "", win: 0, tutorial: true }
+          : { bet, p: [bjCard(), bjCard()], d: [bjCard(), bjCard()], end: "", win: 0 };
         sfx("ui");
         if (bjVal(BJ.p) == 21) return bjFinish(); /* natural blackjack */
         bjUI();
       }
       function bjHit() {
         if (!BJ || BJ.end) return;
-        BJ.p.push(bjCard());
+        BJ.p.push(BJ.tutorial ? 10 : bjCard());
         sfx("ui", 1.2);
-        bjVal(BJ.p) > 21 ? bjFinish() : bjUI();
+        const total = bjVal(BJ.p);
+        total > 21 || (BJ.tutorial && total == 21) ? bjFinish() : bjUI();
       }
       function bjStand() {
         if (!BJ || BJ.end) return;
@@ -4288,7 +4945,7 @@
         const ghost = npcHidden(n) ? 1 : 0;
         if (ghost) {
           /* locked: keep the NPC's own emblem but greyed, name hidden, padlock badge drawn below */
-          n.p2 = n.p2 || new Path2D(n.g);
+          if (!n.icons) n.p2 = n.p2 || new Path2D(n.g);
           LOCK_P2 = LOCK_P2 || new Path2D(LOCK_G);
           n = { ...n, col: mixHex(n.col, "#7d8a96", 0.55), nm: "???", _lock: 1 };
           mark = "";
@@ -4349,12 +5006,35 @@
         c.stroke();
         c.shadowBlur = 0;
         /* emblem (cached Path2D) */
-        n.p2 = n.p2 || new Path2D(n.g);
-        c.fillStyle = c.strokeStyle = n.col;
         c.lineWidth = 2.6;
         c.lineCap = c.lineJoin = "round";
         c.scale(n.gz || 1, n.gz || 1); /* gz = emblem zoom */
-        n.gs ? c.stroke(n.p2) : c.fill(n.p2);
+        if (n.icons) {
+          c.strokeStyle = c.fillStyle = CLASSN.col;
+          c.lineWidth = 1.8;
+          const positions = [["tank", -8, -4], ["dps", 8, -4], ["heal", 0, 8]],
+            tau = 2 * Math.PI,
+            angles = positions.map(([, x, y]) => (Math.atan2(y, x) + tau) % tau).sort((a, b) => a - b);
+          for (let i = 0; i < angles.length; i++) {
+            const start = angles[i] + n.orbit.gap,
+              end = (i + 1 < angles.length ? angles[i + 1] : angles[0] + tau) - n.orbit.gap;
+            c.beginPath();
+            c.arc(0, 0, n.orbit.r, start, end);
+            c.stroke();
+          }
+          for (const [k, x, y] of positions) {
+            c.save();
+            c.translate(x, y);
+            c.scale(0.55, 0.55);
+            c.fillStyle = c.strokeStyle = CLASSN.col;
+            c.fill(PEMB[k]);
+            c.restore();
+          }
+        } else {
+          n.p2 = n.p2 || new Path2D(n.g);
+          c.fillStyle = c.strokeStyle = n.col;
+          n.gs ? c.stroke(n.p2) : c.fill(n.p2);
+        }
         if (n._lock) {
           /* padlock badge on the lower-right of the disc */
           c.save();
@@ -4526,7 +5206,7 @@
         /* health bar turns white while armored (tank dash); thin strip above = armor time left */
         if (p.name && p !== P) {
           /* hub visitor: just a name tag, no health bar */
-          nameplate(p.lv, p.name, p.ti, 1 + (p.lvp || 0) * 1.2, "#dfe8f0", p.badge);
+          nameplate(p.lv, p.name, p.ti, 1 + (p.lvp || 0) * 1.2, p.bot ? "#63a8ff" : "#dfe8f0", p.badge);
           drawEmote(p, -PR - 22);
           if (!sayBubble(p, -PR - 6) && (p.talk || p.typing)) {
             /* chat bubble with three bouncing dots */
@@ -4558,7 +5238,7 @@
           c.shadowBlur = 0;
         }
         if (p === P) {
-          nameplate(lvlInfo().L, pname(), myTitle(), 1 + p.lvp * 1.2, "#fff", cosV().badge);
+          nameplate(lvlInfo().L, pname(), myTitle(), 1 + p.lvp * 1.2, "#ffd84a", cosV().badge);
           sayBubble(p, -PR - 17);
           drawEmote(p, -PR - 32);
         }
@@ -7926,6 +8606,7 @@
         last = now;
         padPoll();
         step(dt);
+        netStep();
         uiUpd();
         draw(dt);
         requestAnimationFrame(loop);

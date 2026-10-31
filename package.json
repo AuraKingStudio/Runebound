@@ -6,6 +6,7 @@
   "scripts": {
     "start": "electron .",
     "dev": "live-server --port=8080 --no-browser --ignore=node_modules,dist",
+    "signaling": "node signaling-server.js",
     "dist": "electron-builder --win portable"
   },
   "devDependencies": {
