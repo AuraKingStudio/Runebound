@@ -3563,15 +3563,6 @@
           }
           c.stroke();
         }
-        /* soft glints */
-        for (let k = 0; k < 10; k++) {
-          const p = pts[Math.floor((t * 6 + k * 7.3) % (n - 1))],
-            tw = Math.max(0, Math.sin(t * 4 + k * 2));
-          c.fillStyle = `rgba(255,255,255,${0.55 * tw})`;
-          c.beginPath();
-          c.ellipse(p.x + p.nx * ((k % 3) - 1) * 5, p.y + p.ny * ((k % 3) - 1) * 5, 2.2, 0.9, 0, 0, 6.3);
-          c.fill();
-        }
         /* caustic shimmer: soft light bands rippling across the water */
         for (let i = 0; i < n - 3; i += 3) {
           const p = pts[i],
@@ -3606,6 +3597,23 @@
           }
         }
         c.restore();
+        /* petals and leaves floating downstream, swaying across the current */
+        for (let k = 0; k < 7; k++) {
+          const head = (t * 3.2 + k * (n / 7)) % (n - 1),
+            i = Math.floor(head),
+            p = pts[i],
+            sway = Math.sin(t * 1.5 + k * 2) * p.w * 0.45,
+            px = p.x + p.nx * sway,
+            py = p.y + p.ny * sway;
+          c.save();
+          c.translate(px, py);
+          c.rotate(t * 0.8 + k);
+          c.fillStyle = k % 3 ? "#ff9fcf" : "#7fbf5a";
+          c.beginPath();
+          c.ellipse(0, 0, 3.4, 1.8, 0, 0, 6.3);
+          c.fill();
+          c.restore();
+        }
       }
       /* magic spring in the middle of the platform: the brook pours into a sunken stone pool, the pool is the portal.
          FOUNT = pool footprint, also used to block walking through it. SPRING_IN = angle where the brook enters. */
