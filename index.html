@@ -6954,17 +6954,17 @@
               rr = sr * 0.82 * (1 - u * 0.78);
             k ? g.lineTo(Math.cos(a) * rr, Math.sin(a) * rr) : g.moveTo(Math.cos(a) * rr, Math.sin(a) * rr);
           }
-          g.strokeStyle = "rgba(200,150,44,.9)";
+          g.strokeStyle = "#1d3f8f"; /* dark blue */
           g.lineWidth = 4.5;
           g.stroke();
-          g.strokeStyle = arm % 2 ? "#f6d27a" : "#7fe6d2";
+          g.strokeStyle = arm % 2 ? "#a9e2ff" : "#4f9dff"; /* light blue */
           g.lineWidth = 2;
           g.stroke();
         }
         /* soft light in the eye */
         const eye = g.createRadialGradient(0, 0, 1, 0, 0, sr * 0.3);
-        eye.addColorStop(0, `rgba(220,255,250,${0.85 + 0.15 * Math.sin(t * 2)})`);
-        eye.addColorStop(1, "rgba(120,240,225,0)");
+        eye.addColorStop(0, `rgba(225,245,255,${0.85 + 0.15 * Math.sin(t * 2)})`);
+        eye.addColorStop(1, "rgba(110,180,255,0)");
         g.fillStyle = eye;
         g.beginPath();
         g.arc(0, 0, sr * 0.3, 0, 6.3);
@@ -6984,9 +6984,9 @@
           g.lineTo(-aw, ay - ah * 0.05);
           g.closePath();
         };
-        g.shadowColor = "#5af0dc";
+        g.shadowColor = "#6fb8ff";
         g.shadowBlur = 10 + 5 * Math.sin(t * 2);
-        g.fillStyle = "#c8962c";
+        g.fillStyle = "#1d3f8f";
         g.save();
         g.scale(1.18, 1.12);
         arrow();
@@ -6995,7 +6995,7 @@
         g.shadowBlur = 0;
         const ag = g.createLinearGradient(0, ay - ah * 0.55, 0, ay + ah * 0.45);
         ag.addColorStop(0, "#ffffff");
-        ag.addColorStop(1, "#7fe6d2");
+        ag.addColorStop(1, "#7fc4ff");
         g.fillStyle = ag;
         arrow();
         g.fill();
