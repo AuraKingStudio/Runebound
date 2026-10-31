@@ -3484,42 +3484,27 @@
         }
         c.restore();
       }
-      /* two little streams flow from the fountain to the platform edge and spill over it.
-         STREAMS = angles (rad) placed in the gaps between NPC spots. streamPath() traces one stream. */
-      const STREAMS = [0.39];
-      function streamPath(ctx, a) {
-        const sx = FOUNT.x + Math.cos(a) * (FOUNT.rx + 4),
-          sy = FOUNT.y + Math.sin(a) * (FOUNT.ry + 4),
-          ex = PLAT.x + Math.cos(a) * PLAT.rx,
-          ey = PLAT.y + Math.sin(a) * PLAT.ry,
-          bend = a < 1.5 ? 1 : -1;
+      /* one stream carries the waterfall's pond across the platform into the fountain.
+         streamPath(ctx) traces it from the pond, over the platform edge, to the fountain rim. */
+      function streamPath(ctx) {
         ctx.beginPath();
-        ctx.moveTo(sx, sy);
-        ctx.quadraticCurveTo((sx + ex) / 2 - Math.sin(a) * 40 * bend, (sy + ey) / 2 + Math.cos(a) * 26 * bend, ex, ey);
-        return [ex, ey];
+        ctx.moveTo(WF.px + 6, WF.py + WF.pry - 4);
+        ctx.quadraticCurveTo(68, 205, 92, 262);
+        ctx.quadraticCurveTo(225, 250, 378, 334);
       }
       function streams(g) {
         g.lineCap = "round";
-        for (const a of STREAMS) {
-          streamPath(g, a);
-          g.strokeStyle = "#b39570";
-          g.lineWidth = 22;
-          g.stroke();
-          streamPath(g, a);
-          g.strokeStyle = "#1f8fa3";
-          g.lineWidth = 14;
-          const [ex, ey] = streamPath(g, a);
-          g.stroke();
-          /* little waterfall down the platform side */
-          const wf = g.createLinearGradient(0, ey, 0, ey + 26);
-          wf.addColorStop(0, "#5fd3e0");
-          wf.addColorStop(1, "#5fd3e000");
-          g.fillStyle = wf;
-          g.fillRect(ex - 7, ey, 14, 26);
-        }
+        streamPath(g);
+        g.strokeStyle = "#b39570";
+        g.lineWidth = 22;
+        g.stroke();
+        streamPath(g);
+        g.strokeStyle = "#1f8fa3";
+        g.lineWidth = 14;
+        g.stroke();
         g.lineCap = "butt";
       }
-      /* streamFlow(t): moving ripples along the streams and foam at the waterfall */
+      /* streamFlow(t): ripples moving from the pond toward the fountain */
       function streamFlow(t) {
         c.save();
         c.globalCompositeOperation = "lighter";
@@ -3528,19 +3513,8 @@
         c.lineDashOffset = -t * 30;
         c.strokeStyle = "rgba(200,250,255,.45)";
         c.lineWidth = 3;
-        for (const a of STREAMS) {
-          const [ex, ey] = streamPath(c, a);
-          c.stroke();
-          c.setLineDash([]);
-          for (let i = 0; i < 3; i++) {
-            const p = (t * 1.5 + i / 3) % 1;
-            c.fillStyle = `rgba(220,255,255,${0.6 * (1 - p)})`;
-            c.beginPath();
-            c.arc(ex + (i - 1) * 4, ey + 4 + p * 20, 2, 0, 6.3);
-            c.fill();
-          }
-          c.setLineDash([6, 14]);
-        }
+        streamPath(c);
+        c.stroke();
         c.restore();
       }
       /* magic teleport fountain in the middle of the platform. FOUNT = basin footprint, also used to block walking through it. */
