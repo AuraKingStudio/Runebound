@@ -3159,9 +3159,10 @@
           { x, y, rx, ry } = PLAT;
         g.scale(k, k);
         forest(g, r);
-        skyEdge(g);
         cliff(g);
         outflowGround(g);
+        forestTrees(g, r); /* trees after the pond and stream, so their canopies overlap the water */
+        skyEdge(g);
         /* platform side wall: stacked stone blocks, darker at the bottom */
         g.fillStyle = "#6b5a44";
         g.beginPath();
@@ -3344,6 +3345,11 @@
             g.fill();
           }
         }
+      }
+      /* forestTrees(g, r): trees around the platform, painted after the pond so they sit on top of it */
+      function forestTrees(g, r) {
+        const { x, y, rx, ry } = PLAT,
+          out = (px, py, m) => ((px - x) / (rx * m)) ** 2 + ((py - y) / (ry * m)) ** 2 > 1;
         /* trees: round canopies with a shadow and a highlight, only outside the platform */
         const trees = [];
         for (let i = 0; i < 140; i++) {
