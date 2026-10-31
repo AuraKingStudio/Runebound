@@ -735,6 +735,16 @@
       }
       button.claim .coin { width: 20px; height: 20px; vertical-align: -3px; }
       /* blackjack cards */
+      .bjtable {
+        margin: 8px 0; padding: 10px 12px; border-radius: 12px;
+        background: radial-gradient(ellipse at 50% 40%, #1f5f58, #12403b 70%, #0d2f2b);
+        border: 2px solid #8a6d2c; box-shadow: inset 0 0 0 4px #00000033, inset 0 0 30px #0008;
+      }
+      .bjrow { display: flex; align-items: center; gap: 6px; min-height: 92px; flex-wrap: wrap; }
+      .bjlab { font: bold 12px "Cinzel", Georgia, serif; color: #f0d9a0; letter-spacing: 1px; margin: 2px 0; display: flex; justify-content: space-between; }
+      .bjlab b { color: #fff6e0; font-size: 14px; }
+      .bjc { width: 62px; height: 86px; filter: drop-shadow(0 3px 2px #0009); animation: bjin 0.25s ease-out both; }
+      @keyframes bjin { from { transform: translateY(-14px) rotate(-6deg); opacity: 0; } }
       .card { display: inline-grid; place-items: center; width: 30px; height: 42px; margin: 2px; border-radius: 5px; background: #f6f0e0; color: #111; font: bold 14px Georgia, serif; box-shadow: 0 2px 0 #0008; vertical-align: middle; }
       .card.r { color: #c0262d; } .card.back { background: repeating-linear-gradient(45deg, #1d7f78 0 4px, #125a55 4px 8px); color: #fff; }
       /* daily bonus track */
@@ -3395,10 +3405,53 @@
         while (v > 21 && a--) v -= 10;
         return v;
       }
-      const bjShow = (cs, hide) => cs.map((x, i) => (hide && i == 1 ? `<span class="card back">?</span>` : `<span class="card ${i % 2 ? "r" : ""}">${["", "A", 2, 3, 4, 5, 6, 7, 8, 9, 10, "J", "Q", "K"][x]}${i % 2 ? "♥" : "♠"}</span>`)).join("");
+      /* ---------- the Barkeep's deck: four suits from this world ----------
+         Shield (tank blue), Bow (dps red), Leaf (healer green) and Rune (gold). 2-10 lay out pips of the suit icon,
+         Jack / Queen / King carry a framed portrait of the Smith, the Maiden and the Elder, the Ace one big glowing emblem.
+         bjCardSVG(v, suit): one card as an inline SVG (62x86). The suit only decorates; values stay plain numbers. */
+      const BJ_SUITS = [
+        { c: "#2f6fd6", p: '<path d="M0-13l11 4v7c0 8-6 12-11 15-5-3-11-7-11-15v-7z"/>' },
+        { c: "#c8323c", p: '<path d="M-10 10 8-8" stroke-width="3" fill="none"/><path d="M10-10 1-7 7-1z"/><path d="M-10 10v-5M-10 10h5" stroke-width="2.5" fill="none"/>' },
+        { c: "#2f9a4a", p: '<path d="M0 13C-12 4-11-8 0-14 11-8 12 4 0 13z"/><path d="M0 12V-10" stroke="#f6efdc" stroke-width="1.5" fill="none"/>' },
+        { c: "#b8860b", p: '<path d="M0-14 10 0 0 14-10 0z"/><path d="M0-7v14M-4-3 0 1 4-3" stroke="#f6efdc" stroke-width="1.6" fill="none"/>' },
+      ];
+      const BJ_PIPS = {
+        2: [[0, -24], [0, 24]], 3: [[0, -24], [0, 0], [0, 24]], 4: [[-11, -24], [11, -24], [-11, 24], [11, 24]],
+        5: [[-11, -24], [11, -24], [0, 0], [-11, 24], [11, 24]], 6: [[-11, -24], [11, -24], [-11, 0], [11, 0], [-11, 24], [11, 24]],
+        7: [[-11, -24], [11, -24], [0, -12], [-11, 0], [11, 0], [-11, 24], [11, 24]],
+        8: [[-11, -24], [11, -24], [0, -12], [-11, 0], [11, 0], [0, 12], [-11, 24], [11, 24]],
+        9: [[-11, -26], [11, -26], [-11, -9], [11, -9], [0, 0], [-11, 9], [11, 9], [-11, 26], [11, 26]],
+        10: [[-11, -26], [11, -26], [0, -17], [-11, -9], [11, -9], [-11, 9], [11, 9], [0, 17], [-11, 26], [11, 26]],
+      };
+      /* face cards are people of the hub: Jack the Smith (anvil), Queen the Maiden (rose), King the Elder (wizard hat) */
+      const BJ_FACE = { 11: SMITH.g, 12: MAIDEN.g, 13: ELDER.g };
+      function bjCardSVG(v, suit) {
+        const S2 = BJ_SUITS[suit],
+          rank = ["", "A", 2, 3, 4, 5, 6, 7, 8, 9, 10, "J", "Q", "K"][v],
+          icon = (x, y, k, rot) => `<g transform="translate(${x} ${y}) scale(${k})${rot ? " rotate(180)" : ""}" fill="${S2.c}" stroke="${S2.c}" stroke-linecap="round" stroke-linejoin="round">${S2.p}</g>`;
+        let mid = "";
+        if (v == 1) mid = `<circle r="20" fill="${S2.c}" opacity=".12"/>${icon(0, 0, 1.25)}`;
+        else if (v >= 11)
+          mid = `<rect x="-19" y="-27" width="38" height="54" rx="4" fill="${S2.c}" opacity=".1" stroke="${S2.c}" stroke-width="1.2"/>
+            <g fill="${S2.c}" transform="translate(0 -3) scale(1.05)"><path d="${BJ_FACE[v]}"/></g>${icon(0, 17, 0.42)}${icon(0, -20, 0.32, 1)}`;
+        else mid = BJ_PIPS[v].map(([x, y]) => icon(x * 0.85, y * 0.85, 0.36, y > 0)).join("");
+        return `<svg class="bjc" viewBox="-31 -43 62 86"><rect x="-30" y="-42" width="60" height="84" rx="6" fill="#f6efdc" stroke="#8a6d2c" stroke-width="1.5"/>
+          <rect x="-26.5" y="-38.5" width="53" height="77" rx="4" fill="none" stroke="#c9a14a" stroke-width=".8"/>
+          <text x="-24" y="-29" font-family="Cinzel, Georgia, serif" font-weight="bold" font-size="10" fill="${S2.c}">${rank}</text>${icon(-21, -20, 0.24)}
+          <g transform="rotate(180)"><text x="-24" y="-29" font-family="Cinzel, Georgia, serif" font-weight="bold" font-size="10" fill="${S2.c}">${rank}</text>${icon(-21, -20, 0.24)}</g>
+          ${mid}</svg>`;
+      }
+      const BJ_BACK = `<svg class="bjc" viewBox="-31 -43 62 86"><rect x="-30" y="-42" width="60" height="84" rx="6" fill="#163f45" stroke="#8a6d2c" stroke-width="1.5"/>
+        <rect x="-25" y="-37" width="50" height="74" rx="4" fill="none" stroke="#c9a14a" stroke-width="1"/>
+        <path d="M0-24 14 0 0 24-14 0z" fill="none" stroke="#5af0d8" stroke-width="1.4"/><circle r="6" fill="none" stroke="#c9a14a" stroke-width="1.2"/>
+        <text y="3" text-anchor="middle" font-size="8" fill="#7fe6d2">ᛟ</text></svg>`;
+      const bjShow = (cs, hide) => cs.map((x, i) => (hide && i == 1 ? BJ_BACK : bjCardSVG(x, (x * 7 + i * 3) % 4))).join("");
       function bjUI() {
         if (!BJ || BJ.end) {
-          const last = BJ ? `<div class="qo ${BJ.win > 0 ? "done" : ""}">${BJ.end}</div><div class="sm">You ${bjShow(BJ.p)} (${bjVal(BJ.p)}) · Barkeep ${bjShow(BJ.d)} (${bjVal(BJ.d)})</div>` : "";
+          const last = BJ
+            ? `<div class="qo ${BJ.win > 0 ? "done" : ""}">${BJ.end}</div><div class="bjtable"><div class="bjlab">BARKEEP <b>${bjVal(BJ.d)}</b></div><div class="bjrow">${bjShow(BJ.d)}</div>
+              <div class="bjlab">YOU <b>${bjVal(BJ.p)}</b></div><div class="bjrow">${bjShow(BJ.p)}</div></div>`
+            : "";
           $("dp").innerHTML = `<h2>🍺 The Barkeep</h2><p class="sm">"Fancy a hand of blackjack? Beat my cards, double your coin."</p>${last}
             <div class="purse"><span class="coin"></span><b>${V.gold}</b></div>
             <div class="row">${[10, 50, 100].map((b) => `<button ${V.gold < b ? "disabled" : ""} onclick="bjDeal(${b})">BET ${b}</button>`).join("")}</div>
@@ -3406,7 +3459,8 @@
           return;
         }
         $("dp").innerHTML = `<h2>🍺 Blackjack · bet ${BJ.bet}</h2>
-          <p>Barkeep: ${bjShow(BJ.d, true)}</p><p>You: ${bjShow(BJ.p)} <b>${bjVal(BJ.p)}</b></p>
+          <div class="bjtable"><div class="bjlab">BARKEEP <b>?</b></div><div class="bjrow">${bjShow(BJ.d, true)}</div>
+          <div class="bjlab">YOU <b>${bjVal(BJ.p)}</b></div><div class="bjrow">${bjShow(BJ.p)}</div></div>
           <div class="row"><button onclick="bjHit()">HIT</button><button onclick="bjStand()">STAND</button></div>`;
       }
       function bjDeal(bet) {
