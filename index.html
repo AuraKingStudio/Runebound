@@ -1049,11 +1049,9 @@
       }
       /* riverPush(p): invisible wall along both banks. The player's body never touches the water.
          p._rs remembers which bank they are on, so fast moves can't tunnel to the other side. The bridge deck is free. */
-      function riverPush(p) {
-        if (bridgeAt(p)) {
-          p._rs = 0;
-          return;
-        }
+      /* riverNear(x, y): closest point on the river centerline. Out: { d: distance, bx, by: that point, bw: half width there,
+         bnx, bny: bank normal, side: which bank (x, y) is on, +1 or -1 } */
+      function riverNear(x, y) {
         const pts = streamPts();
         let best = 1e9, bx = 0, by = 0, bw = 0, bnx = 0, bny = 1;
         for (let i = 0; i < pts.length - 1; i++) {
@@ -1061,14 +1059,21 @@
             b = pts[i + 1],
             ex = b.x - a.x,
             ey = b.y - a.y,
-            u = Math.max(0, Math.min(1, ((p.x - a.x) * ex + (p.y - a.y) * ey) / (ex * ex + ey * ey || 1))),
+            u = Math.max(0, Math.min(1, ((x - a.x) * ex + (y - a.y) * ey) / (ex * ex + ey * ey || 1))),
             cx = a.x + ex * u,
             cy = a.y + ey * u,
-            d = Math.hypot(p.x - cx, p.y - cy);
+            d = Math.hypot(x - cx, y - cy);
           if (d < best) (best = d), (bx = cx), (by = cy), (bw = a.w + (b.w - a.w) * u), (bnx = a.nx), (bny = a.ny);
         }
-        const lim = bw + PR + 6,
-          side = Math.sign((p.x - bx) * bnx + (p.y - by) * bny) || 1;
+        return { d: best, bx, by, bw, bnx, bny, side: Math.sign((x - bx) * bnx + (y - by) * bny) || 1 };
+      }
+      function riverPush(p) {
+        if (bridgeAt(p)) {
+          p._rs = 0;
+          return;
+        }
+        const { d: best, bx, by, bw, bnx, bny, side } = riverNear(p.x, p.y),
+          lim = bw + PR + 6;
         if (best < lim) {
           const sd = p._rs || side;
           p.x = bx + bnx * lim * sd;
@@ -1085,12 +1090,40 @@
       }
       /* ---------- hub visitors: HUB_MIN..HUB_MAX people share a hub, counting you ----------
          HUBV = the other players (real ones and bots). Kept apart from S.ps (the raid party) so arena logic never sees them.
-         Network hooks: hubJoin(id, {name, cls, x, y}), hubMove(id, x, y), hubLeave(id).
+         Network hooks: hubJoin(id, {name, cls, x, y, lv, ti}), hubMove(id, x, y), hubLeave(id). lv = level, ti = title index.
          Visitors glide toward their last reported spot (tx, ty), so ~10 updates a second still look smooth.
          Bots top the hub up to HUB_MIN. When a real player joins a full hub, a bot "leaves for a raid":
          it plays the teleport animation (v.out = start time) and disconnects after TP_TIME. */
-      const HUB_MAX = 10,
-        BOT_NAMES = ["Aster", "Bram", "Cyra", "Dain", "Elow", "Fenn", "Gale", "Hollis", "Isk", "Juno", "Kael", "Lark"];
+      const HUB_MAX = 10;
+      /* botName(): a handle like real players pick - gamer tags, nicknames, numbers, underscores, the odd xX..Xx */
+      const NM_A = ["Shadow", "Frost", "Moon", "Ember", "Storm", "Night", "Rune", "Ash", "Iron", "Void", "Star", "Wolf", "Raven", "Blood", "Silver", "Dark", "Sun", "Mist", "Thorn", "Crimson"],
+        NM_B = ["fang", "blade", "walker", "heart", "born", "bane", "fall", "whisper", "slayer", "storm", "hunter", "veil", "knight", "song", "fox", "claw"],
+        NM_N = ["kai", "mira", "nyx", "luna", "zed", "kiri", "riku", "yuna", "vex", "sora", "eli", "nova", "ren", "aria", "dax", "momo", "theo", "lia", "jinx", "ozzy"],
+        NM_W = ["mochi", "pickle", "noodle", "toast", "potato", "bean", "waffle", "cookie", "taco", "biscuit"],
+        NM_C = ["tank", "heals", "dps", "healer", "main", "gg", "pro", "irl", "afk"],
+        pick = (a) => a[Math.floor(Math.random() * a.length)],
+        cap = (w) => w[0].toUpperCase() + w.slice(1),
+        num = () => pick(["", "", String(Math.floor(Math.random() * 99) + 1), String(Math.floor(Math.random() * 9000) + 1000), "7", "69", "420", "x", "_"]);
+      function botName() {
+        const n = pick(NM_N);
+        return pick([
+          () => pick(NM_A) + cap(pick(NM_B)) + num(),
+          () => pick(NM_A).toLowerCase() + pick(NM_B) + num(),
+          () => cap(n) + num(),
+          () => n + n.slice(-1) + n.slice(-1),
+          () => n + "_" + pick(NM_C),
+          () => pick(["the", "lil", "xX", "its", "not", "sir", "big"]) + cap(n) + pick(["", "Xx", "", "_"]),
+          () => pick(NM_W) + pick(["", "lord", "_" + pick(NM_C), String(Math.floor(Math.random() * 99))]),
+          () => pick(["Tank", "Heals", "Dps", "Big", "Sir"]) + cap(pick(NM_W)),
+          () => cap(n) + pick(NM_A),
+        ])().slice(0, 15);
+      }
+      /* botLook(v): random level (most players are low, a few are veterans) and a title that fits it */
+      function botLook(v) {
+        v.lv = 1 + Math.floor(Math.random() ** 1.8 * 60);
+        const ok = TITLES.filter((t) => !["Tester"].includes(t.n) && (v.lv >= 25 || !["Loremaster", "Fully Runed", "Moneybags"].includes(t.n)));
+        v.ti = v.lv < 5 || Math.random() < 0.35 ? TITLES[0] : pick(ok);
+      }
       let HUBV = [],
         HUB_MIN = 5, /* ?bots=N raises it to N + 1 for stress tests */
         botN = 0;
@@ -1111,7 +1144,8 @@
           botOut(b);
         }
         const [sx, sy] = spawnSpot(),
-          v = { id, name: o.name || "Wanderer", cls: CL[o.cls] ? o.cls : "tank", x: o.x ?? sx, y: o.y ?? sy, dx: 0, dy: 0, f: "d", hp: 1, mh: 1, bot: bot ? 1 : 0 };
+          v = { id, name: o.name || "Wanderer", cls: CL[o.cls] ? o.cls : "tank", x: o.x ?? sx, y: o.y ?? sy, dx: 0, dy: 0, f: "d", hp: 1, mh: 1, bot: bot ? 1 : 0,
+            lv: o.lv || 1, ti: TITLES[o.ti] || TITLES[0], via: [] };
         v.tx = v.x;
         v.ty = v.y;
         HUBV.push(v);
@@ -1137,9 +1171,11 @@
       function fillBots() {
         const ks = Object.keys(CL);
         while (hubCount() < Math.min(HUB_MIN, HUB_MAX)) {
-          const used = HUBV.map((v) => v.name),
-            name = BOT_NAMES.find((n) => !used.includes(n)) || "Wanderer";
-          if (!hubJoin("bot" + botN, { name, cls: ks[botN % ks.length] }, 1)) break;
+          let name = botName();
+          while (HUBV.some((v) => v.name == name) || name == pname()) name = botName();
+          const v = hubJoin("bot" + botN, { name, cls: pick(ks) }, 1);
+          if (!v) break;
+          botLook(v);
           botN++;
         }
       }
@@ -1167,25 +1203,137 @@
           if (walking) v.f = Math.abs(v.dx) > Math.abs(v.dy) ? (v.dx > 0 ? "r" : "l") : v.dy > 0 ? "d" : "u";
         }
       }
-      /* botStep: wander between random spots. Bots report a new target 10 times a second, like a network update would. */
+      /* ---------- bot brain: acts like a player hanging out in the hub ----------
+         Mostly idle. Now and then, at random, picks a plan and moves there at its class's normal speed, then lingers:
+           npc    - walk up to an NPC, face it and "talk" (chat bubble) for a while
+           chill  - hang out at the platform's outer edge, looking at the view
+           stroll - a few steps to a nearby spot
+         Crossing the river: the route goes over the Rune Crossing (approach on this bank, centre, far bank).
+         Near a bank the bot slides along it instead of walking into the water. */
+      const HUB_NPCS = () => [ELDER, SHOP, LORE, CLASSN, MAIDEN, SMITH, HERALD, BARKEEP].filter((n) => n && !npcHidden(n));
+      /* dry(x, y, m): true when (x, y) is on the stones and at least m px clear of the water */
+      function dry(x, y, m = 12) {
+        const rv = riverNear(x, y);
+        return rv.d > rv.bw + PR + m && ((x - HUB.x) / (HUB.rx - 30)) ** 2 + ((y - HUB.y) / (HUB.ry - 30)) ** 2 < 1;
+      }
+      /* spotNear(cx, cy, a0, r0, r1, side): a dry spot around (cx, cy) on the given river bank, aimed roughly at angle a0 */
+      function spotNear(cx, cy, a0, r0, r1, side) {
+        for (let i = 0; i < 24; i++) {
+          const a = a0 + rnd(-1, 1) * (0.9 + i * 0.12),
+            r = rnd(r0, r1),
+            x = cx + Math.cos(a) * r,
+            y = cy + Math.sin(a) * r * 0.75;
+          if (dry(x, y) && (!side || riverNear(x, y).side == side)) return { x, y };
+        }
+        return null;
+      }
+      /* npcSpot(n): a free place to stand in front of an NPC, on the NPC's own bank */
+      const npcSpot = (n) => spotNear(n.x, n.y, Math.atan2(HUB.y - n.y, HUB.x - n.x), 36, 54, riverNear(n.x, n.y).side);
+      /* edgeSpot(): somewhere on the platform's outer ring, dry and not crowding an NPC */
+      function edgeSpot() {
+        for (let i = 0; i < 30; i++) {
+          const a = rnd(0, 6.28),
+            x = HUB.x + Math.cos(a) * (HUB.rx - 46),
+            y = HUB.y + Math.sin(a) * (HUB.ry - 40);
+          if (dry(x, y, 20) && !HUB_NPCS().some((n) => Math.hypot(n.x - x, n.y - y) < 60)) return { x, y };
+        }
+        return null;
+      }
+      /* botPlan(v): choose what to do next. Busy NPCs (2+ bots already there) are skipped. */
+      function botPlan(v) {
+        const r = Math.random(),
+          free = HUB_NPCS().filter((n) => n !== v.npc && HUBV.filter((o) => o.npc === n).length < 2);
+        v.npc = null;
+        v.goal = null;
+        if (r < 0.5 && free.length) {
+          v.npc = free[Math.floor(Math.random() * free.length)];
+          v.goal = npcSpot(v.npc);
+          v.stay = rnd(12, 30);
+          v.plan = "npc";
+        } else if (r < 0.8) {
+          v.goal = edgeSpot();
+          v.stay = rnd(25, 60);
+          v.plan = "chill";
+        } else {
+          v.goal = spotNear(v.x, v.y, rnd(0, 6.28), 30, 90, bridgeAt(v) ? 0 : riverNear(v.x, v.y).side);
+          v.stay = rnd(8, 20);
+          v.plan = "stroll";
+        }
+        if (!v.goal) return (v.wait = rnd(3, 8)), (v.npc = null);
+        /* other bank: three waypoints over the Rune Crossing */
+        v.via = [];
+        const mine = riverNear(v.x, v.y).side,
+          theirs = riverNear(v.goal.x, v.goal.y).side;
+        if (!bridgeAt(v) && mine != theirs) {
+          const { q } = crossFrame();
+          v.via = [{ x: q.x + q.nx * 30 * mine, y: q.y + q.ny * 30 * mine }, { x: q.x, y: q.y }, { x: q.x + q.nx * 30 * theirs, y: q.y + q.ny * 30 * theirs }];
+        }
+        v.st = 0;
+      }
+      /* botStep(v, dt): follow the plan. Reports a new target 10 times a second, like a network update would. */
       function botStep(v, dt) {
-        v.wt = (v.wt || 0) - dt;
-        if (v.wt > 0) return;
-        /* new goal when arrived, or when stuck against the river or the edge for 2s */
-        v.st = Math.hypot(v.x - (v.lx ?? v.x), v.y - (v.ly ?? v.y)) < 1 ? (v.st || 0) + 0.1 : 0;
-        v.lx = v.x;
-        v.ly = v.y;
-        if (!v.gx || v.st > 2 || Math.hypot(v.gx - v.x, v.gy - v.y) < 6) {
-          v.st = 0;
-          v.gx = HUB.x + rnd(-300, 300);
-          v.gy = HUB.y + rnd(-160, 170);
-          v.wt = rnd(0.5, 3);
+        if (v.wait > 0) {
+          /* lingering: at an NPC keep facing it, chat bubble on and off */
+          v.wait -= dt;
+          v.talk = v.plan == "npc" && v.npc && v.wait % 7 > 3;
+          if (v.npc) {
+            const dx = v.npc.x - v.x,
+              dy = v.npc.y - v.y;
+            v.f = Math.abs(dx) > Math.abs(dy) ? (dx > 0 ? "r" : "l") : dy > 0 ? "d" : "u";
+          }
+          if (v.wait <= 0) botPlan(v);
           return;
         }
-        const a = Math.atan2(v.gy - v.y, v.gx - v.x);
-        v.tx = v.x + Math.cos(a) * 15;
-        v.ty = v.y + Math.sin(a) * 15;
+        v.talk = false;
+        if (!v.goal) {
+          v.wait = rnd(2, 12); /* fresh bots stand around a while before doing anything */
+          return;
+        }
+        v.wt = (v.wt || 0) - dt;
+        if (v.wt > 0) return;
         v.wt = 0.1;
+        /* stuck for 1.5s anyway: give up, stand there, pick something else later */
+        v.st = Math.hypot(v.x - (v.lx ?? v.x), v.y - (v.ly ?? v.y)) < 1 ? v.st + 0.1 : 0;
+        v.lx = v.x;
+        v.ly = v.y;
+        if (v.st > 1.5) {
+          v.goal = null;
+          v.npc = null;
+          v.wait = rnd(4, 10);
+          return;
+        }
+        const g = v.via[0] || v.goal,
+          d = Math.hypot(g.x - v.x, g.y - v.y);
+        if (d < 6) {
+          if (v.via.length) v.via.shift();
+          else {
+            v.wait = v.stay;
+            v.goal = null;
+            v.tx = v.x;
+            v.ty = v.y;
+          }
+          return;
+        }
+        /* move at the class's run speed, like a player holding the stick */
+        let ux = (g.x - v.x) / d,
+          uy = (g.y - v.y) / d;
+        if (!bridgeAt(v)) {
+          /* close to the water: drop the part of the move that heads into it, so the bot slides along the bank */
+          const rv = riverNear(v.x, v.y),
+            nx = rv.bnx * rv.side,
+            ny = rv.bny * rv.side,
+            into = ux * nx + uy * ny;
+          if (rv.d < rv.bw + PR + 22 && into < 0) {
+            ux -= nx * into;
+            uy -= ny * into;
+            const l = Math.hypot(ux, uy) || 1;
+            ux /= l;
+            uy /= l;
+          }
+        }
+        const step = Math.min(d, CL[v.cls].sp * 0.1);
+        v.tx = v.x + ux * step;
+        v.ty = v.y + uy * step;
       }
       function toHub() {
         S.sc = "hub";
@@ -3183,14 +3331,25 @@
         /* health bar turns white while armored (tank dash); thin strip above = armor time left */
         if (p.name && p !== P) {
           /* hub visitor: just a name tag, no health bar */
-          c.textAlign = "center";
-          c.textBaseline = "alphabetic";
-          c.lineWidth = 3;
-          c.strokeStyle = "#000";
-          c.font = "bold 11px Georgia";
-          c.fillStyle = "#dfe8f0";
-          c.strokeText(p.name, 0, PR + 16);
-          c.fillText(p.name, 0, PR + 16);
+          nameplate(p.lv, p.name, p.ti, 1, "#dfe8f0");
+          if (p.talk) {
+            /* chat bubble with three bouncing dots */
+            c.fillStyle = "rgba(245,248,252,.92)";
+            c.beginPath();
+            c.ellipse(PR + 6, -PR - 8, 11, 7, 0, 0, 6.3);
+            c.fill();
+            c.beginPath();
+            c.moveTo(PR - 1, -PR - 3);
+            c.lineTo(PR - 4, -PR + 2);
+            c.lineTo(PR + 3, -PR - 2);
+            c.fill();
+            c.fillStyle = "#3a4654";
+            for (let i = 0; i < 3; i++) {
+              c.beginPath();
+              c.arc(PR + 1 + i * 5, -PR - 8 - Math.max(0, Math.sin(S.tm * 6 - i * 0.9)) * 2, 1.4, 0, 6.3);
+              c.fill();
+            }
+          }
           c.restore();
           return;
         }
@@ -3202,51 +3361,49 @@
           c.fillRect(-14, -PR - 15, 28 * cl(p.ar / DASH.tank.ar, 0, 1), 2);
           c.shadowBlur = 0;
         }
-        if (p === P) {
-          /* level badge on the left: grows with level, tier color, pops on level-up */
-          const L = lvlInfo().L,
-            lc = lvlCol(L),
-            br = 7 + Math.min(6, L * 0.12),
-            pop = 1 + p.lvp * 1.2;
-          c.save();
-          c.translate(-PR - br - 4, 0);
-          c.scale(pop, pop);
-          c.shadowColor = lc;
-          c.shadowBlur = L >= 10 ? 10 + 4 * Math.sin(S.tm * 4) : 4;
-          c.fillStyle = "#0b1218";
-          c.strokeStyle = lc;
-          c.lineWidth = 2;
-          c.beginPath(); /* diamond rune badge */
-          c.moveTo(0, -br - 2);
-          c.lineTo(br + 2, 0);
-          c.lineTo(0, br + 2);
-          c.lineTo(-br - 2, 0);
-          c.closePath();
-          c.fill();
-          c.stroke();
-          c.shadowBlur = 0;
-          c.fillStyle = lc;
-          c.font = `bold ${Math.round(br * 1.15)}px Georgia`;
-          c.textAlign = "center";
-          c.textBaseline = "middle";
-          c.fillText(L, 0, 1);
-          c.restore();
-          /* name + equipped title */
-          const tl = myTitle();
-          c.textBaseline = "alphabetic";
-          c.textAlign = "center";
-          c.lineWidth = 3;
-          c.strokeStyle = "#000";
-          c.font = "bold 12px Georgia";
-          c.fillStyle = "#fff";
-          c.strokeText(pname(), 0, PR + 17);
-          c.fillText(pname(), 0, PR + 17);
-          c.font = "italic 10px Georgia";
-          c.fillStyle = tl.col;
-          c.strokeText(tl.n, 0, PR + 29);
-          c.fillText(tl.n, 0, PR + 29);
-        }
+        if (p === P) nameplate(lvlInfo().L, pname(), myTitle(), 1 + p.lvp * 1.2, "#fff");
         c.restore();
+      }
+      /* nameplate(L, name, tl, pop, col): level badge on the left (grows with level, tier color, pop = level-up bounce),
+         name below the body and the equipped title under it. Drawn in the player's local space. */
+      function nameplate(L, name, tl, pop, col) {
+        const lc = lvlCol(L),
+          br = 7 + Math.min(6, L * 0.12);
+        c.save();
+        c.translate(-PR - br - 4, 0);
+        c.scale(pop, pop);
+        c.shadowColor = lc;
+        c.shadowBlur = L >= 10 ? 10 + 4 * Math.sin(S.tm * 4) : 4;
+        c.fillStyle = "#0b1218";
+        c.strokeStyle = lc;
+        c.lineWidth = 2;
+        c.beginPath(); /* diamond rune badge */
+        c.moveTo(0, -br - 2);
+        c.lineTo(br + 2, 0);
+        c.lineTo(0, br + 2);
+        c.lineTo(-br - 2, 0);
+        c.closePath();
+        c.fill();
+        c.stroke();
+        c.shadowBlur = 0;
+        c.fillStyle = lc;
+        c.font = `bold ${Math.round(br * 1.15)}px Georgia`;
+        c.textAlign = "center";
+        c.textBaseline = "middle";
+        c.fillText(L, 0, 1);
+        c.restore();
+        c.textBaseline = "alphabetic";
+        c.textAlign = "center";
+        c.lineWidth = 3;
+        c.strokeStyle = "#000";
+        c.font = "bold 12px Georgia";
+        c.fillStyle = col;
+        c.strokeText(name, 0, PR + 17);
+        c.fillText(name, 0, PR + 17);
+        c.font = "italic 10px Georgia";
+        c.fillStyle = tl.col;
+        c.strokeText(tl.n, 0, PR + 29);
+        c.fillText(tl.n, 0, PR + 29);
       }
       /* ---------- hub: round stone platform in the mist, portal arch at the top (world space, 900x600) ----------
          paintHub() paints the static platform once into HUBC (2x for sharpness).
