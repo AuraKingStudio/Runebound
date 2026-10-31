@@ -2849,8 +2849,8 @@
       /* npcHidden(n): true while an NPC is still locked (tutorial step or Archivist unlock). */
       const npcHidden = (n) => (n.lk && !isUnl(n.lk)) || (n.tu && tut() < n.tu);
       function npc(n, mark) {
-        if (npcHidden(n)) return; /* locked NPCs are fully hidden: no sprite, no ghost */
-        const ghost = 0;
+        /* locked NPCs show as a faint 20% ghost ("???" + padlock) until they appear */
+        const ghost = npcHidden(n) ? 1 : 0;
         if (ghost) {
           /* locked: keep the NPC's own emblem but greyed, name hidden, padlock badge drawn below */
           n.p2 = n.p2 || new Path2D(n.g);
@@ -2861,7 +2861,7 @@
         /* no floating: NPCs stand still and "breathe" (tiny scale pulse) so they read as grounded */
         /* reveal: fade in + rise over 1.5s after the NPC is unlocked (n._rv = reveal time) */
         const fa = n._rv != null ? cl((S.tm - n._rv) / 1.5, 0, 1) : 1;
-        c.globalAlpha = fa * (ghost ? 0.12 + 0.5 * ghost : 1);
+        c.globalAlpha = fa * (ghost ? 0.2 : 1);
         const t = S.tm,
           bob = (1 - fa) * 14,
           br = 1 + Math.sin(t * 1.6 + n.x) * 0.025;
@@ -2939,7 +2939,7 @@
         /* NPC names: logo font, tinted with the NPC's color (players use plain white Georgia) */
         /* name only when the player is close (less clutter), small */
         const near = P && dist(P, n) < 140;
-        c.globalAlpha = near ? 1 : 0;
+        c.globalAlpha = near ? (ghost ? 0.2 : 1) : 0;
         c.font = 'bold 10px "Cinzel", Georgia';
         c.fillStyle = n.col;
         c.strokeStyle = "#000";
