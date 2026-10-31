@@ -60,7 +60,28 @@ Small raid 3, large raid 6, hub and epic raid **12** (the most the game will eve
   - `?player=N` (localhost only) gives each tab its own save, so two VS Code Simple Browser tabs are two players.
   - Run `npm run signaling` and `npm run dev`.
 
-## Latest (2026-10-31, networked raids)
+## Handoff (2026-10-31, latest; read first)
+
+**Built since networked raids (commits 5b9a47f, 5dd4122, 0089be0):**
+- Ultimates on R / RT / `#bu`: `ULT`, `ult()`, `ultFx()`. Tank Bulwark (shield 150 for 8 s to all, boss stun 3 s, cd 50). Healer Resurrect (50% HP, once per raid). DPS Overdrive (`ultDmg` = 420·(eng−1)^1.5, Engine resets). Networked as `ra` a=3; bots use them in `raidAI`.
+- VFX: `VX` + `drawVX` (beam/flash/nova/dome/pillar/slash/stars), `sparks`, `skillFx`, `hitFx`, projectile trails, Circle redraw.
+- Save code: `saveCode` / `saveRead` / `saveCheck` (seal + plausibility; paid items dropped), 💾 button `saveUI`.
+- Hold-to-attack (`HOLD` set). Party frame `#ptl` / `partyFrame`. F near a player invites; Yes/No popup `#pinv`; busy refusal.
+- Barkeep locked: `DISCORD_URL`, `discordUnlock`. Tutorial has no blackjack (`TUT_DONE` 5, `tutMigrate` v3); first hand ever rigged (`V.bj1`).
+- Lore rewritten (no Rune Warden).
+- Equipment tab (`shopUI('eq')`): `eqRoll` seeded stock every 2 raids (`V.rc`), tiers `TIERS` (common→legendary, legendary only from level 30). Types: tank `dr`, damage `dmg`, utility `dd` double dash / `bd` buff time / `hl` heal. Ledger kind `equip`.
+- Class bonuses `CLB` (tank vit → less damage, DPS dmg → faster Engine, healer cdr → more healing); `upCost` ramp; win gold +1%/level (max +50%); loss gives 15 gold; audit raid cap ×1.5.
+- Host accepts 2 dashes per window (Twin Feather).
+- Hub address: if none configured, the game uses `http://localhost:8787` (`npm run signaling`); `app.js` sends `access-control-allow-private-network`. So the live site works for windows on the same PC only.
+
+**Owner's next asks / not done:**
+1. Play with friends from the GitHub link. Needs a public signaling service (Cloudflare tunnel or a server); OR build manual copy-paste offer/answer codes (serverless WebRTC). Owner wants: first player = host, others join as clients, each keeps their own browser save.
+2. Host migration: hub dies when the host leaves; raid ends if the leader leaves.
+3. Rebind crash: `settingsUI()` is called but doesn't exist.
+4. Not rerun since this batch: bench, 2-browser raid E2E, screenshots of the new effects and UI.
+5. Random levels on the paid shop's display characters.
+
+
 
 **Done**
 - **Networked raids:** the party leader's screen runs the fight (`S.net.role` `lead`); members mirror it (`member`, `raidPuppet`/`raidApply`).
