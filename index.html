@@ -699,6 +699,9 @@
       #btns #b0 svg { width: 58px; height: 58px; }
       #btns #b1 { right: 132px; bottom: 30px; }
       #btns #b2 { right: 102px; bottom: 134px; }
+      #btns #bd { right: 214px; bottom: 26px; width: 58px; height: 58px; }
+      #btns #bd svg { width: 30px; height: 30px; }
+      body.hub #btns #bd { width: 54px; height: 54px; opacity: 0.9; } /* the one move you can use in the hub stays bright */
       /* logo font (Cinzel, same as the icon / logo / banner) for headings and big buttons; Georgia if offline */
       h2, .claim, .qn, #btns #bi, .kh { font-family: "Cinzel", Georgia, serif; }
       h2 { color: #ffd84a; letter-spacing: 1.5px; }
@@ -933,7 +936,7 @@
     <div id="jb"><div id="jk"></div></div>
     <div id="chat" hidden><div id="chlog"></div><div id="chrow"><input id="chin" maxlength="80" autocomplete="off" placeholder="Press Enter to chat" /><div id="emo"></div></div></div>
     <div id="btns">
-      <button id="b0"></button><button id="b1"></button><button id="b2"></button
+      <button id="bd" class="sk"></button><button id="b0"></button><button id="b1"></button><button id="b2"></button
       ><button id="bi" hidden>Enter arena</button><div id="tlbar"><span id="gp"><i class="coin"></i><b id="gn">0</b></span><button id="bt">🏷 Titles</button></div><button id="bq" class="hb">📜 Quests</button><button id="bg" class="hb">🛡 Guild</button><button id="bs" class="hb">✨ Shop</button>
     </div>
     <script>
@@ -1027,11 +1030,16 @@
         `<g fill="${u.col}" stroke="${u.col}">${u.ic}</g></svg>`;
       /* ---------- settings (saved per device) ----------
          shake/dmg: 0|1, fx: 0 low | 1 high, vol: 0..1, lang: "en"|"fr", bind: action -> KeyboardEvent.code (physical key) */
-      const BIND_DEF = { s0: "Space", s1: "KeyQ", s2: "KeyE", int: "KeyF", dash: "ShiftLeft", up: "KeyW", down: "KeyS", left: "KeyA", right: "KeyD", pause: "KeyP" };
+      const BIND_DEF = { s0: "Mouse0", /* main attack: left mouse button */ s1: "KeyQ", s2: "KeyE", int: "KeyF", dash: "ShiftLeft", up: "KeyW", down: "KeyS", left: "KeyA", right: "KeyD", pause: "KeyP" };
       const SET = { shake: 1, fx: 1, dmg: 1, vol: 0.8, lang: "en", bind: { ...BIND_DEF } };
       try {
         const s = JSON.parse(localStorage.getItem("runebound_settings") || "null");
         if (s) Object.assign(SET, s, { bind: { ...BIND_DEF, ...(s.bind || {}) } });
+        if (!SET.mb1) {
+          /* once: the main attack moved from Space to the left mouse button */
+          if (SET.bind.s0 == "Space") SET.bind.s0 = "Mouse0";
+          SET.mb1 = 1;
+        }
       } catch (e) {}
       const saveSet = () => { try { localStorage.setItem("runebound_settings", JSON.stringify(SET)); } catch (e) {} };
       /* ---------- soft synth sfx (no audio files) ---------- */
@@ -3617,6 +3625,7 @@
       }
       let tt = [];
       cv.addEventListener("pointerdown", (e) => {
+        if (e.pointerType == "mouse" && e.button == 0 && SET.bind.s0 == "Mouse0" && P && !dlgOpen()) press(0); /* main attack on left click */
         const r = cv.getBoundingClientRect(),
           d = cv.width / r.width,
           gx = ((e.clientX - r.left) * d - ox) / sc,
@@ -3790,6 +3799,7 @@
       try { navigator.keyboard && navigator.keyboard.getLayoutMap().then((m) => { LAYOUT = m; refreshHints(); }); } catch (e) {}
       const KEYNAME = { Space: "Space", ShiftLeft: "Shift", ShiftRight: "Shift", ControlLeft: "Ctrl", AltLeft: "Alt", Tab: "Tab", Enter: "Enter", ArrowUp: "↑", ArrowDown: "↓", ArrowLeft: "←", ArrowRight: "→" };
       function keyLabel(code) {
+        if (code == "Mouse0") return "MB1";
         const l = LAYOUT && LAYOUT.get(code);
         return KEYNAME[code] || (l ? l.toUpperCase() : String(code || "?").replace(/^(Key|Digit)/, ""));
       }
@@ -3846,6 +3856,10 @@
       const press = (a) => {
         if (P && !dlgOpen()) act(P, a);
       };
+      $("bd").addEventListener("pointerdown", (e) => {
+        e.preventDefault();
+        dash(P);
+      });
       [0, 1, 2].forEach((a) =>
         $("b" + a).addEventListener("pointerdown", (e) => {
           e.preventDefault();
@@ -4000,6 +4014,28 @@
           b.style.setProperty("--p", on ? (cd / mx) * 100 + "%" : "0%");
           const tx = on ? (cd < 1 ? cd.toFixed(1) : Math.ceil(cd)) : "";
           const cn = b.querySelector(".cdn");
+          if (cn && cn.textContent != tx) cn.textContent = tx;
+        }
+        /* dash button: same look and cooldown sweep as the skills */
+        {
+          const b = $("bd"),
+            cd = m.dcd || 0,
+            mx = DASH[m.cls].cd * cdm() * (bless("swift") ? 0.5 : 1);
+          if (b.dataset.cls != m.cls) {
+            b.dataset.cls = m.cls;
+            b.style.setProperty("--sc", SKC[m.cls]);
+            b.innerHTML = `<svg viewBox="-20 -20 40 40" fill="none" stroke="currentColor" stroke-width="3.2" stroke-linecap="round" stroke-linejoin="round"><path d="M-12 -8 L-2 0 L-12 8 M0 -8 L10 0 L0 8"/></svg><span class="cdv"></span><span class="cdn"></span><span class="sn">Dash</span><span class="kh k4"></span>`;
+          }
+          const kh = b.querySelector(".kh"),
+            ht = KEYHINT[INMODE][4];
+          if (kh && kh.textContent != ht) kh.textContent = ht;
+          const on = cd > 0.05;
+          if (b._on && !on) { b.classList.remove("rd"); void b.offsetWidth; b.classList.add("rd"); }
+          b._on = on;
+          b.classList.toggle("cd", on);
+          b.style.setProperty("--p", on ? (cd / mx) * 100 + "%" : "0%");
+          const tx = on ? (cd < 1 ? cd.toFixed(1) : Math.ceil(cd)) : "",
+            cn = b.querySelector(".cdn");
           if (cn && cn.textContent != tx) cn.textContent = tx;
         }
         const n = nearby();

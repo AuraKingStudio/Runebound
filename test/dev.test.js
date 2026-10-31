@@ -81,7 +81,7 @@ T.V().lt=100;for(let i=0;i<400&&!T.isUnl('maiden');i++)T.loreReward(true);ok(T.i
 ok(seen.size>=4,'lore: secret pages give varied rewards ('+[...seen].join(' ')+')');}
 /* ---- input mode ---- */
 T.setIn('pad');ok(T.inMode()=='pad'&&T.KEYHINT.pad[0]=='A','input: controller mode shows A/X/Y/B');
-T.setIn('kb');ok(T.inMode()=='kb'&&T.KEYHINT.kb.join(',')=='Space,Q,E,F,Shift','input: keyboard badges follow binds (Space, Q, E, F, Shift)');
+T.setIn('kb');ok(T.inMode()=='kb'&&T.KEYHINT.kb.join(',')=='MB1,Q,E,F,Shift','input: keyboard badges follow binds (MB1, Q, E, F, Shift)');
 /* ---- dash ---- */
 T.DEV.nocd=0;T.devHub();ctx.document.getElementById('dlg').hidden=true;const dp0={x:T.P().x,y:T.P().y};T.P().dx=1;T.P().dy=0;T.P().dcd=0;T.dash(T.P());for(let i=0;i<10;i++)T.dashStep(T.P(),.02);
 ok(T.P().x>dp0.x+20&&T.P().dcd>0,'dash: moves the player and starts its cooldown');
