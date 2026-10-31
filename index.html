@@ -3457,10 +3457,7 @@
       function streams(g) {
         const pts = streamPts(),
           r = rng(31);
-        /* damp earth bank, then the water, then a darker deep channel */
-        g.fillStyle = "#7b6a4e";
-        bank(g, pts, 7, 6, r);
-        g.fill();
+        /* grassy edge, then the water, then a faint deep channel */
         g.fillStyle = "#5d8a4a";
         bank(g, pts, 3, 5, r);
         g.fill();
