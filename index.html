@@ -3095,10 +3095,9 @@
           b = S.b;
         if (ar) c.drawImage(IM.arena, 0, 0, W, H);
         else {
-          /* hub: cover-fit the 1920x1080 art over the visible world area (keeps 16:9, no stretching) */
-          const vx = CAM.x - ox / sc, vy = CAM.y - oy / sc, vw = cv.width / sc, vh = cv.height / sc;
-          const k = Math.max(vw / 1920, vh / 1080), dw = 1920 * k, dh = 1080 * k;
-          c.drawImage(IM.hub, vx + (vw - dw) / 2, vy + (vh - dh) / 2, dw, dh);
+          /* hub: art is placed in world space (fixed to the 900x600 world, 16:9 kept), so it never moves with the window size */
+          const dh = H, dw = (H * 1920) / 1080;
+          c.drawImage(IM.hub, (W - dw) / 2, 0, dw, dh);
         }
         if (S.sc == "lobby") {
           c.fillStyle = "#0008";
