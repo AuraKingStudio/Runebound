@@ -372,7 +372,7 @@ async function networkTests(){
  const createContext=()=>{const c={window:null,RTCPeerConnection:Peer,crypto:require('crypto').webcrypto,TextEncoder,TextDecoder,Uint8Array,Map,Promise,Error,Date,JSON,Array,String,Math,atob,btoa,setTimeout,clearTimeout};c.window=c;vm.createContext(c);vm.runInContext(NETSRC,c);return c;};
  const linkHub=(search,hostname='aurakingstudio.github.io')=>{const c={window:null,location:{search,hostname},crypto:require('crypto').webcrypto,URL,Map,Error,Date,JSON,Array,String,Math};c.window=c;vm.createContext(c);vm.runInContext(NETSRC,c);return c.RBNet.defaultConfig().signalingUrl;};
  ok(linkHub('?hub=https://abc-def.trycloudflare.com')=='https://abc-def.trycloudflare.com','network: ?hub= accepts an https Quick Tunnel address');
- ok(linkHub('?hub=https://evil.example.com')==''&&linkHub('?hub=http://abc.trycloudflare.com')==''&&linkHub('?hub=javascript:alert(1)')=='','network: ?hub= rejects other hosts, http and scripts');
+ ok(linkHub('?hub=https://evil.example.com')=='http://localhost:8787'&&linkHub('?hub=http://abc.trycloudflare.com')=='http://localhost:8787'&&linkHub('?hub=javascript:alert(1)')=='http://localhost:8787','network: ?hub= rejects other hosts, http and scripts (falls back to the local hub)');
  ok(linkHub('','localhost')=='http://localhost:8787','network: localhost uses the local hub directory');
  const host=createContext(),h=host.RBNet;let received=0,errors=0;
  h.setHandlers({onMessage:(_id,m)=>{if(m.type=='test')received++;},onError:()=>errors++});
