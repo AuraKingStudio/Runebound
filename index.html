@@ -3816,7 +3816,7 @@
         c.restore();
       }
       /* waterfall in the top-left corner: rocky cliff, falling water and a pond. WF = fall position. */
-      const WF = { x: 86, top: 0, mid: 46, bot: 92, w: 46, px: 92, py: 118, prx: 78, pry: 30 };
+      const WF = { x: 90, top: 18, mid: 58, bot: 98, w: 54, px: 92, py: 124, prx: 78, pry: 30 }; /* whole fall visible on screen */
       /* pondWater(g): the pond surface, same colors as the brook. Drawn again after the brook so the brook flows out of it. */
       /* pondPath(ctx, grow): an organic, lumpy outline for the pond (a few overlapping waves on the radius), grow = extra size */
       function pondPath(ctx, grow) {
@@ -3844,7 +3844,7 @@
         g.fill();
         pondWater(g);
         /* rocky cliff behind the fall */
-        const rocks = [[0, 0, 70], [60, -10, 62], [128, 6, 50], [18, 48, 40], [150, 46, 34], [-10, 70, 30]];
+        const rocks = [[10, 34, 54], [62, 18, 46], [124, 34, 44], [20, 70, 36], [156, 66, 30], [-6, 86, 28]]; /* rocky hill the spring comes out of, fully on screen */
         for (const [rx0, ry0, rr] of rocks) {
           g.fillStyle = "#5c5a55";
           g.beginPath();
@@ -3907,7 +3907,7 @@
       /* waterfall(t): two-tier fall with flowing light bands, glossy lip, foam cloud, splash, mist and a faint rainbow */
       function waterfall(t) {
         const { x, bot, w, mid, py, prx, pry } = WF,
-          tiers = [[-4, mid + 2, w * 0.55, w * 0.7, 0], [mid, bot, w * 0.8, w * 1.05, 3]];
+          tiers = [[WF.top, mid + 2, w * 0.55, w * 0.7, 0], [mid, bot, w * 0.8, w * 1.05, 3]];
         c.save();
         for (const [y0, y1, w0, w1, k] of tiers) {
           /* body: deep water color at the top, lighter and foamier as it falls */
