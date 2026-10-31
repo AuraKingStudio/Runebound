@@ -771,26 +771,26 @@
       const PORTAL = { x: 450, y: 165, ir: 120 },
         /* NPCs. g = emblem path (SVG path syntax, drawn on a 40x40 box centered at 0,0), gs = stroke instead of fill */
         /* Elder: wizard hat (wide brim + bent cone) */
-        ELDER = { tu: 1, x: 155, y: 319, ic: "🧙", nm: "The Elder", col: "#b48cff",
+        ELDER = { tu: 1, x: 257, y: 214, ic: "🧙", nm: "The Elder", col: "#b48cff",
           g: "M-14 9q14 6 28 0q-2 4-14 5q-12-1-14-5zM-9 8L-1-12q3-5 9-3q-4 1-5 4L9 8q-9 3-18 0z" },
         /* Merchant: round coin bag with a tied neck and a coin mark */
-        SHOP = { tu: 2, x: 347, y: 517, ic: "💰", nm: "The Merchant", col: "#ffcf4d",
+        SHOP = { tu: 2, x: 643, y: 214, ic: "💰", nm: "The Merchant", col: "#ffcf4d",
           g: "M-3-8q-6 3-10 10q-3 10 7 11h12q10-1 7-11q-4-7-10-10zM-3-9l-4-5q7 2 14 0l-4 5zM-1 0h4a2 2 0 0 1 0 4h-2a2 2 0 0 0 0 4h4" },
-        LORE = { tu: 3, x: 190, y: 439, ic: "📜", nm: "The Archivist", col: "#5ad7ff", gs: 1,
+        LORE = { tu: 3, x: 745, y: 319, ic: "📜", nm: "The Archivist", col: "#5ad7ff", gs: 1,
           /* Archivist: rolled scroll with text lines */
           g: "M-10-13h20a3 3 0 0 1 0 6h-20a3 3 0 0 1 0-6M-8-7v13M8-7v13M-10 6h20a3 3 0 0 1 0 6h-20a3 3 0 0 1 0-6M-4-3h8M-4 1h6" },
         /* the 4 NPCs standing where the old torches were */
         /* Class Master (green): three class orbs */
-        CLASSN = { lk: "class", x: 745, y: 319, ic: "⚔", nm: "The Class Master", col: "#5dff8a",
+        CLASSN = { lk: "class", x: 553, y: 517, ic: "⚔", nm: "The Class Master", col: "#5dff8a",
           g: "M-4-6a4 4 0 1 0 8 0a4 4 0 1 0-8 0zM-11 5a4 4 0 1 0 8 0a4 4 0 1 0-8 0zM3 5a4 4 0 1 0 8 0a4 4 0 1 0-8 0z" },
         /* The Maiden (rose): a rose bloom */
-        MAIDEN = { lk: "maiden", x: 710, y: 439, ic: "🌹", nm: "The Maiden", col: "#ff8fc8",
+        MAIDEN = { lk: "maiden", x: 347, y: 517, ic: "🌹", nm: "The Maiden", col: "#ff8fc8",
           g: "M0-11c5 0 8 4 6 8 4 0 5 5 1 7-1 4-6 5-7 2-1 3-6 2-7-2-4-2-3-7 1-7-2-4 1-8 6-8z" },
         /* The Smith (orange): an anvil */
-        SMITH = { lk: "smith", x: 553, y: 517, ic: "🔨", nm: "The Smith", col: "#ff9f43",
+        SMITH = { lk: "smith", x: 190, y: 439, ic: "🔨", nm: "The Smith", col: "#ff9f43",
           g: "M-12-6h20q4 0 4 4h-6v4l4 6h-18l4-6v-4h-6q-2 0-2-4z" },
         /* The Herald (silver): a banner */
-        HERALD = { lk: "herald", x: 643, y: 214, ic: "📯", nm: "The Herald", col: "#cfe6ff",
+        HERALD = { lk: "herald", x: 155, y: 319, ic: "📯", nm: "The Herald", col: "#cfe6ff",
           g: "M-8-12v24h2.5v-10h12l-3-5 3-5h-12v-4z" };
       /* ---------- progress (saved) ---------- */
       /* upgrades. k = save key, b = base cost (cost = b * next level), pl = % per level, ic = SVG icon, col = card color */
@@ -1872,7 +1872,7 @@
       }
       /* ---------- The Barkeep (bar, right wall) + the two wall boards ---------- */
       /* Barkeep: a mug. Shown after the tutorial (tu: 4). Boards: no disc, bigger reach (ir). */
-      const BARKEEP = { tu: 4, x: 257, y: 214, ic: "🍺", nm: "The Barkeep", col: "#ffb347",
+      const BARKEEP = { tu: 4, x: 710, y: 439, ic: "🍺", nm: "The Barkeep", col: "#ffb347",
           g: "M-9-9h13v18h-13zM4-5h3a4 4 0 0 1 0 9h-3M-9-9q0-4 4-4h5q4 0 4 4" },
         QBOARD = { x: 300, y: 190, ir: 110, col: "#ffd84a" },
         GBOARD = { x: 717, y: 266, ir: 110, col: "#5af0dc" };
@@ -2897,6 +2897,7 @@
         c.ellipse(0, 18, 16, 6, 0, 0, 6.3);
         c.fill();
         c.save();
+        c.translate(0, Math.sin(t * 1.8 + n.x * 0.05) * 3); /* gentle float; rug and shadow stay on the ground */
         c.scale(br, br);
         const R = n.r || 20; /* body radius */
         const bg = c.createRadialGradient(0, -6, 2, 0, 0, R + 1);
@@ -2938,7 +2939,7 @@
         c.textAlign = "center";
         /* NPC names: logo font, tinted with the NPC's color (players use plain white Georgia) */
         /* name only when the player is close (less clutter), small */
-        const near = P && dist(P, n) < 140;
+        const near = P && dist(P, n) < 80;
         c.globalAlpha = near ? (ghost ? 0.2 : 1) : 0;
         c.font = 'bold 10px "Cinzel", Georgia';
         c.fillStyle = n.col;
