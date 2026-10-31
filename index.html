@@ -4107,7 +4107,7 @@
       }
       /* BRANCHES: two rivulets leaving the main stream, each running to the rim where a thin fall drops off.
          dx = where along the rim the thin fall is (relative to the main fall), w = half width. */
-      const BRANCHES = [{ dx: -52, w: 5 }, { dx: 40, w: 4 }];
+      const BRANCHES = [{ dx: -50, w: 5 }, { dx: -96, w: 4 }]; /* both downhill (left): the rim rises to the right, water cannot run up to it */
       /* branchPts(b): sampled centerline of a rivulet with a natural wobble, plus a width that tapers from the junction to the rim */
       function branchPts(b) {
         const e = streamPts()[streamPts().length - 1],
