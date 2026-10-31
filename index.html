@@ -3117,6 +3117,7 @@
           { x, y, rx, ry } = PLAT;
         g.scale(k, k);
         forest(g, r);
+        cliff(g);
         /* platform side wall (drum) */
         g.fillStyle = "#6e6152";
         g.beginPath();
@@ -3239,9 +3240,99 @@
           }
         }
       }
+      /* waterfall in the top-left corner: rocky cliff, falling water and a pond. WF = fall position. */
+      const WF = { x: 86, top: 0, bot: 92, w: 46, px: 92, py: 118, prx: 78, pry: 30 };
+      function cliff(g) {
+        const { x, bot, w, px, py, prx, pry } = WF;
+        /* pond */
+        g.fillStyle = "#3d6b3a";
+        g.beginPath();
+        g.ellipse(px, py, prx + 8, pry + 6, 0, 0, 6.3);
+        g.fill();
+        const pond = g.createRadialGradient(px, py - 6, 4, px, py, prx);
+        pond.addColorStop(0, "#5fd3e0");
+        pond.addColorStop(1, "#1f7f99");
+        g.fillStyle = pond;
+        g.beginPath();
+        g.ellipse(px, py, prx, pry, 0, 0, 6.3);
+        g.fill();
+        /* rocky cliff behind the fall */
+        const rocks = [[0, 0, 70], [60, -10, 62], [128, 6, 50], [18, 48, 40], [150, 46, 34], [-10, 70, 30]];
+        for (const [rx0, ry0, rr] of rocks) {
+          g.fillStyle = "#5c5a55";
+          g.beginPath();
+          g.arc(rx0, ry0, rr, 0, 6.3);
+          g.fill();
+          g.fillStyle = "#77746c";
+          g.beginPath();
+          g.arc(rx0 - rr * 0.25, ry0 - rr * 0.3, rr * 0.55, 0, 6.3);
+          g.fill();
+          g.fillStyle = "#4f8f3f";
+          g.beginPath();
+          g.arc(rx0 + rr * 0.3, ry0 - rr * 0.65, rr * 0.3, 0, 6.3);
+          g.fill();
+        }
+        /* water sheet (the moving streaks are added in waterfall) */
+        const sheet = g.createLinearGradient(0, 0, 0, bot);
+        sheet.addColorStop(0, "#3fb4c8");
+        sheet.addColorStop(1, "#8fe6ee");
+        g.fillStyle = sheet;
+        g.fillRect(x - w / 2, 0, w, bot);
+        /* rocks at the foot of the fall */
+        for (const [bx, by, br] of [[x - w / 2 - 6, bot - 2, 10], [x + w / 2 + 6, bot, 9], [px + prx - 6, py - 4, 8]]) {
+          g.fillStyle = "#6b685f";
+          g.beginPath();
+          g.arc(bx, by, br, 0, 6.3);
+          g.fill();
+        }
+      }
+      /* waterfall(t): falling streaks, foam and spray at the bottom, ripples on the pond */
+      function waterfall(t) {
+        const { x, bot, w, px, py, prx, pry } = WF;
+        c.save();
+        c.globalCompositeOperation = "lighter";
+        c.lineWidth = 2;
+        for (let i = 0; i < 9; i++) {
+          const lx = x - w / 2 + 4 + (i / 8) * (w - 8),
+            off = (t * 140 + i * 37) % 60;
+          c.strokeStyle = "rgba(220,255,255,.45)";
+          c.setLineDash([18, 42]);
+          c.lineDashOffset = -off;
+          c.beginPath();
+          c.moveTo(lx, 0);
+          c.lineTo(lx, bot);
+          c.stroke();
+        }
+        c.setLineDash([]);
+        /* foam where the water hits the pond */
+        for (let i = 0; i < 10; i++) {
+          const p = (t * 1.6 + i / 10) % 1,
+            fx = x + (i - 4.5) * 5 + Math.sin(t * 3 + i) * 3;
+          c.fillStyle = `rgba(240,255,255,${0.7 * (1 - p)})`;
+          c.beginPath();
+          c.arc(fx, bot - p * 14, 3 + p * 3, 0, 6.3);
+          c.fill();
+        }
+        /* spray mist */
+        const sp = c.createRadialGradient(x, bot, 4, x, bot, 46);
+        sp.addColorStop(0, `rgba(220,255,255,${0.28 + 0.08 * Math.sin(t * 4)})`);
+        sp.addColorStop(1, "rgba(220,255,255,0)");
+        c.fillStyle = sp;
+        c.fillRect(x - 46, bot - 46, 92, 92);
+        /* ripples spreading on the pond */
+        for (let i = 0; i < 3; i++) {
+          const p = (t * 0.5 + i / 3) % 1;
+          c.strokeStyle = `rgba(200,250,255,${0.4 * (1 - p)})`;
+          c.lineWidth = 1.5;
+          c.beginPath();
+          c.ellipse(x, py - 6, 8 + p * (prx - 18), 3 + p * (pry - 10), 0, 0, 6.3);
+          c.stroke();
+        }
+        c.restore();
+      }
       /* two little streams flow from the fountain to the platform edge and spill over it.
          STREAMS = angles (rad) placed in the gaps between NPC spots. streamPath() traces one stream. */
-      const STREAMS = [0.39, 2.75];
+      const STREAMS = [0.39];
       function streamPath(ctx, a) {
         const sx = FOUNT.x + Math.cos(a) * (FOUNT.rx + 4),
           sy = FOUNT.y + Math.sin(a) * (FOUNT.ry + 4),
@@ -3487,6 +3578,7 @@
         c.globalCompositeOperation = "source-over";
         fountainWater(t);
         streamFlow(t);
+        waterfall(t);
         /* mist drifting around the platform rim */
         for (let i = 0; i < 18; i++) {
           const a = (i / 18) * 6.283 + t * 0.03 * (i % 2 ? 1 : -1),
