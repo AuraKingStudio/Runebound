@@ -4578,7 +4578,6 @@
         g.scale(k, k);
         forest(g, r);
         skyEdge(g);
-        outflowGround(g);
         forestTrees(g, r, false); /* far trees: behind the platform */
         /* platform side wall: stacked stone blocks, darker at the bottom */
         g.fillStyle = "#6b5a44";
@@ -6238,7 +6237,6 @@
       /* the waterfall's pond feeds a natural stream that winds across the platform and runs under the fountain.
          STREAM = sampled centerline points {x, y, nx, ny (normal), w (half width)}; built once by streamPts(). */
       let STREAM = null;
-      const WALL_H = 18; /* height of the platform's side wall */
       function streamPts() {
         if (STREAM) return STREAM;
         const r = rng(23),
@@ -6246,7 +6244,7 @@
             [WF.px + 8, WF.py + WF.pry * 0.4, 150, 312, 250, 292], /* starts inside the cistern, so the canal cuts through its rim */
             [250, 292, 350, 284, 450, 352],
             [450, 352, 530, 400, 566, 470],
-            [566, 470, 596, 540, 604, 650], /* toward the viewer, over the near edge and out of sight below */
+            [566, 470, 590, 518, 636, 536], /* toward the viewer, ending at the Rune Sluice by the platform's edge */
           ],
           pts = [];
         for (const [x0, y0, cx, cy, x1, y1] of segs)
@@ -6268,13 +6266,6 @@
           p.ny = dx / l;
           p.w = 19; /* a built canal: one even width */
         }
-        /* the last stretch settles to an even width so it meets the fall down the wall cleanly */
-        for (let i = pts.length - 14; i < pts.length; i++) {
-          const k = Math.min(1, (i - (pts.length - 14)) / 8);
-          pts[i].w = pts[i].w * (1 - k) + 20 * k;
-        }
-        /* past the platform's edge the brook has dropped down the side wall to the grass (WALL_H lower) */
-        for (const p of pts) if (((p.x - PLAT.x) / PLAT.rx) ** 2 + ((p.y - PLAT.y) / PLAT.ry) ** 2 > 1) (p.y += WALL_H), (p.drop = 1);
         return (STREAM = pts);
       }
       /* bank(ctx, pts, grow, jit): closed outline of the stream, grow = extra half width, jit = edge wobble */
@@ -6296,29 +6287,8 @@
           r = rng(31);
         /* a built canal: an even course of carved curb blocks with a bevelled lip, the inner wall face down to the water,
            rune posts at intervals, and only a little moss in the joints */
-        const L = pts.findIndex((p) => p.drop),
-          N = L > 0 ? L - 1 : pts.length - 1, /* the curb ends at the platform's lip */
-          canal = pts.slice(0, N + 1),
-          low = L > 0 ? pts.slice(N) : [];
-        /* below the wall: a natural little stream on the grass, running off toward the island's edge */
-        if (low.length > 1) {
-          g.fillStyle = "#3f7a34";
-          bank(g, low, 4, 4, r);
-          g.fill();
-          g.fillStyle = "#5aa7a6";
-          bank(g, low, -1, 2, r);
-          g.fill();
-          for (let i = 1; i < low.length; i += 2)
-            for (const sd of [-1, 1]) {
-              if (r() < 0.5) continue;
-              const p = low[i],
-                d = (p.w + 4 + r() * 4) * sd;
-              g.fillStyle = r() < 0.5 ? "#8f8a80" : "#a59f92";
-              g.beginPath();
-              g.ellipse(p.x + p.nx * d, p.y + p.ny * d, 2.5 + r() * 3, 1.8 + r() * 1.5, r(), 0, 6.3);
-              g.fill();
-            }
-        }
+        const N = pts.length - 1,
+          canal = pts,
           off = (p, d) => [p.x + p.nx * d, p.y + p.ny * d],
           quad = (p, q, d0, d1, sd) => {
             g.beginPath();
@@ -6373,25 +6343,7 @@
         g.fillStyle = "rgba(40,110,112,.2)";
         bank(g, canal.map((p) => ({ ...p, w: p.w * 0.4 })), 0, 0);
         g.fill();
-        /* the drop over the side wall: a sheet of water from the lip to the grass */
-        if (low.length > 1) {
-          const p = low[0],
-            q = low[1],
-            hw = p.w - 3,
-            sh = g.createLinearGradient(0, p.y, 0, q.y);
-          sh.addColorStop(0, "#5aa7a6");
-          sh.addColorStop(1, "#c9eeea");
-          g.fillStyle = sh;
-          g.beginPath();
-          g.moveTo(p.x - hw, p.y);
-          g.lineTo(p.x + hw, p.y);
-          g.lineTo(q.x + hw + 2, q.y);
-          g.lineTo(q.x - hw - 2, q.y);
-          g.closePath();
-          g.fill();
-          g.fillStyle = "#e9d6ae"; /* the lip */
-          g.fillRect(p.x - hw - 4, p.y - 2, hw * 2 + 8, 3);
-        }
+        sluiceDraw(g, pts);
         /* rune obelisks along both curbs (their crystals glow in riverDecor) */
         for (const [bx, by] of riverObelisks()) {
           g.fillStyle = "rgba(0,0,0,.25)";
@@ -6458,222 +6410,111 @@
         }
         cisternDraw(g); /* over the brook's start, so the brook pours out of the spout */
       }
-      /* the river's end: it pours off the platform's stone lip, down the side wall, then runs away through the forest off screen.
-         outflowPath(ctx) traces that last stretch on the ground. */
-      /* SPILL: where the stream reaches the island's edge and pours off into the sky */
-      /* spill(): where the stream reaches the island's lower rim, straight below the river's end */
-      const spill = () => {
-        const e = streamPts()[streamPts().length - 1];
-        return { x: e.x, y: edgeLowY(e.x) };
-      };
-      function outflowPath(ctx) {
-        const e = streamPts()[streamPts().length - 1];
-        ctx.beginPath();
-        ctx.moveTo(e.x, e.y + 8);
-        ctx.lineTo(e.x, spill().y + 4);
-      }
-      /* FALL_SPLIT: shares of the water for the three falls, left to right. GAP = stone between two falls.
-         fallSplit(cx, hw, feed): the three falls across the stream's width (centre cx, half width hw). */
-      const FALL_SPLIT = [0.2, 0.5, 0.3],
-        FALL_GAP = 4;
-      function fallSplit(cx, hw, feed) {
-        const total = hw * 2 - FALL_GAP * (FALL_SPLIT.length - 1);
-        let x = cx - hw;
-        return FALL_SPLIT.map((sh) => {
-          const w = (total * sh) / 2,
-            F = { x: x + w, w, feed, lanes: sh >= 0.4 ? [-0.45, 0.45] : [0] };
-          x += w * 2 + FALL_GAP;
-          return F;
-        });
-      }
-      /* outflowGround(g): the stream on the forest floor. Painted before the platform so it starts hidden under the side wall
-         and comes out at the wall's foot, the same width as the river. */
-      function outflowGround(g) {
-        const e = streamPts()[streamPts().length - 1];
-        outflowPath(g);
-        g.strokeStyle = "#5d8a4a";
-        g.lineWidth = e.w * 2 + 6;
-        g.stroke();
-        outflowPath(g);
-        g.strokeStyle = "#5aa7a6";
-        g.lineWidth = e.w * 2 - 2;
-        g.stroke();
-      }
-            /* rimY(x): y of the platform's front rim at x (where the top surface ends and the side wall begins) */
-      function rimY(x) {
-        const k = (x - PLAT.x) / PLAT.rx;
-        return PLAT.y + PLAT.ry * Math.sqrt(Math.max(0, 1 - k * k));
-      }
-      function riverEnd(t) {
-        const e = streamPts()[streamPts().length - 1],
-          bot = spill().y + 2,
-          hw = e.w - 1;
-        /* plain water from inside the river's end, over the last bit of stone up to the rim (the rim is lower on the left),
-           down the wall and into the ground stream, so no part of the river is missing */
-        c.fillStyle = "#5aa7a6";
-        c.fillRect(e.x - hw, e.y - 10, hw * 2, bot - e.y + 10);
-        /* the falling-water look only on the side wall: between the rim and the wall's bottom edge */
-        c.save();
-        c.beginPath();
-        c.ellipse(PLAT.x, PLAT.y + 18, PLAT.rx, PLAT.ry, 0, 0, 6.3);
-        c.ellipse(PLAT.x, PLAT.y, PLAT.rx, PLAT.ry, 0, 0, 6.3);
-        c.clip("evenodd");
-        /* and only where the water actually is (the rim rises steeply on the right, above the water) */
-        c.beginPath();
-        c.rect(e.x - hw, e.y - 10, hw * 2, bot - e.y + 10);
-        c.clip();
-        const ft = rimY(e.x + hw) - 2,
-          sh = c.createLinearGradient(0, ft, 0, ft + 22);
-        sh.addColorStop(0, "#6fb6b3");
-        sh.addColorStop(1, "#a9dcd8");
-        c.fillStyle = sh;
-        c.fillRect(e.x - hw, ft - 20, hw * 2, 50);
-        c.globalCompositeOperation = "lighter";
-        for (let k = 0; k < 6; k++) {
-          const sx = e.x - hw + (k + 0.5) * ((hw * 2) / 6),
-            r0 = rimY(sx),
-            len = 7,
-            span = 18,
-            head = r0 - len + ((t * 40 + k * 7) % (span + len)),
-            gr = c.createLinearGradient(0, head, 0, head + len);
-          gr.addColorStop(0, "rgba(255,255,255,0)");
-          gr.addColorStop(1, "rgba(235,255,255,.6)");
-          c.fillStyle = gr;
-          c.fillRect(sx - 1, head, 2, len);
+      /* sluiceDraw(g, pts): the Rune Sluice where the canal ends: the water darkens as it drains under the plaza through
+         a carved stone frame (two posts and a lintel) with glowing bars across the channel. Static; the churn is in sluiceFx. */
+      function sluiceDraw(g, pts) {
+        const n = pts.length,
+          e = pts[n - 1],
+          b = pts[n - 4],
+          hw = e.w + 9;
+        /* the water darkening into the drain */
+        const dg = g.createLinearGradient(b.x, b.y, e.x, e.y);
+        dg.addColorStop(0, "rgba(20,50,55,0)");
+        dg.addColorStop(1, "rgba(20,50,55,.85)");
+        g.fillStyle = dg;
+        bank(g, pts.slice(n - 5), -3, 0);
+        g.fill();
+        /* the end wall of the channel */
+        const ox = e.ny,
+          oy = -e.nx; /* along the flow */
+        g.fillStyle = "#cdb48a";
+        g.beginPath();
+        g.moveTo(e.x + e.nx * hw, e.y + e.ny * hw);
+        g.lineTo(e.x - e.nx * hw, e.y - e.ny * hw);
+        g.lineTo(e.x - e.nx * hw + ox * 6, e.y - e.ny * hw + oy * 6);
+        g.lineTo(e.x + e.nx * hw + ox * 6, e.y + e.ny * hw + oy * 6);
+        g.closePath();
+        g.fill();
+        /* glowing bars across the channel */
+        const gx = b.x * 0.4 + e.x * 0.6,
+          gy = b.y * 0.4 + e.y * 0.6;
+        for (let k = -3; k <= 3; k++) {
+          const px = gx + e.nx * k * (e.w / 3.6),
+            py = gy + e.ny * k * (e.w / 3.6);
+          g.strokeStyle = "#5e5444";
+          g.lineWidth = 2.4;
+          g.beginPath();
+          g.moveTo(px - ox * 4, py - oy * 4);
+          g.lineTo(px + ox * 4, py + oy * 4);
+          g.stroke();
+          g.strokeStyle = "rgba(110,240,220,.85)";
+          g.lineWidth = 0.9;
+          g.beginPath();
+          g.moveTo(px - ox * 3, py - oy * 3);
+          g.lineTo(px + ox * 3, py + oy * 3);
+          g.stroke();
         }
-        c.restore();
-        /* the river's current lines keep going along the ground stream to the island's edge */
-        c.save();
-        c.globalCompositeOperation = "lighter";
-        c.lineCap = "round";
-        c.setLineDash([10, 16]);
-        c.lineDashOffset = -t * 50;
-        c.strokeStyle = "rgba(210,250,255,.4)";
-        c.lineWidth = 1.6;
-        outflowPath(c);
-        c.stroke();
-        c.restore();
-        /* off the edge: the river falls straight down off the island in a long ribbon, with two thin falls beside it
-           (split by two rim stones). Each ribbon fades into mist above the clouds. */
-        const SP = spill(),
-          fb = H + 30,
-          FALLS = [
-            ...fallSplit(SP.x, e.w - 1, SP.y + 4 - (e.y + 8)),
-          ];
-        c.save();
-        skyClip(c);
-        c.clip();
-        /* each fall is a ribbon with rippling edges that widens, wavers and breaks up into strands as it drops,
-           then dissolves into mist. ribbon() traces one strand between two rippling edges. */
-        const ribbon = (cx, y0, y1, w0, w1, seed, drift) => {
-          const N = 18;
-          c.beginPath();
-          for (let i = 0; i <= N; i++) {
-            const p = i / N,
-              y = y0 + (y1 - y0) * p,
-              w = w0 + (w1 - w0) * p,
-              x = cx + drift * p * p + Math.sin(y * 0.07 - t * 2.2 + seed) * (0.8 + p * 3);
-            i ? c.lineTo(x - w, y) : c.moveTo(x - w, y);
-          }
-          for (let i = N; i >= 0; i--) {
-            const p = i / N,
-              y = y0 + (y1 - y0) * p,
-              w = w0 + (w1 - w0) * p,
-              x = cx + drift * p * p + Math.sin(y * 0.07 - t * 2.2 + seed) * (0.8 + p * 3) + Math.sin(y * 0.11 + t * 1.7 + seed * 2) * (0.6 + p * 2);
-            c.lineTo(x + w, y);
-          }
-          c.closePath();
+        /* frame: two posts on the curbs and a carved lintel spanning the channel, a rune at its centre */
+        const post = (sd) => {
+          const px = gx + e.nx * (e.w + 5) * sd,
+            py = gy + e.ny * (e.w + 5) * sd;
+          g.fillStyle = "#8c7556";
+          g.fillRect(px - 4, py - 22, 8, 23);
+          g.fillStyle = "#d9c49c";
+          g.fillRect(px - 4, py - 22, 3, 23);
+          return [px, py];
         };
-        FALLS.forEach((F, n) => {
-          const fy = edgeLowY(F.x) - 2,
-            len = (F.w > 6 ? 0.95 : 0.7) * (fb - fy),
-            fall = c.createLinearGradient(0, fy, 0, fy + len);
-          fall.addColorStop(0, "rgba(110,190,190,.95)");
-          fall.addColorStop(0.45, "rgba(170,225,228,.75)");
-          fall.addColorStop(1, "rgba(235,245,250,0)");
-          c.fillStyle = fall;
-          /* solid upper part, then 2-3 strands peeling apart lower down */
-          ribbon(F.x, fy, fy + len * 0.55, F.w, F.w * 1.1, n * 3, 0);
-          c.fill();
-          const strands = F.w > 6 ? [[-0.55, 0], [0, 0], [0.55, 0]] : [[-0.35, 0], [0.4, 0]] /* straight down, no sideways drift */;
-          for (const [o, drift] of strands) ribbon(F.x + o * F.w, fy + len * 0.45, fy + len, F.w * 0.42, F.w * 0.28, n * 3 + o * 5, drift);
-          c.fill();
-          /* mist where the strands dissolve */
-          c.save();
-          c.globalCompositeOperation = "lighter";
-          for (let k = 0; k < 3; k++) {
-            const p = (t * 0.25 + k / 3 + n * 0.2) % 1,
-              my = fy + len * (0.7 + p * 0.3),
-              mr = F.w * (2 + p * 2.5),
-              mg = c.createRadialGradient(F.x, my, 1, F.x, my, mr);
-            mg.addColorStop(0, `rgba(240,250,255,${0.22 * (1 - p)})`);
-            mg.addColorStop(1, "rgba(240,250,255,0)");
-            c.fillStyle = mg;
-            c.fillRect(F.x - mr, my - mr, mr * 2, mr * 2);
-          }
-          /* droplets flicking off the edges */
-          for (let k = 0; k < (F.w > 6 ? 8 : 3); k++) {
-            const p = (t * 0.9 + k / 8 + n * 0.13) % 1,
-              side = k % 2 ? 1 : -1,
-              dx = F.x + side * (F.w * 1.1 + p * 10 + (k % 3) * 2),
-              dy = fy + 6 + p * len * 0.6;
-            c.fillStyle = `rgba(225,250,255,${0.7 * (1 - p)})`;
-            c.beginPath();
-            c.arc(dx, dy, 1.2, 0, 6.3);
-            c.fill();
-          }
-          c.restore();
-        });
-        c.globalCompositeOperation = "lighter";
-        /* current lines continue straight down each fall: same dash pattern and speed as the streams above,
-           offset by the feeding stream's length so the dashes run on without a jump */
-        c.lineCap = "round";
-        c.strokeStyle = "rgba(225,252,255,.5)";
-        for (const F of FALLS) {
-          const fy = edgeLowY(F.x);
-          c.lineWidth = F.w > 6 ? 1.6 : 1;
-          c.setLineDash(F.w > 6 ? [10, 16] : [5, 9]);
-          c.lineDashOffset = -t * 50 + F.feed;
-          for (const o of F.lanes) {
-            c.beginPath();
-            c.moveTo(F.x + o * F.w, fy - 1);
-            c.lineTo(F.x + o * F.w * 1.2, fb);
-            c.stroke();
-          }
-        }
-        c.setLineDash([]);
-        c.restore();
-        /* the two rim stones that split the water */
-        for (let i = 0; i < FALLS.length - 1; i++) {
-          const gx = (FALLS[i].x + FALLS[i].w + FALLS[i + 1].x - FALLS[i + 1].w) / 2,
-            gy = edgeLowY(gx);
-          c.fillStyle = "#6b5f52";
-          c.beginPath();
-          c.ellipse(gx, gy + 1, 4.5, 4, 0, 0, 6.3);
-          c.fill();
-          c.fillStyle = "#8a7d6c";
-          c.beginPath();
-          c.ellipse(gx - 1, gy - 1, 3, 2.4, 0, 0, 6.3);
-          c.fill();
-        }
-        /* spray where each one tips over the lip (smaller for the thin falls) */
+        const [ax, ay] = post(-1),
+          [cx, cy] = post(1);
+        g.strokeStyle = "#a08a64";
+        g.lineWidth = 7;
+        g.lineCap = "butt";
+        g.beginPath();
+        g.moveTo(ax - 3, ay - 24);
+        g.lineTo(cx + 3, cy - 24);
+        g.stroke();
+        g.strokeStyle = "#e9d6ae";
+        g.lineWidth = 2;
+        g.beginPath();
+        g.moveTo(ax - 3, ay - 27);
+        g.lineTo(cx + 3, cy - 27);
+        g.stroke();
+        g.fillStyle = "rgba(110,240,220,.95)";
+        g.font = "bold 8px " + RUNE_FONT;
+        g.textAlign = "center";
+        g.textBaseline = "middle";
+        g.fillText("ᛚ", (ax + cx) / 2, (ay + cy) / 2 - 24);
+        g.fillStyle = "#5c9e45";
+        g.beginPath();
+        g.ellipse(ax - 2, ay - 27.5, 3.5, 1.3, 0, 0, 6.3);
+        g.fill();
+      }
+      /* sluiceFx(t): small swirls churning where the water slips under the bars, and the bars' glow breathing */
+      function sluiceFx(t) {
+        const pts = streamPts(),
+          n = pts.length,
+          e = pts[n - 1],
+          b = pts[n - 4],
+          gx = b.x * 0.4 + e.x * 0.6,
+          gy = b.y * 0.4 + e.y * 0.6;
         c.save();
         c.globalCompositeOperation = "lighter";
-        for (const F of FALLS) {
-          const fy = edgeLowY(F.x),
-            big = F.w > 6 ? 1 : 0.45;
-          for (let k = 0; k < 4; k++) {
-            const p = (t * 0.5 + k / 4 + F.x * 0.01) % 1,
-              mr = (8 + p * 14) * big,
-              mx = F.x + (k - 1.5) * 6 * big,
-              my = fy + 6 + p * 10,
-              mg = c.createRadialGradient(mx, my, 1, mx, my, mr);
-            mg.addColorStop(0, `rgba(235,250,255,${0.32 * (1 - p)})`);
-            mg.addColorStop(1, "rgba(235,250,255,0)");
-            c.fillStyle = mg;
-            c.fillRect(mx - mr, my - mr, mr * 2, mr * 2);
-          }
+        for (let i = 0; i < 6; i++) {
+          const ph = (t * 0.9 + i / 6) % 1,
+            k = (i / 5 - 0.5) * 1.6,
+            px = gx - e.ny * 10 * (1 - ph) + e.nx * k * e.w * 0.6,
+            py = gy + e.nx * 10 * (1 - ph) + e.ny * k * e.w * 0.6;
+          c.strokeStyle = `rgba(220,255,255,${0.45 * Math.sin(ph * Math.PI)})`;
+          c.lineWidth = 1;
+          c.beginPath();
+          c.arc(px, py, 1.5 + ph * 2.5, t * 3 + i, t * 3 + i + 3.5);
+          c.stroke();
         }
+        const gl = c.createRadialGradient(gx, gy - 6, 2, gx, gy - 6, 26);
+        gl.addColorStop(0, `rgba(110,240,220,${0.16 + 0.08 * Math.sin(t * 2)})`);
+        gl.addColorStop(1, "rgba(110,240,220,0)");
+        c.fillStyle = gl;
+        c.fillRect(gx - 26, gy - 32, 52, 52);
         c.restore();
       }
       /* streamFlow(t): current lines, bubbles, shimmer and petals drifting downstream */
@@ -6691,8 +6532,7 @@
       function riverObelisks() {
         if (OBELISKS) return OBELISKS;
         const pts = streamPts(),
-          L = pts.findIndex((p) => p.drop),
-          N = L > 0 ? L - 1 : pts.length - 1;
+          N = pts.length - 1;
         OBELISKS = [];
         for (let i = 8; i < N - 3; i += 11)
           for (const sd of [-1, 1]) {
@@ -6743,33 +6583,6 @@
           c.fillStyle = "rgba(110,240,220,.7)";
           c.fillRect(sx - 0.5, sy - 0.5, 1, 1.5);
         }
-      }
-      /* wallSpill(t): the canal pouring over the platform's lip: streaks sliding down the short drop, foam where it lands */
-      function wallSpill(t) {
-        const pts = streamPts(),
-          L = pts.findIndex((p) => p.drop);
-        if (L < 1) return;
-        const p = pts[L - 1],
-          q = pts[L],
-          hw = p.w - 3;
-        c.save();
-        c.globalCompositeOperation = "lighter";
-        for (let i = 0; i < 6; i++) {
-          const lx = p.x - hw + ((i + 0.5) / 6) * hw * 2,
-            ph = (t * 1.8 + i * 0.37) % 1,
-            yy = p.y + ph * (q.y - p.y);
-          c.fillStyle = `rgba(235,255,255,${0.55 * (1 - ph)})`;
-          c.fillRect(lx - 0.8, yy - 3, 1.6, 6);
-        }
-        for (let i = 0; i < 7; i++) {
-          const ph = (t * 1.3 + i / 7) % 1,
-            fx = q.x + ((i / 6) - 0.5) * hw * 2.2 + Math.sin(t * 3 + i) * 1.5;
-          c.fillStyle = `rgba(245,255,255,${0.5 * (1 - ph)})`;
-          c.beginPath();
-          c.arc(fx, q.y - ph * 5, 2 + ph * 3.5, 0, 6.3);
-          c.fill();
-        }
-        c.restore();
       }
       function streamFlow(t) {
         const pts = streamPts(),
@@ -7146,7 +6959,7 @@
         /* rune ring glow pulse, kept off the canal (the ring runs under it) */
         c.save();
         {
-          const cp = streamPts().filter((p) => !p.drop),
+          const cp = streamPts(),
             gw = (p) => p.w + 10;
           c.beginPath();
           c.rect(-60, -60, W + 120, H + 120);
@@ -7177,10 +6990,9 @@
         c.globalCompositeOperation = "source-over";
         c.restore(); /* end of the canal clip */
         streamFlow(t);
-        wallSpill(t);
+        sluiceFx(t);
         riverDecor(t);
         rimFlames(t);
-        riverEnd(t);
         waterfall(t);
         bridges(c, t);
         teleportFx();

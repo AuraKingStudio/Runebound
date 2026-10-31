@@ -115,7 +115,7 @@ T.shopPay('r_void');ok(!T.cosV().own.r_void,'cosmetics: paid items are not grant
 ok(T.COS.filter(i=>i.eur).every(i=>i.eur>=1&&i.eur<=2),'cosmetics: paid items cost 1-2 EUR');
 /* ---------- hub layout: crossing, canal, cistern, statue ---------- */
 const q=T.crossFrame().q;ok(Math.hypot(q.x-T.PORTAL.x,q.y-T.PORTAL.y)<10,'hub: the Rune Crossing sits at the centre');
-const ws=T.streamPts().filter(p=>!p.drop).map(p=>p.w);ok(Math.max(...ws)-Math.min(...ws)<1,'hub: the canal is an even width');
+const ws=T.streamPts().map(p=>p.w);ok(Math.max(...ws)-Math.min(...ws)<1,'hub: the canal is an even width');
 const pp={x:T.WF.px,y:T.WF.py,hp:1};T.clampW(pp);ok(Math.hypot(pp.x-T.WF.px,pp.y-T.WF.py)>T.WF.pry,'hub: the cistern is solid');
 const sp={x:T.STATUE.x,y:T.STATUE.y-6};T.clampW(sp);ok(Math.hypot(sp.x-T.STATUE.x,sp.y-T.STATUE.y)>8,'hub: the statue is solid');
 ok(T.EDGE.length>100&&T.inIsle(450,350,0)&&!T.inIsle(5,5,0),'hub: the island is round, the corners are sky');
