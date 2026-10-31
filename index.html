@@ -3774,6 +3774,10 @@
         c.ellipse(PLAT.x, PLAT.y + 18, PLAT.rx, PLAT.ry, 0, 0, 6.3);
         c.ellipse(PLAT.x, PLAT.y, PLAT.rx, PLAT.ry, 0, 0, 6.3);
         c.clip("evenodd");
+        /* and only where the water actually is (the rim rises steeply on the right, above the water) */
+        c.beginPath();
+        c.rect(e.x - hw, e.y - 10, hw * 2, bot - e.y + 10);
+        c.clip();
         const ft = rimY(e.x + hw) - 2,
           sh = c.createLinearGradient(0, ft, 0, ft + 22);
         sh.addColorStop(0, "#6fb6b3");
