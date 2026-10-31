@@ -3355,7 +3355,7 @@
         for (let i = 0; i < 140; i++) {
           const tx = r() * (W + 80) - 40,
             ty = r() * (H + 80) - 40;
-          if (out(tx, ty, 1.18) && ty > edgeY(tx) + 24) trees.push([tx, ty, 26 + r() * 22]);
+          if (out(tx, ty, 1.18) && inIsle(tx, ty, 28)) trees.push([tx, ty, 26 + r() * 22]);
         }
         trees.sort((p, q) => p[1] - q[1]);
         for (const [tx, ty, tr] of trees) {
@@ -3421,21 +3421,38 @@
         const k = (x - ISLE.x) / ISLE.rx;
         return ISLE.y - ISLE.ry * Math.sqrt(Math.max(0, 1 - k * k));
       }
+      /* edgeLowY(x): y of the island's rim on its lower-right curve */
+      const edgeLowY = (x) => {
+        const k = (x - ISLE.x) / ISLE.rx;
+        return ISLE.y + ISLE.ry * Math.sqrt(Math.max(0, 1 - k * k));
+      };
+      /* inIsle(x, y, m): true if (x, y) is on the island at least m pixels from its edge */
+      const inIsle = (x, y, m) =>
+        x < ISLE.x ? y > edgeY(x) + m : ((x - ISLE.x) / (ISLE.rx - m)) ** 2 + ((y - ISLE.y) / (ISLE.ry - m)) ** 2 < 1 || (y > ISLE.y && x < ISLE.x + 1);
       const EDGE = (() => {
         const r = rng(77),
           pts = [];
-        for (let i = 0; i <= 52; i++) {
-          const ex = -20 + (i / 52) * 950;
+        for (let i = 0; i <= 50; i++) {
+          const ex = -20 + (i / 50) * (ISLE.x + ISLE.rx + 20);
           pts.push([ex + (r() - 0.5) * 6, edgeY(ex) + (r() - 0.5) * 8]);
+        }
+        /* round the right side and back along the bottom-right */
+        for (let i = 1; i <= 24; i++) {
+          const a = (i / 24) * 1.25,
+            ex = ISLE.x + ISLE.rx * Math.cos(a),
+            ey = ISLE.y + ISLE.ry * Math.sin(a);
+          pts.push([ex + (r() - 0.5) * 6, ey + (r() - 0.5) * 8]);
         }
         return pts;
       })();
       /* skyClip(ctx): everything beyond the island's edge */
       function skyClip(ctx) {
+        const last = EDGE[EDGE.length - 1];
         ctx.beginPath();
         ctx.moveTo(EDGE[0][0], -30);
         for (const [x, y] of EDGE) ctx.lineTo(x, y);
-        ctx.lineTo(W + 30, EDGE[EDGE.length - 1][1]);
+        ctx.lineTo(last[0] - 40, H + 40);
+        ctx.lineTo(W + 30, H + 40);
         ctx.lineTo(W + 30, -30);
         ctx.closePath();
       }
@@ -3452,7 +3469,7 @@
         sky.addColorStop(0.45, "#cfe6f2");
         sky.addColorStop(1, "#f7e1c8");
         g.fillStyle = sky;
-        g.fillRect(-30, -30, 970, 360);
+        g.fillRect(-30, -30, 970, H + 60);
         /* a huge pale ringed moon hanging in the sky */
         g.fillStyle = "rgba(255,250,240,.55)";
         g.beginPath();
@@ -3529,8 +3546,8 @@
         sea.addColorStop(0, "#f4ece6");
         sea.addColorStop(1, "#dfe9f2");
         g.fillStyle = sea;
-        g.fillRect(-30, horizonY(-30) + 14, 970, 340);
-        for (let row = 0; row < 9; row++) {
+        g.fillRect(-30, horizonY(-30) + 14, 970, H + 40);
+        for (let row = 0; row < 16; row++) {
           const cy = horizonY(660) + 18 + row * row * 3.6 + row * 6,
             sz = 6 + row * 4;
           for (let x = -30 + (row % 2) * sz; x < 960; x += sz * 1.6) {
@@ -3543,6 +3560,30 @@
             g.beginPath();
             g.ellipse(x, cy + cr * 0.15, cr * 1.4, cr * 0.25, 0, 0, Math.PI);
             g.fill();
+          }
+        }
+        /* the island's rocky underside, visible below its lower-right rim, tapering away */
+        const low = EDGE.slice(51);
+        if (low.length) {
+          const ug = g.createLinearGradient(0, 380, 0, H + 40);
+          ug.addColorStop(0, "#7a6652");
+          ug.addColorStop(1, "#4a3e33");
+          g.fillStyle = ug;
+          g.beginPath();
+          g.moveTo(low[0][0], low[0][1]);
+          for (const [x, y] of low) g.lineTo(x, y);
+          for (let i = low.length - 1; i >= 0; i--) {
+            const [x, y] = low[i];
+            g.lineTo(x - 18 - i * 1.5, y + 46 + Math.sin(i * 1.7) * 10);
+          }
+          g.closePath();
+          g.fill();
+          g.strokeStyle = "rgba(255,240,220,.18)";
+          g.lineWidth = 1.2;
+          for (let band = 1; band <= 3; band++) {
+            g.beginPath();
+            low.forEach(([x, y], i) => (i ? g.lineTo(x - band * 5, y + band * 11) : g.moveTo(x - band * 5, y + band * 11)));
+            g.stroke();
           }
         }
         /* soft shadow of the island falling into the void near its edge */
@@ -3991,12 +4032,16 @@
       /* the river's end: it pours off the platform's stone lip, down the side wall, then runs away through the forest off screen.
          outflowPath(ctx) traces that last stretch on the ground. */
       /* SPILL: where the stream reaches the island's edge and pours off into the sky */
-      const SPILL = { x: 884, y: 268 };
+      /* spill(): where the stream reaches the island's lower rim, straight below the river's end */
+      const spill = () => {
+        const e = streamPts()[streamPts().length - 1];
+        return { x: e.x, y: edgeLowY(e.x) };
+      };
       function outflowPath(ctx) {
         const e = streamPts()[streamPts().length - 1];
         ctx.beginPath();
         ctx.moveTo(e.x, e.y + 8);
-        ctx.quadraticCurveTo(e.x + 64, e.y + 10, SPILL.x, SPILL.y);
+        ctx.lineTo(e.x, spill().y + 4);
       }
       /* outflowGround(g): the stream on the forest floor. Painted before the platform so it starts hidden under the side wall
          and comes out at the wall's foot, the same width as the river. */
@@ -4066,42 +4111,50 @@
         outflowPath(c);
         c.stroke();
         c.restore();
-        /* off the edge: a ribbon of water falls away into the sky, thinning into mist, with spray rising at the lip */
+        /* off the edge: the stream falls straight down off the island in a long ribbon, fading into mist above the clouds */
+        const SP = spill(),
+          fw = e.w - 1,
+          fb = H + 30;
         c.save();
         skyClip(c);
         c.clip();
-        const fall = c.createLinearGradient(SPILL.x, SPILL.y, SPILL.x + 40, SPILL.y - 70);
-        fall.addColorStop(0, "rgba(140,205,205,.9)");
-        fall.addColorStop(1, "rgba(230,245,250,0)");
+        const fall = c.createLinearGradient(0, SP.y, 0, fb);
+        fall.addColorStop(0, "rgba(110,190,190,.95)");
+        fall.addColorStop(0.5, "rgba(170,225,228,.7)");
+        fall.addColorStop(1, "rgba(235,245,250,0)");
         c.fillStyle = fall;
         c.beginPath();
-        c.moveTo(SPILL.x - 14, SPILL.y + 4);
-        c.quadraticCurveTo(SPILL.x + 10, SPILL.y - 30, SPILL.x + 30, SPILL.y - 80);
-        c.lineTo(SPILL.x + 52, SPILL.y - 76);
-        c.quadraticCurveTo(SPILL.x + 26, SPILL.y - 26, SPILL.x + 14, SPILL.y + 4);
+        c.moveTo(SP.x - fw, SP.y - 2);
+        c.lineTo(SP.x + fw, SP.y - 2);
+        c.lineTo(SP.x + fw * 1.25, fb);
+        c.lineTo(SP.x - fw * 1.25, fb);
         c.closePath();
         c.fill();
         c.globalCompositeOperation = "lighter";
-        for (let k = 0; k < 6; k++) {
-          const p = (t * 0.7 + k / 6) % 1,
-            sx = SPILL.x - 8 + k * 3 + p * 30,
-            sy = SPILL.y - p * 76;
-          c.fillStyle = `rgba(235,255,255,${0.55 * (1 - p)})`;
-          c.beginPath();
-          c.ellipse(sx, sy, 1.5, 4, 0.4, 0, 6.3);
-          c.fill();
+        for (let k = 0; k < 7; k++) {
+          const lx = SP.x - fw + (k + 0.5) * ((fw * 2) / 7),
+            len = 14,
+            head = SP.y - len + ((t * 70 + k * 23) % (fb - SP.y + len)),
+            gr = c.createLinearGradient(0, head, 0, head + len);
+          gr.addColorStop(0, "rgba(255,255,255,0)");
+          gr.addColorStop(1, "rgba(235,255,255,.55)");
+          c.fillStyle = gr;
+          c.fillRect(lx - 1, head, 2, len);
         }
         c.restore();
+        /* spray where it tips over the lip */
         c.save();
         c.globalCompositeOperation = "lighter";
         for (let k = 0; k < 4; k++) {
           const p = (t * 0.5 + k / 4) % 1,
-            mr = 8 + p * 16,
-            mg = c.createRadialGradient(SPILL.x + p * 10, SPILL.y - p * 18, 1, SPILL.x + p * 10, SPILL.y - p * 18, mr);
-          mg.addColorStop(0, `rgba(235,250,255,${0.35 * (1 - p)})`);
+            mr = 8 + p * 14,
+            mx = SP.x + (k - 1.5) * 6,
+            my = SP.y + 6 + p * 10,
+            mg = c.createRadialGradient(mx, my, 1, mx, my, mr);
+          mg.addColorStop(0, `rgba(235,250,255,${0.32 * (1 - p)})`);
           mg.addColorStop(1, "rgba(235,250,255,0)");
           c.fillStyle = mg;
-          c.fillRect(SPILL.x + p * 10 - mr, SPILL.y - p * 18 - mr, mr * 2, mr * 2);
+          c.fillRect(mx - mr, my - mr, mr * 2, mr * 2);
         }
         c.restore();
       }
