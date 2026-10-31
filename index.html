@@ -6593,108 +6593,150 @@
         }
         cisternDraw(g); /* over the brook's start, so the brook pours out of the spout */
       }
-      /* the water portal at the canal's end: an upright carved stone ring standing across the channel at the disc's edge.
-         The water runs into its swirling light and dark blue vortex and is carried back up to the island the sky fall pours from.
-         portalFrame(): ring centre (x, y), radius R, and the across-the-channel direction (ux, uy) of the last river point. */
-      function portalFrame() {
+      /* the Water Gate at the canal's end: a carved stone arch standing across the channel at the disc's edge.
+         Water flowing under it is teleported away (back up to the island the sky fall pours from): it breaks into
+         glowing motes that stream upward through a shimmering veil. gateFrame(): base centre, half span and height. */
+      function gateFrame() {
         const pts = streamPts(),
-          e = pts[pts.length - 1],
-          R = e.w + 11;
-        return { e, R, x: e.x, y: e.y - R * 0.95, ux: e.nx, uy: e.ny };
+          e = pts[pts.length - 2];
+        return { e, x: e.x, y: e.y, hw: e.w + 7, H: 40, ux: e.nx, uy: e.ny };
       }
-      /* ringPt(F, a, k): a point on the upright ring at angle a (0 = one side of the channel, PI/2 = top), k = radius scale */
-      const ringPt = (F, a, k) => [F.x + F.ux * F.R * k * Math.cos(a), F.y + F.uy * F.R * k * Math.cos(a) - F.R * k * Math.sin(a)];
+      /* sluiceDraw(g, pts): static parts - the water brightening toward the gate, and the pillar bases on the curbs */
       function sluiceDraw(g, pts) {
-        const F = portalFrame(),
-          { e } = F;
-        /* the water brightening as it nears the portal */
-        const n = pts.length,
-          b = pts[n - 5],
-          lg = g.createLinearGradient(b.x, b.y, e.x, e.y);
-        lg.addColorStop(0, "rgba(140,210,255,0)");
-        lg.addColorStop(1, "rgba(140,210,255,.55)");
+        const G = gateFrame(),
+          n = pts.length,
+          b = pts[n - 6],
+          lg = g.createLinearGradient(b.x, b.y, G.x, G.y);
+        lg.addColorStop(0, "rgba(150,215,255,0)");
+        lg.addColorStop(1, "rgba(170,225,255,.7)");
         g.fillStyle = lg;
-        bank(g, pts.slice(n - 6), -3, 0);
+        bank(g, pts.slice(n - 7), -3, 0);
         g.fill();
-        /* stone feet where the ring stands on the curbs */
-        for (const sd of [-1, 1]) {
-          const [fx, fy] = ringPt(F, sd < 0 ? Math.PI : 0, 1.05);
-          g.fillStyle = "#8c7556";
-          g.fillRect(fx - 6, fy - 2, 12, 6);
-          g.fillStyle = "#e2cba0";
-          g.fillRect(fx - 6, fy - 4, 12, 3);
-        }
       }
-      /* sluiceFx(t): the portal itself, drawn every frame: back half of the ring, the vortex, then the front half */
+      /* sluiceFx(t): the gate drawn every frame - veil, motes, then the arch over them */
       function sluiceFx(t) {
-        const F = portalFrame(),
-          ring = (a0, a1, k, col, w) => {
-            c.strokeStyle = col;
-            c.lineWidth = w;
-            c.beginPath();
-            for (let s2 = 0; s2 <= 24; s2++) {
-              const [px, py] = ringPt(F, a0 + ((a1 - a0) * s2) / 24, k);
-              s2 ? c.lineTo(px, py) : c.moveTo(px, py);
-            }
-            c.stroke();
-          };
+        const G = gateFrame(),
+          L = [G.x - G.ux * G.hw, G.y - G.uy * G.hw],
+          R = [G.x + G.ux * G.hw, G.y + G.uy * G.hw],
+          span = Math.hypot(R[0] - L[0], R[1] - L[1]),
+          top = (u) => [L[0] + (R[0] - L[0]) * u, L[1] + (R[1] - L[1]) * u - G.H - Math.sin(u * Math.PI) * span * 0.3];
         c.save();
-        c.lineCap = "round";
-        /* vortex: a filled disk with arms turning inward, light and dark blue */
+        /* the veil: shimmering light filling the arch */
         c.beginPath();
-        for (let s2 = 0; s2 <= 40; s2++) {
-          const [px, py] = ringPt(F, (s2 / 40) * 6.283, 0.92);
-          s2 ? c.lineTo(px, py) : c.moveTo(px, py);
-        }
+        c.moveTo(...L);
+        for (let k = 0; k <= 20; k++) c.lineTo(...top(k / 20));
+        c.lineTo(...R);
         c.closePath();
-        c.fillStyle = "#1d3f8f";
+        const vg = c.createLinearGradient(0, G.y - G.H - span * 0.3, 0, G.y);
+        vg.addColorStop(0, "rgba(120,190,255,.15)");
+        vg.addColorStop(1, `rgba(170,230,255,${0.5 + 0.12 * Math.sin(t * 3)})`);
+        c.fillStyle = vg;
         c.fill();
         c.save();
         c.clip();
-        for (let arm = 0; arm < 5; arm++) {
-          c.beginPath();
-          for (let k = 0; k <= 26; k++) {
-            const u = k / 26,
-              [px, py] = ringPt(F, t * 2.2 + arm * 1.257 + u * 3.4, 0.9 * (1 - u * 0.9));
-            k ? c.lineTo(px, py) : c.moveTo(px, py);
-          }
-          c.strokeStyle = arm % 2 ? "#a9e2ff" : "#4f9dff";
-          c.lineWidth = 3;
-          c.stroke();
-        }
-        const glow = c.createRadialGradient(F.x, F.y, 1, F.x, F.y, F.R * 0.6);
-        glow.addColorStop(0, `rgba(230,245,255,${0.85 + 0.15 * Math.sin(t * 3)})`);
-        glow.addColorStop(1, "rgba(120,190,255,0)");
-        c.fillStyle = glow;
-        c.fillRect(F.x - F.R, F.y - F.R, F.R * 2, F.R * 2);
-        c.restore();
-        /* the stone ring: thick carved band, lit edge, runes glowing round it */
-        ring(0, 6.3, 1, "#8c7556", 7);
-        ring(0, 6.3, 1, "#cdb48a", 5);
-        ring(Math.PI * 0.35, Math.PI * 1.1, 1.04, "#efdcb5", 1.4);
-        c.fillStyle = `rgba(140,210,255,${0.75 + 0.25 * Math.sin(t * 2)})`;
-        c.font = "bold 6px " + RUNE_FONT;
-        c.textAlign = "center";
-        c.textBaseline = "middle";
-        for (let k = 0; k < 8; k++) {
-          const [px, py] = ringPt(F, (k / 8) * 6.283 + 0.2, 1);
-          c.fillText(RUNES_HUB[k * 2 + 3], px, py);
-        }
-        /* motes of water lifted up out of the portal, back toward the sky */
         c.globalCompositeOperation = "lighter";
-        for (let k = 0; k < 8; k++) {
-          const ph = (t * 0.6 + k / 8) % 1,
-            [px, py] = ringPt(F, k * 0.8 + t, 0.4);
-          c.fillStyle = `rgba(170,225,255,${0.8 * Math.sin(ph * Math.PI)})`;
+        for (let k = 0; k < 9; k++) {
+          const u = (k + 0.5) / 9,
+            bx = L[0] + (R[0] - L[0]) * u,
+            by = L[1] + (R[1] - L[1]) * u,
+            ph = (t * 0.8 + k * 0.37) % 1,
+            len = 14;
+          const sg = c.createLinearGradient(0, by - ph * 60 - len, 0, by - ph * 60);
+          sg.addColorStop(0, "rgba(230,248,255,0)");
+          sg.addColorStop(1, "rgba(230,248,255,.6)");
+          c.fillStyle = sg;
+          c.fillRect(bx - 0.8, by - ph * 60 - len, 1.6, len);
+        }
+        c.restore();
+        /* water breaking into motes as it passes the gate, streaming up and away */
+        c.globalCompositeOperation = "lighter";
+        for (let k = 0; k < 22; k++) {
+          const ph = (t * 0.7 + k / 22) % 1,
+            u = (k * 0.618) % 1,
+            bx = L[0] + (R[0] - L[0]) * u,
+            by = L[1] + (R[1] - L[1]) * u;
+          c.fillStyle = `rgba(${k % 3 ? "170,225,255" : "235,250,255"},${0.9 * Math.sin(ph * Math.PI)})`;
           c.beginPath();
-          c.arc(px + Math.sin(t * 2 + k) * 3, py - ph * 40, 1.3, 0, 6.3);
+          c.arc(bx + Math.sin(t * 2 + k) * 3 * ph, by - ph * (50 + (k % 4) * 12), 1.1 + (1 - ph) * 0.8, 0, 6.3);
           c.fill();
         }
-        const aura = c.createRadialGradient(F.x, F.y, F.R * 0.5, F.x, F.y, F.R * 1.8);
-        aura.addColorStop(0, `rgba(110,180,255,${0.18 + 0.06 * Math.sin(t * 2)})`);
-        aura.addColorStop(1, "rgba(110,180,255,0)");
+        /* rings where the water vanishes */
+        for (let k = 0; k < 3; k++) {
+          const ph = (t * 0.9 + k / 3) % 1;
+          c.strokeStyle = `rgba(190,235,255,${0.5 * (1 - ph)})`;
+          c.lineWidth = 1.2;
+          c.beginPath();
+          c.ellipse(G.x, G.y, 4 + ph * G.hw * 0.9, 1.5 + ph * 4, Math.atan2(G.uy, G.ux), 0, 6.3);
+          c.stroke();
+        }
+        const aura = c.createRadialGradient(G.x, G.y - G.H * 0.6, 4, G.x, G.y - G.H * 0.6, G.H * 1.3);
+        aura.addColorStop(0, `rgba(120,190,255,${0.2 + 0.06 * Math.sin(t * 2)})`);
+        aura.addColorStop(1, "rgba(120,190,255,0)");
         c.fillStyle = aura;
-        c.fillRect(F.x - F.R * 2, F.y - F.R * 2, F.R * 4, F.R * 4);
+        c.fillRect(G.x - G.H * 1.4, G.y - G.H * 2, G.H * 2.8, G.H * 2.6);
+        c.globalCompositeOperation = "source-over";
+        /* the arch: two carved pillars on the curbs, a curved band of voussoirs, a keystone with a glowing rune */
+        for (const [px, py] of [L, R]) {
+          c.fillStyle = "rgba(0,0,0,.25)";
+          c.beginPath();
+          c.ellipse(px + 3, py + 2, 8, 3, 0, 0, 6.3);
+          c.fill();
+          c.fillStyle = "#8c7556";
+          c.fillRect(px - 6, py - 2, 12, 5);
+          c.fillStyle = "#b8a07a";
+          c.fillRect(px - 4.5, py - G.H, 9, G.H - 1);
+          c.fillStyle = "#e2cba0";
+          c.fillRect(px - 4.5, py - G.H, 3, G.H - 1);
+          c.fillStyle = "#8c7556";
+          c.fillRect(px + 3, py - G.H, 1.5, G.H - 1);
+          c.fillStyle = "#d3bb90";
+          c.fillRect(px - 6, py - G.H - 3, 12, 4);
+          c.fillStyle = `rgba(140,210,255,${0.7 + 0.3 * Math.sin(t * 2 + px)})`;
+          c.font = "bold 7px " + RUNE_FONT;
+          c.textAlign = "center";
+          c.textBaseline = "middle";
+          c.fillText("ᛗ", px, py - G.H * 0.5);
+        }
+        c.lineCap = "butt";
+        c.strokeStyle = "#8c7556";
+        c.lineWidth = 9;
+        c.beginPath();
+        for (let k = 0; k <= 20; k++) (k ? c.lineTo : c.moveTo).call(c, ...top(k / 20));
+        c.stroke();
+        c.strokeStyle = "#cdb48a";
+        c.lineWidth = 6.5;
+        c.stroke();
+        c.strokeStyle = "rgba(90,70,45,.5)"; /* voussoir joints */
+        c.lineWidth = 0.8;
+        for (let k = 1; k < 9; k++) {
+          const [ax, ay] = top(k / 9),
+            [bx2, by2] = top(k / 9 + 0.01),
+            nx = -(by2 - ay),
+            ny = bx2 - ax,
+            l = Math.hypot(nx, ny) || 1;
+          c.beginPath();
+          c.moveTo(ax - (nx / l) * 4.5, ay - (ny / l) * 4.5);
+          c.lineTo(ax + (nx / l) * 4.5, ay + (ny / l) * 4.5);
+          c.stroke();
+        }
+        const [kx, ky] = top(0.5);
+        c.fillStyle = "#e2cba0";
+        c.fillRect(kx - 5, ky - 6, 10, 11);
+        c.fillStyle = "#b8a07a";
+        c.fillRect(kx + 2, ky - 6, 3, 11);
+        c.fillStyle = `rgba(150,215,255,${0.8 + 0.2 * Math.sin(t * 2.5)})`;
+        c.font = "bold 8px " + RUNE_FONT;
+        c.fillText("ᛚ", kx, ky);
+        c.fillStyle = "#5c9e45"; /* moss and a trailing vine */
+        c.beginPath();
+        c.ellipse(L[0] - 1, L[1] - G.H - 3, 4, 1.4, 0, 0, 6.3);
+        c.fill();
+        c.strokeStyle = "#3f7a34";
+        c.lineWidth = 0.9;
+        c.beginPath();
+        c.moveTo(...top(0.2));
+        c.quadraticCurveTo(top(0.2)[0] + 3, top(0.2)[1] + 10, top(0.2)[0] - 1, top(0.2)[1] + 18);
+        c.stroke();
         c.restore();
       }
       /* streamFlow(t): current lines, bubbles, shimmer and petals drifting downstream */
