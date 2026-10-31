@@ -2211,7 +2211,10 @@
            stroll - a few steps to a nearby spot
          Crossing the river: the route goes over the Rune Crossing (approach on this bank, centre, far bank).
          Near a bank the bot slides along it instead of walking into the water. */
-      const HUB_NPCS = () => [ELDER, SHOP, LORE, CLASSN, MAIDEN, SMITH, HERALD, BARKEEP].filter((n) => n && !npcHidden(n));
+      /* bots have their own progress: the starter NPCs are open to everyone, the others unlock at a level (BOT_NPC_LV).
+         HUB_NPCS(v): the NPCs bot v can visit; without v, every NPC (for keeping clear of them). */
+      const BOT_NPC_LV = { class: 3, maiden: 8, smith: 14, herald: 20 };
+      const HUB_NPCS = (v) => [ELDER, SHOP, LORE, CLASSN, MAIDEN, SMITH, HERALD, BARKEEP].filter((n) => n && (!v || !n.lk || v.lv >= BOT_NPC_LV[n.lk]));
       /* dry(x, y, m): true when (x, y) is on the stones and at least m px clear of the water */
       function dry(x, y, m = 12) {
         const rv = riverNear(x, y);
@@ -2243,7 +2246,7 @@
       /* botPlan(v): choose what to do next. Busy NPCs (2+ bots already there) are skipped. */
       function botPlan(v) {
         const r = Math.random(),
-          free = HUB_NPCS().filter((n) => n !== v.npc && HUBV.filter((o) => o.npc === n).length < 2);
+          free = HUB_NPCS(v).filter((n) => n !== v.npc && HUBV.filter((o) => o.npc === n).length < 2);
         v.npc = null;
         v.goal = null;
         if (r < 0.5 && free.length) {
