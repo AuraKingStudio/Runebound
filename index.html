@@ -1360,7 +1360,7 @@
         HUB_MIN = 3, /* you + at least 2 bots. ?bots=N raises it to N + 1 for stress tests */
         botN = 0;
       /* HUB_SPAWNS: spawn spots south of the river. Arrivals take the free spot farthest from everyone, so nobody stacks. */
-      const HUB_SPAWNS = [[450, 440], [400, 450], [500, 450], [355, 430], [545, 430], [425, 485], [475, 485], [310, 455], [590, 455], [450, 515]];
+      const HUB_SPAWNS = [[450, 440], [400, 450], [500, 450], [355, 430], [505, 520], [425, 485], [475, 485], [310, 455], [300, 520], [450, 515]];
       function spawnSpot() {
         const near = ([x, y]) => Math.min(1e9, ...[P, ...HUBV].filter(Boolean).map((o) => Math.hypot(o.x - x, o.y - y)));
         return HUB_SPAWNS.reduce((a, b) => (near(b) > near(a) ? b : a));
@@ -5737,8 +5737,8 @@
           segs = [
             [WF.px + 6, WF.py + WF.pry + 4, 130, 304, 250, 292],
             [250, 292, 350, 284, 450, 352],
-            [450, 352, 540, 412, 640, 405],
-            [640, 405, 810, 372, 810, 444], /* turns to run straight down where it leaves the platform */
+            [450, 352, 530, 400, 566, 470],
+            [566, 470, 596, 540, 604, 650], /* toward the viewer, over the near edge and out of sight below */
           ],
           pts = [];
         for (const [x0, y0, cx, cy, x1, y1] of segs)
@@ -5758,7 +5758,7 @@
             l = Math.hypot(dx, dy) || 1;
           p.nx = -dy / l;
           p.ny = dx / l;
-          p.w = 20 + 2.2 * Math.sin(i * 0.23) + 1 * Math.sin(i * 0.61 + 1) + (r() - 0.5) * 0.8; /* a steady width with a gentle swell */
+          p.w = 19; /* a built canal: one even width */
         }
         /* the last stretch settles to an even width so it meets the fall down the wall cleanly */
         for (let i = pts.length - 14; i < pts.length; i++) {
@@ -5784,87 +5784,85 @@
       function streams(g) {
         const pts = streamPts(),
           r = rng(31);
-        /* grassy edge, then the water, then a faint deep channel */
-        g.fillStyle = "#5d8a4a";
-        bank(g, pts, 3, 5, r);
+        /* a built canal: an even course of carved curb blocks with a bevelled lip, the inner wall face down to the water,
+           rune posts at intervals, and only a little moss in the joints */
+        const edgeI = pts.findIndex((p) => ((p.x - PLAT.x) / PLAT.rx) ** 2 + ((p.y - PLAT.y) / PLAT.ry) ** 2 > 0.97),
+          N = edgeI > 0 ? edgeI : pts.length - 1, /* the curb ends at the platform's edge */
+          off = (p, d) => [p.x + p.nx * d, p.y + p.ny * d],
+          quad = (p, q, d0, d1, sd) => {
+            g.beginPath();
+            g.moveTo(...off(p, (p.w + d0) * sd));
+            g.lineTo(...off(q, (q.w + d0) * sd));
+            g.lineTo(...off(q, (q.w + d1) * sd));
+            g.lineTo(...off(p, (p.w + d1) * sd));
+            g.closePath();
+          };
+        g.fillStyle = "#7d6649"; /* shadow under the curb */
+        bank(g, pts.slice(0, N + 1), 10, 0);
         g.fill();
-        const wg = g.createLinearGradient(80, 150, 450, 352);
-        wg.addColorStop(0, "#5aa7a6");
-        wg.addColorStop(1, "#5aa7a6");
-        g.fillStyle = wg;
-        bank(g, pts, -1, 3, r);
-        g.fill();
-        g.fillStyle = "rgba(40,110,112,.18)";
-        bank(g, pts.map((p) => ({ ...p, w: p.w * 0.38 })), 0, 2, r);
-        g.fill();
-        /* rounded river stones along both banks */
-        for (let i = 2; i < pts.length - 6; i += 2) {
-          for (const side of [-1, 1]) {
-            if (r() < 0.45) continue;
+        for (const sd of [-1, 1]) {
+          for (let i = 0; i < N; i += 2) {
             const p = pts[i],
-              d = p.w + 3 + r() * 5,
-              sx = p.x + p.nx * d * side,
-              sy = p.y + p.ny * d * side,
-              sr = 3 + r() * 5;
-            g.fillStyle = "#00000033";
-            g.beginPath();
-            g.ellipse(sx + 1, sy + 1.5, sr, sr * 0.7, 0, 0, 6.3);
+              q = pts[Math.min(N, i + 2)];
+            g.fillStyle = "#d3bb90"; /* block top */
+            quad(p, q, 0.5, 9, sd);
             g.fill();
-            g.fillStyle = r() < 0.5 ? "#8f8a80" : "#a59f92";
-            g.beginPath();
-            g.ellipse(sx, sy, sr, sr * 0.7, r(), 0, 6.3);
+            g.fillStyle = "#e9d6ae"; /* bevelled outer lip catching the light */
+            quad(p, q, 7.4, 9, sd);
             g.fill();
-            g.fillStyle = "#ffffff30";
-            g.beginPath();
-            g.ellipse(sx - sr * 0.25, sy - sr * 0.25, sr * 0.45, sr * 0.3, 0, 0, 6.3);
+            g.fillStyle = "#a88f6a"; /* inner bevel */
+            quad(p, q, 0.5, 2.2, sd);
             g.fill();
-          }
-        }
-        /* grass tufts and little flowers along both banks */
-        for (let i = 0; i < pts.length - 4; i++) {
-          for (const side of [-1, 1]) {
-            if (r() < 0.35) continue;
-            const p = pts[i],
-              d = p.w + 6 + r() * 8,
-              gx = p.x + p.nx * d * side,
-              gy = p.y + p.ny * d * side;
-            g.strokeStyle = r() < 0.5 ? "#6aa84a" : "#4f8a3a";
-            g.lineWidth = 1.2;
-            for (let k = 0; k < 4; k++) {
+            g.strokeStyle = "rgba(90,70,45,.55)"; /* joint between blocks */
+            g.lineWidth = 0.9;
+            g.beginPath();
+            g.moveTo(...off(q, (q.w + 0.5) * sd));
+            g.lineTo(...off(q, (q.w + 9) * sd));
+            g.stroke();
+            if (r() < 0.16) {
+              const [jx, jy] = off(q, (q.w + 5) * sd);
+              g.fillStyle = r() < 0.5 ? "#5c9e45" : "#4b8a3c";
               g.beginPath();
-              g.moveTo(gx + k * 2 - 3, gy);
-              g.lineTo(gx + k * 2 - 3 + (r() - 0.5) * 3, gy - 4 - r() * 5);
-              g.stroke();
-            }
-            if (r() < 0.25) {
-              g.fillStyle = ["#ff9fcf", "#ffe27a", "#fff3f8", "#c4a8ff"][(r() * 4) | 0];
-              g.beginPath();
-              g.arc(gx, gy - 7, 1.8, 0, 6.3);
+              g.ellipse(jx, jy, 2 + r() * 2, 1.2 + r() * 0.8, r() * 3, 0, 6.3);
               g.fill();
             }
           }
         }
-        /* a few stones poking out of the water, and reeds on the bends */
-        for (const i of [14, 33, 51]) {
-          const p = pts[i];
-          g.fillStyle = "#8f8a80";
-          g.beginPath();
-          g.ellipse(p.x + p.nx * 4, p.y + p.ny * 4, 5, 3.5, 0, 0, 6.3);
-          g.fill();
-        }
-        g.strokeStyle = "#4f7a36";
-        g.lineWidth = 1.5;
-        for (const i of [8, 26, 44, 60]) {
-          const p = pts[i],
-            bx = p.x + p.nx * (p.w + 4),
-            by = p.y + p.ny * (p.w + 4);
-          for (let k = 0; k < 4; k++) {
+        /* the inner wall face, wet and dark down to the waterline, then the water */
+        g.fillStyle = "#5e5444";
+        bank(g, pts, 0.6, 0);
+        g.fill();
+        g.fillStyle = "#4b6a60";
+        bank(g, pts, -1.4, 0);
+        g.fill();
+        g.fillStyle = "#5aa7a6";
+        bank(g, pts, -3, 0);
+        g.fill();
+        /* deeper channel down the middle */
+        g.fillStyle = "rgba(40,110,112,.2)";
+        bank(g, pts.map((p) => ({ ...p, w: p.w * 0.4 })), 0, 0);
+        g.fill();
+        /* rune posts along both curbs (not on the crossing, not by the cistern) */
+        for (let i = 10; i < N - 2; i += 12)
+          for (const sd of [-1, 1]) {
+            const p = pts[i],
+              [bx, by] = off(p, (p.w + 5) * sd);
+            if (bridgeAt({ x: bx, y: by })) continue;
+            g.fillStyle = "#8c7556";
+            g.fillRect(bx - 3.5, by - 7, 7, 8);
+            g.fillStyle = "#d9c49c";
+            g.fillRect(bx - 3.5, by - 7, 2.5, 8);
+            g.fillStyle = "#e9d6ae";
             g.beginPath();
-            g.moveTo(bx + k * 2, by);
-            g.lineTo(bx + k * 2 + (k - 1.5) * 2, by - 10 - k * 2);
-            g.stroke();
+            g.moveTo(bx, by - 11);
+            g.lineTo(bx + 4.5, by - 7);
+            g.lineTo(bx, by - 5);
+            g.lineTo(bx - 4.5, by - 7);
+            g.closePath();
+            g.fill();
+            g.fillStyle = "rgba(110,240,220,.9)";
+            g.fillRect(bx - 0.7, by - 5, 1.4, 4);
           }
-        }
         cisternDraw(g); /* over the brook's start, so the brook pours out of the spout */
       }
       /* the river's end: it pours off the platform's stone lip, down the side wall, then runs away through the forest off screen.
