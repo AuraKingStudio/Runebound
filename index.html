@@ -1195,7 +1195,7 @@
         v.ti = v.lv < 5 || Math.random() < 0.35 ? TITLES[0] : pick(ok);
       }
       let HUBV = [],
-        HUB_MIN = 6, /* you + at least 5 bots. ?bots=N raises it to N + 1 for stress tests */
+        HUB_MIN = 3, /* you + at least 2 bots. ?bots=N raises it to N + 1 for stress tests */
         botN = 0;
       /* HUB_SPAWNS: spawn spots south of the river. Arrivals take the free spot farthest from everyone, so nobody stacks. */
       const HUB_SPAWNS = [[450, 440], [400, 450], [500, 450], [355, 430], [545, 430], [425, 485], [475, 485], [310, 455], [590, 455], [450, 515]];
@@ -1256,7 +1256,7 @@
          HUB_T = hub clock (only runs while you're in the hub, so a raid doesn't age the bots). */
       const BOT_STAY = [60, 300];
       let HUB_T = 0,
-        HUB_AIM = 7,
+        HUB_AIM = 5,
         nextJoin = 0,
         hubSeeded = false;
       function addBot(quiet) {
@@ -1286,7 +1286,7 @@
       function fillBots() {
         if (!hubSeeded) {
           hubSeeded = true;
-          HUB_AIM = Math.max(HUB_MIN, 6 + Math.floor(Math.random() * 4)); /* you + 5-8 bots */
+          HUB_AIM = Math.max(HUB_MIN, 3 + Math.floor(Math.random() * 5)); /* you + 2-6 bots */
           while (hubCount() < HUB_AIM) {
             const v = addBot(true);
             if (!v) break;
@@ -1300,7 +1300,7 @@
         if (HUB_T >= nextJoin) {
           nextJoin = 0;
           addBot(false);
-          HUB_AIM = Math.max(HUB_MIN, 6 + Math.floor(Math.random() * 4)); /* you + 5-8 bots */
+          HUB_AIM = Math.max(HUB_MIN, 3 + Math.floor(Math.random() * 5)); /* you + 2-6 bots */
         }
       }
       /* hubVisitStep(dt): top up bots, glide visitors toward their target (on the stones, out of the river), update facing,
