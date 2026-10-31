@@ -753,30 +753,30 @@
         heal: ["Bolt", "Heal", "Circle"],
       };
       /* hub plaza: ellipse center + radii. Sized for ~10 players, 3 NPC daises and the portal arch at the top. */
-      const HUB = { x: 450, y: 335, rx: 335, ry: 205 };
-      const PORTAL = { x: 450, y: 150, ir: 120 },
+      const HUB = { x: 450, y: 350, rx: 395, ry: 232 };
+      const PORTAL = { x: 450, y: 165, ir: 120 },
         /* NPCs. g = emblem path (SVG path syntax, drawn on a 40x40 box centered at 0,0), gs = stroke instead of fill */
         /* Elder: wizard hat (wide brim + bent cone) */
-        ELDER = { tu: 1, x: 145, y: 345, ic: "🧙", nm: "The Elder", col: "#b48cff",
+        ELDER = { tu: 1, x: 152, y: 373, ic: "🧙", nm: "The Elder", col: "#b48cff",
           g: "M-14 9q14 6 28 0q-2 4-14 5q-12-1-14-5zM-9 8L-1-12q3-5 9-3q-4 1-5 4L9 8q-9 3-18 0z" },
         /* Merchant: round coin bag with a tied neck and a coin mark */
-        SHOP = { tu: 2, x: 450, y: 525, ic: "💰", nm: "The Merchant", col: "#ffcf4d",
+        SHOP = { tu: 2, x: 538, y: 527, ic: "💰", nm: "The Merchant", col: "#ffcf4d",
           g: "M-3-8q-6 3-10 10q-3 10 7 11h12q10-1 7-11q-4-7-10-10zM-3-9l-4-5q7 2 14 0l-4 5zM-1 0h4a2 2 0 0 1 0 4h-2a2 2 0 0 0 0 4h4" },
-        LORE = { tu: 3, x: 230, y: 475, ic: "📜", nm: "The Archivist", col: "#5ad7ff", gs: 1,
+        LORE = { tu: 3, x: 220, y: 469, ic: "📜", nm: "The Archivist", col: "#5ad7ff", gs: 1,
           /* Archivist: rolled scroll with text lines */
           g: "M-10-13h20a3 3 0 0 1 0 6h-20a3 3 0 0 1 0-6M-8-7v13M8-7v13M-10 6h20a3 3 0 0 1 0 6h-20a3 3 0 0 1 0-6M-4-3h8M-4 1h6" },
         /* the 4 NPCs standing where the old torches were */
         /* Class Master (green): three class orbs */
-        CLASSN = { lk: "class", x: 755, y: 355, ic: "⚔", nm: "The Class Master", col: "#5dff8a",
+        CLASSN = { lk: "class", x: 748, y: 373, ic: "⚔", nm: "The Class Master", col: "#5dff8a",
           g: "M-4-6a4 4 0 1 0 8 0a4 4 0 1 0-8 0zM-11 5a4 4 0 1 0 8 0a4 4 0 1 0-8 0zM3 5a4 4 0 1 0 8 0a4 4 0 1 0-8 0z" },
         /* The Maiden (rose): a rose bloom */
-        MAIDEN = { lk: "maiden", x: 635, y: 500, ic: "🌹", nm: "The Maiden", col: "#ff8fc8",
+        MAIDEN = { lk: "maiden", x: 680, y: 469, ic: "🌹", nm: "The Maiden", col: "#ff8fc8",
           g: "M0-11c5 0 8 4 6 8 4 0 5 5 1 7-1 4-6 5-7 2-1 3-6 2-7-2-4-2-3-7 1-7-2-4 1-8 6-8z" },
         /* The Smith (orange): an anvil */
-        SMITH = { lk: "smith", x: 265, y: 500, ic: "🔨", nm: "The Smith", col: "#ff9f43",
+        SMITH = { lk: "smith", x: 362, y: 527, ic: "🔨", nm: "The Smith", col: "#ff9f43",
           g: "M-12-6h20q4 0 4 4h-6v4l4 6h-18l4-6v-4h-6q-2 0-2-4z" },
         /* The Herald (silver): a banner */
-        HERALD = { lk: "herald", x: 690, y: 220, ic: "📯", nm: "The Herald", col: "#cfe6ff",
+        HERALD = { lk: "herald", x: 600, y: 190, ic: "📯", nm: "The Herald", col: "#cfe6ff",
           g: "M-8-12v24h2.5v-10h12l-3-5 3-5h-12v-4z" };
       /* ---------- progress (saved) ---------- */
       /* upgrades. k = save key, b = base cost (cost = b * next level), pl = % per level, ic = SVG icon, col = card color */
@@ -1851,10 +1851,10 @@
       }
       /* ---------- The Barkeep (bar, right wall) + the two wall boards ---------- */
       /* Barkeep: a mug. Shown after the tutorial (tu: 4). Boards: no disc, bigger reach (ir). */
-      const BARKEEP = { tu: 4, x: 190, y: 205, ic: "🍺", nm: "The Barkeep", col: "#ffb347",
+      const BARKEEP = { tu: 4, x: 183, y: 266, ic: "🍺", nm: "The Barkeep", col: "#ffb347",
           g: "M-9-9h13v18h-13zM4-5h3a4 4 0 0 1 0 9h-3M-9-9q0-4 4-4h5q4 0 4 4" },
-        QBOARD = { x: 300, y: 240, ir: 110, col: "#ffd84a" },
-        GBOARD = { x: 600, y: 240, ir: 110, col: "#5af0dc" };
+        QBOARD = { x: 300, y: 190, ir: 110, col: "#ffd84a" },
+        GBOARD = { x: 717, y: 266, ir: 110, col: "#5af0dc" };
       /* boardMark(b, hot): soft pulse over a wall board; a "!" when something can be claimed. */
       function boardMark(b, hot) {
         const p = 0.5 + 0.5 * Math.sin(S.tm * 3), near = P && dist(P, b) < b.ir;
@@ -3066,44 +3066,224 @@
         }
         c.restore();
       }
-      /* hub room drawn in code (world space, 900x600): brick walls, wood floor, rug and plaza */
-      function drawHub() {
-        const g = c.createLinearGradient(0, 0, 0, H);
-        g.addColorStop(0, "#2a1b10");
-        g.addColorStop(1, "#1a110a");
-        c.fillStyle = g;
-        c.fillRect(0, 0, W, H);
-        c.fillStyle = "#3b2a1c";
-        c.fillRect(22, 40, 856, 530);
-        for (let y = 40; y < 570; y += 22) {
-          for (let x = 22 + ((y / 22) % 2) * 26; x < 878; x += 52) {
-            c.fillStyle = "#4a3523";
-            c.fillRect(x, y, 50, 20);
+      /* ---------- hub: round stone platform in the mist, portal arch at the top (world space, 900x600) ----------
+         paintHub() paints the static platform once into HUBC (2x for sharpness).
+         drawHub() blits it each frame and adds the moving parts: drifting mist and the glowing rune ring. */
+      let HUBC = null;
+      /* rng(seed): seeded random so cracks and moss look the same every load. Out: () -> 0..1 */
+      const rng = (s) => () => (s = (s * 16807) % 2147483647) / 2147483647;
+      const PLAT = { x: 450, y: 350, rx: 405, ry: 238 }; /* platform top surface */
+      const RUNES_HUB = "ᚠᚢᚦᚨᚱᚲᚷᚹᚺᚾᛁᛃᛇᛈᛉᛊᛏᛒᛖᛗᛚᛜᛞᛟ";
+      function paintHub() {
+        const k = 2,
+          cv2 = document.createElement("canvas");
+        cv2.width = W * k;
+        cv2.height = H * k;
+        const g = cv2.getContext("2d"),
+          r = rng(7),
+          { x, y, rx, ry } = PLAT;
+        g.scale(k, k);
+        /* night sky */
+        const sky = g.createRadialGradient(x, y, 100, x, y, 620);
+        sky.addColorStop(0, "#13222a");
+        sky.addColorStop(1, "#070b0f");
+        g.fillStyle = sky;
+        g.fillRect(0, 0, W, H);
+        /* portal arch behind the platform's top edge */
+        arch(g, x, y - ry);
+        /* platform side wall (drum) */
+        g.fillStyle = "#3b3a35";
+        g.beginPath();
+        g.ellipse(x, y + 16, rx, ry, 0, 0, 6.3);
+        g.fill();
+        for (let a = 0.15; a < 3.0; a += 0.2) {
+          const px = x + Math.cos(a) * rx;
+          g.fillStyle = "#00000044";
+          g.fillRect(px - 1, y + Math.sin(a) * ry, 2, 16);
+        }
+        /* top surface */
+        const top = g.createRadialGradient(x, y - 40, 40, x, y, rx);
+        top.addColorStop(0, "#d6d0c2");
+        top.addColorStop(1, "#a29b8b");
+        g.fillStyle = top;
+        g.beginPath();
+        g.ellipse(x, y, rx, ry, 0, 0, 6.3);
+        g.fill();
+        /* outer flagstone band: two rings + radial joints */
+        g.strokeStyle = "#7d7668";
+        g.lineWidth = 1.6;
+        for (const s of [0.86, 0.72]) {
+          g.beginPath();
+          g.ellipse(x, y, rx * s, ry * s, 0, 0, 6.3);
+          g.stroke();
+        }
+        for (let i = 0; i < 40; i++) {
+          const a = (i / 40) * 6.283 + (i % 2) * 0.05,
+            s0 = i % 2 ? 0.72 : 0.86;
+          g.beginPath();
+          g.moveTo(x + Math.cos(a) * rx * s0, y + Math.sin(a) * ry * s0);
+          g.lineTo(x + Math.cos(a) * rx * (s0 == 0.86 ? 1 : 0.86), y + Math.sin(a) * ry * (s0 == 0.86 ? 1 : 0.86));
+          g.stroke();
+        }
+        /* cracks across the inner disc */
+        g.strokeStyle = "#8a8373";
+        g.lineWidth = 1.2;
+        for (let i = 0; i < 14; i++) {
+          let a = r() * 6.283,
+            d = r() * 0.5,
+            px = x + Math.cos(a) * rx * d,
+            py = y + Math.sin(a) * ry * d;
+          g.beginPath();
+          g.moveTo(px, py);
+          for (let j = 0; j < 4; j++) {
+            px += (r() - 0.5) * 70;
+            py += (r() - 0.5) * 40;
+            g.lineTo(px, py);
+          }
+          g.stroke();
+        }
+        /* moss along the rim */
+        for (let i = 0; i < 70; i++) {
+          const a = r() * 6.283,
+            d = 0.9 + r() * 0.1,
+            mx = x + Math.cos(a) * rx * d,
+            my = y + Math.sin(a) * ry * d,
+            mr = 8 + r() * 18;
+          const mg = g.createRadialGradient(mx, my, 1, mx, my, mr);
+          mg.addColorStop(0, "#5f8a2ecc");
+          mg.addColorStop(1, "#5f8a2e00");
+          g.fillStyle = mg;
+          g.beginPath();
+          g.ellipse(mx, my, mr, mr * 0.6, 0, 0, 6.3);
+          g.fill();
+        }
+        /* rune ring (glow pulses in drawHub) */
+        g.strokeStyle = "#3aa89a";
+        g.lineWidth = 2;
+        for (const s of [0.6, 0.52]) {
+          g.beginPath();
+          g.ellipse(x, y, rx * s, ry * s, 0, 0, 6.3);
+          g.stroke();
+        }
+        g.fillStyle = "#5af0dc";
+        g.font = "bold 13px Georgia";
+        g.textAlign = "center";
+        g.textBaseline = "middle";
+        for (let i = 0; i < 64; i++) {
+          const a = (i / 64) * 6.283;
+          g.fillText(RUNES_HUB[i % RUNES_HUB.length], x + Math.cos(a) * rx * 0.56, y + Math.sin(a) * ry * 0.56);
+        }
+        /* steps down at the front */
+        for (let i = 0; i < 3; i++) {
+          g.fillStyle = i % 2 ? "#a49d8d" : "#b8b1a1";
+          g.fillRect(392 - i * 10, y + ry + 2 + i * 9, 116 + i * 20, 10);
+          g.fillStyle = "#00000055";
+          g.fillRect(392 - i * 10, y + ry + 11 + i * 9, 116 + i * 20, 2);
+        }
+        boards(g);
+        HUBC = cv2;
+      }
+      /* arch(g, cx, by): stone portal arch standing on the platform edge. by = base y. */
+      function arch(g, cx, by) {
+        const t = by - 100;
+        g.fillStyle = "#2c3134";
+        g.fillRect(cx - 70, t + 18, 32, 104);
+        g.fillRect(cx + 38, t + 18, 32, 104);
+        g.beginPath();
+        g.moveTo(cx - 78, t + 22);
+        g.lineTo(cx - 60, t);
+        g.lineTo(cx + 60, t);
+        g.lineTo(cx + 78, t + 22);
+        g.fill();
+        g.fillStyle = "#3e4549";
+        g.fillRect(cx - 66, t + 26, 6, 92);
+        g.fillRect(cx + 42, t + 26, 6, 92);
+        /* glowing doorway */
+        const dg = g.createLinearGradient(0, t + 22, 0, by + 20);
+        dg.addColorStop(0, "#0c3a3a");
+        dg.addColorStop(1, "#5af0dc");
+        g.fillStyle = dg;
+        g.beginPath();
+        g.moveTo(cx - 38, by + 20);
+        g.lineTo(cx - 38, t + 50);
+        g.quadraticCurveTo(cx, t + 18, cx + 38, t + 50);
+        g.lineTo(cx + 38, by + 20);
+        g.fill();
+        /* carved crest */
+        g.fillStyle = "#5af0dc";
+        g.beginPath();
+        g.moveTo(cx, t + 4);
+        g.lineTo(cx + 8, t + 12);
+        g.lineTo(cx, t + 20);
+        g.lineTo(cx - 8, t + 12);
+        g.fill();
+      }
+      /* stone tablets for the quest board (notes) and guild board (crest) */
+      function boards(g) {
+        for (const [b, quest] of [[QBOARD, 1], [GBOARD, 0]]) {
+          const { x, y } = b;
+          g.fillStyle = "#00000055";
+          g.beginPath();
+          g.ellipse(x, y + 26, 30, 8, 0, 0, 6.3);
+          g.fill();
+          g.fillStyle = "#4a4740";
+          g.fillRect(x - 28, y - 28, 56, 52);
+          g.fillStyle = quest ? "#7a5634" : "#2a2346";
+          g.fillRect(x - 24, y - 24, 48, 44);
+          if (quest)
+            for (const [a, b2, t] of [[-20, -20, -0.1], [2, -18, 0.08], [-18, 0, 0.06], [4, 2, -0.07]]) {
+              g.save();
+              g.translate(x + a + 8, y + b2 + 8);
+              g.rotate(t);
+              g.fillStyle = "#f2e2b8";
+              g.fillRect(-8, -8, 16, 15);
+              g.fillStyle = "#b8402e";
+              g.fillRect(-1.5, -9, 3, 3);
+              g.restore();
+            }
+          else {
+            g.fillStyle = "#1d7f78";
+            g.strokeStyle = "#ffd84a";
+            g.lineWidth = 2;
+            g.beginPath();
+            g.moveTo(x, y - 16);
+            g.lineTo(x + 13, y - 10);
+            g.lineTo(x + 11, y + 4);
+            g.quadraticCurveTo(x, y + 16, x - 11, y + 4);
+            g.lineTo(x - 13, y - 10);
+            g.closePath();
+            g.fill();
+            g.stroke();
           }
         }
-        c.fillStyle = "#6b4a2e";
-        c.fillRect(44, 92, 812, 448);
-        for (let x = 44; x < 856; x += 40) {
-          c.fillStyle = (x / 40) % 2 ? "#7a5536" : "#6b4a2e";
-          c.fillRect(x, 92, 40, 448);
-        }
-        c.strokeStyle = "#2c1d12";
-        c.lineWidth = 2;
-        c.strokeRect(44, 92, 812, 448);
-        c.fillStyle = "#5a1a22";
+      }
+      function drawHub() {
+        if (!HUBC) paintHub();
+        c.drawImage(HUBC, 0, 0, W, H);
+        const t = S.tm,
+          { x, y, rx, ry } = PLAT;
+        c.save();
+        /* rune ring glow pulse */
+        c.globalCompositeOperation = "lighter";
+        c.strokeStyle = `rgba(90,240,220,${0.15 + 0.12 * Math.sin(t * 2)})`;
+        c.lineWidth = 10;
         c.beginPath();
-        c.ellipse(HUB.x, HUB.y, HUB.rx - 40, HUB.ry - 40, 0, 0, 6.3);
-        c.fill();
-        c.strokeStyle = "#d9a400";
-        c.lineWidth = 4;
+        c.ellipse(x, y, rx * 0.56, ry * 0.56, 0, 0, 6.3);
         c.stroke();
-        c.fillStyle = "#2c1d12";
-        c.fillRect(300, 92, 300, 26);
-        c.fillStyle = "#d9a400";
-        c.font = "bold 16px Georgia";
-        c.textAlign = "center";
-        c.textBaseline = "middle";
-        c.fillText("THE RAIDERS", 450, 105);
+        c.globalCompositeOperation = "source-over";
+        /* mist drifting around the platform rim */
+        for (let i = 0; i < 18; i++) {
+          const a = (i / 18) * 6.283 + t * 0.03 * (i % 2 ? 1 : -1),
+            mx = x + Math.cos(a) * (rx + 30),
+            my = y + 20 + Math.sin(a) * (ry + 26),
+            mr = 70 + 25 * Math.sin(t * 0.5 + i);
+          const mg = c.createRadialGradient(mx, my, 4, mx, my, mr);
+          mg.addColorStop(0, "rgba(70,150,140,.28)");
+          mg.addColorStop(1, "rgba(70,150,140,0)");
+          c.fillStyle = mg;
+          c.fillRect(mx - mr, my - mr, mr * 2, mr * 2);
+        }
+        c.restore();
       }
       function draw(dt) {
         c.setTransform(1, 0, 0, 1, 0, 0);
