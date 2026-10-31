@@ -3891,10 +3891,11 @@
         }
         c.restore();
       }
+      const HUB_ANIM = 0.55; /* hub scenery animation speed (1 = original) */
       function drawHub() {
         if (!HUBC) paintHub();
         c.drawImage(HUBC, 0, 0, W, H);
-        const t = S.tm,
+        const t = S.tm * HUB_ANIM,
           { x, y, rx, ry } = PLAT;
         c.save();
         /* rune ring glow pulse */
@@ -3956,7 +3957,7 @@
         c.restore();
         ambient(t);
       }
-      /* ambient(t): life around the hub. Leaves falling from the trees, butterflies, dragonflies over the brook,
+      /* ambient(t): life around the hub. Leaves falling from the trees, butterflies,
          pollen drifting in the light and a bird flying over now and then. Everything is a pure function of time. */
       function ambient(t) {
         c.save();
@@ -4000,30 +4001,6 @@
           }
           c.fillStyle = "#3a2a1a";
           c.fillRect(-0.6, -3, 1.2, 6);
-          c.restore();
-        }
-        /* dragonflies darting along the brook */
-        const pts = streamPts();
-        for (let i = 0; i < 2; i++) {
-          const k = Math.floor(((t * 0.6 + i * 0.5) % 1) * (pts.length - 1)),
-            p = pts[k],
-            hover = Math.sin(t * 9 + i * 4),
-            dx = p.x + p.nx * 18 * Math.sin(t * 0.9 + i * 3),
-            dy = p.y + p.ny * 18 * Math.sin(t * 0.9 + i * 3) - 14 + hover * 1.5;
-          c.save();
-          c.translate(dx, dy);
-          c.rotate(Math.atan2(p.ny, p.nx) - 1.57);
-          c.fillStyle = "rgba(220,255,255,.55)";
-          for (const s of [-1, 1]) {
-            c.beginPath();
-            c.ellipse(s * 5, -1, 5, 1.3, s * 0.2, 0, 6.3);
-            c.fill();
-            c.beginPath();
-            c.ellipse(s * 4.5, 1.5, 4.5, 1.1, -s * 0.2, 0, 6.3);
-            c.fill();
-          }
-          c.fillStyle = i ? "#3fb4c8" : "#6fbf5a";
-          c.fillRect(-0.9, -3, 1.8, 10);
           c.restore();
         }
         /* pollen motes drifting slowly in the warm light */
