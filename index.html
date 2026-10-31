@@ -3159,6 +3159,7 @@
           { x, y, rx, ry } = PLAT;
         g.scale(k, k);
         forest(g, r);
+        skyEdge(g);
         cliff(g);
         outflowGround(g);
         /* platform side wall: stacked stone blocks, darker at the bottom */
@@ -3402,6 +3403,158 @@
               g.fill();
             }
         }
+      }
+      /* the hub is a floating island: in the top-right corner the land ends in a rocky edge and opens onto the sky,
+         with far-away mountains and clouds below. EDGE = the jagged line where the island stops (left-top to right). */
+      const EDGE = (() => {
+        const r = rng(77),
+          pts = [];
+        for (let i = 0; i <= 22; i++) {
+          const p = i / 22;
+          pts.push([560 + 340 * p + (r() - 0.5) * 8, 212 * p + (r() - 0.5) * 10 - Math.sin(p * 3.1) * 14]);
+        }
+        return pts;
+      })();
+      /* skyClip(ctx): the open-sky area beyond the island's edge */
+      function skyClip(ctx) {
+        ctx.beginPath();
+        ctx.moveTo(EDGE[0][0], -20);
+        for (const [x, y] of EDGE) ctx.lineTo(x, y);
+        ctx.lineTo(W + 20, EDGE[EDGE.length - 1][1]);
+        ctx.lineTo(W + 20, -20);
+        ctx.closePath();
+      }
+      function skyEdge(g) {
+        const r = rng(78);
+        g.save();
+        skyClip(g);
+        g.clip();
+        /* sky: soft blue high up, warm haze toward the horizon */
+        const sky = g.createLinearGradient(W, 0, 640, 170);
+        sky.addColorStop(0, "#9ccbe8");
+        sky.addColorStop(0.6, "#cfe4ee");
+        sky.addColorStop(1, "#f6e2c4");
+        g.fillStyle = sky;
+        g.fillRect(500, -20, 420, 260);
+        /* three ranges of far mountains, paler the further they are */
+        const ranges = [
+          [34, 30, "#b9cbd8", "#eef4f8"],
+          [20, 24, "#9fb5c6", "#e6eef4"],
+          [8, 16, "#879fb3", null],
+        ];
+        for (const [off, amp, col, snow] of ranges) {
+          const ridge = [];
+          for (let i = 0; i <= 26; i++) {
+            const p = i / 26,
+              bx = 540 + 380 * p,
+              by = 212 * ((bx - 560) / 340) - off,
+              h = amp * (0.35 + 0.65 * Math.abs(Math.sin(p * 9 + off))) + r() * 6;
+            ridge.push([bx, by - h]);
+          }
+          g.fillStyle = col;
+          g.beginPath();
+          g.moveTo(ridge[0][0], ridge[0][1] + 80);
+          for (const [x, y] of ridge) g.lineTo(x, y);
+          g.lineTo(ridge[ridge.length - 1][0], ridge[ridge.length - 1][1] + 120);
+          g.closePath();
+          g.fill();
+          if (snow)
+            for (let i = 1; i < ridge.length - 1; i++) {
+              const [x, y] = ridge[i];
+              if (y < ridge[i - 1][1] && y < ridge[i + 1][1]) {
+                g.fillStyle = snow;
+                g.beginPath();
+                g.moveTo(x, y);
+                g.lineTo(x - 6, y + 7);
+                g.lineTo(x + 6, y + 7);
+                g.closePath();
+                g.fill();
+              }
+            }
+        }
+        /* sea of clouds far below, hiding the mountain bases */
+        for (let i = 0; i < 30; i++) {
+          const p = r(),
+            cx = 560 + 340 * p + (r() - 0.5) * 30,
+            cy = 212 * p - 4 + r() * 18,
+            cr = 10 + r() * 16;
+          g.fillStyle = r() < 0.5 ? "rgba(255,255,255,.85)" : "rgba(240,246,250,.8)";
+          g.beginPath();
+          g.ellipse(cx, cy, cr * 1.6, cr * 0.7, 0, 0, 6.3);
+          g.fill();
+        }
+        g.restore();
+        /* the island's rocky lip: dark rock band just beyond the grass, with roots hanging into the void */
+        g.lineJoin = "round";
+        g.strokeStyle = "#5a4a3a";
+        g.lineWidth = 7;
+        g.beginPath();
+        EDGE.forEach(([x, y], i) => (i ? g.lineTo(x + 2, y - 3) : g.moveTo(x + 2, y - 3)));
+        g.stroke();
+        g.strokeStyle = "#3f342a";
+        g.lineWidth = 3;
+        g.beginPath();
+        EDGE.forEach(([x, y], i) => (i ? g.lineTo(x + 4, y - 6) : g.moveTo(x + 4, y - 6)));
+        g.stroke();
+        g.strokeStyle = "#6b4a2e";
+        g.lineWidth = 1.4;
+        for (let i = 1; i < EDGE.length - 1; i += 2) {
+          const [x, y] = EDGE[i],
+            len = 8 + r() * 14;
+          g.beginPath();
+          g.moveTo(x + 3, y - 6);
+          g.quadraticCurveTo(x + 8, y - 6 - len * 0.5, x + 5 + (r() - 0.5) * 6, y - 6 - len);
+          g.stroke();
+        }
+        /* grass and flowers fringing the edge on the island side */
+        for (let i = 0; i < 70; i++) {
+          const k = Math.floor(r() * (EDGE.length - 1)),
+            p = r(),
+            x = EDGE[k][0] + (EDGE[k + 1][0] - EDGE[k][0]) * p - 3,
+            y = EDGE[k][1] + (EDGE[k + 1][1] - EDGE[k][1]) * p + 4;
+          g.strokeStyle = r() < 0.5 ? "#6aa84a" : "#4f8a3a";
+          g.lineWidth = 1.2;
+          g.beginPath();
+          g.moveTo(x, y);
+          g.lineTo(x + (r() - 0.5) * 3, y - 4 - r() * 5);
+          g.stroke();
+          if (r() < 0.15) {
+            g.fillStyle = ["#ff9fcf", "#ffe27a", "#fff3f8"][(r() * 3) | 0];
+            g.beginPath();
+            g.arc(x, y - 6, 1.8, 0, 6.3);
+            g.fill();
+          }
+        }
+      }
+      /* skyClouds(t): a few soft clouds drifting slowly across the open sky, and birds far away */
+      function skyClouds(t) {
+        c.save();
+        skyClip(c);
+        c.clip();
+        for (let i = 0; i < 5; i++) {
+          const cx = ((t * (4 + i) + i * 90) % 460) + 520,
+            cy = 20 + i * 34 + Math.sin(t * 0.3 + i) * 4,
+            cr = 14 + (i % 3) * 6;
+          c.fillStyle = "rgba(255,255,255,.55)";
+          for (const [dx, dy, k] of [[0, 0, 1], [-cr, 3, 0.7], [cr, 4, 0.75], [cr * 0.4, -cr * 0.4, 0.65]]) {
+            c.beginPath();
+            c.ellipse(cx + dx, cy + dy, cr * k * 1.4, cr * k * 0.7, 0, 0, 6.3);
+            c.fill();
+          }
+        }
+        c.strokeStyle = "rgba(60,70,90,.5)";
+        c.lineWidth = 1;
+        for (let i = 0; i < 3; i++) {
+          const bx = ((t * 10 + i * 140) % 420) + 520,
+            by = 40 + i * 22 + Math.sin(t + i) * 3,
+            w = Math.sin(t * 6 + i) * 2;
+          c.beginPath();
+          c.moveTo(bx - 4, by - w);
+          c.lineTo(bx, by);
+          c.lineTo(bx + 4, by - w);
+          c.stroke();
+        }
+        c.restore();
       }
       /* waterfall in the top-left corner: rocky cliff, falling water and a pond. WF = fall position. */
       const WF = { x: 86, top: 0, mid: 46, bot: 92, w: 46, px: 92, py: 118, prx: 78, pry: 30 };
@@ -4170,6 +4323,7 @@
         }
         c.restore();
         ambient(t);
+        skyClouds(t);
       }
       /* ambient(t): life around the hub. Leaves falling from the trees, butterflies,
          pollen drifting in the light and a bird flying over now and then. Everything is a pure function of time. */
