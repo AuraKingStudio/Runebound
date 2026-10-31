@@ -3803,6 +3803,15 @@
         c.restore();
       }
       /* streamFlow(t): current lines and glints drifting downstream toward the fountain */
+      function ptAt(h) {
+        const pts = streamPts(),
+          i = Math.max(0, Math.min(pts.length - 2, Math.floor(h))),
+          f = Math.max(0, Math.min(1, h - i)),
+          a = pts[i],
+          b = pts[i + 1],
+          m = (k) => a[k] + (b[k] - a[k]) * f;
+        return { x: m("x"), y: m("y"), nx: m("nx"), ny: m("ny"), w: m("w") };
+      }
       function streamFlow(t) {
         const pts = streamPts(),
           n = pts.length;
@@ -3812,14 +3821,13 @@
         for (let k = 0; k < 14; k++) {
           const lane = ((k % 5) - 2) / 2.6,
             head = (t * 9 + k * (n / 14)) % n,
-            i = Math.floor(head),
             len = 4;
-          if (i + len >= n) continue;
+          if (head + len >= n - 1) continue;
           c.strokeStyle = `rgba(210,250,255,${0.35 + 0.15 * Math.sin(t * 3 + k)})`;
           c.lineWidth = 1.6;
           c.beginPath();
-          for (let j = 0; j <= len; j++) {
-            const p = pts[i + j],
+          for (let j = 0; j <= len * 2; j++) {
+            const p = ptAt(head + j / 2),
               w = p.w * 0.7 * lane;
             j ? c.lineTo(p.x + p.nx * w, p.y + p.ny * w) : c.moveTo(p.x + p.nx * w, p.y + p.ny * w);
           }
@@ -3827,7 +3835,7 @@
         }
         /* caustic shimmer: soft light bands rippling across the water */
         for (let i = 0; i < n - 3; i += 3) {
-          const p = pts[i],
+          const p = ptAt(i + ((t * 1.2) % 3)),
             sh = Math.max(0, Math.sin(t * 2.2 - i * 0.35));
           c.fillStyle = `rgba(190,245,240,${0.12 * sh})`;
           c.beginPath();
@@ -3837,7 +3845,7 @@
         /* tiny bubbles riding the current and popping */
         for (let k = 0; k < 12; k++) {
           const head = (t * 5 + k * (n / 12)) % (n - 1),
-            p = pts[Math.floor(head)],
+            p = ptAt(head),
             life = head % 1,
             off = ((k % 4) - 1.5) * p.w * 0.35;
           c.strokeStyle = `rgba(235,255,255,${0.55 * (1 - life)})`;
@@ -3862,8 +3870,7 @@
         /* petals and leaves floating downstream, swaying across the current */
         for (let k = 0; k < 7; k++) {
           const head = (t * 3.2 + k * (n / 7)) % (n - 1),
-            i = Math.floor(head),
-            p = pts[i],
+            p = ptAt(head),
             sway = Math.sin(t * 1.5 + k * 2) * p.w * 0.45,
             px = p.x + p.nx * sway,
             py = p.y + p.ny * sway;
