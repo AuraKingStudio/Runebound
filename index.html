@@ -1263,6 +1263,14 @@
             p.y = HUB.y + (dy / l) * ry;
           }
           riverPush(p);
+          /* the Rune Cistern is solid */
+          const cx = (p.x - WF.px) / (WF.prx + 10 + PR),
+            cy = (p.y - WF.py - 3) / (WF.pry + 6 + PR),
+            cd = Math.hypot(cx, cy);
+          if (cd < 1 && cd > 0) {
+            p.x = WF.px + (cx / cd) * (WF.prx + 10 + PR);
+            p.y = WF.py + 3 + (cy / cd) * (WF.pry + 6 + PR);
+          }
         }
       }
       /* riverPush(p): invisible wall along both banks. The player's body never touches the water.
@@ -4521,7 +4529,6 @@
         g.scale(k, k);
         forest(g, r);
         skyEdge(g);
-        cliff(g);
         outflowGround(g);
         forestTrees(g, r); /* trees after the pond and stream, so their canopies overlap the water */
         /* platform side wall: stacked stone blocks, darker at the bottom */
@@ -4672,21 +4679,64 @@
       function forest(g, r) {
         const { x, y, rx, ry } = PLAT,
           out = (px, py, m) => ((px - x) / (rx * m)) ** 2 + ((py - y) / (ry * m)) ** 2 > 1;
-        const fl = g.createRadialGradient(x, y, 120, x, y, 620);
-        fl.addColorStop(0, "#4f8a3a");
-        fl.addColorStop(1, "#24461f");
+        g.save();
+        g.translate(x, y + 18);
+        g.scale(1, ry / rx);
+        const fl = g.createRadialGradient(0, 0, rx * 0.9, 0, 0, rx * 1.16);
+        fl.addColorStop(0, "#7cbd55");
+        fl.addColorStop(0.5, "#62a446");
+        fl.addColorStop(1, "#447f36");
         g.fillStyle = fl;
-        g.fillRect(0, 0, W, H);
-        /* grass blades */
-        for (let i = 0; i < 1600; i++) {
+        g.fillRect(-rx * 1.4, -rx * 1.4, rx * 2.8, rx * 2.8);
+        g.restore();
+        const ring = (gx, gy) => out(gx, gy, 0.98) && inIsle(gx, gy, 4);
+        /* soft mottled patches of lighter and darker grass */
+        for (let i = 0; i < 70; i++) {
           const gx = r() * W,
             gy = r() * H;
-          g.strokeStyle = r() < 0.5 ? "#6aa84a" : "#2f5e27";
-          g.lineWidth = 1;
+          if (!ring(gx, gy)) continue;
+          g.fillStyle = r() < 0.5 ? "rgba(150,210,100,.18)" : "rgba(40,80,30,.16)";
           g.beginPath();
-          g.moveTo(gx, gy);
-          g.lineTo(gx + (r() - 0.5) * 3, gy - 3 - r() * 4);
-          g.stroke();
+          g.ellipse(gx, gy, 10 + r() * 16, 5 + r() * 7, 0, 0, 6.3);
+          g.fill();
+        }
+        /* grass blades: thick on the ring, two-tone, little tufts of three */
+        for (let i = 0; i < 4200; i++) {
+          const gx = r() * W,
+            gy = r() * H;
+          if (!ring(gx, gy)) continue;
+          const lit = r() < 0.55;
+          g.strokeStyle = lit ? "#8fcf63" : "#3f7a34";
+          g.lineWidth = 1.1;
+          for (let k = -1; k <= 1; k++) {
+            g.beginPath();
+            g.moveTo(gx + k * 1.4, gy);
+            g.lineTo(gx + k * 2.4 + (r() - 0.5) * 2, gy - 3.5 - r() * 4.5);
+            g.stroke();
+          }
+        }
+        /* clover and flower patches */
+        for (let i = 0; i < 60; i++) {
+          const gx = r() * W,
+            gy = r() * H;
+          if (!ring(gx, gy)) continue;
+          const col = ["#ff9fcf", "#ffe27a", "#fff3f8", "#c4a8ff", "#ffb08a"][(r() * 5) | 0];
+          for (let k = 0; k < 5; k++) {
+            const fx = gx + (r() - 0.5) * 14,
+              fy = gy + (r() - 0.5) * 6;
+            g.fillStyle = "#4f8f3f";
+            g.beginPath();
+            g.arc(fx, fy + 1.5, 2, 0, 6.3);
+            g.fill();
+            g.fillStyle = col;
+            g.beginPath();
+            g.arc(fx, fy, 1.7, 0, 6.3);
+            g.fill();
+            g.fillStyle = "rgba(255,240,150,.9)";
+            g.beginPath();
+            g.arc(fx, fy, 0.6, 0, 6.3);
+            g.fill();
+          }
         }
         /* bushes with little flowers hugging the platform edge */
         for (let i = 0; i < 26; i++) {
@@ -4712,12 +4762,7 @@
         const { x, y, rx, ry } = PLAT,
           out = (px, py, m) => ((px - x) / (rx * m)) ** 2 + ((py - y) / (ry * m)) ** 2 > 1;
         /* trees: round canopies with a shadow and a highlight, only outside the platform */
-        const trees = [];
-        for (let i = 0; i < 140; i++) {
-          const tx = r() * (W + 80) - 40,
-            ty = r() * (H + 80) - 40;
-          if (out(tx, ty, 1.18) && inIsle(tx, ty, 28)) trees.push([tx, ty, 26 + r() * 22]);
-        }
+        const trees = [[30, 400, 34], [88, 498, 50], [160, 590, 44], [752, 598, 44], [872, 372, 30]];
         trees.sort((p, q) => p[1] - q[1]);
         for (const [tx, ty, tr] of trees) {
           const bloom = r() < 0.18,
@@ -4774,47 +4819,38 @@
       /* the hub is a floating island. Its round edge curves across the top-right; beyond it we look down
          onto a fantasy skyscape: a sea of clouds, floating islands, a crystal citadel and mountains on the horizon.
          EDGE = the jagged rim of the island, following a big ellipse around the hub. */
-      const ISLE = { x: 470, y: 360, rx: 400, ry: 275 };
-      /* edgeY(x): y of the island's rim. Right of the top it follows the round curve down the right side;
-         to the left it keeps going along the top of the screen, rising gently toward the top-left corner. */
+      const ISLE = { x: 450, y: 372, rx: 448, ry: 282 };
+      /* edgeY(x) / edgeLowY(x): y of the island's rim on its upper / lower curve */
       function edgeY(x) {
-        if (x < ISLE.x) return ISLE.y - ISLE.ry + (ISLE.x - x) * 0.05; /* left of the top: dips gently toward the waterfall corner */
         const k = (x - ISLE.x) / ISLE.rx;
         return ISLE.y - ISLE.ry * Math.sqrt(Math.max(0, 1 - k * k));
       }
-      /* edgeLowY(x): y of the island's rim on its lower-right curve */
       const edgeLowY = (x) => {
         const k = (x - ISLE.x) / ISLE.rx;
         return ISLE.y + ISLE.ry * Math.sqrt(Math.max(0, 1 - k * k));
       };
       /* inIsle(x, y, m): true if (x, y) is on the island at least m pixels from its edge */
-      const inIsle = (x, y, m) =>
-        x < ISLE.x ? y > edgeY(x) + m : ((x - ISLE.x) / (ISLE.rx - m)) ** 2 + ((y - ISLE.y) / (ISLE.ry - m)) ** 2 < 1 || (y > ISLE.y && x < ISLE.x + 1);
+      const inIsle = (x, y, m) => ((x - ISLE.x) / (ISLE.rx - m)) ** 2 + ((y - ISLE.y) / (ISLE.ry - m)) ** 2 < 1;
+      /* EDGE: the jagged rim, all the way round (starts at the right, runs down, left, over the top and back) */
       const EDGE = (() => {
         const r = rng(77),
           pts = [];
-        for (let i = 0; i <= 50; i++) {
-          const ex = -20 + (i / 50) * (ISLE.x + ISLE.rx + 20);
-          pts.push([ex + (r() - 0.5) * 6, edgeY(ex) + (r() - 0.5) * 8]);
+        for (let i = 0; i < 120; i++) {
+          const a = (i / 120) * 6.2832;
+          pts.push([ISLE.x + Math.cos(a) * ISLE.rx + (r() - 0.5) * 6, ISLE.y + Math.sin(a) * ISLE.ry + (r() - 0.5) * 8]);
         }
-        /* round the right side and back along the bottom-right */
-        for (let i = 1; i <= 24; i++) {
-          const a = (i / 24) * 1.25,
-            ex = ISLE.x + ISLE.rx * Math.cos(a),
-            ey = ISLE.y + ISLE.ry * Math.sin(a);
-          pts.push([ex + (r() - 0.5) * 6, ey + (r() - 0.5) * 8]);
-        }
+        pts.push(pts[0].slice());
         return pts;
       })();
-      /* skyClip(ctx): everything beyond the island's edge */
+      /* skyClip(ctx): everything beyond the island's edge (the screen with the island cut out) */
       function skyClip(ctx) {
-        const last = EDGE[EDGE.length - 1];
         ctx.beginPath();
-        ctx.moveTo(EDGE[0][0], -30);
-        for (const [x, y] of EDGE) ctx.lineTo(x, y);
-        ctx.lineTo(last[0] - 40, H + 40);
-        ctx.lineTo(W + 30, H + 40);
-        ctx.lineTo(W + 30, -30);
+        ctx.moveTo(-40, -40);
+        ctx.lineTo(W + 40, -40);
+        ctx.lineTo(W + 40, H + 40);
+        ctx.lineTo(-40, H + 40);
+        ctx.closePath();
+        for (let i = EDGE.length - 1; i >= 0; i--) (i == EDGE.length - 1 ? ctx.moveTo : ctx.lineTo).call(ctx, EDGE[i][0], EDGE[i][1]);
         ctx.closePath();
       }
       /* horizon line, slightly tilted, near the top of the screen */
@@ -4938,7 +4974,7 @@
           }
         }
         /* the island's rocky underside, visible below its lower-right rim, tapering away */
-        const low = EDGE.slice(51);
+        const low = EDGE.filter(([, y]) => y > ISLE.y + 10);
         if (low.length) {
           const ug = g.createLinearGradient(0, 380, 0, H + 40);
           ug.addColorStop(0, "#7a6652");
@@ -4949,7 +4985,7 @@
           for (const [x, y] of low) g.lineTo(x, y);
           for (let i = low.length - 1; i >= 0; i--) {
             const [x, y] = low[i];
-            g.lineTo(x - 18 - i * 1.5, y + 46 + Math.sin(i * 1.7) * 10);
+            g.lineTo(x + (ISLE.x - x) * 0.1, y + 44 + Math.sin(i * 1.7) * 10);
           }
           g.closePath();
           g.fill();
@@ -4957,7 +4993,7 @@
           g.lineWidth = 1.2;
           for (let band = 1; band <= 3; band++) {
             g.beginPath();
-            low.forEach(([x, y], i) => (i ? g.lineTo(x - band * 5, y + band * 11) : g.moveTo(x - band * 5, y + band * 11)));
+            low.forEach(([x, y], i) => (i ? g.lineTo(x + (ISLE.x - x) * 0.03 * band, y + band * 11) : g.moveTo(x + (ISLE.x - x) * 0.03 * band, y + band * 11)));
             g.stroke();
           }
         }
@@ -5360,6 +5396,22 @@
           c.restore();
         }
         c.globalCompositeOperation = "source-over";
+        /* now and then a big soft rainbow arcs over the far sky: fades in for ~40s every ~3 minutes */
+        {
+          const cyc = (t % 180) / 40;
+          if (cyc < 1) {
+            c.save();
+            c.globalAlpha = 0.22 * Math.sin(cyc * Math.PI);
+            c.lineWidth = 5;
+            ["#ff8a8a", "#ffc46b", "#fff07a", "#8dffa8", "#7fd8ff", "#b9a2ff"].forEach((col, i) => {
+              c.strokeStyle = col;
+              c.beginPath();
+              c.arc(700, horizonY(700) + 150, 230 - i * 5, Math.PI * 1.08, Math.PI * 1.92);
+              c.stroke();
+            });
+            c.restore();
+          }
+        }
         /* floating islands at different distances, bobbing slowly */
         for (const [ix, iy, is, k] of [[660, 34, 0.45, 1], [760, 96, 0.8, 3], [880, 160, 1.1, 2], [520, 22, 0.35, 4], [860, 60, 0.55, 0], [120, 8, 0.3, 5], [880, 470, 0.9, 6]])
           floatIsle(ix + Math.sin(t * 0.2 + k) * 3, iy + Math.sin(t * 0.5 + k * 1.7) * 2.5 * is, is, k);
@@ -5388,20 +5440,12 @@
       /* waterfall in the top-left corner: rocky cliff, falling water and a pond. WF = fall position. */
       /* WF: the sky fall. Water pours from an island high above (off screen) in one long column (x, w = width at the bottom)
          straight down into the pond (px, py, prx, pry) on the island's corner. */
-      const WF = { x: 86, w: 22, px: 88, py: 152, prx: 60, pry: 24 };
+      const WF = { x: 100, w: 18, px: 100, py: 250, prx: 26, pry: 14 }; /* the column lands in the Rune Cistern (px, py, prx, pry) */
       /* pondWater(g): the pond surface, same colors as the brook. Drawn again after the brook so the brook flows out of it. */
       /* pondPath(ctx, grow): an organic, lumpy outline for the pond (a few overlapping waves on the radius), grow = extra size */
       function pondPath(ctx, grow) {
-        const { px, py, prx, pry } = WF;
         ctx.beginPath();
-        for (let i = 0; i <= 48; i++) {
-          const a = (i / 48) * 6.283,
-            k = 1 + 0.1 * Math.sin(a * 2 + 0.7) + 0.07 * Math.sin(a * 3 + 2.1) + 0.04 * Math.sin(a * 5 + 4),
-            x = px + Math.cos(a) * (prx * k + grow),
-            y = py + Math.sin(a) * (pry * k + grow * 0.75);
-          i ? ctx.lineTo(x, y) : ctx.moveTo(x, y);
-        }
-        ctx.closePath();
+        ctx.ellipse(WF.px, WF.py, WF.prx + grow, WF.pry + grow * 0.55, 0, 0, 6.3);
       }
       function pondWater(g) {
         g.fillStyle = "#86cdc6"; /* shallow edge */
@@ -5410,181 +5454,84 @@
         g.fillStyle = "#5aa7a6";
         pondPath(g, -6);
         g.fill();
-        g.fillStyle = "#4b9798"; /* deep middle */
-        pondPath(g, -16);
+        g.fillStyle = "#3f8a8e"; /* deep middle */
+        pondPath(g, -12);
         g.fill();
       }
-      /* SHRINE: a little ruined shrine on the pond's far shore, a rune crystal hovering over its pedestal */
-      const SHRINE = { x: 30, y: 136 };
-      /* cliff(g): the pond the sky fall lands in: a mossy shore ring, reeds and a few flat wet stones. Static. */
-      function cliff(g) {
+      /* cisternDraw(g): the Rune Cistern, a round carved basin set into the platform's edge that catches the sky fall.
+         Thick sandstone ring with a visible front wall, glowing runes in the rim, two short pillars at the back
+         (their crystals are animated in waterfall), and a spout where the brook pours out. Static. */
+      function cisternDraw(g) {
         const { px, py, prx, pry } = WF,
-          r = rng(41);
-        g.fillStyle = "#3d6b3a";
-        pondPath(g, 8);
+          R = prx + 10,
+          Ry = pry + 6;
+        /* front wall and shadow */
+        g.fillStyle = "rgba(0,0,0,.25)";
+        g.beginPath();
+        g.ellipse(px + 4, py + 9, R + 2, Ry + 3, 0, 0, 6.3);
         g.fill();
-        g.fillStyle = "#4d8a40";
-        pondPath(g, 4);
+        g.fillStyle = "#8a7558";
+        g.beginPath();
+        g.ellipse(px, py + 6, R, Ry, 0, 0, 6.3);
+        g.fill();
+        g.strokeStyle = "rgba(60,45,30,.5)";
+        g.lineWidth = 1;
+        for (let a = 0.25; a < 3; a += 0.42) {
+          g.beginPath();
+          g.moveTo(px + Math.cos(a) * R, py + Math.sin(a) * Ry);
+          g.lineTo(px + Math.cos(a) * R, py + 6 + Math.sin(a) * Ry);
+          g.stroke();
+        }
+        /* rim top: carved blocks */
+        g.fillStyle = "#cdb48a";
+        g.beginPath();
+        g.ellipse(px, py, R, Ry, 0, 0, 6.3);
+        g.fill();
+        g.fillStyle = "#e2cba0";
+        g.beginPath();
+        g.ellipse(px - 2, py - 1.5, R - 3, Ry - 2, 0, 0, 6.3);
+        g.fill();
+        g.strokeStyle = "rgba(90,70,45,.45)";
+        for (let a = 0; a < 6.28; a += 0.52) {
+          g.beginPath();
+          g.moveTo(px + Math.cos(a) * (prx + 1), py + Math.sin(a) * (pry + 1));
+          g.lineTo(px + Math.cos(a) * R, py + Math.sin(a) * Ry);
+          g.stroke();
+        }
+        /* water */
+        g.fillStyle = "#6e5a40";
+        pondPath(g, 2);
         g.fill();
         pondWater(g);
-        /* deeper water where the column lands */
-        const dg = g.createRadialGradient(WF.x, py - 4, 2, WF.x, py - 4, prx * 0.7);
-        dg.addColorStop(0, "#3b8a8c");
-        dg.addColorStop(1, "rgba(90,167,166,0)");
-        g.fillStyle = dg;
-        g.beginPath();
-        g.ellipse(WF.x, py - 4, prx * 0.7, pry * 0.7, 0, 0, 6.3);
-        g.fill();
-        /* reeds on the far shore */
-        for (let k = 0; k < 18; k++) {
-          const a = Math.PI + 0.3 + (k / 17) * (Math.PI - 0.6),
-            bx = px + Math.cos(a) * (prx + 4) + (r() - 0.5) * 6,
-            by = py + Math.sin(a) * (pry + 3);
-          g.strokeStyle = r() < 0.5 ? "#4f8f3f" : "#6aad4c";
-          g.lineWidth = 1.4;
-          g.beginPath();
-          g.moveTo(bx, by);
-          g.quadraticCurveTo(bx + (r() - 0.5) * 4, by - 8, bx + (r() - 0.5) * 6, by - 13 - r() * 6);
-          g.stroke();
-          if (r() < 0.3) {
-            g.fillStyle = "#7a5a3a"; /* cattail */
-            g.beginPath();
-            g.ellipse(bx + (r() - 0.5) * 3, by - 14 - r() * 4, 1.3, 3, 0, 0, 6.3);
-            g.fill();
-          }
+        /* glowing runes carved round the rim */
+        g.fillStyle = "rgba(110,240,220,.85)";
+        g.font = "6px serif";
+        g.textAlign = "center";
+        g.textBaseline = "middle";
+        for (let n = 0; n < 8; n++) {
+          const a = (n / 8) * 6.28 + 0.2;
+          g.fillText(RUNES_HUB[n * 3 + 1], px + Math.cos(a) * (prx + 5), py + Math.sin(a) * (pry + 3));
         }
-        /* pebble shore */
-        for (let k = 0; k < 46; k++) {
-          const a = r() * 6.283,
-            q = 1.04 + r() * 0.1,
-            bx = px + Math.cos(a) * prx * q,
-            by = py + Math.sin(a) * pry * q + 2;
-          if (Math.hypot(bx - 98, by - 158) < 16) continue; /* keep the brook's mouth clear */
-          g.fillStyle = ["#9a8670", "#857259", "#b3a089", "#6e5f4d"][(r() * 4) | 0];
-          g.beginPath();
-          g.ellipse(bx, by, 1.6 + r() * 2.2, 1.1 + r() * 1.2, r() * 3, 0, 6.3);
-          g.fill();
+        /* spout on the near side where the brook pours out */
+        const sx = px + 6,
+          sy = py + pry + 2;
+        g.fillStyle = "#b39a72";
+        g.fillRect(sx - 9, sy - 3, 18, 9);
+        g.fillStyle = "#5aa7a6";
+        g.fillRect(sx - 5, sy - 4, 10, 10);
+        g.fillStyle = "rgba(220,255,255,.5)";
+        g.fillRect(sx - 4, sy - 3, 2, 8);
+        /* two short pillars at the back for the crystals */
+        for (const dx of [-R + 4, R - 4]) {
+          const bx = px + dx,
+            by = py - 6;
+          g.fillStyle = "#9c8a6c";
+          g.fillRect(bx - 3.5, by - 14, 7, 14);
+          g.fillStyle = "#cdb48a";
+          g.fillRect(bx - 3.5, by - 14, 2.5, 14);
+          g.fillStyle = "#e2cba0";
+          g.fillRect(bx - 5, by - 16, 10, 3);
         }
-        /* the ruined shrine: a flagstone base, two broken pillars, a fallen lintel, a pedestal, moss and ivy */
-        {
-          const { x: sx, y: sy } = SHRINE;
-          g.fillStyle = "#6e6253";
-          g.beginPath();
-          g.ellipse(sx, sy + 4, 20, 7, 0, 0, 6.3);
-          g.fill();
-          g.fillStyle = "#a8997f";
-          g.beginPath();
-          g.ellipse(sx, sy + 2, 19, 6, 0, 0, 6.3);
-          g.fill();
-          g.strokeStyle = "rgba(60,50,40,.35)";
-          g.lineWidth = 0.8;
-          for (const dx of [-8, 0, 8]) {
-            g.beginPath();
-            g.moveTo(sx + dx, sy - 3);
-            g.lineTo(sx + dx + 2, sy + 7);
-            g.stroke();
-          }
-          const pillar = (cx, h, brk) => {
-            g.fillStyle = "#8d8070";
-            g.fillRect(cx - 3.5, sy - h, 7, h);
-            g.fillStyle = "#b0a28c";
-            g.fillRect(cx - 3.5, sy - h, 2.5, h);
-            g.fillStyle = "#6e6253";
-            g.fillRect(cx + 2, sy - h, 1.5, h);
-            g.fillStyle = "#9c8e78";
-            g.fillRect(cx - 4.5, sy - 2, 9, 3);
-            g.beginPath(); /* jagged broken top */
-            g.moveTo(cx - 3.5, sy - h);
-            g.lineTo(cx - 1, sy - h - brk);
-            g.lineTo(cx + 1, sy - h - 1);
-            g.lineTo(cx + 3.5, sy - h - brk * 0.6);
-            g.lineTo(cx + 3.5, sy - h + 1);
-            g.lineTo(cx - 3.5, sy - h + 1);
-            g.fillStyle = "#a89a84";
-            g.fill();
-            g.fillStyle = "#5c9e45"; /* moss on top */
-            g.beginPath();
-            g.ellipse(cx, sy - h, 4, 1.6, 0, 0, 6.3);
-            g.fill();
-          };
-          pillar(sx - 12, 22, 4);
-          pillar(sx + 12, 15, 3);
-          /* fallen lintel leaning on the base */
-          g.save();
-          g.translate(sx + 15, sy + 3);
-          g.rotate(0.25);
-          g.fillStyle = "#8d8070";
-          g.fillRect(-9, -2.5, 18, 5);
-          g.fillStyle = "#b0a28c";
-          g.fillRect(-9, -2.5, 18, 1.6);
-          g.fillStyle = "#5c9e45";
-          g.beginPath();
-          g.ellipse(-3, -2.5, 5, 1.4, 0, 0, 6.3);
-          g.fill();
-          g.restore();
-          /* pedestal in the middle with a carved rune */
-          g.fillStyle = "#7d705f";
-          g.fillRect(sx - 4, sy - 9, 8, 10);
-          g.fillStyle = "#a89a84";
-          g.fillRect(sx - 5.5, sy - 11, 11, 3);
-          g.fillStyle = "rgba(110,240,220,.8)";
-          g.font = "6px serif";
-          g.textAlign = "center";
-          g.textBaseline = "middle";
-          g.fillText("ᚱ", sx, sy - 4);
-          /* ivy creeping up the tall pillar */
-          g.strokeStyle = "#3f7a34";
-          g.lineWidth = 1;
-          g.beginPath();
-          g.moveTo(sx - 14, sy);
-          g.bezierCurveTo(sx - 9, sy - 6, sx - 15, sy - 12, sx - 11, sy - 18);
-          g.stroke();
-          g.fillStyle = "#6aad4c";
-          for (const [lx, ly] of [[-12, -4], [-13, -9], [-11, -13], [-12, -17]]) {
-            g.beginPath();
-            g.ellipse(sx + lx, sy + ly, 1.8, 1.1, 0.5, 0, 6.3);
-            g.fill();
-          }
-          /* a few flowers at its foot */
-          for (const [fx, fy, fc] of [[-18, 4, "#ff9fcf"], [17, 7, "#ffe27a"], [-6, 8, "#fff3f8"], [6, 9, "#c4a8ff"]]) {
-            g.fillStyle = fc;
-            g.beginPath();
-            g.arc(sx + fx, sy + fy, 1.6, 0, 6.3);
-            g.fill();
-          }
-        }
-        /* flat wet stones around the shore */
-        const stone = (sx, sy, sw, sh, seed) => {
-          const rr = rng(seed),
-            pts = [];
-          for (let k = 0; k < 7; k++) {
-            const a = (k / 7) * 6.283,
-              q = 0.8 + rr() * 0.3;
-            pts.push([sx + Math.cos(a) * sw * q, sy + Math.sin(a) * sh * q]);
-          }
-          g.fillStyle = "#4e4337";
-          g.beginPath();
-          pts.forEach(([a, b], k) => (k ? g.lineTo(a, b + 2) : g.moveTo(a, b + 2)));
-          g.closePath();
-          g.fill();
-          g.fillStyle = "#857259";
-          g.beginPath();
-          pts.forEach(([a, b], k) => (k ? g.lineTo(a, b) : g.moveTo(a, b)));
-          g.closePath();
-          g.fill();
-          g.fillStyle = "rgba(255,240,220,.25)";
-          g.beginPath();
-          g.ellipse(sx - sw * 0.25, sy - sh * 0.35, sw * 0.45, sh * 0.25, 0, 0, 6.3);
-          g.fill();
-          g.fillStyle = "#5c9e45";
-          g.beginPath();
-          g.ellipse(sx + sw * 0.25, sy - sh * 0.45, sw * 0.4, sh * 0.3, 0, 0, 6.3);
-          g.fill();
-        };
-        stone(px - prx + 4, py + 6, 10, 6, 51);
-        stone(px + prx - 10, py - 12, 9, 5, 52);
-        stone(px - prx * 0.4, py + pry - 2, 7, 4, 53);
-        stone(px + prx * 0.3, py - pry + 1, 6, 3.5, 54);
       }
       /* waterfall(t): the sky fall. A long column from an island far above the screen, swaying slightly in the wind,
          streaks racing down it, droplets peeling off its sides, and a churning landing: foam, splash, spreading rings, mist
@@ -5592,7 +5539,7 @@
       function waterfall(t) {
         const { x, w, py, prx, pry } = WF,
           y0 = -60,
-          y1 = py - 6,
+          y1 = py - 2,
           sway = (yy) => Math.sin(t * 0.9 + yy * 0.012) * (1 - yy / y1) * 3; /* the top sways, the bottom is pinned to the pond */
         c.save();
         /* faint shadow of the column on the ground behind it, and a soft glow of spray around it */
@@ -5675,7 +5622,7 @@
         for (let i = 0; i < 12; i++) {
           const p = (t * 1.2 + i / 12) % 1,
             dir = i % 2 ? 1 : -1,
-            sx = x + dir * (4 + p * (18 + (i % 3) * 8)),
+            sx = x + dir * (4 + p * (12 + (i % 3) * 5)),
             sy = y1 - Math.sin(p * Math.PI) * (12 + (i % 4) * 4);
           c.fillStyle = `rgba(230,255,255,${0.75 * (1 - p)})`;
           c.beginPath();
@@ -5693,84 +5640,42 @@
           c.fillStyle = sp;
           c.fillRect(mx - mr, my - mr, mr * 2, mr * 2);
         }
-        /* faint rainbow in the mist */
         c.globalCompositeOperation = "source-over";
-        c.globalAlpha = 0.18 + 0.07 * Math.sin(t * 0.8);
-        c.lineWidth = 2;
-        ["#ff6b6b", "#ffd84a", "#7dff9a", "#5ad7ff", "#b48cff"].forEach((cl2, i) => {
-          c.strokeStyle = cl2;
-          c.beginPath();
-          c.arc(x + 6, y1 + 6, 36 - i * 2, 3.5, 5.6);
-          c.stroke();
-        });
-        c.globalAlpha = 1;
-        /* lily pads bobbing on the pond, two with flowers */
-        for (const [lx, ly, lr, fl, k] of [[WF.px - 34, WF.py + 6, 6, 1, 0], [WF.px - 22, WF.py + 13, 4.5, 0, 1], [WF.px + 30, WF.py + 9, 5.5, 1, 2], [WF.px + 40, WF.py - 4, 4, 0, 3]]) {
-          const by = ly + Math.sin(t * 1.3 + k) * 0.6;
-          c.fillStyle = "#3f7a34";
-          c.beginPath();
-          c.ellipse(lx, by + 0.6, lr, lr * 0.5, 0, 0.35, 6.0);
-          c.lineTo(lx, by + 0.6);
-          c.fill();
-          c.fillStyle = "#62a34a";
-          c.beginPath();
-          c.ellipse(lx, by, lr, lr * 0.5, 0, 0.35, 6.0);
-          c.lineTo(lx, by);
-          c.fill();
-          if (fl) {
-            c.fillStyle = "#ffd0e4";
-            for (let i = 0; i < 5; i++) {
-              const a = (i / 5) * 6.28 + k;
-              c.beginPath();
-              c.ellipse(lx + Math.cos(a) * 1.8, by - 1.5 + Math.sin(a) * 0.9, 1.8, 1, a, 0, 6.3);
-              c.fill();
-            }
-            c.fillStyle = "#ffe27a";
-            c.beginPath();
-            c.arc(lx, by - 1.5, 1, 0, 6.3);
-            c.fill();
-          }
-        }
-        /* the shrine's rune crystal: hovers, slowly turns, pulses, sheds motes, and lights the water */
-        {
-          const { x: sx, y: sy } = SHRINE,
-            cy = sy - 20 + Math.sin(t * 1.6) * 2.5,
-            pulse = 0.6 + 0.4 * Math.sin(t * 2.2),
-            sq = Math.cos(t * 1.1); /* turning: the crystal narrows and widens */
+        /* the cistern's two crystals: hover over the pillars, pulse, and shed motes */
+        for (const [dx, k] of [[-WF.prx - 6, 0], [WF.prx + 6, 1]]) {
+          const sx = WF.px + dx,
+            cy = WF.py - 30 + Math.sin(t * 1.6 + k * 2) * 2,
+            pulse = 0.6 + 0.4 * Math.sin(t * 2.2 + k),
+            sq = Math.cos(t * 1.1 + k),
+            hw = 2.8 * (0.35 + 0.65 * Math.abs(sq));
           c.globalCompositeOperation = "lighter";
-          const gl = c.createRadialGradient(sx, cy, 1, sx, cy, 26);
+          const gl = c.createRadialGradient(sx, cy, 1, sx, cy, 18);
           gl.addColorStop(0, `rgba(120,255,235,${0.35 * pulse})`);
           gl.addColorStop(1, "rgba(120,255,235,0)");
           c.fillStyle = gl;
-          c.fillRect(sx - 26, cy - 26, 52, 52);
-          /* reflection on the pond */
-          c.fillStyle = `rgba(120,255,235,${0.12 * pulse})`;
-          c.beginPath();
-          c.ellipse(sx + 18, WF.py - 6, 14, 3, 0, 0, 6.3);
-          c.fill();
+          c.fillRect(sx - 18, cy - 18, 36, 36);
           c.globalCompositeOperation = "source-over";
-          const hw = 3.2 * (0.35 + 0.65 * Math.abs(sq));
           c.fillStyle = "#3fd6c6";
           c.beginPath();
-          c.moveTo(sx, cy - 8);
+          c.moveTo(sx, cy - 7);
           c.lineTo(sx + hw, cy);
-          c.lineTo(sx, cy + 6);
+          c.lineTo(sx, cy + 5);
           c.lineTo(sx - hw, cy);
           c.closePath();
           c.fill();
           c.fillStyle = `rgba(230,255,252,${0.6 + 0.3 * pulse})`;
           c.beginPath();
-          c.moveTo(sx, cy - 8);
+          c.moveTo(sx, cy - 7);
           c.lineTo(sx + hw * (sq > 0 ? 1 : 0.2), cy);
           c.lineTo(sx, cy + 1);
           c.closePath();
           c.fill();
           c.globalCompositeOperation = "lighter";
-          for (let i = 0; i < 6; i++) {
-            const p = (t * 0.4 + i / 6) % 1;
+          for (let i = 0; i < 4; i++) {
+            const p = (t * 0.4 + i / 4 + k * 0.13) % 1;
             c.fillStyle = `rgba(170,255,240,${0.8 * Math.sin(p * Math.PI)})`;
             c.beginPath();
-            c.arc(sx + Math.sin(t * 1.5 + i * 2) * (5 + p * 6), cy + 4 - p * 26, 1.1, 0, 6.3);
+            c.arc(sx + Math.sin(t * 1.5 + i * 2) * (4 + p * 5), cy + 3 - p * 22, 1, 0, 6.3);
             c.fill();
           }
           c.globalCompositeOperation = "source-over";
@@ -5793,8 +5698,7 @@
         if (STREAM) return STREAM;
         const r = rng(23),
           segs = [
-            [WF.px + 10, WF.py + 6, 60, 200, 96, 258],
-            [96, 258, 150, 300, 250, 292],
+            [WF.px + 6, WF.py + WF.pry + 4, 130, 304, 250, 292],
             [250, 292, 350, 284, 450, 352],
             [450, 352, 540, 412, 640, 405],
             [640, 405, 826, 372, 826, 444], /* turns to run straight down where it leaves the platform */
@@ -5817,7 +5721,7 @@
             l = Math.hypot(dx, dy) || 1;
           p.nx = -dy / l;
           p.ny = dx / l;
-          p.w = 15 + 6 * Math.sin(i * 0.23) + 4 * Math.sin(i * 0.61 + 1) + (r() - 0.5) * 3;
+          p.w = 20 + 2.2 * Math.sin(i * 0.23) + 1 * Math.sin(i * 0.61 + 1) + (r() - 0.5) * 0.8; /* a steady width with a gentle swell */
         }
         /* the last stretch settles to an even width so it meets the fall down the wall cleanly */
         for (let i = pts.length - 14; i < pts.length; i++) {
@@ -5924,7 +5828,7 @@
             g.stroke();
           }
         }
-        pondWater(g);
+        cisternDraw(g); /* over the brook's start, so the brook pours out of the spout */
       }
       /* the river's end: it pours off the platform's stone lip, down the side wall, then runs away through the forest off screen.
          outflowPath(ctx) traces that last stretch on the ground. */
@@ -6229,7 +6133,8 @@
       /* the Rune Crossing: a grand round stone dais laid flat over the river in the middle of the hub.
          It is the only way across. bridgeAt(p) is true while p stands on it (walk collision).
          Drawn each frame after the water, so ripples and particles never show through it. */
-      const BRIDGES = [{ i: 72 }];
+      /* the Rune Crossing sits on the river point nearest the hub centre (PORTAL), whatever the river's shape */
+      const BRIDGES = [{ get i() { if (this._i != null) return this._i; const p = streamPts(); let b = 0; p.forEach((q, n) => { if (Math.hypot(q.x - PORTAL.x, q.y - PORTAL.y) < Math.hypot(p[b].x - PORTAL.x, p[b].y - PORTAL.y)) b = n; }); return (this._i = b); } }];
       function crossFrame() {
         const q = streamPts()[BRIDGES[0].i],
           R = (q.w + 34) / 0.6;
