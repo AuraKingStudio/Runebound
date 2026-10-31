@@ -1462,6 +1462,7 @@
         }
         botLook(v);
         v.chatty = Math.random() < 0.3; /* most players never say a word */
+        v.dasher = Math.random() < 0.35; /* some dash whenever they can to get places faster */
         return v;
       }
       /* fillBots(): first visit - the hub is already lively (bots part-way through their stay). After that, joins trickle in. */
@@ -2345,6 +2346,22 @@
             ux /= l;
             uy /= l;
           }
+        }
+        /* smart bots dash toward a far goal whenever their dash is ready, just like a player would */
+        v.dcd = Math.max(0, (v.dcd || 0) - dt);
+        if (v.ds > 0) {
+          v.ds -= dt;
+          v.tx = v.x + v.dvx * dt;
+          v.ty = v.y + v.dvy * dt;
+          return;
+        }
+        const D = DASH[v.cls];
+        if (v.dasher && !v.dcd && d > D.d * 1.4 && !bridgeAt(v)) {
+          v.dvx = ux * (D.d / D.t);
+          v.dvy = uy * (D.d / D.t);
+          v.ds = D.t;
+          v.dcd = D.cd * rnd(1, 1.6); /* not always the very instant it comes back */
+          return;
         }
         const step = Math.min(d, CL[v.cls].sp * spm() * dt); /* exactly a player's run speed (with your Wind Boots bonus) */
         v.tx = v.x + ux * step;
@@ -6924,21 +6941,29 @@
           g.arc(cx, cy, sr * 0.42, 0, 6.3);
           g.stroke();
         }
-        /* where the arcs meet: teal inlay, pulsing */
-        g.fillStyle = `rgba(90,200,185,${0.75 + 0.2 * Math.sin(t * 1.6)})`;
-        g.beginPath();
-        g.arc(0, 0, sr * 0.2, 0, 6.3);
-        g.fill();
-        g.strokeStyle = "#c8962c";
-        g.lineWidth = 2;
-        g.stroke();
+        /* where the arcs meet: a turning vortex, the sign of a gate - step here and you are carried away */
+        g.lineCap = "round";
+        for (let arm = 0; arm < 3; arm++) {
+          g.beginPath();
+          for (let k = 0; k <= 24; k++) {
+            const u = k / 24,
+              a = -t * 1.2 + arm * 2.094 + u * 4.2,
+              rr = sr * 0.26 * (1 - u * 0.85);
+            k ? g.lineTo(Math.cos(a) * rr, Math.sin(a) * rr) : g.moveTo(Math.cos(a) * rr, Math.sin(a) * rr);
+          }
+          g.strokeStyle = "#c8962c";
+          g.lineWidth = 3.4;
+          g.stroke();
+          g.strokeStyle = arm ? "#f6d27a" : "#7fe6d2";
+          g.lineWidth = 1.6;
+          g.stroke();
+        }
         g.shadowColor = "#5af0dc";
         g.shadowBlur = 8 + 5 * Math.sin(t * 1.6);
         g.fillStyle = "#e9fffb";
-        g.font = "bold " + Math.round(sr * 0.28) + "px " + RUNE_FONT;
-        g.textAlign = "center";
-        g.textBaseline = "middle";
-        g.fillText("ᛉ", 0, 1);
+        g.beginPath();
+        g.arc(0, 0, sr * 0.035 + 1, 0, 6.3);
+        g.fill();
         g.restore();
         /* four glowing lantern studs on the rim */
         for (let i = 0; i < 4; i++) {
