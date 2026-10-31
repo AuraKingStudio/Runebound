@@ -3844,7 +3844,7 @@
         g.fill();
         pondWater(g);
         /* rocky cliff behind the fall */
-        const rocks = [[90, 6, 36], [24, 36, 40], [-8, 70, 32], [156, 36, 38], [176, 70, 30]]; /* one rock behind the top of the fall, the rest framing it left and right, none in front of the water */
+        const rocks = [[60, -20, 66], [140, -10, 64], [20, 24, 72], [96, 10, 70], [168, 34, 60], [-24, 76, 52], [200, 72, 44]]; /* big rocky hill filling the top-left corner so no far sky shows behind the fall */
         for (const [rx0, ry0, rr] of rocks) {
           g.fillStyle = "#5c5a55";
           g.beginPath();
