@@ -3330,37 +3330,149 @@
         }
         c.restore();
       }
-      /* one stream carries the waterfall's pond across the platform into the fountain.
-         streamPath(ctx) traces it from the pond, over the platform edge, to the fountain rim. */
-      function streamPath(ctx) {
+      /* the waterfall's pond feeds a natural stream that winds across the platform and runs under the fountain.
+         STREAM = sampled centerline points {x, y, nx, ny (normal), w (half width)}; built once by streamPts(). */
+      let STREAM = null;
+      function streamPts() {
+        if (STREAM) return STREAM;
+        const r = rng(23),
+          segs = [
+            [WF.px + 4, WF.py + WF.pry - 6, 64, 200, 96, 258],
+            [96, 258, 150, 300, 250, 292],
+            [250, 292, 350, 284, 450, 352],
+          ],
+          pts = [];
+        for (const [x0, y0, cx, cy, x1, y1] of segs)
+          for (let i = 0; i < 24; i++) {
+            const t = i / 24,
+              u = 1 - t;
+            pts.push({ x: u * u * x0 + 2 * u * t * cx + t * t * x1, y: u * u * y0 + 2 * u * t * cy + t * t * y1 });
+          }
+        pts.push({ x: 450, y: 352 });
+        /* normals + a width that swells and narrows like a real brook */
+        for (let i = 0; i < pts.length; i++) {
+          const p = pts[i],
+            q = pts[Math.min(pts.length - 1, i + 1)],
+            o = pts[Math.max(0, i - 1)],
+            dx = q.x - o.x,
+            dy = q.y - o.y,
+            l = Math.hypot(dx, dy) || 1;
+          p.nx = -dy / l;
+          p.ny = dx / l;
+          p.w = 15 + 6 * Math.sin(i * 0.23) + 4 * Math.sin(i * 0.61 + 1) + (r() - 0.5) * 3;
+        }
+        return (STREAM = pts);
+      }
+      /* bank(ctx, pts, grow, jit): closed outline of the stream, grow = extra half width, jit = edge wobble */
+      function bank(ctx, pts, grow, jit, r) {
         ctx.beginPath();
-        ctx.moveTo(WF.px + 6, WF.py + WF.pry - 4);
-        ctx.quadraticCurveTo(68, 205, 92, 262);
-        ctx.quadraticCurveTo(225, 250, 378, 334);
+        pts.forEach((p, i) => {
+          const w = p.w + grow + (r ? (r() - 0.5) * jit : 0);
+          i ? ctx.lineTo(p.x + p.nx * w, p.y + p.ny * w) : ctx.moveTo(p.x + p.nx * w, p.y + p.ny * w);
+        });
+        for (let i = pts.length - 1; i >= 0; i--) {
+          const p = pts[i],
+            w = p.w + grow + (r ? (r() - 0.5) * jit : 0);
+          ctx.lineTo(p.x - p.nx * w, p.y - p.ny * w);
+        }
+        ctx.closePath();
       }
       function streams(g) {
-        g.lineCap = "round";
-        streamPath(g);
-        g.strokeStyle = "#b39570";
-        g.lineWidth = 22;
-        g.stroke();
-        streamPath(g);
-        g.strokeStyle = "#1f8fa3";
-        g.lineWidth = 14;
-        g.stroke();
-        g.lineCap = "butt";
+        const pts = streamPts(),
+          r = rng(31);
+        /* damp earth bank, then the water, then a darker deep channel */
+        g.fillStyle = "#7b6a4e";
+        bank(g, pts, 7, 6, r);
+        g.fill();
+        g.fillStyle = "#5d8a4a";
+        bank(g, pts, 3, 5, r);
+        g.fill();
+        const wg = g.createLinearGradient(80, 150, 450, 352);
+        wg.addColorStop(0, "#3fb4c8");
+        wg.addColorStop(1, "#1f8fa3");
+        g.fillStyle = wg;
+        bank(g, pts, -1, 3, r);
+        g.fill();
+        g.fillStyle = "#16708a";
+        bank(g, pts.map((p) => ({ ...p, w: p.w * 0.38 })), 0, 2, r);
+        g.fill();
+        /* rounded river stones along both banks */
+        for (let i = 2; i < pts.length - 6; i += 2) {
+          for (const side of [-1, 1]) {
+            if (r() < 0.45) continue;
+            const p = pts[i],
+              d = p.w + 3 + r() * 5,
+              sx = p.x + p.nx * d * side,
+              sy = p.y + p.ny * d * side,
+              sr = 3 + r() * 5;
+            g.fillStyle = "#00000033";
+            g.beginPath();
+            g.ellipse(sx + 1, sy + 1.5, sr, sr * 0.7, 0, 0, 6.3);
+            g.fill();
+            g.fillStyle = r() < 0.5 ? "#8f8a80" : "#a59f92";
+            g.beginPath();
+            g.ellipse(sx, sy, sr, sr * 0.7, r(), 0, 6.3);
+            g.fill();
+            g.fillStyle = "#ffffff30";
+            g.beginPath();
+            g.ellipse(sx - sr * 0.25, sy - sr * 0.25, sr * 0.45, sr * 0.3, 0, 0, 6.3);
+            g.fill();
+          }
+        }
+        /* a few stones poking out of the water, and reeds on the bends */
+        for (const i of [14, 33, 51]) {
+          const p = pts[i];
+          g.fillStyle = "#8f8a80";
+          g.beginPath();
+          g.ellipse(p.x + p.nx * 4, p.y + p.ny * 4, 5, 3.5, 0, 0, 6.3);
+          g.fill();
+        }
+        g.strokeStyle = "#4f7a36";
+        g.lineWidth = 1.5;
+        for (const i of [8, 26, 44, 60]) {
+          const p = pts[i],
+            bx = p.x + p.nx * (p.w + 4),
+            by = p.y + p.ny * (p.w + 4);
+          for (let k = 0; k < 4; k++) {
+            g.beginPath();
+            g.moveTo(bx + k * 2, by);
+            g.lineTo(bx + k * 2 + (k - 1.5) * 2, by - 10 - k * 2);
+            g.stroke();
+          }
+        }
       }
-      /* streamFlow(t): ripples moving from the pond toward the fountain */
+      /* streamFlow(t): current lines and glints drifting downstream toward the fountain */
       function streamFlow(t) {
+        const pts = streamPts(),
+          n = pts.length;
         c.save();
         c.globalCompositeOperation = "lighter";
         c.lineCap = "round";
-        c.setLineDash([6, 14]);
-        c.lineDashOffset = -t * 30;
-        c.strokeStyle = "rgba(200,250,255,.45)";
-        c.lineWidth = 3;
-        streamPath(c);
-        c.stroke();
+        for (let k = 0; k < 14; k++) {
+          const lane = ((k % 5) - 2) / 2.6,
+            head = (t * 9 + k * (n / 14)) % n,
+            i = Math.floor(head),
+            len = 4;
+          if (i + len >= n) continue;
+          c.strokeStyle = `rgba(210,250,255,${0.35 + 0.15 * Math.sin(t * 3 + k)})`;
+          c.lineWidth = 1.6;
+          c.beginPath();
+          for (let j = 0; j <= len; j++) {
+            const p = pts[i + j],
+              w = p.w * 0.7 * lane;
+            j ? c.lineTo(p.x + p.nx * w, p.y + p.ny * w) : c.moveTo(p.x + p.nx * w, p.y + p.ny * w);
+          }
+          c.stroke();
+        }
+        /* soft glints */
+        for (let k = 0; k < 10; k++) {
+          const p = pts[Math.floor((t * 6 + k * 7.3) % (n - 1))],
+            tw = Math.max(0, Math.sin(t * 4 + k * 2));
+          c.fillStyle = `rgba(255,255,255,${0.55 * tw})`;
+          c.beginPath();
+          c.ellipse(p.x + p.nx * ((k % 3) - 1) * 5, p.y + p.ny * ((k % 3) - 1) * 5, 2.2, 0.9, 0, 0, 6.3);
+          c.fill();
+        }
         c.restore();
       }
       /* magic teleport fountain in the middle of the platform. FOUNT = basin footprint, also used to block walking through it. */
