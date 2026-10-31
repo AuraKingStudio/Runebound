@@ -6244,7 +6244,7 @@
             [WF.px + 8, WF.py + WF.pry * 0.4, 150, 312, 250, 292], /* starts inside the cistern, so the canal cuts through its rim */
             [250, 292, 350, 284, 450, 352],
             [450, 352, 530, 400, 566, 470],
-            [566, 470, 590, 518, 636, 536], /* toward the viewer, ending at the Rune Sluice by the platform's edge */
+            [566, 470, 594, 522, 646, 552], /* toward the viewer, into the water portal at the disc's edge */
           ],
           pts = [];
         for (const [x0, y0, cx, cy, x1, y1] of segs)
@@ -6410,111 +6410,108 @@
         }
         cisternDraw(g); /* over the brook's start, so the brook pours out of the spout */
       }
-      /* sluiceDraw(g, pts): the Rune Sluice where the canal ends: the water darkens as it drains under the plaza through
-         a carved stone frame (two posts and a lintel) with glowing bars across the channel. Static; the churn is in sluiceFx. */
-      function sluiceDraw(g, pts) {
-        const n = pts.length,
-          e = pts[n - 1],
-          b = pts[n - 4],
-          hw = e.w + 9;
-        /* the water darkening into the drain */
-        const dg = g.createLinearGradient(b.x, b.y, e.x, e.y);
-        dg.addColorStop(0, "rgba(20,50,55,0)");
-        dg.addColorStop(1, "rgba(20,50,55,.85)");
-        g.fillStyle = dg;
-        bank(g, pts.slice(n - 5), -3, 0);
-        g.fill();
-        /* the end wall of the channel */
-        const ox = e.ny,
-          oy = -e.nx; /* along the flow */
-        g.fillStyle = "#cdb48a";
-        g.beginPath();
-        g.moveTo(e.x + e.nx * hw, e.y + e.ny * hw);
-        g.lineTo(e.x - e.nx * hw, e.y - e.ny * hw);
-        g.lineTo(e.x - e.nx * hw + ox * 6, e.y - e.ny * hw + oy * 6);
-        g.lineTo(e.x + e.nx * hw + ox * 6, e.y + e.ny * hw + oy * 6);
-        g.closePath();
-        g.fill();
-        /* glowing bars across the channel */
-        const gx = b.x * 0.4 + e.x * 0.6,
-          gy = b.y * 0.4 + e.y * 0.6;
-        for (let k = -3; k <= 3; k++) {
-          const px = gx + e.nx * k * (e.w / 3.6),
-            py = gy + e.ny * k * (e.w / 3.6);
-          g.strokeStyle = "#5e5444";
-          g.lineWidth = 2.4;
-          g.beginPath();
-          g.moveTo(px - ox * 4, py - oy * 4);
-          g.lineTo(px + ox * 4, py + oy * 4);
-          g.stroke();
-          g.strokeStyle = "rgba(110,240,220,.85)";
-          g.lineWidth = 0.9;
-          g.beginPath();
-          g.moveTo(px - ox * 3, py - oy * 3);
-          g.lineTo(px + ox * 3, py + oy * 3);
-          g.stroke();
-        }
-        /* frame: two posts on the curbs and a carved lintel spanning the channel, a rune at its centre */
-        const post = (sd) => {
-          const px = gx + e.nx * (e.w + 5) * sd,
-            py = gy + e.ny * (e.w + 5) * sd;
-          g.fillStyle = "#8c7556";
-          g.fillRect(px - 4, py - 22, 8, 23);
-          g.fillStyle = "#d9c49c";
-          g.fillRect(px - 4, py - 22, 3, 23);
-          return [px, py];
-        };
-        const [ax, ay] = post(-1),
-          [cx, cy] = post(1);
-        g.strokeStyle = "#a08a64";
-        g.lineWidth = 7;
-        g.lineCap = "butt";
-        g.beginPath();
-        g.moveTo(ax - 3, ay - 24);
-        g.lineTo(cx + 3, cy - 24);
-        g.stroke();
-        g.strokeStyle = "#e9d6ae";
-        g.lineWidth = 2;
-        g.beginPath();
-        g.moveTo(ax - 3, ay - 27);
-        g.lineTo(cx + 3, cy - 27);
-        g.stroke();
-        g.fillStyle = "rgba(110,240,220,.95)";
-        g.font = "bold 8px " + RUNE_FONT;
-        g.textAlign = "center";
-        g.textBaseline = "middle";
-        g.fillText("ᛚ", (ax + cx) / 2, (ay + cy) / 2 - 24);
-        g.fillStyle = "#5c9e45";
-        g.beginPath();
-        g.ellipse(ax - 2, ay - 27.5, 3.5, 1.3, 0, 0, 6.3);
-        g.fill();
-      }
-      /* sluiceFx(t): small swirls churning where the water slips under the bars, and the bars' glow breathing */
-      function sluiceFx(t) {
+      /* the water portal at the canal's end: an upright carved stone ring standing across the channel at the disc's edge.
+         The water runs into its swirling light and dark blue vortex and is carried back up to the island the sky fall pours from.
+         portalFrame(): ring centre (x, y), radius R, and the across-the-channel direction (ux, uy) of the last river point. */
+      function portalFrame() {
         const pts = streamPts(),
-          n = pts.length,
-          e = pts[n - 1],
-          b = pts[n - 4],
-          gx = b.x * 0.4 + e.x * 0.6,
-          gy = b.y * 0.4 + e.y * 0.6;
+          e = pts[pts.length - 1],
+          R = e.w + 11;
+        return { e, R, x: e.x, y: e.y - R * 0.95, ux: e.nx, uy: e.ny };
+      }
+      /* ringPt(F, a, k): a point on the upright ring at angle a (0 = one side of the channel, PI/2 = top), k = radius scale */
+      const ringPt = (F, a, k) => [F.x + F.ux * F.R * k * Math.cos(a), F.y + F.uy * F.R * k * Math.cos(a) - F.R * k * Math.sin(a)];
+      function sluiceDraw(g, pts) {
+        const F = portalFrame(),
+          { e } = F;
+        /* the water brightening as it nears the portal */
+        const n = pts.length,
+          b = pts[n - 5],
+          lg = g.createLinearGradient(b.x, b.y, e.x, e.y);
+        lg.addColorStop(0, "rgba(140,210,255,0)");
+        lg.addColorStop(1, "rgba(140,210,255,.55)");
+        g.fillStyle = lg;
+        bank(g, pts.slice(n - 6), -3, 0);
+        g.fill();
+        /* stone feet where the ring stands on the curbs */
+        for (const sd of [-1, 1]) {
+          const [fx, fy] = ringPt(F, sd < 0 ? Math.PI : 0, 1.05);
+          g.fillStyle = "#8c7556";
+          g.fillRect(fx - 6, fy - 2, 12, 6);
+          g.fillStyle = "#e2cba0";
+          g.fillRect(fx - 6, fy - 4, 12, 3);
+        }
+      }
+      /* sluiceFx(t): the portal itself, drawn every frame: back half of the ring, the vortex, then the front half */
+      function sluiceFx(t) {
+        const F = portalFrame(),
+          ring = (a0, a1, k, col, w) => {
+            c.strokeStyle = col;
+            c.lineWidth = w;
+            c.beginPath();
+            for (let s2 = 0; s2 <= 24; s2++) {
+              const [px, py] = ringPt(F, a0 + ((a1 - a0) * s2) / 24, k);
+              s2 ? c.lineTo(px, py) : c.moveTo(px, py);
+            }
+            c.stroke();
+          };
         c.save();
-        c.globalCompositeOperation = "lighter";
-        for (let i = 0; i < 6; i++) {
-          const ph = (t * 0.9 + i / 6) % 1,
-            k = (i / 5 - 0.5) * 1.6,
-            px = gx - e.ny * 10 * (1 - ph) + e.nx * k * e.w * 0.6,
-            py = gy + e.nx * 10 * (1 - ph) + e.ny * k * e.w * 0.6;
-          c.strokeStyle = `rgba(220,255,255,${0.45 * Math.sin(ph * Math.PI)})`;
-          c.lineWidth = 1;
+        c.lineCap = "round";
+        /* vortex: a filled disk with arms turning inward, light and dark blue */
+        c.beginPath();
+        for (let s2 = 0; s2 <= 40; s2++) {
+          const [px, py] = ringPt(F, (s2 / 40) * 6.283, 0.92);
+          s2 ? c.lineTo(px, py) : c.moveTo(px, py);
+        }
+        c.closePath();
+        c.fillStyle = "#1d3f8f";
+        c.fill();
+        c.save();
+        c.clip();
+        for (let arm = 0; arm < 5; arm++) {
           c.beginPath();
-          c.arc(px, py, 1.5 + ph * 2.5, t * 3 + i, t * 3 + i + 3.5);
+          for (let k = 0; k <= 26; k++) {
+            const u = k / 26,
+              [px, py] = ringPt(F, t * 2.2 + arm * 1.257 + u * 3.4, 0.9 * (1 - u * 0.9));
+            k ? c.lineTo(px, py) : c.moveTo(px, py);
+          }
+          c.strokeStyle = arm % 2 ? "#a9e2ff" : "#4f9dff";
+          c.lineWidth = 3;
           c.stroke();
         }
-        const gl = c.createRadialGradient(gx, gy - 6, 2, gx, gy - 6, 26);
-        gl.addColorStop(0, `rgba(110,240,220,${0.16 + 0.08 * Math.sin(t * 2)})`);
-        gl.addColorStop(1, "rgba(110,240,220,0)");
-        c.fillStyle = gl;
-        c.fillRect(gx - 26, gy - 32, 52, 52);
+        const glow = c.createRadialGradient(F.x, F.y, 1, F.x, F.y, F.R * 0.6);
+        glow.addColorStop(0, `rgba(230,245,255,${0.85 + 0.15 * Math.sin(t * 3)})`);
+        glow.addColorStop(1, "rgba(120,190,255,0)");
+        c.fillStyle = glow;
+        c.fillRect(F.x - F.R, F.y - F.R, F.R * 2, F.R * 2);
+        c.restore();
+        /* the stone ring: thick carved band, lit edge, runes glowing round it */
+        ring(0, 6.3, 1, "#8c7556", 7);
+        ring(0, 6.3, 1, "#cdb48a", 5);
+        ring(Math.PI * 0.35, Math.PI * 1.1, 1.04, "#efdcb5", 1.4);
+        c.fillStyle = `rgba(140,210,255,${0.75 + 0.25 * Math.sin(t * 2)})`;
+        c.font = "bold 6px " + RUNE_FONT;
+        c.textAlign = "center";
+        c.textBaseline = "middle";
+        for (let k = 0; k < 8; k++) {
+          const [px, py] = ringPt(F, (k / 8) * 6.283 + 0.2, 1);
+          c.fillText(RUNES_HUB[k * 2 + 3], px, py);
+        }
+        /* motes of water lifted up out of the portal, back toward the sky */
+        c.globalCompositeOperation = "lighter";
+        for (let k = 0; k < 8; k++) {
+          const ph = (t * 0.6 + k / 8) % 1,
+            [px, py] = ringPt(F, k * 0.8 + t, 0.4);
+          c.fillStyle = `rgba(170,225,255,${0.8 * Math.sin(ph * Math.PI)})`;
+          c.beginPath();
+          c.arc(px + Math.sin(t * 2 + k) * 3, py - ph * 40, 1.3, 0, 6.3);
+          c.fill();
+        }
+        const aura = c.createRadialGradient(F.x, F.y, F.R * 0.5, F.x, F.y, F.R * 1.8);
+        aura.addColorStop(0, `rgba(110,180,255,${0.18 + 0.06 * Math.sin(t * 2)})`);
+        aura.addColorStop(1, "rgba(110,180,255,0)");
+        c.fillStyle = aura;
+        c.fillRect(F.x - F.R * 2, F.y - F.R * 2, F.R * 4, F.R * 4);
         c.restore();
       }
       /* streamFlow(t): current lines, bubbles, shimmer and petals drifting downstream */
