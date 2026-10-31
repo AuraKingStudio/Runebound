@@ -4488,6 +4488,8 @@
       /* rng(seed): seeded random so cracks and moss look the same every load. Out: () -> 0..1 */
       const rng = (s) => () => (s = (s * 16807) % 2147483647) / 2147483647;
       const PLAT = { x: 450, y: 350, rx: 390, ry: 250 }; /* platform top surface */
+      /* RUNE_FONT: a font that actually has runic letters (Segoe UI Historic on Windows, Noto Sans Runic elsewhere) */
+      const RUNE_FONT = '"Segoe UI Historic", "Noto Sans Runic", "Segoe UI Symbol", serif';
       const RUNES_HUB = "ᚠᚢᚦᚨᚱᚲᚷᚹᚺᚾᛁᛃᛇᛈᛉᛊᛏᛒᛖᛗᛚᛜᛞᛟ";
       function paintHub() {
         const k = 2,
@@ -4633,7 +4635,7 @@
           g.stroke();
         }
         g.fillStyle = "rgba(80,190,175,.95)";
-        g.font = "bold 14px Georgia";
+        g.font = "bold 15px " + RUNE_FONT;
         g.textAlign = "center";
         g.textBaseline = "middle";
         for (let i = 0; i < 60; i++) {
@@ -6728,7 +6730,7 @@
       const BRIDGES = [{ get i() { if (this._i != null) return this._i; const p = streamPts(); let b = 0; p.forEach((q, n) => { if (Math.hypot(q.x - PORTAL.x, q.y - PORTAL.y) < Math.hypot(p[b].x - PORTAL.x, p[b].y - PORTAL.y)) b = n; }); return (this._i = b); } }];
       function crossFrame() {
         const q = streamPts()[BRIDGES[0].i],
-          R = (q.w + 34) / 0.6;
+          R = (q.w + 44) / 0.6;
         return { q, R, Ry: R * 0.6 };
       }
       function bridgeAt(p) {
@@ -6781,15 +6783,47 @@
         }
         /* rune band inlaid in teal, slowly pulsing */
         ring(0.74, "#e6d2ab", "#c8962c", 2);
-        g.fillStyle = `rgba(70,170,155,${0.75 + 0.2 * Math.sin(t * 1.4)})`;
-        g.font = "bold 11px Georgia";
-        g.textAlign = "center";
-        g.textBaseline = "middle";
-        for (let i = 0; i < 20; i++) {
-          const a = (i / 20) * 6.283 + t * 0.05;
-          g.fillText(RUNES_HUB[i % RUNES_HUB.length], x + Math.cos(a) * R * 0.86, y + Math.sin(a) * Ry * 0.86);
-        }
+        /* the glyph band turns slowly; a wave of light runs round it, each glyph lying flat on the stone */
+        const glyphRing = (n, rk, spin, size, off, base = 0) => {
+          g.font = "bold " + size + "px " + RUNE_FONT;
+          g.textAlign = "center";
+          g.textBaseline = "middle";
+          for (let i = 0; i < n; i++) {
+            const a = (i / n) * 6.283 + t * spin,
+              gx = x + Math.cos(a) * R * rk,
+              gy = y + Math.sin(a) * Ry * rk,
+              lit = Math.max(base + 0.15 * Math.sin(t * 3 + i), Math.max(0, Math.sin(a * 2 - t * 2.4 + off)) ** 3);
+            if (lit > 0.1) {
+              g.globalCompositeOperation = "lighter";
+              g.fillStyle = `rgba(90,240,215,${0.35 * lit})`;
+              g.beginPath();
+              g.ellipse(gx, gy, size * 0.8, size * 0.5, 0, 0, 6.3);
+              g.fill();
+              g.globalCompositeOperation = "source-over";
+            }
+            g.save();
+            g.translate(gx, gy);
+            g.scale(1, Ry / R);
+            g.rotate(a + Math.PI / 2);
+            g.fillStyle = `rgba(${Math.round(60 + 140 * lit)},${Math.round(160 + 90 * lit)},${Math.round(148 + 80 * lit)},${0.8 + 0.2 * lit})`;
+            g.fillText(RUNES_HUB[(i + off * 3) % RUNES_HUB.length], 0, 0);
+            if (base && lit > 0.6) {
+              /* shine: a white-hot core and a twinkle on the brightest glyphs */
+              g.globalCompositeOperation = "lighter";
+              g.fillStyle = `rgba(235,255,250,${(lit - 0.6) * 1.6})`;
+              g.fillText(RUNES_HUB[(i + off * 3) % RUNES_HUB.length], 0, 0);
+              const tw = (lit - 0.6) * 2.5 * size * 0.35;
+              g.fillRect(-tw, -size * 0.6, tw * 2, 0.8);
+              g.fillRect(-0.4, -size * 0.6 - tw, 0.8, tw * 2);
+              g.globalCompositeOperation = "source-over";
+            }
+            g.restore();
+          }
+        };
+        glyphRing(22, 0.86, 0.22, 13, 0);
         /* eight-point compass star inlaid in gold and teal */
+        ring(0.69, null, "rgba(200,150,44,.5)", 1);
+        glyphRing(16, 0.645, -0.35, 10, 2, 0.45); /* a smaller ring turning the other way, always glowing */
         ring(0.6, "#dcc6a0", "rgba(200,150,44,.8)", 1.5);
         for (let i = 0; i < 8; i++) {
           const a = (i / 8) * 6.283 - Math.PI / 2,
