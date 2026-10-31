@@ -3370,7 +3370,7 @@
         const lc = lvlCol(L),
           fs = L >= 50 ? 11 : 10,
           t = S.tm;
-        c.font = `bold ${fs}px Georgia`;
+        c.font = `bold ${fs}px "Trebuchet MS", "Segoe UI", Arial, sans-serif`; /* lining digits: Georgia's old-style numerals look staggered (5 dips, 6 rises) */
         /* diamond sized to the number: half-diagonal = half text width + half text height + padding, so 1 or 2 digits never touch the edge */
         const h = Math.max(9, c.measureText(L).width / 2 + fs * 0.42 + 3.5);
         c.save();
