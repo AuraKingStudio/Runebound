@@ -6426,8 +6426,8 @@
           segs = [
             [WF.px + 8, WF.py + WF.pry * 0.4, 150, 312, 250, 292], /* starts inside the cistern, so the canal cuts through its rim */
             [250, 292, 350, 284, 450, 352],
-            [450, 352, 530, 400, 566, 470],
-            [566, 470, 594, 522, 646, 552], /* toward the viewer, into the water portal at the disc's edge */
+            [450, 352, 522, 402, 542, 470],
+            [542, 470, 552, 528, 566, 570], /* toward the viewer, into the Water Gate at the disc's edge (clear of the Class Master) */
           ],
           pts = [];
         for (const [x0, y0, cx, cy, x1, y1] of segs)
@@ -6612,6 +6612,49 @@
         g.fillStyle = lg;
         bank(g, pts.slice(n - 7), -3, 0);
         g.fill();
+        /* balustrades running out from both pillars along the edge, ending in lantern posts (their flames in sluiceFx) */
+        for (const sd of [-1, 1]) {
+          const ax = G.x + G.ux * G.hw * sd,
+            ay = G.y + G.uy * G.hw * sd,
+            dx = G.ux * sd,
+            dy = G.uy * sd;
+          for (let k = 1; k <= 4; k++) {
+            const bx = ax + dx * k * 6,
+              by = ay + dy * k * 6;
+            g.fillStyle = "#a08a64";
+            g.fillRect(bx - 1.6, by - 10, 3.2, 10);
+            g.fillStyle = "#dcc59b";
+            g.fillRect(bx - 1.6, by - 10, 1.2, 10);
+          }
+          g.strokeStyle = "#cdb48a"; /* top rail */
+          g.lineWidth = 3;
+          g.beginPath();
+          g.moveTo(ax, ay - 11);
+          g.lineTo(ax + dx * 27, ay + dy * 27 - 11);
+          g.stroke();
+          g.strokeStyle = "#8c7556"; /* base */
+          g.lineWidth = 2.5;
+          g.beginPath();
+          g.moveTo(ax, ay + 0.5);
+          g.lineTo(ax + dx * 27, ay + dy * 27 + 0.5);
+          g.stroke();
+          const lx = ax + dx * 33,
+            ly = ay + dy * 33;
+          g.fillStyle = "#8c7556";
+          g.fillRect(lx - 3, ly - 22, 6, 23);
+          g.fillStyle = "#dcc59b";
+          g.fillRect(lx - 3, ly - 22, 2, 23);
+          g.fillStyle = "#5e5444";
+          g.beginPath();
+          g.moveTo(lx - 6, ly - 23);
+          g.quadraticCurveTo(lx, ly - 17, lx + 6, ly - 23);
+          g.closePath();
+          g.fill();
+          g.fillStyle = "#cdb48a";
+          g.beginPath();
+          g.ellipse(lx, ly - 23, 6, 1.8, 0, 0, 6.3);
+          g.fill();
+        }
       }
       /* sluiceFx(t): the gate drawn every frame - veil, motes, then the arch over them */
       function sluiceFx(t) {
@@ -6674,6 +6717,18 @@
         aura.addColorStop(1, "rgba(120,190,255,0)");
         c.fillStyle = aura;
         c.fillRect(G.x - G.H * 1.4, G.y - G.H * 2, G.H * 2.8, G.H * 2.6);
+        /* blue flames on the lantern posts */
+        for (const sd of [-1, 1]) {
+          const lx = G.x + G.ux * (G.hw + 33) * sd,
+            ly = G.y + G.uy * (G.hw + 33) * sd - 25;
+          for (let k = 0; k < 4; k++) {
+            const ph = (t * 1.7 + k / 4 + sd) % 1;
+            c.fillStyle = k % 2 ? `rgba(160,215,255,${0.75 * (1 - ph)})` : `rgba(90,150,255,${0.65 * (1 - ph)})`;
+            c.beginPath();
+            c.ellipse(lx + Math.sin(t * 5 + k) * 1.5 * (1 - ph), ly - ph * 11, (3.2 - ph * 2.4) * 0.7, 3.2 - ph * 2.4, 0, 0, 6.3);
+            c.fill();
+          }
+        }
         c.globalCompositeOperation = "source-over";
         /* the arch: two carved pillars on the curbs, a curved band of voussoirs, a keystone with a glowing rune */
         for (const [px, py] of [L, R]) {
