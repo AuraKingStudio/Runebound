@@ -816,18 +816,6 @@
         if (s) Object.assign(SET, s, { bind: { ...BIND_DEF, ...(s.bind || {}) } });
       } catch (e) {}
       const saveSet = () => { try { localStorage.setItem("runebound_settings", JSON.stringify(SET)); } catch (e) {} };
-      /* ---------- translations: lang/<code>.md lines "- key: text". tr(key, english) falls back to English. ---------- */
-      const LANGS = { en: "English", fr: "Français" };
-      let LTX = {};
-      const tr = (k, d) => LTX[k] || d;
-      function loadLang(cb) {
-        LTX = {};
-        if (SET.lang == "en" || typeof fetch != "function") return cb && cb();
-        fetch("lang/" + SET.lang + ".md").then((r) => r.text()).then((md) => {
-          for (const ln of md.split(/\r?\n/)) { const m = ln.match(/^- ([\w.]+):\s*(.+)$/); if (m) LTX[m[1]] = m[2].trim(); }
-          cb && cb();
-        }).catch(() => cb && cb());
-      }
       /* ---------- soft synth sfx (no audio files) ---------- */
       let AC = null;
       const SFX = {
@@ -1090,7 +1078,7 @@
       function place(a) {
         P.mh = Math.round(CL[P.cls].hp * hpm());
         P.x = 450;
-        P.y = a ? 430 : 440; /* hub spawn: in front of the fountain */
+        P.y = a ? 430 : 440; /* hub spawn: south of the river, below the Rune Crossing */
         P.hp = P.mh;
         P.cd = [0, 0, 0];
         P.dx = P.dy = 0;
@@ -1702,7 +1690,6 @@
         ["E", "You hear a faint chime. Somewhere, a Merchant just raised his prices."],
       ];
       /* fixed shuffled order so every player hears tales in a varied but stable sequence */
-      const TALE_ORDER = TALES.map((_, i) => i).sort((a, b) => ((a * 37) % 101) - ((b * 37) % 101));
       /* milestones: talk count -> gold + message */
       const TALE_MS = { 10: [100, "You have the patience of a scholar."], 25: [250, "A quarter of the ledger is yours."], 50: [500, "Half the archive lives in you now."], 100: [1000, "You have heard every tale. The one I never wrote down: the Warden fears being forgotten. So we remember it, every raid."] };
       /* loreNext(): random tale index, never one of the last 15 heard. Out: index into TALES. */
@@ -1909,23 +1896,9 @@
           <button class="alt" onclick="closeDlg()">Farewell</button>`;
       }
       /* ---------- The Barkeep (bar, right wall) + the two wall boards ---------- */
-      /* Barkeep: a mug. Shown after the tutorial (tu: 4). Boards: no disc, bigger reach (ir). */
+      /* Barkeep: a mug. Shown after the tutorial (tu: 4). Quests and Guild open from the top HUD buttons. */
       const BARKEEP = { tu: 4, x: 750, y: 350, ic: "🍺", nm: "The Barkeep", col: "#ffb347",
-          g: "M-9-9h13v18h-13zM4-5h3a4 4 0 0 1 0 9h-3M-9-9q0-4 4-4h5q4 0 4 4" },
-        QBOARD = { x: 300, y: 190, ir: 110, col: "#ffd84a" },
-        GBOARD = { x: 717, y: 266, ir: 110, col: "#5af0dc" };
-      /* boardMark(b, hot): soft pulse over a wall board; a "!" when something can be claimed. */
-      function boardMark(b, hot) {
-        const p = 0.5 + 0.5 * Math.sin(S.tm * 3), near = P && dist(P, b) < b.ir;
-        c.save();
-        c.globalAlpha = near ? 0.5 + 0.3 * p : 0.18 + 0.12 * p;
-        c.strokeStyle = b.col;
-        c.lineWidth = 2;
-        c.strokeRect(b.x - 36, b.y - 42, 72, 84);
-        c.restore();
-        if (hot) qMark(b.x, b.y - 62, "new", S.tm, 0.8);
-      }
-
+          g: "M-9-9h13v18h-13zM4-5h3a4 4 0 0 1 0 9h-3M-9-9q0-4 4-4h5q4 0 4 4" };
       /* ---------- Quest Board: main quest + 3 daily bounties ---------- */
       /* bounty: id, text, n = amount needed, g = gold, x = XP */
       const BOUNTIES = [
@@ -4164,11 +4137,6 @@
         ctx.moveTo(e.x, e.y + 8);
         ctx.lineTo(e.x, spill().y + 4);
       }
-      const MAIN_AFTER = 0.55; /* main stream width after the two branches take their share */
-      const junctionY = () => {
-        const e = streamPts()[streamPts().length - 1];
-        return (e.y + 8 + spill().y) / 2;
-      };
       /* FALL_SPLIT: shares of the water for the three falls, left to right. GAP = stone between two falls.
          fallSplit(cx, hw, feed): the three falls across the stream's width (centre cx, half width hw). */
       const FALL_SPLIT = [0.2, 0.5, 0.3],
@@ -4183,45 +4151,6 @@
           return F;
         });
       }
-      const pathLen = (pts) => pts.reduce((a, p, i) => (i ? a + Math.hypot(p.x - pts[i - 1].x, p.y - pts[i - 1].y) : 0), 0);
-      /* BRANCHES: two rivulets leaving the main stream, each running to the rim where a thin fall drops off.
-         dx = where along the rim the thin fall is (relative to the main fall), w = half width. */
-      const BRANCHES = []; /* no side rivulets: the stream splits on the rim stones instead (see FALL_SPLIT) */
-      /* branchPts(b): sampled centerline of a rivulet with a natural wobble, plus a width that tapers from the junction to the rim */
-      function branchPts(b) {
-        const e = streamPts()[streamPts().length - 1],
-          sx = e.x + Math.sign(b.dx) * (e.w - 4),
-          sy = junctionY(),
-          tx = e.x + b.dx,
-          ty = edgeLowY(tx) + 3,
-          cx = e.x + b.dx * 0.65,
-          cy = sy + 10,
-          pts = [];
-        for (let i = 0; i <= 16; i++) {
-          const t = i / 16,
-            u = 1 - t,
-            x = u * u * sx + 2 * u * t * cx + t * t * tx,
-            y = u * u * sy + 2 * u * t * cy + t * t * ty,
-            dx = 2 * u * (cx - sx) + 2 * t * (tx - cx),
-            dy = 2 * u * (cy - sy) + 2 * t * (ty - cy),
-            l = Math.hypot(dx, dy) || 1,
-            wob = Math.sin(t * 9 + b.dx) * 3 * Math.sin(t * Math.PI);
-          pts.push({ x: x + (-dy / l) * wob, y: y + (dx / l) * wob, nx: -dy / l, ny: dx / l, w: b.w * (1.7 - 0.7 * t) + Math.sin(t * 13 + b.dx) * 0.8 });
-        }
-        return pts;
-      }
-      function branchPath(ctx, b) {
-        ctx.beginPath();
-        branchPts(b).forEach((p, i) => (i ? ctx.lineTo(p.x, p.y) : ctx.moveTo(p.x, p.y)));
-      }
-      /* branchShape(ctx, b, grow): the rivulet's outline, grow = extra half width (for the grassy bank) */
-      function branchShape(ctx, b, grow) {
-        const pts = branchPts(b);
-        ctx.beginPath();
-        pts.forEach((p, i) => (i ? ctx.lineTo(p.x + p.nx * (p.w + grow), p.y + p.ny * (p.w + grow)) : ctx.moveTo(p.x + p.nx * (p.w + grow), p.y + p.ny * (p.w + grow))));
-        for (let i = pts.length - 1; i >= 0; i--) ctx.lineTo(pts[i].x - pts[i].nx * (pts[i].w + grow), pts[i].y - pts[i].ny * (pts[i].w + grow));
-        ctx.closePath();
-      }
       /* outflowGround(g): the stream on the forest floor. Painted before the platform so it starts hidden under the side wall
          and comes out at the wall's foot, the same width as the river. */
       function outflowGround(g) {
@@ -4234,38 +4163,8 @@
         g.strokeStyle = "#5aa7a6";
         g.lineWidth = e.w * 2 - 2;
         g.stroke();
-        const rb = rng(57);
-        for (const b of BRANCHES) {
-          g.fillStyle = "#5d8a4a";
-          branchShape(g, b, 3);
-          g.fill();
-          g.fillStyle = "#5aa7a6";
-          branchShape(g, b, 0);
-          g.fill();
-          /* pebbles and grass along the rivulet */
-          for (const p of branchPts(b))
-            for (const sd of [-1, 1]) {
-              if (rb() < 0.55) continue;
-              const px = p.x + p.nx * (p.w + 4) * sd,
-                py = p.y + p.ny * (p.w + 4) * sd;
-              if (rb() < 0.5) {
-                g.fillStyle = rb() < 0.5 ? "#8f8a80" : "#a59f92";
-                g.beginPath();
-                g.ellipse(px, py, 2.5 + rb() * 2, 1.8 + rb(), 0, 0, 6.3);
-                g.fill();
-              } else {
-                g.strokeStyle = "#6aa84a";
-                g.lineWidth = 1;
-                g.beginPath();
-                g.moveTo(px, py);
-                g.lineTo(px + (rb() - 0.5) * 3, py - 4 - rb() * 4);
-                g.stroke();
-              }
-            }
-        }
       }
-      /* riverEnd(t): the river pours over the stone lip and runs down the platform's curved side wall into the pool below */
-      /* rimY(x): y of the platform's front rim at x (where the top surface ends and the side wall begins) */
+            /* rimY(x): y of the platform's front rim at x (where the top surface ends and the side wall begins) */
       function rimY(x) {
         const k = (x - PLAT.x) / PLAT.rx;
         return PLAT.y + PLAT.ry * Math.sqrt(Math.max(0, 1 - k * k));
@@ -4318,15 +4217,9 @@
         c.lineWidth = 1.6;
         outflowPath(c);
         c.stroke();
-        c.lineWidth = 1;
-        c.setLineDash([5, 9]);
-        for (const b of BRANCHES) {
-          branchPath(c, b);
-          c.stroke();
-        }
         c.restore();
         /* off the edge: the river falls straight down off the island in a long ribbon, with two thin falls beside it
-           (water seeping out of the rim). Each ribbon fades into mist above the clouds. */
+           (split by two rim stones). Each ribbon fades into mist above the clouds. */
         const SP = spill(),
           fb = H + 30,
           FALLS = [
@@ -4448,7 +4341,7 @@
         }
         c.restore();
       }
-      /* streamFlow(t): current lines and glints drifting downstream toward the fountain */
+      /* streamFlow(t): current lines, bubbles, shimmer and petals drifting downstream */
       function ptAt(h) {
         const pts = streamPts(),
           i = Math.max(0, Math.min(pts.length - 2, Math.floor(h))),
