@@ -393,42 +393,63 @@
       #btns #bg { left: calc(50% - 64px); }
       #btns #bs { left: calc(50% + 50px); border-color: #ffd84acc; box-shadow: 0 0 10px #ffd84a55; }
       /* cosmetics shop */
-      .pn.shop { width: min(620px, 94vw); }
-      .ctabs { display: flex; gap: 4px; flex-wrap: wrap; margin: 6px 0 10px; }
-      .ctabs button { background: #1b2a33; border-color: #d9a40066; font-size: 13px; }
-      .ctabs button.on { background: #2b3f4a; border-color: #ffd84a; color: #ffd84a; }
-      .cgrid { display: grid; grid-template-columns: repeat(auto-fill, minmax(132px, 1fr)); gap: 8px; }
+      .pn canvas { position: static; width: auto; height: auto; } /* the game canvas rule is position: fixed */
+      .pn.shop { width: min(600px, 94vw); padding: 18px 20px 16px; }
+      .shead { display: flex; align-items: baseline; justify-content: space-between; margin-bottom: 4px; }
+      .shead h2 { margin: 0; }
+      .purse2 { font: bold 13px Georgia, serif; color: #ffd84a; background: #0b1218; border: 1px solid #d9a40055; border-radius: 20px; padding: 3px 10px; }
+      .ctabs { display: flex; gap: 18px; border-bottom: 1px solid #2c3b48; margin: 10px 0 14px; }
+      .ctabs button {
+        background: none; border: none; border-radius: 0; margin: 0; padding: 6px 0 8px;
+        font: 13px "Cinzel", Georgia, serif; letter-spacing: 1px; color: #9fb0bd;
+        border-bottom: 2px solid transparent; margin-bottom: -1px;
+      }
+      .ctabs button:hover { color: #e6f1ef; }
+      .ctabs button.on { color: #ffd84a; border-bottom-color: #ffd84a; }
+      .cgrid { display: grid; grid-template-columns: repeat(auto-fill, minmax(118px, 1fr)); gap: 10px; }
       .ccard {
-        background: #0f171e;
-        border: 1px solid #2c3b48;
-        border-radius: 10px;
-        padding: 8px;
+        position: relative;
+        background: #101920;
+        border: 1px solid #243240;
+        border-radius: 8px;
+        padding: 10px 8px 8px;
         text-align: center;
         display: flex;
         flex-direction: column;
         align-items: center;
-        gap: 3px;
       }
-      .ccard.paid { border-color: #d9a40088; background: linear-gradient(#1d1a10, #0f171e); }
-      .ccard.on { border-color: #5dff8a; box-shadow: 0 0 10px #5dff8a44 inset; }
-      .ccard canvas { width: 80px; height: 80px; }
-      .ccard b { font-size: 13px; }
-      .ccard .sm { font-size: 11px; opacity: 0.8; min-height: 26px; }
-      .ccard button { width: 100%; margin: 2px 0 0; padding: 6px; font-size: 12px; }
-      .ccard button.gold { background: #6b5310; border-color: #ffd84a88; }
-      .ccard button.eur { background: #8a2f5c; border-color: #ff8fc888; }
+      .ccard.paid { border-color: #5a4a1e; }
+      .ccard.on { border-color: #ffd84a; }
+      .ccard canvas { width: 64px; height: 64px; margin-bottom: 6px; }
+      .ccard b { font-size: 13px; line-height: 1.2; }
+      .ccard .sub { font-size: 11px; color: #8fa1ae; margin: 3px 0 8px; min-height: 14px; }
+      .ccard .tag { position: absolute; top: 6px; right: 6px; font-size: 9px; letter-spacing: 1px; text-transform: uppercase; color: #ffd84a; }
+      .ccard button { width: 100%; margin: auto 0 0; padding: 6px 4px; font-size: 12px; background: #1f2e38; border-color: #33475a; }
+      .ccard button.gold { background: #3a2f0e; border-color: #8a6d1c; color: #ffe08a; }
+      .ccard button.eur { background: #ffd84a; border-color: #ffd84a; color: #1a1406; font-weight: bold; }
+      .ccard button:disabled { opacity: 0.55; }
       .cpass {
-        border: 1px solid #ffd84a;
-        border-radius: 12px;
-        padding: 12px;
-        background: radial-gradient(circle at 20% 0%, #3a3010, #0f171e 70%);
-        display: flex;
-        gap: 12px;
+        display: grid;
+        grid-template-columns: 76px 1fr auto;
+        gap: 16px;
         align-items: center;
+        padding: 14px 16px;
+        border: 1px solid #5a4a1e;
+        border-radius: 8px;
+        background: #13191a;
       }
-      .cpass ul { margin: 6px 0; padding-left: 18px; font-size: 13px; }
-      .cnote { font-size: 12px; color: #ffd84a; min-height: 16px; margin: 6px 0 0; }
-      .cfoot { font-size: 11px; opacity: 0.6; margin-top: 10px; }
+      .cpass canvas { width: 76px; height: 76px; }
+      .cpass h3 { margin: 0 0 6px; font: bold 16px "Cinzel", Georgia, serif; color: #ffd84a; letter-spacing: 1px; }
+      .cpass p { margin: 2px 0; font-size: 13px; color: #c9d6de; line-height: 1.45; }
+      .cpass button { margin: 0; padding: 10px 16px; background: #ffd84a; border-color: #ffd84a; color: #1a1406; font-weight: bold; white-space: nowrap; }
+      .cpass button:disabled { background: #1f2e38; border-color: #33475a; color: #9fb0bd; }
+      .cnote { font-size: 12px; color: #ffd84a; min-height: 16px; margin: 10px 0 0; }
+      .cfoot { font-size: 11px; color: #6f8291; margin: 4px 0 0; }
+      @media (max-width: 520px) { .cpass { grid-template-columns: 60px 1fr; } .cpass button { grid-column: 1 / -1; } }
+      /* every dialog: a bit more air and calmer body text */
+      .pn { padding: 18px 20px 16px; }
+      .pn p { line-height: 1.5; }
+      .pn .sm { line-height: 1.45; }
       #btns #bq.hot { box-shadow: 0 0 14px #ffd84a; border-color: #ffd84a; }
       #btns #bt {
         /* under the gold counter (game y ≈ 80 of 600) */
@@ -1771,32 +1792,31 @@
         shopMsg = "";
       const eur = (n) => n.toFixed(2).replace(".", ",") + " €";
       function cosShopUI() {
-        const tabs = [["pass", "⭐ Rune Pass"], ["ring", "◯ Borders"], ["badge", "◆ Level frames"], ["emote", "😀 Emotes"]],
-          head = `<h2>✨ Shop</h2><p class="sm">Cosmetics only: they change how you look, never how strong you are. 💰 ${V.gold} gold</p>
+        const tabs = [["pass", "Rune Pass"], ["ring", "Borders"], ["badge", "Frames"], ["emote", "Emotes"]],
+          head = `<div class="shead"><h2>Shop</h2><span class="purse2">💰 ${V.gold}</span></div>
             <div class="ctabs">${tabs.map(([k, n]) => `<button class="${shopTab == k ? "on" : ""}" onclick="shopTab='${k}';shopMsg='';cosShopUI()">${n}</button>`).join("")}</div>`;
         let body = "";
         if (shopTab == "pass") {
-          const ex = COS.filter((i) => i.pass);
-          body = `<div class="cpass"><canvas width="160" height="160" data-pv="r_rune" style="width:80px;height:80px"></canvas><div>
-            <b style="color:#ffd84a;font-size:16px">⭐ Rune Pass</b>
-            <ul><li>+25% gold from raids</li><li>+25% XP from raids</li><li>Exclusive: ${ex.map((i) => (i.e ? i.e + " " : "") + i.n).join(", ")}</li></ul>
-            ${V.pass ? '<button disabled>Active ✓</button>' : `<button class="eur" style="background:#8a2f5c" onclick="shopPay('pass')">Get it · ${eur(PASS.eur)}</button>`}</div></div>`;
+          body = `<div class="cpass"><canvas width="152" height="152" data-pv="r_rune"></canvas>
+            <div><h3>Rune Pass</h3><p>+25% gold and XP from every raid.</p><p>Includes the Rune Aura border, Rune Crest frame and ⚡ emote.</p></div>
+            ${V.pass ? "<button disabled>Active</button>" : `<button onclick="shopPay('pass')">${eur(PASS.eur)}</button>`}</div>`;
         } else {
           const cards = COS.filter((i) => i.t == shopTab).map((it) => {
             const own = cosOwn(it),
-              on = it.t != "emote" && cosV()[it.t] == it.id;
-            let how = it.free ? "Free" : it.gold ? `${it.gold} gold` : it.eur ? eur(it.eur) : it.pass ? "Rune Pass" : it.how;
+              on = it.t != "emote" && cosV()[it.t] == it.id,
+              sub = it.free ? "Free" : it.gold ? "Gold" : it.eur ? "" : it.pass ? "Rune Pass" : it.how;
             let btn;
-            if (own) btn = it.t == "emote" ? `<button disabled>Owned · /${it.k}</button>` : `<button ${on ? "disabled" : ""} onclick="cosEquip('${it.id}')">${on ? "Equipped" : "Equip"}</button>`;
-            else if (it.gold) btn = `<button class="gold" ${V.gold >= it.gold ? "" : "disabled"} onclick="cosBuyGold('${it.id}')">💰 ${it.gold}</button>`;
+            if (own) btn = it.t == "emote" ? `<button disabled>/${it.k}</button>` : `<button ${on ? "disabled" : ""} onclick="cosEquip('${it.id}')">${on ? "Equipped" : "Equip"}</button>`;
+            else if (it.gold) btn = `<button class="gold" ${V.gold >= it.gold ? "" : "disabled"} onclick="cosBuyGold('${it.id}')">${it.gold} gold</button>`;
             else if (it.eur) btn = `<button class="eur" onclick="shopPay('${it.id}')">${eur(it.eur)}</button>`;
-            else if (it.pass) btn = `<button onclick="shopTab='pass';cosShopUI()">Rune Pass</button>`;
-            else btn = `<button disabled>🔒 Locked</button>`;
-            return `<div class="ccard ${it.eur || it.pass ? "paid" : ""} ${on ? "on" : ""}"><canvas width="160" height="160" data-pv="${it.id}"></canvas>
-              <b style="color:${it.col || "#fff"}">${it.n}</b><div class="sm">${how}</div>${btn}</div>`;
+            else if (it.pass) btn = `<button onclick="shopTab='pass';cosShopUI()">See pass</button>`;
+            else btn = `<button disabled>Locked</button>`;
+            return `<div class="ccard ${it.eur || it.pass ? "paid" : ""} ${on ? "on" : ""}">${own && !on && !it.free ? '<span class="tag">Owned</span>' : ""}
+              <canvas width="128" height="128" data-pv="${it.id}"></canvas><b style="color:${it.col || "#e6f1ef"}">${it.n}</b><div class="sub">${own ? "" : sub}</div>${btn}</div>`;
           });
-          const none = shopTab != "emote" ? `<div class="ccard ${!cosV()[shopTab] ? "on" : ""}"><canvas width="160" height="160" data-pv=""></canvas><b>None</b><div class="sm">Plain</div>
-            <button ${!cosV()[shopTab] ? "disabled" : ""} onclick="cosEquip('', '${shopTab}')">${!cosV()[shopTab] ? "Equipped" : "Equip"}</button></div>` : "";
+          const cur = cosV()[shopTab],
+            none = shopTab != "emote" ? `<div class="ccard ${!cur ? "on" : ""}"><canvas width="128" height="128" data-pv="none-${shopTab}"></canvas><b>None</b><div class="sub"></div>
+            <button ${!cur ? "disabled" : ""} onclick="cosEquip('', '${shopTab}')">${!cur ? "Equipped" : "Equip"}</button></div>` : "";
           body = `<div class="cgrid">${none}${cards.join("")}</div>`;
         }
         $("dp").className = "pn shop";
@@ -1825,8 +1845,7 @@
             g.globalAlpha = 1;
             continue;
           }
-          const cls = P ? P.cls : "tank";
-          if (it && it.t == "badge") {
+          if ((it && it.t == "badge") || id == "none-badge") {
             /* a badge preview: diamond with a sample level */
             g.translate(40, 40);
             g.scale(2, 2);
@@ -1842,7 +1861,7 @@
             g.closePath();
             g.fill();
             g.stroke();
-            badgeFrame(g, id, h, t);
+            if (it) badgeFrame(g, id, h, t);
             g.fillStyle = lvlCol(24);
             g.font = 'bold 10px "Trebuchet MS", Arial, sans-serif';
             g.textAlign = "center";
@@ -1850,11 +1869,20 @@
             g.fillText("24", 0, 1);
             continue;
           }
+          /* border preview on a plain stone figure, so it doesn't look like any class */
           g.translate(40, 40);
           g.scale(1.9, 1.9);
-          drawRing(g, id, t);
-          const bs = PR + BODY_PAD;
-          g.drawImage(bodySprite(cls), -bs, -bs, bs * 2, bs * 2);
+          if (it) drawRing(g, id, t);
+          const bg = g.createRadialGradient(0, -4, 1, 0, 0, PR + 1);
+          bg.addColorStop(0, "#2a3946");
+          bg.addColorStop(1, "#111a22");
+          g.fillStyle = bg;
+          g.strokeStyle = "#8fa1ae";
+          g.lineWidth = 2;
+          g.beginPath();
+          g.arc(0, 0, PR, 0, 6.3);
+          g.fill();
+          g.stroke();
         }
         requestAnimationFrame(shopAnim);
       }
