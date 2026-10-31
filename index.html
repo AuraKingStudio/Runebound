@@ -3066,6 +3066,45 @@
         }
         c.restore();
       }
+      /* hub room drawn in code (world space, 900x600): brick walls, wood floor, rug and plaza */
+      function drawHub() {
+        const g = c.createLinearGradient(0, 0, 0, H);
+        g.addColorStop(0, "#2a1b10");
+        g.addColorStop(1, "#1a110a");
+        c.fillStyle = g;
+        c.fillRect(0, 0, W, H);
+        c.fillStyle = "#3b2a1c";
+        c.fillRect(22, 40, 856, 530);
+        for (let y = 40; y < 570; y += 22) {
+          for (let x = 22 + ((y / 22) % 2) * 26; x < 878; x += 52) {
+            c.fillStyle = "#4a3523";
+            c.fillRect(x, y, 50, 20);
+          }
+        }
+        c.fillStyle = "#6b4a2e";
+        c.fillRect(44, 92, 812, 448);
+        for (let x = 44; x < 856; x += 40) {
+          c.fillStyle = (x / 40) % 2 ? "#7a5536" : "#6b4a2e";
+          c.fillRect(x, 92, 40, 448);
+        }
+        c.strokeStyle = "#2c1d12";
+        c.lineWidth = 2;
+        c.strokeRect(44, 92, 812, 448);
+        c.fillStyle = "#5a1a22";
+        c.beginPath();
+        c.ellipse(HUB.x, HUB.y, HUB.rx - 40, HUB.ry - 40, 0, 0, 6.3);
+        c.fill();
+        c.strokeStyle = "#d9a400";
+        c.lineWidth = 4;
+        c.stroke();
+        c.fillStyle = "#2c1d12";
+        c.fillRect(300, 92, 300, 26);
+        c.fillStyle = "#d9a400";
+        c.font = "bold 16px Georgia";
+        c.textAlign = "center";
+        c.textBaseline = "middle";
+        c.fillText("THE RAIDERS", 450, 105);
+      }
       function draw(dt) {
         c.setTransform(1, 0, 0, 1, 0, 0);
         c.fillStyle = "#05070a";
@@ -3096,8 +3135,7 @@
         if (ar) c.drawImage(IM.arena, 0, 0, W, H);
         else {
           /* hub: art is placed in world space (fixed to the 900x600 world, 16:9 kept), so it never moves with the window size */
-          const dh = H, dw = (H * 1920) / 1080;
-          c.drawImage(IM.hub, (W - dw) / 2, 0, dw, dh);
+          drawHub();
         }
         if (S.sc == "lobby") {
           c.fillStyle = "#0008";
