@@ -9,11 +9,11 @@ let netClock=0,fakePeers=[],fakeHandlers={},fakeBroadcast=[],fakeDirectory=[];
 const fakeNet={directorySend:(path,data)=>{fakeDirectory.push({path,data});return Promise.resolve({ok:true});},setHandlers:h=>fakeHandlers=h,peerIds:()=>fakePeers.slice(),send:(id,msg)=>{fakeBroadcast.push({id,msg});return fakePeers.includes(id)},broadcast:msg=>{fakeBroadcast.push({id:'all',msg});return fakePeers.length},disconnect:id=>{fakePeers=fakePeers.filter(p=>p!=id);fakeHandlers.onClose?.(id)},disconnectAll:()=>{const old=fakePeers.slice();fakePeers=[];old.forEach(id=>fakeHandlers.onClose?.(id));}};
 const els={};const doc={addEventListener(){},createTextNode:t=>t,getElementById:id=>els[id]||(els[id]={style:{},dataset:{},children:[{style:{}}],value:'',addEventListener(){},append(){},setPointerCapture(){},getContext:()=>new Proxy({},{get:()=>()=>({addColorStop(){}}),set:()=>true}),set innerHTML(v){this._h=v},get innerHTML(){return this._h||''},hidden:false,textContent:''}),querySelectorAll:()=>[],body:{className:'',appendChild(){}},createElement:()=>({style:{},remove(){},append(){},classList:{add(){},remove(){}}}),documentElement:{cls:new Set(),classList:{add(c){doc.documentElement.cls.add(c)},remove(c){doc.documentElement.cls.delete(c)}},style:{setProperty(){}}}};
 const store={};
-const ctx={document:doc,window:{},innerWidth:900,innerHeight:600,performance:{now:()=>netClock},requestAnimationFrame(){},addEventListener(){},localStorage:{getItem:k=>store[k]||null,setItem:(k,v)=>store[k]=v,removeItem:k=>delete store[k]},Image:function(){this.complete=false},location:{search:''},console,setTimeout:f=>0,clearTimeout(){},Math,JSON,Object,Array,Date,Number,parseInt,isNaN};
+const ctx={document:doc,window:{},innerWidth:900,innerHeight:600,performance:{now:()=>netClock},requestAnimationFrame(){},addEventListener(){},localStorage:{getItem:k=>store[k]||null,setItem:(k,v)=>store[k]=v,removeItem:k=>delete store[k]},Image:function(){this.complete=false},location:{search:''},console,setTimeout:f=>0,clearTimeout(){},Math,JSON,Object,Array,Date,Number,parseInt,isNaN,btoa,atob,escape,unescape,encodeURIComponent,decodeURIComponent};
 ctx.RBNet=fakeNet;
 ctx.window=ctx;vm.createContext(ctx);
 vm.runInContext(SRC+`
-;globalThis.devMin=devMin;globalThis.devFs=devFs;globalThis.T={V:()=>V,P:()=>P,S:()=>S,start,devAdd,devUp,devUI,devCls,devHeal,devWipe,devResetQ,devArena,devBoss,devHub,DEV,hurt,act,step,pauseGame,resumeGame,isPaused:()=>paused,QUESTS,UPG,toggleDev,buy,shopUI,qAct,togglePause,dailyCheck,saveName,lvlInfo,gainXP,lvlCol,loreReward,isUnl,tutNext,bjVal,bjDeal,bjHit,bjStand,guildFound,guildRecruit,gBonus,bountyDay,bountyAdd,bountyClaim,guildJoin,guildTab,rankPool,rankRefresh,rankSort,dm,dash,dashStep,setIn,padPoll,inMode:()=>INMODE,KEYHINT,HUBV:()=>HUBV,ENGINE,cdMul,inter,hitB,DASH,ZONE_DMG,RAIDS,BOSSES,raidTeam,raidAI,partyMembers,partyAdd,partyRemove,raidUI,playerUI,partyMessage,bash,taunt,inTele,toArena,PARTY:()=>PARTY,netRelayFlush,raidNet,raidState,raidApply,raidNetStep,arena,toArena,HUB_NPCS,BOT_NPC_LV,BARKEEP,CLASSN,SKC,PEMB,hubJoin,hubLeave,hubCount,HUB_MAX,hubVisitStep,botName,botLook,chatSend,COS,cosOwn,cosV,cosBuyGold,cosEquip,shopPay,myEmote,streamPts,crossFrame,bridgeAt,riverNear,clampW,WF,STATUE,PORTAL,SET,keyLabel,EDGE,inIsle,netReceive,netPrepareHub,netStep,netPack,netUnpack,netAudit,auditRules,goldAdd,gainXP,netStats,LEDGER:()=>LEDGER,FX:()=>FX,FT:()=>FT,shk:()=>shk,els:null};`,ctx);
+;globalThis.devMin=devMin;globalThis.devFs=devFs;globalThis.T={V:()=>V,P:()=>P,S:()=>S,start,devAdd,devUp,devUI,devCls,devHeal,devWipe,devResetQ,devArena,devBoss,devHub,DEV,hurt,act,step,pauseGame,resumeGame,isPaused:()=>paused,QUESTS,UPG,toggleDev,buy,shopUI,qAct,togglePause,dailyCheck,saveName,lvlInfo,gainXP,lvlCol,loreReward,isUnl,tutNext,bjVal,bjDeal,bjHit,bjStand,guildFound,guildRecruit,gBonus,bountyDay,bountyAdd,bountyClaim,guildJoin,guildTab,rankPool,rankRefresh,rankSort,dm,dash,dashStep,setIn,padPoll,inMode:()=>INMODE,KEYHINT,HUBV:()=>HUBV,ENGINE,cdMul,discordUnlock,openDlg,TUT_DONE,ult,ultDmg,ULT,saveCode,saveRead,saveCheck,inter,hitB,DASH,ZONE_DMG,RAIDS,BOSSES,raidTeam,raidAI,partyMembers,partyAdd,partyRemove,raidUI,playerUI,partyMessage,bash,taunt,inTele,toArena,PARTY:()=>PARTY,netRelayFlush,raidNet,raidState,raidApply,raidNetStep,arena,toArena,HUB_NPCS,BOT_NPC_LV,BARKEEP,CLASSN,SKC,PEMB,hubJoin,hubLeave,hubCount,HUB_MAX,hubVisitStep,botName,botLook,chatSend,COS,cosOwn,cosV,cosBuyGold,cosEquip,shopPay,myEmote,streamPts,crossFrame,bridgeAt,riverNear,clampW,WF,STATUE,PORTAL,SET,keyLabel,EDGE,inIsle,netReceive,netPrepareHub,netStep,netPack,netUnpack,netAudit,auditRules,goldAdd,gainXP,netStats,LEDGER:()=>LEDGER,FX:()=>FX,FT:()=>FT,shk:()=>shk,els:null};`,ctx);
 const T=ctx.T,BENCH_ONLY=process.argv.includes('--bench');let f=0;const ok=(c,m)=>{if(!c||!BENCH_ONLY)console.log((c?'PASS ':'FAIL ')+m);if(!c)f++};
 T.start();ok(T.S().sc=='hub','start -> hub');
 ctx.document.getElementById('dlg').hidden=true;const pausedAt=T.S().tm;T.pauseGame();T.step(.1);ok(T.isPaused()&&T.S().tm===pausedAt,'pause freezes the game');T.resumeGame();ok(!T.isPaused(),'resume re-enables play');
@@ -69,9 +69,9 @@ T.DEV.nocd=0;T.devHub();T.P().cd=[0,0,0];T.act(T.P(),1);ok(T.S().sc=='hub'&&T.P(
 ok(T.BARKEEP.ic=='🃏'&&T.BARKEEP.col=='#ffb347'&&T.BARKEEP.gs==1&&/M-5-10h10q.*zM0-4l3 4-3 4-3-4z/.test(T.BARKEEP.g),'blackjack NPC: card emblem keeps the orange palette');
 ok(T.CLASSN.icons.join(',')=='tank,dps,heal'&&T.CLASSN.icons.every(k=>T.PEMB[k]&&T.SKC[k])&&T.CLASSN.orbit.r==9&&T.CLASSN.orbit.gap>=0.95&&Number.isFinite(T.CLASSN.orbit.a),'class NPC: rotation ring stays clear of all three class emblems');
 ok(T.bjVal([1,13])==21&&T.bjVal([1,1,9])==21&&T.bjVal([10,10,5])==25,'blackjack: hand values (aces 11 or 1)');
-T.V().gold=100;T.bjDeal(50);ok([50,100,175].includes(T.V().gold),'blackjack: betting takes the stake (or settles a natural 21)');
-T.V().gold=100;T.V().tut=5;T.bjDeal(10);ok(T.V().tut==6&&T.V().gold==90&&ctx.document.getElementById('dp').innerHTML.includes('YOU <b>11</b>'),'blackjack: tutorial starts at 11');
-T.bjHit();ok(T.V().gold==110&&ctx.document.getElementById('dp').innerHTML.includes('You win! +20'),'blackjack: tutorial hit guarantees 21 and a win');
+T.V().gold=100;T.V().bj1=1;T.bjDeal(50);ok([50,100,175].includes(T.V().gold),'blackjack: betting takes the stake (or settles a natural 21)');
+T.V().gold=100;T.V().bj1=0;T.bjDeal(10);ok(T.V().bj1==1&&T.V().gold==90&&ctx.document.getElementById('dp').innerHTML.includes('YOU <b>11</b>'),'blackjack: your very first hand starts at 11');
+T.bjHit();ok(T.V().gold==110&&ctx.document.getElementById('dp').innerHTML.includes('You win! +20'),'blackjack: the first hand\'s hit guarantees 21 and a win');
 {const originalMath=ctx.Math;let rolls=[.1,.1,.7,.62];ctx.Math=Object.create(Math);ctx.Math.random=()=>rolls.shift()??.1;T.V().gold=100;T.V().tut=6;T.bjDeal(10);T.bjStand();ctx.Math=originalMath;ok(T.V().gold==90&&ctx.document.getElementById('dp').innerHTML.includes('house wins'),'blackjack: normal hands remain random');}
 T.V().gd=null;T.guildFound('Rune Riders');ok(T.V().gd&&T.V().gd.name=='Rune Riders','guild: found a guild');
 T.V().gold=1000;T.guildRecruit();T.guildRecruit();ok(T.V().gd.m.length==2&&T.V().gold==700&&Math.abs(T.gBonus()-0.06)<1e-9,'guild: recruits cost 100, 200 and give +3% each');
@@ -82,8 +82,12 @@ T.V().gd=null;T.guildJoin('Dawn Lanterns');ok(T.V().gd&&T.V().gd.name=='Dawn Lan
 /* ---- ranks ---- */
 ok(T.rankPool().length>=100,'ranks: top-100 pool is 100 guilds');T.rankRefresh();ok(true,'ranks: refresh moves to the next page');
 /* ---- tutorial ---- */
-T.V().tut=0;T.tutNext(0);ok(T.V().tut==1&&T.V().ul.class,'tutorial: walking reveals the Class Master (step 2)');T.tutNext(2);ok(T.V().tut==1,'tutorial: steps cannot be skipped');for(let i=1;i<6;i++)T.tutNext(i);ok(T.V().tut==6,'tutorial: class -> Elder -> Merchant -> Archivist -> blackjack -> raid open');
+T.V().tut=0;T.tutNext(0);ok(T.V().tut==1&&T.V().ul.class,'tutorial: walking reveals the Class Master (step 2)');T.tutNext(2);ok(T.V().tut==1,'tutorial: steps cannot be skipped');for(let i=1;i<5;i++)T.tutNext(i);ok(T.V().tut==5&&T.TUT_DONE==5,'tutorial: class -> Elder -> Merchant -> Archivist -> raid open (no blackjack)');
 /* ---- NPC unlocks ---- */
+{T.V().ul.barkeep=false;T.openDlg('barkeep');ok(ctx.document.getElementById('dp').innerHTML.includes('JOIN DISCORD TO UNLOCK'),'barkeep: locked until you join the Discord');
+ let opened='';ctx.window.open=(u)=>{opened=u;};T.discordUnlock();ok(opened.startsWith('https://discord.gg/')&&T.isUnl('barkeep'),'barkeep: the Discord button opens the invite and unlocks him');
+ T.V().ul.barkeep=false;T.V().bo=null;for(let i=0;i<30;i++){T.V().bo=null;if(T.bountyDay().ids.includes('bj'))break;}ok(!T.V().bo.ids.includes('bj'),'bounties: no blackjack bounty while the Barkeep is locked');T.V().bo=null;}
+
 T.V().ul={};T.V().lt=5;ok(!T.isUnl('class'),'unlock: Class Master starts locked');
 for(let i=0;i<50;i++)T.loreReward(true);ok(!T.isUnl('class'),'unlock: secret pages never unlock the Class Master (luck per tale only)');
 for(let i=0;i<200;i++)T.loreReward(true);ok(!T.isUnl('maiden'),'unlock: Maiden stays locked before 100 tales');
@@ -93,11 +97,11 @@ T.V().lt=100;for(let i=0;i<400&&!T.isUnl('maiden');i++)T.loreReward(true);ok(T.i
 ok(seen.size>=4,'lore: secret pages give varied rewards ('+[...seen].join(' ')+')');}
 /* ---- input mode ---- */
 T.setIn('pad');ok(T.inMode()=='pad'&&T.KEYHINT.pad[0]=='A','input: controller mode shows A/X/Y/B');
-T.setIn('kb');ok(T.inMode()=='kb'&&T.KEYHINT.kb.join(',')=='MB1,Q,E,F,Shift','input: keyboard badges follow binds (MB1, Q, E, F, Shift)');
+T.setIn('kb');ok(T.inMode()=='kb'&&T.KEYHINT.kb.join(',')=='MB1,Q,E,F,Shift,R','input: keyboard badges follow binds (MB1, Q, E, F, Shift, R)');
 /* ---- dash ---- */
 T.DEV.nocd=0;T.devHub();ctx.document.getElementById('dlg').hidden=true;const dp0={x:T.P().x,y:T.P().y};T.P().dx=1;T.P().dy=0;T.P().dcd=0;T.dash(T.P());for(let i=0;i<10;i++)T.dashStep(T.P(),.02);
 ok(T.P().x>dp0.x+20&&T.P().dcd>0,'dash: moves the player and starts its cooldown');
-T.P().cls='tank';T.P().ar=1;T.P().inv=0;T.DEV.god=0;T.P().hp=100;T.hurt(T.P(),20);ok(T.P().hp==90,'dash: tank armor halves damage');
+T.P().cls='tank';T.V().up.vit=0;T.P().ar=1;T.P().inv=0;T.DEV.god=0;T.P().hp=100;T.hurt(T.P(),20);ok(T.P().hp==90,'dash: tank armor halves damage');
 T.P().ar=0;T.P().inv=1;T.hurt(T.P(),20);ok(T.P().hp==90,'dash: dps dodge ignores damage');T.P().inv=0;
 T.padPoll();ok(true,'input: no controller connected is safe');
 T.togglePause();ok(T.isPaused(),'P toggles pause on');T.togglePause();ok(!T.isPaused(),'P toggles pause off');
@@ -115,7 +119,7 @@ ok(T.hubCount()<=T.HUB_MAX,'hub: never more than HUB_MAX people');
 ok(T.HUBV().filter(v=>!v.bot).length>=1&&T.HUBV().some(v=>v.out||!v.bot),'hub: real players bump bots, who teleport out');
 ok(T.hubJoin('real0',{})===null,'hub: the same player cannot join twice');
 for(let i=0;i<12;i++)T.hubLeave('real'+i);ok(!T.HUBV().some(v=>!v.bot),'hub: leaving removes the player');
-{const lo=T.HUB_NPCS({lv:1}),hi=T.HUB_NPCS({lv:60});ok(lo.every(n=>!n.lk)&&hi.length==8,'hub: bots only visit NPCs their level has unlocked');}
+{const lo=T.HUB_NPCS({lv:1}),hi=T.HUB_NPCS({lv:60});ok(lo.every(n=>!n.lk||n.lk=='barkeep')&&hi.length==8,'hub: bots only visit NPCs their level has unlocked');}
 /* ---------- chat and emotes ---------- */
 T.chatSend('hello there');ok(T.P().say&&T.P().say.t=='hello there','chat: your line shows as a bubble');
 T.chatSend('/wave');ok(T.P().emo&&T.P().emo.e=='👋','chat: /wave plays the emote');
@@ -150,7 +154,8 @@ ok(remote.netX-beforeX<60&&fakeBroadcast.some(x=>x.msg.type=='c'),'network hub: 
 netClock+=100;const dashX=remote.netX;T.netReceive('peer-one',{type:'m',x:dashX+70,y:remote.netY,f:3,d:1,s:4});
 ok(remote.netX-dashX>50,'network hub: a dash gets its extra distance');
 netClock+=100;const dash2=remote.netX;T.netReceive('peer-one',{type:'m',x:dash2+70,y:remote.netY,f:3,d:1,s:5});
-ok(remote.netX-dash2<45,'network hub: dash budget respects the cooldown');
+netClock+=100;const dash3=remote.netX;T.netReceive('peer-one',{type:'m',x:dash3+70,y:remote.netY,f:3,d:1,s:6});
+ok(remote.netX-dash3<45,'network hub: dash budget allows 2 dashes (Twin Feather), not 3');
 T.netStep();
 {const s=T.HUBV().find(v=>v.netClientId=='player-test1234');const x0=s.netX-50;s.x=x0;s.y=s.netY;netClock+=400;T.hubVisitStep(0.05);ok(s.x>x0+5&&s.x<x0+45,'network hub: remote players glide toward their buffered position instead of jumping');}
 fakeBroadcast=[];netClock+=1000;T.netStep();const full=fakeBroadcast.find(x=>x.msg.type=='s');ok(full&&full.id=='peer-one'&&typeof full.msg.p=='string'&&full.msg.p.length==6&&T.netUnpack(full.msg.p)[0][0]==0,'network hub: state is 6 packed characters per player, without the receiver itself');
@@ -188,7 +193,7 @@ function raidSim(key,cls,setup){
  ok(T.raidTeam('small').err&&!T.raidTeam('large').err,'party: 2 extra tanks are too many for a small raid, fine for a large one');
  tanks.forEach(v=>T.partyRemove(v.id));ok(T.PARTY().m.length==0,'party: members can be removed');
  const bot=T.hubJoin('rbh1',{name:'RbHeal',cls:'heal',quiet:1},1);T.playerUI(bot);ok(ctx.document.getElementById('dp').innerHTML.includes(bot.name),'party: inspecting a player shows class, level, cosmetics');
- {T.closeDlg&&T.closeDlg();ctx.document.getElementById('dlg').hidden=true;bot.inn=0;bot.out=0;T.P().x=bot.x+10;T.P().y=bot.y;T.inter();ok(ctx.document.getElementById('dlg').hidden,'party: interact near a player sends the invite at once, no menu');}
+ {T.closeDlg&&T.closeDlg();ctx.document.getElementById('dlg').hidden=true;bot.inn=0;bot.out=0;bot.x=330;bot.y=420;T.P().x=bot.x+10;T.P().y=bot.y;T.inter();ok(ctx.document.getElementById('dlg').hidden,'party: interact near a player sends the invite at once, no menu');}
  T.partyAdd(bot.id);const pm=T.partyMembers();ok(pm.length==2&&pm[1].name==bot.name&&pm[1].cls==bot.cls,'party: a party member joins your raid team');
  T.partyRemove(bot.id);
 }
@@ -211,7 +216,7 @@ function raidSim(key,cls,setup){
  ok(l.end=='win'&&l.size==6&&l.time<=270,`raid: the large raid (6) is won by a full role team (${l.end} in ${Math.round(l.time)} s)`);
  const nt=raidSim('small','dps',S=>S.ps.forEach(p=>{if(p.cls=='tank')p.noTaunt=true;}));console.log('RAID small no taunt',JSON.stringify(nt));
  ok(nt.end=='lose'||nt.deaths>=1,'raid: without Taunt the boss eats the healer and DPS');
- const nd=raidSim('small','dps',S=>{S.b.hp=S.b.mh*0.61;S.ps.forEach(p=>{if(p.cls=='heal')p.ai_ignoreDoom=true;});});
+ const nd=raidSim('small','dps',S=>{S.b.hp=S.b.mh*0.61;S.ps.forEach(p=>{p.ai_ignoreDoom=true;}); /* whoever the Doom lands on (the healer, or anyone if the healer already fell) ignores it */});
  ok(nd.end=='lose'&&/Doom/.test(nd.why),'raid: an uncleansed Doom wipes the whole party');
 }
 /* ---------- party messages between real players go through the master ---------- */
@@ -228,6 +233,38 @@ function raidSim(key,cls,setup){
  T.partyMessage('player-party3x',{type:'pi'});ok(!ctx.document.getElementById('pinv').hidden&&ctx.document.getElementById('pinv').innerHTML.includes('Yes'),'party: an invite from a real player shows a small Yes/No popup');
  fakeBroadcast=[];T.partyMessage('host-player',{type:'pi'});T.netRelayFlush&&T.netRelayFlush();
  ok(ctx.document.getElementById('pinv').innerHTML.includes('Pb3')&&!ctx.document.getElementById('pinv').innerHTML.includes('Boss'),'party: a second invite while one is pending is refused (first popup stays)');
+}
+/* ---------- ultimates (R) ---------- */
+{
+ T.devHub();T.toArena('small');const S=T.S(),b=S.b,ps=S.ps,tank=ps.find(p=>p.cls=='tank'),heal=ps.find(p=>p.cls=='heal'),dps=ps.find(p=>p.cls=='dps');
+ ok(ps.every(p=>p.ucd==T.ULT.start),'ultimate: every raid starts with it charging');
+ ps.forEach(p=>p.ucd=0);b.stun=0;
+ T.ult(tank);ok(ps.every(p=>p.sh==T.ULT.tank.sh)&&b.stun>=T.ULT.tank.stun&&tank.ucd==T.ULT.tank.cd,'tank Bulwark: shields the whole party and stuns the boss');
+ const hp=heal.hp;T.hurt(heal,100);ok(heal.hp==hp&&heal.sh==T.ULT.tank.sh-100,'tank Bulwark: the shield soaks damage first');
+ T.ult(heal);ok(!heal.rev,'healer Resurrect: needs a fallen ally');
+ dps.hp=0;T.ult(heal);ok(dps.hp==Math.round(dps.mh*T.ULT.heal.hp)&&heal.rev==1,'healer Resurrect: brings a fallen ally back at half health');
+ dps.hp=0;heal.ucd=0;T.ult(heal);ok(dps.hp==0,'healer Resurrect: once per raid per healer');
+ dps.hp=dps.mh;dps.eng=1.2;T.ult(dps);ok(dps.ucd==0,'DPS Overdrive: needs Engine stacks');
+ dps.eng=2;const d2=T.ultDmg(dps);dps.eng=4;const d4=T.ultDmg(dps);ok(d4>d2*3,'DPS Overdrive: more stacks hit much harder');
+ b.brk=0;S.zo=[];const bh=b.hp;dps.life=180;dps.eng=4;T.ult(dps);ok(bh-b.hp>=d4*0.99&&dps.eng==1&&dps.life==0,'DPS Overdrive: spends the Engine in one burst and restarts it');
+ S.res=0.01;T.step(0.02);
+}
+/* ---------- save code: export / import, tamper seal, numbers must add up, paid items stay behind ---------- */
+{
+ const V=T.V(),keep=JSON.stringify(V);
+ V.xp=3000;V.gold=500;V.q=2;V.wins=10;V.best=120;V.up={dmg:2,vit:1,spd:0,cdr:0};V.cos={own:{r_ember:1,r_star:1,r_champ:1},ring:'r_star'};V.pass=1;
+ const code=T.saveCode(),r=T.saveRead(code);
+ ok(/^RB1\./.test(code)&&!r.err&&r.s.gold==500&&r.s.xp==3000&&r.s.up.dmg==2,'save code: a real save survives export and import');
+ ok(r.s.pass==0&&!r.s.cos.own.r_star&&r.s.cos.own.r_ember&&!r.s.cos.own.r_champ&&r.s.cos.ring==null&&r.dropped==3,'save code: paid items, the Rune Pass and unearned rewards stay behind');
+ const [, body, seal]=code.split('.');const edited=JSON.parse(Buffer.from(body,'base64url').toString());edited.gold=999999;
+ ok(T.saveRead('RB1.'+Buffer.from(JSON.stringify(edited)).toString('base64url')+'.'+seal).err,'save code: an edited code is refused (seal)');
+ const fair=(o)=>T.saveCheck(Object.assign({xp:3000,gold:500,q:2,wins:10,best:120,up:{dmg:2}},o));
+ ok(!fair({}),'save check: honest numbers pass');
+ ok(fair({gold:900000}),'save check: gold that real play cannot earn is refused');
+ ok(fair({up:{dmg:5,vit:5,spd:5,cdr:5},sk:{tank:[5,5,5],dps:[5,5,5],heal:[5,5,5]},gold:0,xp:500,q:0,wins:0}),'save check: maxed upgrades and skills with little play are refused');
+ ok(fair({wins:500})&&fair({q:5,xp:200})&&fair({best:5})&&fair({up:{dmg:9}}),'save check: impossible wins, quests, raid time and levels are refused');
+ ok(T.saveRead('hello').err&&T.saveRead('RB1.abc.def').err,'save code: junk is refused');
+ Object.keys(V).forEach(k=>delete V[k]);Object.assign(V,JSON.parse(keep));
 }
 /* ---------- networked raids: the leader runs the fight, members mirror it ---------- */
 {

@@ -404,7 +404,7 @@
       .rcard .chains { position: absolute; inset: 0; width: 100%; height: 100%; pointer-events: none; }
       #btns #bg { left: calc(50% - 64px); }
       .net-badge {
-        position: absolute; right: 1.4%; top: 52px; max-width: min(220px, 42vw); padding: 8px 11px;
+        position: absolute; left: 1.4%; bottom: 8px; max-width: min(200px, 40vw); padding: 3px 7px; font-size: 10px !important; opacity: 0.75; white-space: pre-line;
         border: 1px solid var(--gild); border-radius: 9px;
         background: linear-gradient(180deg, #3a2817f2, #24170df2);
         box-shadow: 0 0 0 2px #140c0699, inset 0 1px 0 #ffffff1a, 0 4px 12px #0008;
@@ -421,7 +421,15 @@
       .net-status { min-height: 18px; color: var(--gild2); font-size: 12px; }
       /* top-left: gold and Titles on one row, level with the Quests / Guild / Shop buttons */
       #tlbar { position: absolute; left: 1.4%; top: 1.5%; display: flex; gap: 8px; align-items: center; pointer-events: auto; }
-      #btns #tlbar #bt { position: static; top: auto; left: auto; height: 38px; }
+      #btns #tlbar #bt, #btns #tlbar #bsv { position: static; top: auto; left: auto; height: 38px; }
+      #btns #tlbar #bsv { padding: 0 10px; }
+      /* party frame, left side under the gold bar (hub only; the raid draws its own team list) */
+      #ptl { position: absolute; left: 1.4%; top: 12%; min-width: 150px; padding: 6px 8px; border-radius: 10px; pointer-events: auto; cursor: pointer;
+        background: linear-gradient(180deg, #3a2817e6, #24170de6); border: 1px solid var(--gild); color: var(--parch); font: 12px Georgia, serif; }
+      #ptl[hidden] { display: none; }
+      #ptl b { font-family: "Cinzel", Georgia, serif; color: var(--gild2); }
+      #ptl div { display: flex; gap: 6px; align-items: center; margin-top: 3px; white-space: nowrap; }
+      #ptl i { width: 8px; height: 8px; border-radius: 50%; flex: none; }
       #gp {
         display: flex; align-items: center; gap: 6px; height: 38px; box-sizing: border-box; padding: 0 14px 0 10px;
         border-radius: 10px; border: 1px solid var(--gild, #c9a14a);
@@ -681,6 +689,12 @@
       #btns #b1 { right: 132px; bottom: 30px; }
       #btns #b2 { right: 102px; bottom: 134px; }
       #btns #bd { right: 214px; bottom: 26px; width: 58px; height: 58px; }
+      /* ultimate: above the main attack, glows gold when ready */
+      #btns #bu { right: 30px; bottom: 150px; width: 66px; height: 66px; }
+      #btns #bu svg { width: 38px; height: 38px; }
+      #btns #bu:not(.cd) { animation: ultGlow 1.6s ease-in-out infinite; }
+      @keyframes ultGlow { 50% { box-shadow: 0 0 0 2px #0008, 0 0 26px var(--sc), 0 0 8px #fff8; } }
+      body.hub #btns #bu { width: 44px; height: 44px; opacity: 0.35; animation: none; }
       #btns #bd svg { width: 30px; height: 30px; }
       body.hub #btns #bd { width: 54px; height: 54px; opacity: 0.9; } /* the one move you can use in the hub stays bright */
       /* logo font (Cinzel, same as the icon / logo / banner) for headings and big buttons; Georgia if offline */
@@ -928,8 +942,8 @@
     <div id="jb"><div id="jk"></div></div>
     <div id="chat" hidden><div id="chlog"></div><div id="chrow"><input id="chin" maxlength="80" autocomplete="off" placeholder="Press Enter to chat" /><div id="emo"></div></div></div>
     <div id="btns">
-      <button id="bd" class="sk"></button><button id="b0"></button><button id="b1"></button><button id="b2"></button
-      ><button id="bi" hidden>Enter arena</button><div id="tlbar"><span id="gp"><i class="coin"></i><b id="gn">0</b></span><button id="bt">🏷 Titles</button></div><button id="bq" class="hb">📜 Quests</button><button id="bg" class="hb">🛡 Guild</button><button id="bs" class="hb">✨ Shop</button><button id="bp" class="hb">👥 Party</button><div id="netBadge" class="net-badge" title="Trying to join the first available hub">CONNECTING ONLINE…</div>
+      <button id="bd" class="sk"></button><button id="bu" class="sk"></button><button id="b0"></button><button id="b1"></button><button id="b2"></button
+      ><button id="bi" hidden>Enter arena</button><div id="tlbar"><span id="gp"><i class="coin"></i><b id="gn">0</b></span><button id="bt">🏷 Titles</button><button id="bsv" class="hb" title="Save code: export / import your progress">💾</button></div><button id="bq" class="hb">📜 Quests</button><button id="bg" class="hb">🛡 Guild</button><button id="bs" class="hb">✨ Shop</button><button id="bp" class="hb">👥 Party</button><div id="ptl" hidden></div><div id="netBadge" class="net-badge" title="Trying to join the first available hub">CONNECTING ONLINE…</div>
     </div>
     <script>
       /* Browser networking block: inputs are hub leases, SDP and game messages; outputs are peer events.
@@ -1298,7 +1312,7 @@
         `<g fill="${u.col}" stroke="${u.col}">${u.ic}</g></svg>`;
       /* ---------- settings (saved per device) ----------
          shake/dmg: 0|1, fx: 0 low | 1 high, vol: 0..1, lang: "en"|"fr", bind: action -> KeyboardEvent.code (physical key) */
-      const BIND_DEF = { s0: "Mouse0", /* main attack: left mouse button */ s1: "KeyQ", s2: "KeyE", int: "KeyF", dash: "ShiftLeft", up: "KeyW", down: "KeyS", left: "KeyA", right: "KeyD", pause: "KeyP" };
+      const BIND_DEF = { s0: "Mouse0", /* main attack: left mouse button */ s1: "KeyQ", s2: "KeyE", int: "KeyF", ult: "KeyR", dash: "ShiftLeft", up: "KeyW", down: "KeyS", left: "KeyA", right: "KeyD", pause: "KeyP" };
       const SET = { shake: 1, fx: 1, dmg: 1, vol: 0.8, lang: "en", bind: { ...BIND_DEF } };
       try {
         const s = JSON.parse(localStorage.getItem("runebound_settings") || "null");
@@ -1365,6 +1379,14 @@
           FX.push({ x, y, vx: Math.cos(a) * s, vy: Math.sin(a) * s, l, m: l, col, r: rnd(1.5, 3.2) });
         }
       }
+      /* sparks(x, y, col, n, sp, up): glowing sparks (drawn with a halo); up = drift upward like embers */
+      function sparks(x, y, col, n = 12, sp = 160, up = 0) {
+        n = Math.ceil(n * (SET.fx ? 1 : 0.35));
+        for (let i = 0; i < n; i++) {
+          const a = rnd(0, 6.28), v = rnd(0.25, 1) * sp, l = rnd(0.35, 0.85);
+          FX.push({ x, y, vx: Math.cos(a) * v, vy: Math.sin(a) * v - (up ? rnd(40, 110) : 0), l, m: l, col, r: rnd(1.2, 2.6), g: 1 });
+        }
+      }
       /* ftxt(x, y, text, color, size = 15): floating text that rises and fades (damage numbers, rewards). */
       function ftxt(x, y, t, col, sz) {
         if (!SET.dmg) return;
@@ -1376,7 +1398,7 @@
       const QUESTS = [
         {
           n: "Arm Yourself",
-          t: "The Warden grows stronger every night. Visit the Merchant and buy any upgrade.",
+          t: "The Hollow Seer grows stronger every night. Visit the Merchant and buy any upgrade.",
           o: "Buy an upgrade from the Merchant",
           r: 50,
         },
@@ -1408,7 +1430,7 @@
           V.name = typeof s.name == "string" ? s.name.slice(0, 16) : "";
           V.xp = Math.max(0, +s.xp | 0);
           /* Archivist state: pool (lp, lpt), last tale time (lta), bonus window (lbx, lbn), blessing (bl), title flag (af) */
-          for (const k of ["lp", "lpt", "lta", "lbx", "lbn", "cr"]) if (typeof s[k] == "number") V[k] = s[k];
+          for (const k of ["lp", "lpt", "lta", "lbx", "lbn", "cr", "bj1", "rc", "eqs"]) if (typeof s[k] == "number") V[k] = s[k];
           V.bl = ["stone", "swift"].includes(s.bl) ? s.bl : null;
           V.af = s.af ? 1 : 0;
           if (s.sk) for (const k of Object.keys(V.sk)) if (Array.isArray(s.sk[k])) V.sk[k] = s.sk[k].slice(0, 3).map((x) => cl(+x | 0, 0, 5)); /* skill levels 0-5 */
@@ -1420,8 +1442,9 @@
           /* guild + daily bounties */
           V.gd = s.gd && typeof s.gd.name == "string" ? { name: s.gd.name.slice(0, 20), m: Array.isArray(s.gd.m) ? s.gd.m.filter((r) => r && CL[r.c]).slice(0, 10) : [] } : null;
           V.bo = s.bo && typeof s.bo.day == "string" && Array.isArray(s.bo.ids) ? { day: s.bo.day, ids: s.bo.ids, prog: s.bo.prog || {}, done: s.bo.done || {} } : null;
-          V.ul = s.ul && typeof s.ul == "object" ? { class: !!s.ul.class, maiden: !!s.ul.maiden, smith: !!s.ul.smith, herald: !!s.ul.herald } : {};
+          V.ul = s.ul && typeof s.ul == "object" ? { class: !!s.ul.class, maiden: !!s.ul.maiden, smith: !!s.ul.smith, herald: !!s.ul.herald, barkeep: !!s.ul.barkeep } : {};
           for (const k of ["wins", "loss", "best"]) if (typeof s[k] == "number") V[k] = s[k];
+          if (s.eq && Array.isArray(s.eq.bag)) V.eq = { bag: s.eq.bag.filter((i) => i && typeof i.id == "string" && i.id.length < 20).slice(0, 40), on: s.eq.on && typeof s.eq.on == "object" ? s.eq.on : {} };
         }
       } catch (e) {}
       /* ---------- titles: n = text, col = color, ok() = unlocked?, how = unlock hint ---------- */
@@ -1429,8 +1452,8 @@
         { n: "Wanderer", col: "#cfe", ok: () => true, how: "Everyone starts here" },
         { n: "Tester", col: "#5ad7ff", ok: () => true, how: "Thank you for testing" },
         { n: "Runeseeker", col: "#b48cff", ok: () => V.q >= 1, how: "Complete “Arm Yourself”" },
-        { n: "Wardenbane", col: "#ff4d8d", ok: () => V.q >= 2, how: "Complete “Warden’s Bane”" },
-        { n: "the Swift", col: "#5ad7ff", ok: () => V.q >= 3, how: "Complete “Swift Justice”" },
+        { n: "Seerbane", col: "#ff4d8d", ok: () => V.q >= 2, how: "Complete “First Raid”" },
+        { n: "the Swift", col: "#5ad7ff", ok: () => V.q >= 3, how: "Complete “Colossus Slayer”" },
         { n: "Loremaster", col: "#5ad7ff", ok: () => (V.lt || 0) >= 100, how: "Hear all 100 of the Archivist’s tales" },
         { n: "Faithful", col: "#ffd84a", ok: () => (V.ds || 0) >= 7, how: "Reach a 7-day login streak" },
         { n: "Moneybags", col: "#ffd84a", ok: () => V.gold >= 1000, how: "Hold 1000 gold at once" },
@@ -1520,7 +1543,61 @@
       }
       /* blessing from the Archivist (V.bl = "stone" | "swift"), lasts until the next raid ends */
       const bless = (k) => V.bl == k;
-      const dm = () => 1 + 0.12 * V.up.dmg,
+      /* ---------- equipment: rotating stock, random item + random tier (better = rarer, legendary from level 30) ----------
+         Types: tank (dr: less damage taken), dmg (more damage), util (dd: double dash, bd: longer buffs, hl: more healing done and received).
+         V.eq = { bag: [{id, t, k, r (tier 0-4)}], on: {tank, dmg, util: id} }. Stock re-rolls every 2 raids (V.rc = raids played). */
+      const TIERS = [["Common", "#e8e8e8", 45], ["Uncommon", "#5dff8a", 28], ["Rare", "#4da3ff", 16], ["Epic", "#b48cff", 8], ["Legendary", "#ff9f43", 3]];
+      const EQ_V = { dr: [0.04, 0.06, 0.08, 0.11, 0.15], dmg: [0.04, 0.06, 0.09, 0.12, 0.16], bd: [0.1, 0.15, 0.2, 0.3, 0.4], hl: [0.06, 0.09, 0.12, 0.16, 0.22], dd: [1, 1, 1, 1, 1] };
+      const EQ_PRICE = [120, 220, 380, 600, 950], EQ_LEG_LV = 30;
+      const EQ_K = { tank: ["dr"], dmg: ["dmg"], util: ["dd", "bd", "hl"] };
+      const EQ_N = { dr: "Bulwark", dmg: "Fang", dd: "Twin Feather", bd: "Everbloom Sash", hl: "Mender's Lantern" };
+      const EQ_D = { dr: (v) => `-${Math.round(v * 100)}% damage taken`, dmg: (v) => `+${Math.round(v * 100)}% damage`, dd: () => "Dash twice in a row", bd: (v) => `Your buffs last ${Math.round(v * 100)}% longer`, hl: (v) => `+${Math.round(v * 100)}% healing done and received` };
+      const EQ_G = { tank: '<path d="M0-14 12-9v7c0 8-5 13-12 16-7-3-12-8-12-16v-7z"/>', dmg: '<path d="M-10 12 10-12M4-12h6v6M-12 6l6 6"/>', util: '<circle r="9"/><path d="M0-5v5l4 3"/>' };
+      const eqOk = (it) => it && EQ_K[it.t] && EQ_K[it.t].includes(it.k) && Number.isInteger(it.r) && it.r >= 0 && it.r <= 4 && (it.k != "dd" || it.r >= 2);
+      const eqV = (it) => EQ_V[it.k][it.r];
+      const eqOn = () => (V.eq ? Object.values(V.eq.on || {}).map((id) => (V.eq.bag || []).find((i) => i.id == id)).filter(eqOk) : []);
+      const eqSt = (k) => eqOn().filter((i) => i.k == k).reduce((a, i) => a + eqV(i), 0);
+      /* eqRoll(n): the stock for roll n: one item per type, seeded so reopening the shop shows the same stock */
+      function eqRoll(n) {
+        let x = ((V.eqs || 1) * 9973 + n * 7919) >>> 0;
+        const r = () => ((x = (Math.imul(x ^ (x >>> 15), 2246822507) + 0x6d2b79f5) >>> 0) / 4294967296);
+        const top = lvlInfo().L >= EQ_LEG_LV ? 5 : 4, sum = TIERS.slice(0, top).reduce((a, t) => a + t[2], 0);
+        return ["tank", "dmg", "util"].map((t, i) => {
+          let roll = r() * sum, tier = 0;
+          while (tier < top - 1 && roll >= TIERS[tier][2]) roll -= TIERS[tier++][2];
+          const k = EQ_K[t][Math.floor(r() * EQ_K[t].length)];
+          return { id: "e" + n + "_" + i, t, k, r: k == "dd" ? Math.max(2, tier) : tier };
+        });
+      }
+      function eqBuy(i) {
+        const n = Math.floor((V.rc || 0) / 2), it = eqRoll(n)[i];
+        V.eq = V.eq || { bag: [], on: {} };
+        if (V.eq.bag.some((b) => b.id == it.id) || V.gold < EQ_PRICE[it.r]) return;
+        goldAdd(-EQ_PRICE[it.r], "equip");
+        V.eq.bag.push(it);
+        V.eq.on[it.t] = it.id;
+        save();
+        sfx("coin");
+        shopUI("eq");
+      }
+      function eqWear(id) {
+        const it = V.eq?.bag.find((b) => b.id == id);
+        if (!it) return;
+        V.eq.on[it.t] = V.eq.on[it.t] == id ? null : id;
+        save();
+        shopUI("eq");
+      }
+      function eqCard(it, btn) {
+        const [tn, col] = TIERS[it.r];
+        return `<div class="up" style="--uc:${col}"><svg viewBox="-20 -20 40 40" width="46" height="46"><circle r="18" fill="#0b1218" stroke="${col}" stroke-width="2"/><g fill="none" stroke="${col}" stroke-width="2.6" stroke-linecap="round">${EQ_G[it.t]}</g></svg>
+          <div style="min-width:0;flex:1"><span class="nm">${tn} ${EQ_N[it.k]}</span><div class="sm">${EQ_D[it.k](eqV(it))}</div></div>${btn}</div>`;
+      }
+      /* CLB: class bonus from one shop stat (per level): tank Stoneheart less damage taken, DPS Rune Edge faster Engine, healer Sigil more healing */
+      const CLB = { tank: { k: "vit", v: 0.03, d: "-3% damage taken per level" }, dps: { k: "dmg", v: 0.06, d: "Engine grows 6% faster per level" }, heal: { k: "cdr", v: 0.05, d: "+5% healing per level" } };
+      const clb = (p) => (p === P && CLB[p.cls] ? CLB[p.cls].v * (V.up[CLB[p.cls].k] || 0) : 0);
+      /* upCost(u, l): next upgrade level price; gentle ramp so early levels come fast and the last ones are a goal */
+      const upCost = (u, l) => u.b * (l + 1) + 10 * l * l;
+      const dm = () => (1 + 0.12 * V.up.dmg) * (1 + eqSt("dmg")),
         hpm = () => (1 + 0.15 * V.up.vit) * (bless("stone") ? 1.3 : 1),
         spm = () => 1 + 0.06 * V.up.spd,
         cdm = () => 1 - 0.08 * V.up.cdr;
@@ -1915,12 +1992,12 @@
          that fade over time; the master kicks a slave that keeps failing, a slave reports a master that keeps failing.
          Detection, not prevention: the browser still owns the save, so only a real server could make cheats impossible. */
       const AUDIT_ALLOW_DEV = true; /* owner keeps the F2 dev tools for now: their edits are flagged, not punished */
-      const AUDIT_SPENDS = ["cosmetic", "smith", "guild", "skill", "upgrade"], STRIKE_KICK = 12;
+      const AUDIT_SPENDS = ["cosmetic", "smith", "guild", "skill", "upgrade", "equip"], STRIKE_KICK = 12;
       /* auditRules(): biggest single reward (g gold, x XP) per kind and the shortest gap between two (ms), from the game's tables */
       function auditRules() {
         const bonus = (1 + GUILD_MAX * 0.03) * (1 + PASS.bonus);
         return {
-          raid: { g: Math.round(80 * 1.5 * bonus), x: Math.round(160 * 1.5 * bonus), gap: 15000 }, /* large raid pays 1.5x */
+          raid: { g: Math.round(80 * 1.5 * 1.5 * bonus), x: Math.round(160 * 1.5 * bonus), gap: 15000 }, /* large raid pays 1.5x */
           daily: { g: Math.max(...DAILY), x: 0, gap: 72e6 },
           lore: { g: Math.max(150, ...Object.values(TALE_MS).map((m) => m[0])), x: 150, gap: 700 },
           bounty: { g: Math.max(...BOUNTIES.map((b) => b.g)), x: Math.max(...BOUNTIES.map((b) => b.x)), gap: 1000 },
@@ -2155,7 +2232,7 @@
             v.netPosAt = now;
             const dash = DASH[v.cls], canDash = message.d && now - v.netDashAt >= dash.cd * (v.netBl == "swift" ? 0.45 : 0.9) * 1000;
             const mx = message.x - v.netX, my = message.y - v.netY, dist = Math.hypot(mx, my), allow = v.netBudget + (canDash ? dash.d : 0);
-            if (canDash && dist > v.netBudget) v.netDashAt = now;
+            if (canDash && dist > v.netBudget) { v.netDashAt = v.netDash2 ?? -1e9; v.netDash2 = now; } /* two dashes per window (Twin Feather) */
             const k = dist > allow ? allow / dist : 1, pos = { x: v.netX + mx * k, y: v.netY + my * k, hp: 1 };
             v.netBudget = Math.max(0, v.netBudget - Math.max(0, dist * k - (canDash ? dash.d : 0)));
             clampW(pos);
@@ -2390,7 +2467,7 @@
           v.ring = al.ring;
           v.badge = al.badge;
           v.chatty = al.chatty;
-          if (v.chatty && Math.random() < 0.6) botSay(v, pick(["gg ez", "back", "that raid was rough", "warden down o/", "ez clap", "almost died lol"]), 1);
+          if (v.chatty && Math.random() < 0.6) botSay(v, pick(["gg ez", "back", "that raid was rough", "seer down o/", "ez clap", "almost died lol"]), 1);
           else if (Math.random() < 0.3) emoteLater(v, "🎉", 1.5);
           return v;
         }
@@ -2461,7 +2538,7 @@
          hubChat(id, text) is the network hook for a remote player's message. Your own lines go out through chatSend(). */
       const ARRIVE = 1.2; /* arrival animation length, s */
       const BOT_LINES = ["anyone up for a raid?", "lf healer", "lf tank pls", "gg", "this waterfall is so pretty", "how do i unlock the smith?", "brb",
-          "lol", "the warden hits hard ngl", "need 2 more for raid", "o/", "the archivist talks so much lmao", "is the merchant worth it?", "afk 2 min",
+          "lol", "thornmaw hits hard ngl", "need 2 more for raid", "o/", "the archivist talks so much lmao", "is the merchant worth it?", "afk 2 min",
           "anyone know a good build for dps?", "first time here, this place is nice", "the moon is huge", "just got a new title", "ty for the heals earlier",
           "how many tales are there?", "wind boots are op", "who wants to raid", "lag?", "ok one more raid then sleep", "cute butterflies"],
         BOT_HI = ["hey", "o/", "hi!", "welcome", "yo", "hii", "sup"],
@@ -2965,6 +3042,86 @@
         if (it.t != "emote") return cosEquip(id);
         cosShopUI();
       }
+      /* ---------- save code: carry your progress to another browser ----------
+         "RB1." + base64url(save JSON) + "." + seal. Anyone can read the code, so the seal only stops typos and casual edits.
+         What keeps an import fair is saveCheck: the numbers must add up to what real play can earn, and paid items never travel
+         (they will come back from the payment server once it exists). Same limit as any browser save: not a server account. */
+      const SAVE_SALT = "runebound-save-v1";
+      function saveSeal(t) {
+        let h = 0x811c9dc5;
+        for (const ch of SAVE_SALT + t) h = Math.imul(h ^ ch.charCodeAt(0), 16777619) >>> 0;
+        return h.toString(36);
+      }
+      function saveCode() {
+        const t = btoa(unescape(encodeURIComponent(JSON.stringify(V)))).replace(/\+/g, "-").replace(/\//g, "_").replace(/=+$/, "");
+        return "RB1." + t + "." + saveSeal(t);
+      }
+      /* saveSpent(s): gold a save has already spent on upgrades, skills and gold cosmetics */
+      function saveSpent(s) {
+        let n = 0;
+        for (const u of UPG) for (let l = 0; l < (s.up?.[u.k] | 0); l++) n += upCost(u, l);
+        for (const it of s.eq?.bag || []) n += eqOk(it) ? EQ_PRICE[it.r] : 1e9; /* an impossible item fails the check */
+        for (const k of Object.keys(CL)) for (const lv of s.sk?.[k] || []) for (let l = 0; l < (lv | 0); l++) n += 80 * (l + 1);
+        for (const it of COS) if (it.gold && s.cos?.own?.[it.id]) n += it.gold;
+        return n;
+      }
+      /* saveCheck(s): "" if the save could come from real play, else why not. Pure: reads only s and the game's tables. */
+      function saveCheck(s) {
+        if (!s || typeof s != "object" || Array.isArray(s)) return "That code holds no save.";
+        const num = (x, lo, hi) => x == null || (typeof x == "number" && Number.isFinite(x) && x >= lo && x <= hi);
+        if (!num(s.gold, 0, 1e6) || !num(s.xp, 0, 3e5) || !num(s.wins, 0, 1e5) || !num(s.lt, 0, 1e5) || !num(s.q, 0, QUESTS.length)) return "Some numbers are out of range.";
+        if (UPG.some((u) => !num(s.up?.[u.k] ?? 0, 0, MAXL))) return "Upgrade levels are out of range.";
+        if (Object.keys(CL).some((k) => (s.sk?.[k] || []).some((x) => !num(x, 0, 5)))) return "Skill levels are out of range.";
+        const xp = s.xp || 0;
+        if ((s.q || 0) * 100 > xp) return "Finished quests don't match the experience earned.";
+        if ((s.wins || 0) * 120 > xp + 120) return "Raid wins don't match the experience earned.";
+        if (s.wins && s.best != null && !num(s.best, 40, 1e5)) return "That fastest raid time is impossible.";
+        const quests = QUESTS.slice(0, s.q || 0).reduce((a, q) => a + q.r, 0);
+        if ((s.gold || 0) + saveSpent(s) > 2000 + 4 * xp + 150 * (s.lt || 0) + quests) return "This save's gold doesn't add up to what it has played.";
+        return "";
+      }
+      /* saveRead(code): { s, dropped } for a good code, { err } otherwise. Earned cosmetics stay only if earned in that save. */
+      function saveRead(code) {
+        const m = /^RB1\.([A-Za-z0-9_-]{8,20000})\.([0-9a-z]{1,8})$/.exec(String(code || "").replace(/\s+/g, ""));
+        if (!m || saveSeal(m[1]) != m[2]) return { err: "That code is damaged or was edited." };
+        let s;
+        try { s = JSON.parse(decodeURIComponent(escape(atob(m[1].replace(/-/g, "+").replace(/_/g, "/"))))); } catch { return { err: "That code is damaged or was edited." }; }
+        const err = saveCheck(s);
+        if (err) return { err };
+        let dropped = s.pass ? 1 : 0;
+        s.pass = 0;
+        const own = (s.cos && s.cos.own) || {}, keep = V;
+        V = s;
+        try {
+          for (const it of COS) if (own[it.id] && (it.eur || it.pass || (it.need && !it.need()))) { delete own[it.id]; dropped++; }
+        } finally { V = keep; }
+        if (s.cos) { if (!own[s.cos.ring]) s.cos.ring = null; if (!own[s.cos.badge]) s.cos.badge = null; }
+        return { s, dropped };
+      }
+      function saveUI(msg = "") {
+        CUR_DLG = "save";
+        $("dlg").hidden = false;
+        $("dp").innerHTML = `<h2>💾 Save code</h2><p class="sm">Copy this code to play with your progress in another browser. Paid items stay with this browser for now.</p>
+          <textarea id="svc" class="nm" rows="3" readonly onclick="this.select()">${saveCode()}</textarea>
+          <div class="row"><button class="claim" onclick="saveCopy()">COPY</button></div>
+          <p class="sm">Load a code (replaces the progress in this browser):</p>
+          <textarea id="svi" class="nm" rows="3" placeholder="RB1...."></textarea>
+          ${msg ? `<p class="sm" style="color:#ff8a8a">${esc(msg)}</p>` : ""}
+          <div class="row"><button class="alt" onclick="saveImport()">LOAD CODE</button><button class="alt" onclick="closeDlg()">Close</button></div>`;
+      }
+      function saveCopy() {
+        const t = $("svc");
+        t.select && t.select();
+        (navigator.clipboard?.writeText(t.value) || Promise.reject()).then(() => toast("Save code copied"), () => toast("Select the code and copy it"));
+      }
+      async function saveImport(code = $("svi")?.value) {
+        const r = saveRead(code);
+        if (r.err) return saveUI(r.err);
+        try { localStorage.setItem(SAVE_KEY, JSON.stringify(r.s)); } catch { return saveUI("This browser would not store the save."); }
+        toast(r.dropped ? `Save loaded (${r.dropped} paid or unearned item${r.dropped > 1 ? "s" : ""} left behind)` : "Save loaded");
+        if (NET_SESSION) await netDisconnect();
+        setTimeout(() => location.reload(), 600);
+      }
       /* shopPay(id): real-money purchase. Needs a payment provider + server to confirm the payment (not connected yet).
          With ?dev in the url it grants the item so the cosmetics can be tested. */
       function shopPay(id) {
@@ -3157,7 +3314,7 @@
          Near a bank the bot slides along it instead of walking into the water. */
       /* bots have their own progress: the starter NPCs are open to everyone, the others unlock at a level (BOT_NPC_LV).
          HUB_NPCS(v): the NPCs bot v can visit; without v, every NPC (for keeping clear of them). */
-      const BOT_NPC_LV = { class: 3, maiden: 8, smith: 14, herald: 20 };
+      const BOT_NPC_LV = { class: 3, maiden: 8, smith: 14, herald: 20, barkeep: 1 };
       const HUB_NPCS = (v) => [ELDER, SHOP, LORE, CLASSN, MAIDEN, SMITH, HERALD, BARKEEP].filter((n) => n && (!v || !n.lk || v.lv >= BOT_NPC_LV[n.lk]));
       /* dry(x, y, m): true when (x, y) is on the stones and at least m px clear of the water */
       function dry(x, y, m = 12) {
@@ -3387,7 +3544,7 @@
       function mkAlly(m, id) {
         const tier = Math.min(5, Math.floor((m.lv || 1) / 10)), mh = Math.round(CL[m.cls].hp * (1 + 0.15 * tier));
         return { id, cls: m.cls, name: m.name, lv: m.lv || 1, ti: m.ti || TITLES[0], ring: m.ring, badge: m.badge, filler: m.filler, ally: 1,
-          x: 450, y: 430, hp: mh, mh, cd: [rnd(0, 0.5), rnd(0, 2), rnd(0, 0.5)], dx: 0, dy: 0, f: "u", dmgM: 1 + 0.12 * tier, eng: 1, life: 0 };
+          x: 450, y: 430, hp: mh, mh, cd: [rnd(0, 0.5), rnd(0, 2), rnd(0, 0.5)], dx: 0, dy: 0, f: "u", dmgM: 1 + 0.12 * tier, eng: 1, life: 0, ucd: ULT.start };
       }
       function toArena(key = "small", team = raidTeam(key).team, net = null) {
         S.sc = "arena";
@@ -3400,7 +3557,7 @@
         S.zo = [];
         S.rq = [];
         place(1);
-        P.eng = 1; P.life = 0;
+        P.eng = 1; P.life = 0; P.ucd = ULT.start; P.rev = 0; P.sh = P.sht = 0;
         /* ids follow the team order, so every screen in a networked raid agrees on who is who */
         S.ps = (team || raidTeam(S.raid).team || [{ me: 1 }]).map((m, i) => {
           if (m.me) { P.id = i; return P; }
@@ -3550,6 +3707,13 @@
           <p class="sm">Ring: ${ring ? esc(ring.n) : "none"} · Badge: ${badge ? esc(badge.n) : "none"}</p>
           <p class="sm">${ROLE[v.cls]}</p>${btn}<button class="alt" onclick="closeDlg()">Close</button>`;
       }
+      /* partyFrame(): the party list on the left of the hub screen; rebuilt only when it changes */
+      function partyFrame() {
+        const el = $("ptl"), ms = S.sc == "hub" && P && tut() >= TUT_DONE ? partyMembers() : [];
+        const html = ms.length > 1 ? `<b>👥 Party ${ms.length}/${PARTY_MAX}</b>` + ms.map((m) => `<div><i style="background:${SKC[m.cls]}"></i>${esc(m.name)}${(!m.me && m.key == PARTY.lead) || (m.me && isLeader()) ? " 👑" : ""}<span class="sm">Lv ${m.lv}</span></div>`).join("") : "";
+        el.hidden = !html;
+        if (el._h != html) { el._h = html; el.innerHTML = html; }
+      }
       /* partyUI(): your party, leader actions, leave */
       function partyUI() {
         CUR_DLG = "party";
@@ -3612,7 +3776,8 @@
         p.dvy = (y / l) * (D.d / D.t);
         p.ds = D.t;
         p.dcd = DEV.nocd ? 0 : D.cd * cdm() * (bless("swift") ? 0.5 : 1);
-        if (D.ar) { p.ar = D.ar; ftxt(p.x, p.y - 30, "+armor", "#cfe6ff", 11); }
+        if (p === P && eqSt("dd") && !p.d2) { p.d2 = 1; p.dcd = Math.min(p.dcd, 0.35); } else p.d2 = 0; /* Twin Feather: a second dash right after */
+        if (D.ar) { p.ar = D.ar * (p === P ? 1 + eqSt("bd") : 1); ftxt(p.x, p.y - 30, "+armor", "#cfe6ff", 11); }
         if (D.inv) p.inv = D.inv;
         if (D.hl) heal(p, D.hl);
         burst(p.x, p.y, SKC[p.cls], 10, 90);
@@ -3625,6 +3790,8 @@
         p.dcd = Math.max(0, (p.dcd || 0) - dt);
         p.ar = Math.max(0, (p.ar || 0) - dt);
         p.inv = Math.max(0, (p.inv || 0) - dt);
+        if (p.ucd > 0 && p.ucd < 1e8) p.ucd = Math.max(0, p.ucd - dt);
+        if (p.sht > 0 && (p.sht -= dt) <= 0) p.sh = 0;
         if (!(p.ds > 0)) return false;
         p.ds -= dt;
         p.x += p.dvx * dt;
@@ -3658,6 +3825,13 @@
         if (p.hp <= 0) return;
         if (p.inv > 0) { ftxt(p.x, p.y - 24, "DODGE", "#ff9f43"); return; }
         if (p.ar > 0) d *= 0.5;
+        if (p === P) d *= 1 - eqSt("dr") - (p.cls == "tank" ? clb(p) : 0);
+        if (p.sh > 0) {
+          const s = Math.min(p.sh, d);
+          p.sh -= s; d -= s;
+          sparks(p.x, p.y, "#9fd4ff", 5, 90);
+          if (d <= 0) { ftxt(p.x, p.y - 24, "ABSORB", "#9fd4ff"); return; }
+        }
         p.hp = Math.max(0, p.hp - d);
         ftxt(p.x, p.y - 24, "-" + Math.round(d), "#ff6070");
         burst(p.x, p.y, "#ff6070", 8, 110);
@@ -3666,6 +3840,7 @@
       }
       function heal(p, n, src = P) {
         if (p.hp > 0 && p.hp < p.mh) {
+          n *= (src === P ? 1 + eqSt("hl") + (P.cls == "heal" ? clb(P) : 0) : 1) * (p === P ? 1 + eqSt("hl") : 1);
           const v = Math.min(p.mh - p.hp, n * aDm(src));
           if (S.b && S.sc == "arena") S.b.thr[src.id] = (S.b.thr[src.id] || 0) + v * 0.6; /* healing draws the boss's eye */
           p.hp += v;
@@ -3678,10 +3853,11 @@
         V.bl = null; /* blessings last one raid */
         raidEvent(["end", "win"]);
         V.wins = (V.wins || 0) + 1; /* Herald records */
+        V.rc = (V.rc || 0) + 1; /* raids played: the equipment stock re-rolls every 2 */
         V.best = V.best ? Math.min(V.best, S.at) : S.at;
         S.end = "win";
         S.res = 5;
-        const rw = (RAIDS[S.raid] || RAIDS.small).reward, g = Math.round((60 + (S.at < 150 ? 20 : 0)) * rw * (1 + gBonus()) * passMul()); /* raid size, guild bonus, Rune Pass */
+        const rw = (RAIDS[S.raid] || RAIDS.small).reward, g = Math.round((60 + (S.at < 150 ? 20 : 0)) * rw * (1 + gBonus()) * passMul() * (1 + Math.min(0.5, lvlInfo().L * 0.01))); /* +1% per level, up to +50% */ /* raid size, guild bonus, Rune Pass */
         bountyAdd("raid");
         goldAdd(g, "raid");
         coin = g;
@@ -3721,18 +3897,212 @@
         if (p === P) sfx("shot");
         const b = S.b,
           a = Math.atan2(b.y - p.y, b.x - p.x);
-        S.pr.push({ x: p.x, y: p.y, vx: Math.cos(a) * 360, vy: Math.sin(a) * 360, d, l: 2, c: p.cls, o: p.id });
+        S.pr.push({ x: p.x, y: p.y, vx: Math.cos(a) * 360, vy: Math.sin(a) * 360, d, l: 2, c: p.cls, o: p.id, big: d >= 25 });
+      }
+      /* ---------- glow effects (VX) ----------
+         Short-lived shapes drawn additively over the players: beam, flash, nova (ring), dome, pillar, slash, stars (stunned).
+         Each: {k, x, y, l (time left), m (full time), col, ...shape fields}. Gradients, not shadowBlur, so phones keep up. */
+      let VX = [];
+      const ease = (t) => 1 - (1 - t) * (1 - t);
+      function glowDot(x, y, r, col, a) {
+        const g = c.createRadialGradient(x, y, 0, x, y, r);
+        g.addColorStop(0, col);
+        g.addColorStop(1, "transparent");
+        c.globalAlpha = a;
+        c.fillStyle = g;
+        c.beginPath();
+        c.arc(x, y, r, 0, 6.3);
+        c.fill();
+      }
+      function drawVX(dt) {
+        c.save();
+        c.globalCompositeOperation = "lighter";
+        c.lineCap = "round";
+        /* Bulwark shields: a shimmering hex bubble on everyone shielded */
+        for (const p of S.sc == "arena" ? S.ps : []) {
+          if (!(p.sh > 0) || p.hp <= 0) continue;
+          const pul = 0.55 + 0.25 * Math.sin(S.tm * 6 + p.id), r = PR + 9;
+          glowDot(p.x, p.y, r + 6, "#9fd4ff55", pul);
+          c.globalAlpha = pul;
+          c.strokeStyle = "#cfe6ff";
+          c.lineWidth = 1.6;
+          c.beginPath();
+          for (let i = 0; i <= 6; i++) { const a = S.tm * 0.8 + (i * Math.PI) / 3; c[i ? "lineTo" : "moveTo"](p.x + Math.cos(a) * r, p.y + Math.sin(a) * r); }
+          c.stroke();
+        }
+        for (const e of VX) {
+          e.l -= dt;
+          const f = cl(e.l / e.m, 0, 1), age = 1 - f;
+          if (e.k == "beam") {
+            const j = Math.sin(S.tm * 60) * 2;
+            for (const [w, col, a] of [[e.w * 2.6, e.col, 0.22 * f], [e.w, e.col, 0.75 * f], [e.w * 0.35, "#fff", f]]) {
+              c.globalAlpha = a; c.strokeStyle = col; c.lineWidth = Math.max(1, w + j);
+              c.beginPath(); c.moveTo(e.x, e.y); c.lineTo(e.x2, e.y2); c.stroke();
+            }
+            if (SET.fx && Math.random() < 0.6) { const t = Math.random(); sparks(e.x + (e.x2 - e.x) * t, e.y + (e.y2 - e.y) * t, e.col, 1, 80); }
+          } else if (e.k == "flash") glowDot(e.x, e.y, e.r * (0.6 + 0.4 * age), e.col, f);
+          else if (e.k == "nova") {
+            const r = e.r0 + (e.r1 - e.r0) * ease(age);
+            glowDot(e.x, e.y, r, e.col + "22", f);
+            c.globalAlpha = f; c.strokeStyle = e.col; c.lineWidth = e.w * f + 1;
+            c.beginPath(); c.arc(e.x, e.y, r, 0, 6.3); c.stroke();
+            c.globalAlpha = f * 0.6; c.strokeStyle = "#fff"; c.lineWidth = 1.5;
+            c.beginPath(); c.arc(e.x, e.y, r * 0.96, 0, 6.3); c.stroke();
+          } else if (e.k == "dome") {
+            const r = e.r * ease(Math.min(1, age * 2.5));
+            glowDot(e.x, e.y, r, e.col + "33", f);
+            c.globalAlpha = f; c.strokeStyle = e.col; c.lineWidth = 2;
+            c.beginPath(); c.arc(e.x, e.y, r, 0, 6.3); c.stroke();
+            c.globalAlpha = f * 0.5;
+            for (let i = 0; i < 12; i++) { const a = (i * Math.PI) / 6 + age; c.beginPath(); c.moveTo(e.x + Math.cos(a) * r * 0.3, e.y + Math.sin(a) * r * 0.3); c.lineTo(e.x + Math.cos(a) * r, e.y + Math.sin(a) * r); c.stroke(); }
+          } else if (e.k == "pillar") {
+            const w = e.w * (0.4 + 0.6 * Math.min(1, age * 4)) * (f < 0.3 ? f / 0.3 : 1), g = c.createLinearGradient(0, e.y - e.h, 0, e.y);
+            g.addColorStop(0, "transparent"); g.addColorStop(0.7, e.col); g.addColorStop(1, "#fff");
+            c.globalAlpha = 0.55; c.fillStyle = g; c.fillRect(e.x - w / 2, e.y - e.h, w, e.h);
+            c.globalAlpha = 0.9; c.fillRect(e.x - w / 6, e.y - e.h, w / 3, e.h);
+            glowDot(e.x, e.y, w * 1.4, e.col, f);
+            if (SET.fx && Math.random() < 0.8) FX.push({ x: e.x + rnd(-w / 2, w / 2), y: e.y, vx: 0, vy: -rnd(90, 220), l: 0.8, m: 0.8, col: e.col, r: rnd(1.2, 2.4), g: 1 });
+          } else if (e.k == "slash") {
+            c.globalAlpha = f; c.strokeStyle = e.col; c.lineWidth = 9 * f + 1;
+            c.beginPath(); c.arc(e.x, e.y, e.r, e.a - 1 + age * 0.6, e.a + 0.2 + age * 1.2); c.stroke();
+            c.strokeStyle = "#fff"; c.lineWidth = 2.5 * f + 0.5;
+            c.beginPath(); c.arc(e.x, e.y, e.r, e.a - 0.8 + age * 0.6, e.a + age * 1.2); c.stroke();
+          } else if (e.k == "stars") {
+            const b = S.b, x = b ? b.x : e.x, y = b ? b.y - b.r - 12 : e.y;
+            for (let i = 0; i < 3; i++) { const a = S.tm * 4 + (i * 2 * Math.PI) / 3; glowDot(x + Math.cos(a) * 18, y + Math.sin(a) * 6, 7, "#ffe066", Math.min(1, e.l)); }
+          }
+        }
+        c.restore();
+        VX = VX.filter((e) => e.l > 0);
+      }
+      /* hitFx(o): a projectile lands on the boss */
+      function hitFx(o) {
+        const col = CL[o.c].col;
+        VX.push({ k: "flash", x: o.x, y: o.y, r: o.big ? 46 : 20, col, l: o.big ? 0.3 : 0.15, m: o.big ? 0.3 : 0.15 });
+        sparks(o.x, o.y, col, o.big ? 14 : 4, o.big ? 180 : 90);
+      }
+      /* skillFx(p, a, t): the look of skill a (on the leader's screen and on members' screens). t = heal target if known. */
+      function skillFx(p, a, t) {
+        const b = S.b, col = SKC[p.cls];
+        if (!b) return;
+        const ang = Math.atan2(b.y - p.y, b.x - p.x);
+        if (p.cls == "tank") {
+          if (a == 0) { VX.push({ k: "slash", x: p.x, y: p.y, r: 30, a: ang, col, l: 0.22, m: 0.22 }); sparks(p.x + Math.cos(ang) * 30, p.y + Math.sin(ang) * 30, col, 6, 120); }
+          else if (a == 1) { VX.push({ k: "slash", x: p.x, y: p.y, r: 34, a: ang, col: "#ffe066", l: 0.3, m: 0.3 }); VX.push({ k: "flash", x: b.x, y: b.y, r: b.r * 1.8, col: "#ffe066", l: 0.35, m: 0.35 }); sparks(b.x, b.y, "#ffe066", 16, 200); }
+          else { VX.push({ k: "nova", x: p.x, y: p.y, r0: 12, r1: 120, w: 7, col: "#ff8a5c", l: 0.5, m: 0.5 }); VX.push({ k: "flash", x: b.x, y: b.y, r: b.r * 1.4, col: "#ff5c3a", l: 0.4, m: 0.4 }); }
+        } else if (p.cls == "heal") {
+          if (a == 1 && t) { VX.push({ k: "pillar", x: t.x, y: t.y, w: 22, h: 150, col: "#7dff9a", l: 0.6, m: 0.6 }); sparks(t.x, t.y, "#b6ffc8", 10, 70, 1); }
+          else if (a == 2) VX.push({ k: "nova", x: t ? t.x : p.x, y: t ? t.y : p.y, r0: 20, r1: 90, w: 6, col: "#7dff9a", l: 0.5, m: 0.5 });
+          else VX.push({ k: "flash", x: p.x, y: p.y, r: 26, col, l: 0.2, m: 0.2 });
+        } else {
+          VX.push({ k: "flash", x: p.x + Math.cos(ang) * 14, y: p.y + Math.sin(ang) * 14, r: a == 1 ? 40 : 22, col, l: a == 1 ? 0.3 : 0.15, m: a == 1 ? 0.3 : 0.15 });
+          if (a == 1) sparks(p.x, p.y, col, 10, 140);
+        }
       }
       /* hubSkill(p, a): practice move in the hub. Plays skill a's effect (no damage) and starts its cooldown. */
+      /* ---------- ultimates (R): one big move per class ----------
+         tank Bulwark: every living ally gets a shield (absorbs sh damage for t s) and the boss is stunned (cooldown 50 s).
+         healer Resurrect: brings a fallen ally back at half health; once per raid per healer.
+         DPS Overdrive: spends the whole Engine in one beam (damage grows faster than the stacks), then the Engine restarts at x1. */
+      /* ULTI: ultimate button icons (shield dome, rising cross, burst gear) */
+      const ULTI = {
+        tank: '<path d="M0-15 13-9v7c0 9-6 14-13 17-7-3-13-8-13-17v-7z" fill="none"/><path d="M-6 0h12M0-6v12"/>',
+        heal: '<path d="M0 14V-6M-8 2 0-8 8 2" fill="none"/><path d="M-4-14h8" />',
+        dps: '<circle r="6" fill="none"/><path d="M0-15v5M0 10v5M-15 0h5M10 0h5M-11-11l4 4M7 7l4 4M11-11l-4 4M-7 7l-4 4"/>',
+      };
+      const ULT = {
+        tank: { n: "Bulwark", cd: 50, sh: 150, t: 8, stun: 3 },
+        heal: { n: "Resurrect", cd: 0, hp: 0.5 },
+        dps: { n: "Overdrive", cd: 20, min: 1.5, k: 420 },
+        start: 15, /* every raid starts with the ultimate charging */
+      };
+      /* ultDmg(p): what Overdrive would deal now, before damage bonuses */
+      const ultDmg = (p) => ULT.dps.k * Math.pow(Math.max(0, (p.eng || 1) - 1), 1.5);
+      /* ultWhy(p): "" when p can use its ultimate now, else the reason */
+      function ultWhy(p) {
+        if (S.sc != "arena" || !S.b || S.end) return "Ultimates work in raids.";
+        if (p.hp <= 0) return "You are down.";
+        if ((p.ucd || 0) > 0) return ULT[p.cls].n + " is charging (" + Math.ceil(p.ucd) + " s).";
+        if (p.cls == "heal") return p.rev ? "Resurrect is used: once per raid." : S.ps.some((a) => a.hp <= 0) ? "" : "Nobody to revive.";
+        if (p.cls == "dps" && (p.eng || 1) < ULT.dps.min) return "The Engine needs x" + ULT.dps.min + " to Overdrive.";
+        return "";
+      }
+      function ult(p) {
+        const why = ultWhy(p);
+        if (S.sc == "hub" && p === P && !(p.ucd > 0)) { /* practice in the hub: just the look */
+          const col = SKC[p.cls];
+          VX.push({ k: "pillar", x: p.x, y: p.y, w: 44, h: 260, col, l: 1, m: 1 }); VX.push({ k: "nova", x: p.x, y: p.y, r0: 10, r1: 200, w: 9, col, l: 0.8, m: 0.8 });
+          sparks(p.x, p.y, col, 34, 240, 1); ftxt(p.x, p.y - 34, ULT[p.cls].n, col, 14); sfx("phase", 1.2); shake(0.2);
+          p.ucd = 8;
+          return;
+        }
+        if (why) { if (p === P && S.sc == "arena") toast(why); return; }
+        const u = ULT[p.cls], b = S.b;
+        if (p === P) bountyAdd("skill");
+        p.ucd = u.cd || 1e9;
+        if (S.net && S.net.role == "member") {
+          if (p !== P) return;
+          if (p.cls == "heal") p.rev = 1;
+          ultFx(p);
+          return netParty(S.net.lead, { type: "ra", a: 3, s: ++S.net.seq });
+        }
+        let t = null;
+        if (p.cls == "tank") {
+          for (const a of raidAlive()) { a.sh = u.sh; a.sht = u.t * (p === P ? 1 + eqSt("bd") : 1); }
+          b.stun = Math.max(b.stun, u.stun);
+        } else if (p.cls == "heal") {
+          t = S.ps.filter((a) => a.hp <= 0).sort((x, y) => dist(p, x) - dist(p, y))[0];
+          t.hp = Math.round(t.mh * u.hp);
+          p.rev = 1;
+          raidMsg(`✨ ${t === P ? "You are" : t.name + " is"} back on their feet!`, 1.1, 2000);
+        } else {
+          const n = p.eng || 1;
+          SKM = 1;
+          hitB(ultDmg(p), p);
+          p.life = 0; p.eng = 1; /* the Engine restarts */
+          p.ovr = n; /* for the beam's size */
+        }
+        raidEvent(["fx", p.id, 3, t ? t.id : -1, Math.round((p.ovr || 1) * 10)]);
+        ultFx(p, t, p.ovr);
+      }
+      /* ultFx(p, t, n): the ultimate's look (also played on members' screens from the leader's event) */
+      function ultFx(p, t, n = p.eng || 1) {
+        const b = S.b, col = SKC[p.cls];
+        sfx("phase", 1.2);
+        shake(0.35);
+        if (p.cls == "tank") {
+          VX.push({ k: "dome", x: p.x, y: p.y, r: 260, col: "#9fd4ff", l: 0.9, m: 0.9 });
+          VX.push({ k: "nova", x: p.x, y: p.y, r0: 20, r1: 300, w: 10, col: "#cfe6ff", l: 0.7, m: 0.7 });
+          for (const a of raidAlive()) { a.sh = a.sh || ULT.tank.sh; a.sht = ULT.tank.t; sparks(a.x, a.y, "#9fd4ff", 14, 120, 1); }
+          if (b) { VX.push({ k: "flash", x: b.x, y: b.y, r: b.r * 2.4, col: "#ffe066", l: 0.5, m: 0.5 }); VX.push({ k: "stars", x: b.x, y: b.y - b.r - 10, l: ULT.tank.stun, m: ULT.tank.stun }); }
+          popMsg("🛡 BULWARK: the party is shielded, the boss is stunned", 1.1, 2000);
+        } else if (p.cls == "heal") {
+          const a = t || S.ps.find((o) => o.hp <= 0);
+          if (a) {
+            VX.push({ k: "pillar", x: a.x, y: a.y, w: 46, h: 420, col: "#9dffb8", l: 1.4, m: 1.4 });
+            VX.push({ k: "nova", x: a.x, y: a.y, r0: 10, r1: 140, w: 8, col: "#eaffd0", l: 0.8, m: 0.8 });
+            sparks(a.x, a.y, "#c8ffd4", 40, 200, 1);
+          }
+          VX.push({ k: "flash", x: p.x, y: p.y, r: 80, col: "#7dff9a", l: 0.6, m: 0.6 });
+        } else if (b) {
+          const w = 10 + 8 * Math.min(5, n - 1);
+          VX.push({ k: "beam", x: p.x, y: p.y, x2: b.x, y2: b.y, w, col: "#ff9f43", l: 0.75, m: 0.75 });
+          VX.push({ k: "flash", x: b.x, y: b.y, r: b.r * 2 + w * 3, col: "#ffcf6a", l: 0.6, m: 0.6 });
+          VX.push({ k: "nova", x: b.x, y: b.y, r0: b.r, r1: b.r + 120 + w * 4, w: w * 0.6, col: "#ff9f43", l: 0.55, m: 0.55 });
+          sparks(b.x, b.y, "#ffd27a", 30 + w, 260, 1);
+          sparks(p.x, p.y, "#ff9f43", 16, 140, 1);
+          popMsg(`⚙ OVERDRIVE x${n.toFixed(1)}!`, 1.2, 1500);
+        }
+      }
       function hubSkill(p, a) {
         const col = SKC[p.cls],
           fx = [
             /* skill 1: quick flash in front of the player */
-            () => { const [fx0, fy0] = DIRV[p.f || "d"]; burst(p.x + fx0 * 20, p.y + fy0 * 20, col, 10, 120); sfx("hit"); },
+            () => { const [fx0, fy0] = DIRV[p.f || "d"]; VX.push({ k: "slash", x: p.x, y: p.y, r: 26, a: Math.atan2(fy0, fx0), col, l: 0.22, m: 0.22 }); sparks(p.x + fx0 * 22, p.y + fy0 * 22, col, 8, 120); sfx("hit"); },
             /* skill 2: bigger shockwave */
-            () => { RINGS.push({ x: p.x, y: p.y, col, t: 0 }); burst(p.x, p.y, col, 18, 180); shake(0.08); sfx("slam", 1.6); },
+            () => { VX.push({ k: "nova", x: p.x, y: p.y, r0: 10, r1: 100, w: 7, col, l: 0.5, m: 0.5 }); VX.push({ k: "flash", x: p.x, y: p.y, r: 60, col, l: 0.3, m: 0.3 }); sparks(p.x, p.y, col, 16, 180); shake(0.08); sfx("slam", 1.6); },
             /* skill 3: signature burst + floating skill name */
-            () => { RINGS.push({ x: p.x, y: p.y, col: "#fff", t: 0 }); RINGS.push({ x: p.x, y: p.y, col, t: -0.12 }); burst(p.x, p.y, col, 26, 220); ftxt(p.x, p.y - 30, SK[p.cls][2], col, 12); sfx("heal"); },
+            () => { VX.push({ k: "pillar", x: p.x, y: p.y, w: 30, h: 160, col, l: 0.7, m: 0.7 }); VX.push({ k: "nova", x: p.x, y: p.y, r0: 10, r1: 120, w: 6, col: "#fff", l: 0.6, m: 0.6 }); sparks(p.x, p.y, col, 22, 200, 1); ftxt(p.x, p.y - 30, SK[p.cls][2], col, 12); sfx("heal"); },
           ];
         fx[a]();
         if (!DEV.nocd) p.cd[a] = CL[p.cls].cd[a] * cdm();
@@ -3740,6 +4110,7 @@
       /* SKM: damage multiplier from the skill level (+15% per level). Set at the start of act(), 1 in the arena loop. */
       let SKM = 1;
       function act(p, a) {
+        if (a == 3) return ult(p);
         SKM = p === P ? 1 + 0.15 * ((V.sk[p.cls] || [])[a] || 0) : 1;
         if (p === P && p.cd[a] <= 0 && p.hp > 0) bountyAdd("skill");
         if (S.sc == "hub" && p.hp > 0 && p.cd[a] <= 0) return hubSkill(p, a);
@@ -3752,6 +4123,7 @@
           return netParty(S.net.lead, { type: "ra", a, s: ++S.net.seq });
         }
         raidEvent(["fx", p.id, a]);
+        skillFx(p, a, p.cls == "heal" && a > 0 ? healTarget(p) || p : null);
         const b = S.b,
           d = dist(p, b),
           eng = p.cls == "dps" ? p.eng || 1 : 1; /* DPS skills scale with the Engine */
@@ -3768,7 +4140,7 @@
         } else {
           if (a == 0) shoot(p, 7);
           else if (a == 1) { const t = healTarget(p); t ? heal(t, 55, p) : (ok = 0); }
-          else { const t = healTarget(p) || p; S.zo.push({ x: t.x, y: t.y, r: 90, l: 5, t: 0, src: p.id }); } /* circle lands on the most hurt ally */
+          else { const t = healTarget(p) || p; S.zo.push({ x: t.x, y: t.y, r: 90, l: 5 * (p === P ? 1 + eqSt("bd") : 1), t: 0, src: p.id }); } /* circle lands on the most hurt ally */
         }
         if (ok && !DEV.nocd) p.cd[a] = Math.max(ENGINE.minCd, CL[p.cls].cd[a] * aCdm(p) * cdMul(p, a));
       }
@@ -3814,14 +4186,14 @@
           a.seq = m.s;
           a.heard = performance.now(); /* even a fallen member is still there: it keeps getting the fight to watch */
           if (a.hp <= 0) return;
-          if (m.type == "ra") { if (Number.isInteger(m.a) && m.a >= 0 && m.a <= 2) act(a, m.a); return; }
+          if (m.type == "ra") { if (Number.isInteger(m.a) && m.a >= 0 && m.a <= 3) act(a, m.a); return; }
           if (!Number.isFinite(m.x) || !Number.isFinite(m.y) || !NET_F[m.f]) return;
           /* same refilling budget as the hub: 1.3x class speed, 0.5 s of slack, plus a dash when off cooldown */
           const now = performance.now(), rate = CL[a.cls].sp * RAID_SPEED * 1.3, cap = rate * 0.5 + 24, D = DASH[a.cls];
           a.budget = Math.min(cap, (a.budget ?? cap) + (rate * (now - (a.movedAt || now))) / 1000);
           a.movedAt = now;
           const dash = m.d === 1 && now - (a.dashAt || -1e9) >= D.cd * 900, mx = m.x - (a.tx ?? a.x), my = m.y - (a.ty ?? a.y), dd = Math.hypot(mx, my), allow = a.budget + (dash ? D.d : 0);
-          if (dash && dd > a.budget) { a.dashAt = now; if (D.ar) a.ar = D.ar; if (D.inv) a.inv = D.inv; }
+          if (dash && dd > a.budget) { a.dashAt = a.dash2 ?? -1e9; a.dash2 = now; if (D.ar) a.ar = D.ar; if (D.inv) a.inv = D.inv; }
           const k = dd > allow ? allow / dd : 1, pos = { x: (a.tx ?? a.x) + mx * k, y: (a.ty ?? a.y) + my * k, hp: 1 };
           a.budget = Math.max(0, a.budget - Math.max(0, dd * k - (dash ? D.d : 0)));
           clampW(pos);
@@ -3870,15 +4242,21 @@
         for (const a of m.ao || []) S.ao.push(a[0] ? { ln: 1, x: a[1], y: a[2], a: a[3] / 1000, len: a[4], w: a[5], t: a[6] / 10, m: a[7] / 10 } : { x: a[1], y: a[2], r: a[3], t: a[4] / 10, m: a[5] / 10 });
         for (const z of m.zo || []) S.zo.push({ x: z[0], y: z[1], r: 90, l: 5, t: 0 });
         for (const e of m.ev || []) {
-          if (e[0] == "fx") { const a = S.ps.find((o) => o.id == e[1]); if (a && a !== P) raidFx(a, e[2]); }
+          if (e[0] == "fx") { const a = S.ps.find((o) => o.id == e[1]); if (a && a !== P) raidFx(a, e[2], e[3], e[4]); else if (a && e[2] == 3 && a.cls == "dps") ultFx(a, null, e[4] / 10); }
           else if (e[0] == "msg") popMsg(String(e[1]).slice(0, 80), 1.1, 2500);
           else if (e[0] == "end" && !S.end) e[1] == "win" ? win() : raidEnd(String(e[2] || "Your party fell.").slice(0, 80));
         }
       }
       /* raidFx(a, skill): what a skill looks like, without its effect (members draw others' and their own presses) */
-      function raidFx(a, k) {
+      function raidFx(a, k, t, n) {
         const b = S.b;
-        if ((a.cls == "dps" && k < 2) || (a.cls == "heal" && k == 0)) { const ang = Math.atan2(b.y - a.y, b.x - a.x); S.pr.push({ x: a.x, y: a.y, vx: Math.cos(ang) * 360, vy: Math.sin(ang) * 360, d: 0, l: 2, c: a.cls, o: a.id, vis: 1 }); }
+        if (k == 3) { if (a.cls == "heal") a.rev = 1; return ultFx(a, S.ps.find((o) => o.id == t), n ? n / 10 : a.eng); }
+        skillFx(a, k, a.cls == "heal" && k > 0 ? (S.ps.filter((o) => o.hp > 0 && o.hp < o.mh).sort((x, y) => x.hp / x.mh - y.hp / y.mh)[0] || a) : null);
+        if (a.cls == "dps" || (a.cls == "heal" && k == 0)) {
+          /* projectiles to watch (no damage here); Rapid Fire = a stream of 5 */
+          const ang = Math.atan2(b.y - a.y, b.x - a.x), n = a.cls == "dps" && k == 2 ? 5 : 1;
+          for (let i = 0; i < n; i++) S.pr.push({ x: a.x - Math.cos(ang) * i * 30, y: a.y - Math.sin(ang) * i * 30, vx: Math.cos(ang) * 360, vy: Math.sin(ang) * 360, d: 0, l: 2, c: a.cls, o: a.id, vis: 1, big: a.cls == "dps" && k == 1 });
+        }
         else if (a.cls == "tank" && k == 2) RINGS.push({ x: a.x, y: a.y, col: SKC.tank, t: 0 });
         else burst(a.x, a.y, SKC[a.cls], 12, 120);
       }
@@ -3887,10 +4265,11 @@
         const b = S.b;
         if (S.end || !b) return;
         const k = 1 - Math.exp(-dt * 12);
+        for (const a of S.ps) if (a !== P && a.sht > 0 && (a.sht -= dt) <= 0) a.sh = 0;
         for (const a of S.ps) if (a !== P && a.tx != null) { const ox = a.x, oy = a.y; a.x += (a.tx - a.x) * k; a.y += (a.ty - a.y) * k; a.dx = (a.x - ox) / Math.max(1e-3, dt * 200); a.dy = (a.y - oy) / Math.max(1e-3, dt * 200); }
         b.x += (b.tx - b.x) * k; b.y += (b.ty - b.y) * k;
         b.hf = Math.max(0, (b.hf || 0) - dt);
-        for (const o of S.pr) { o.x += o.vx * dt; o.y += o.vy * dt; o.l -= dt; if (dist(o, b) < b.r) { o.l = 0; burst(o.x, o.y, CL[o.c].col, 4, 80); } }
+        for (const o of S.pr) { o.x += o.vx * dt; o.y += o.vy * dt; o.l -= dt; if (dist(o, b) < b.r) { o.l = 0; hitFx(o); } }
         S.pr = S.pr.filter((o) => o.l > 0);
         for (const z of S.zo) z.l -= dt;
         S.zo = S.zo.filter((z) => z.l > 0);
@@ -3923,6 +4302,11 @@
       /* raidAI(p, dt): bots (and party members on this screen) play their role: dodge telegraphs, then
          tank: hold the boss with Taunt, Shield Bash its weak moments; healer: heal, circle, clear the Doom; DPS: fire on cooldown */
       function raidAI(p, dt) {
+        if (!(p.ucd > 0)) {
+          /* ultimates: tank when the party is hurting or the boss rages, healer when someone fell, DPS to finish or at x4 */
+          const hurt = raidAlive().filter((a) => a.hp < a.mh * 0.55).length;
+          if (p.cls == "tank" ? hurt >= 2 || S.b.enr > 0 : p.cls == "heal" ? !p.rev && S.ps.some((a) => a.hp <= 0) : (p.eng || 1) >= ULT.dps.min && (ultDmg(p) * aDm(p) >= S.b.hp || p.eng >= 4)) ult(p);
+        }
         const b = S.b, doomMe = b.doom && b.doom.id == p.id && !p.ai_ignoreDoom; /* ai_ignoreDoom: tests of a failed Doom */
         let mx = 0, my = 0;
         const danger = S.ao.find((a) => a.t < 1.25 && inTele(p, a, PR + 8));
@@ -3979,6 +4363,8 @@
         S.why = why;
         S.res = 5;
         gainXP(30, "raid");
+        V.rc = (V.rc || 0) + 1;
+        goldAdd(15, "raid"); /* a little gold even for a loss */
         V.bl = null; /* blessings last one raid */
         V.loss = (V.loss || 0) + 1;
         sfx("lose");
@@ -3995,7 +4381,7 @@
           if (p.cls != "dps") continue;
           const was = p.eng || 1;
           p.life = p.hp > 0 ? (p.life || 0) + dt : 0;
-          p.eng = 1 + p.life / ENGINE.t;
+          p.eng = 1 + (p.life / ENGINE.t) * (1 + clb(p));
           if (p === P && Math.floor(p.eng) > Math.floor(was)) popMsg(`⚙ ENGINE x${Math.floor(p.eng)}: faster attacks, harder skills`, 1.1);
         }
         /* bots and party members on this screen: think, move, tick cooldowns */
@@ -4009,6 +4395,8 @@
             p.dx = (p.x - ox) / Math.max(1e-3, dt * 200); p.dy = (p.y - oy) / Math.max(1e-3, dt * 200);
             p.ar = Math.max(0, (p.ar || 0) - dt); p.inv = Math.max(0, (p.inv || 0) - dt);
             for (let i = 0; i < 3; i++) p.cd[i] = Math.max(0, p.cd[i] - dt);
+            if (p.ucd > 0 && p.ucd < 1e8) p.ucd = Math.max(0, p.ucd - dt);
+            if (p.sht > 0 && (p.sht -= dt) <= 0) p.sh = 0;
             continue;
           }
           if (p.remote && p.tx != null) { p.tx = p.ty = null; } /* went silent: the AI plays them */
@@ -4035,6 +4423,7 @@
           if (dist(o, b) < b.r) {
             hitB(o.d, actor(o.o) || P);
             o.l = 0;
+            hitFx(o);
           }
         }
         S.pr = S.pr.filter((o) => o.l > 0);
@@ -4150,14 +4539,15 @@
       /* ---------- tutorial: reveals the starter NPCs one by one ----------
          0 move -> Elder, 1 talk to Elder -> Merchant, 2 open shop -> Archivist, 3 listen -> portal, 4 done */
       const tut = () => (V.tut == null ? 0 : V.tut);
-      const TUT_DONE = 6;
-      const TUT_TXT = ["Move with WASD, the joystick or the stick", "Choose your class at the Class Master", "Talk to the Elder", "Visit the Merchant", "Listen to the Archivist", "Play a hand of blackjack with the Barkeep", ""];
+      const TUT_DONE = 5;
+      const TUT_TXT = ["Move with WASD, the joystick or the stick", "Choose your class at the Class Master", "Talk to the Elder", "Visit the Merchant", "Listen to the Archivist", ""];
       /* tutMigrate(): saves from the old 4-step tutorial (move, Elder, Merchant, Archivist) map onto the new steps */
       function tutMigrate() {
-        if (V.tv == 2) return;
-        if (V.tut != null) V.tut = V.tut >= 4 ? TUT_DONE : V.tut == 0 ? 0 : V.tut + 1;
+        if (V.tv == 3) return;
+        if (V.tv != 2 && V.tut != null) V.tut = V.tut >= 4 ? TUT_DONE : V.tut == 0 ? 0 : V.tut + 1;
+        if (V.tut != null && V.tut > TUT_DONE) V.tut = TUT_DONE; /* the blackjack step is gone */
         if (tut() >= 1) (V.ul = V.ul || {}), (V.ul.class = true);
-        V.tv = 2;
+        V.tv = 3;
       }
       let tutWalk = 0;
       /* tutNext(from): if the player is on step "from", go to the next step and reveal the next NPC. */
@@ -4166,7 +4556,7 @@
         V.tut = from + 1;
         save();
         if (from == 0) (V.ul = V.ul || {}), (V.ul.class = true); /* the Class Master is there from the start of the tutorial */
-        const n = [CLASSN, ELDER, SHOP, LORE, BARKEEP, PORTAL][from];
+        const n = [CLASSN, ELDER, SHOP, LORE, PORTAL][from];
         n._rv = S.tm; /* slow fade-in */
         burst(n.x, n.y, n.col || "#5af0dc", 40, 220);
         RINGS.push({ x: n.x, y: n.y, col: n.col || "#5af0dc", t: 0 });
@@ -4208,6 +4598,7 @@
           /* facing snaps instantly to the dominant move direction */
           if (P.dx || P.dy) P.f = Math.abs(P.dx) > Math.abs(P.dy) ? (P.dx > 0 ? "r" : "l") : P.dy > 0 ? "d" : "u";
           if ((P.dx || P.dy) && tut() == 0 && (tutWalk += dt) > 0.8) tutNext(0); /* tutorial step 1: walk a bit */
+          if (HOLD.size && !P.auto && !dlgOpen() && P.cd[0] <= 0) press(0); /* main attack held down */
           if (!dashStep(P, dt)) {
             const rs = S.sc == "arena" ? RAID_SPEED : 1;
             P.x += P.dx * k.sp * spm() * rs * dt;
@@ -4279,7 +4670,7 @@
         $("dlg").hidden = false;
         const tn = { elder: ELDER, shop: SHOP, lore: LORE }[w];
         if (tn && tut() < tn.tu) return lockedUI("tut");
-        const ln = { class: CLASSN, maiden: MAIDEN, smith: SMITH, herald: HERALD }[w];
+        const ln = { class: CLASSN, maiden: MAIDEN, smith: SMITH, herald: HERALD, barkeep: BARKEEP }[w];
         if (ln && !isUnl(ln.lk)) return lockedUI(ln.lk);
         ({ elder: elderUI, lore: loreUI, shop: shopUI, class: classUI, maiden: maidenUI, smith: smithUI, herald: heraldUI, barkeep: bjUI, qboard: questBoardUI, gboard: guildUI }[w] || shopUI)();
       }
@@ -4325,30 +4716,30 @@
       const TALES = [
         ["L", "Before the hub, before the portal, there was only the Rune Sea: a tide of light that wrote itself across the sky."],
         ["L", "The first runes were not carved. They were sung, and the stone remembered the song."],
-        ["L", "The Rune Warden was once a keeper, sworn to guard the Sea. It guarded too well, and forgot whom it served."],
-        ["L", "Three orders rose to face the Warden: the Shieldbound, the Swiftarrows and the Mendhands. Alone, each one fell."],
+        ["L", "The Hollow Seer was once an oracle of the Rune Sea. It read so many futures that it forgot its own, and only the hunger stayed."],
+        ["L", "Three orders rose to face the Seer: the Shieldbound, the Swiftarrows and the Mendhands. Alone, each one fell."],
         ["L", "The Shieldbound swore an oath on a broken gate: 'What strikes you must first strike me.' Tanks still keep that oath."],
         ["L", "Swiftarrows were hunters of the high cliffs. They learned that a hundred small wounds topple a giant."],
         ["L", "The Mendhands carried no blades. Their weapon was the simple refusal to let a friend fall."],
-        ["L", "When the three orders fought as one, the Warden bled for the first time in a thousand years. That night was named the First Raid."],
+        ["L", "When the three orders fought as one, the Seer bled for the first time in a thousand years. That night was named the First Raid."],
         ["L", "A raid is not many heroes in one place. It is one hero with many hands."],
         ["L", "The portal was torn open by the Elder's master. The cost was his sight and half his years."],
         ["L", "The Elder does not speak of his master. If you listen at dusk, you may hear him whisper the name 'Orrin'."],
         ["L", "The Merchant came through the portal on the third night of the siege, carrying a pack heavier than a mule. He has never said from where."],
-        ["L", "Gold in Runebound is minted from Warden shards. Every coin you spend once tried to kill someone."],
+        ["L", "Gold in Runebound is minted from boss shards. Every coin you spend once tried to kill someone."],
         ["L", "The hub was a battlefield once. Look at the stones: the scorch marks are older than the town."],
-        ["L", "The Warden's eyes burn blue while it remembers its oath. When they turn crimson, it has forgotten everything but rage."],
-        ["L", "The Warden has two hearts. When the first breaks, the second wakes, and it wakes angry."],
-        ["L", "The red circles before the Warden strikes are runes of judgment. It writes where it will fall, and it never lies."],
-        ["L", "Some say the Warden can be reasoned with. All of them say it from very far away."],
-        ["L", "The Rune Edge was forged from the Warden's own claw. It hungers to return home, and so it cuts deeper."],
+        ["L", "Thornmaw was a mountain before it was a monster. The thorns are old pine roots; the horns were two peaks that would not kneel."],
+        ["L", "Every boss has two hearts. When the first breaks at half health, the second wakes, and it wakes angry."],
+        ["L", "The red runes before a boss strikes are written promises. It writes where it will fall, and it never lies."],
+        ["L", "Some say Thornmaw can be reasoned with. All of them say it from very far away."],
+        ["L", "The Rune Edge was forged from a Colossus thorn. It hungers to return home, and so it cuts deeper."],
         ["L", "Stoneheart is quarried from the hub's oldest wall. Those who carry it are said to be very hard to argue with."],
         ["L", "Wind Boots were stitched by a Swiftarrow who outran a storm. She never stopped running, and never said why."],
         ["L", "The Quickening Sigil bends time by a hair's width. Use too many and you start hearing tomorrow."],
         ["L", "In the old tongue, 'Runebound' meant 'one who keeps a promise written in stone'."],
         ["L", "Every raid since the First has a name in my ledger. Yours will too, if you live long enough to earn it."],
         ["L", "The portal hums in a key no lute can play. Bards have gone mad trying."],
-        ["L", "When the portal flickers, the Warden is dreaming. Pray it dreams of something kind."],
+        ["L", "When the portal flickers, the Seer is reading your future. Pray it reads something kind."],
         ["L", "There were once nine portals. Eight were sealed with heroes still inside. Ask me not what became of them."],
         ["L", "The Shieldbound taunt is no insult. It is an old word for 'look at me, not at them'."],
         ["L", "A healer's Circle was first drawn in blood on the floor of a ruined chapel. Now it is drawn in light."],
@@ -4357,59 +4748,59 @@
         ["L", "Shield Bash is older than shields. The first Shieldbound used a door."],
         ["L", "The hub's well never runs dry. Do not drink from it after midnight."],
         ["L", "I have catalogued four hundred and twelve raids. Three ended in victory without a single fallen. Teamwork is rarer than gold."],
-        ["L", "The Warden's arena was a cathedral. The great circle on the floor is the old rose window, fallen and buried."],
+        ["L", "The raid arena was a cathedral. The great circle on the floor is the old rose window, fallen and buried."],
         ["L", "Runes do not glow by magic. They glow because they are trying very hard to be read."],
         ["L", "When a hundred heroes raid as one, the runes call it a Choir. It has happened only once."],
         ["L", "The Elder's quests are not chores. Each one retraces a step of the First Raid."],
         ["L", "Before coin, raiders were paid in names. A hero with no name had nothing to lose."],
-        ["L", "Some nights the Warden calls the names of those who fell to it. It has never once said 'Tank'."],
+        ["L", "Some nights the Seer calls the names of those who fell to it. It has never once said 'Tank'."],
         ["L", "The three orders have a saying: 'The tank holds, the archer ends, the healer remembers.'"],
         ["L", "A raid that loses its healer has minutes. A raid that loses its tank has seconds. A raid that loses its nerve has none."],
         ["L", "The Merchant's prices rise because the shards grow rarer. Or because he is greedy. Both, likely."],
         ["L", "There is a door beneath the hub that no key fits. I have been told not to write about it. I am writing about it."],
         ["L", "The Rune Sea still flows above the clouds. On clear nights, look up and you will see it ripple."],
         ["L", "Every rune carved in this hub is a name. Some are heroes. Most are friends who held the line."],
-        ["L", "The Warden's phase of fury began after the Ninth Raid. Someone taught it to be afraid. Fear made it cruel."],
+        ["L", "The Seer's Doom began after the Ninth Raid. It learned that healers keep raids alive, so now it marks them first."],
         ["L", "When the last rune falls silent, the hub will drift back into the Sea. That is why we fight."],
         ["L", "My own name was traded away long ago, for the right to remember everyone else's."],
-        ["L", "If you ever beat the Warden alone, come and tell me. I will need a new ledger."],
+        ["L", "If you ever beat Thornmaw alone, come and tell me. I will need a new ledger."],
         ["T", "Tip: stand outside the red circles. When the inner circle fills, the rune strikes. Move early, not fast."],
-        ["T", "Tip: the big circle around the Warden means 'get away from me'. Listen to it."],
-        ["T", "Tip: in its fury, the Warden rains four runes at once. Find the gap between them."],
-        ["T", "Tip: Tanks, your Shield Bash stuns the Warden for two seconds. Use it the moment its fury begins."],
-        ["T", "Tip: Taunt makes the Warden choose you four times more often. Your friends will thank you."],
+        ["T", "Tip: a big red circle around the boss means 'get away from me'. Listen to it."],
+        ["T", "Tip: in phase 2 the Seer rains Void runes. Find the gap between them."],
+        ["T", "Tip: Tanks, when the boss glows gold it is weakened. Shield Bash it then to break its poise: +50% damage for everyone."],
+        ["T", "Tip: Taunt holds the boss on you for 8 seconds and comes back every 8. Keep it rolling and your friends live."],
         ["T", "Tip: DPS, keep your distance. Your arrows fly far; your health does not stretch."],
-        ["T", "Tip: Rapid Fire sends five arrows. Loose it while the Warden is stunned for free damage."],
-        ["T", "Tip: Heavy Shot hits for 45. Save it for when the Warden's cooldown just ended."],
+        ["T", "Tip: Rapid Fire sends five arrows. Loose it while the boss is stunned for free damage."],
+        ["T", "Tip: DPS, your Engine makes Heavy Shot hit harder the longer you live. Staying alive IS your damage."],
         ["T", "Tip: Healers, the Circle heals everyone standing in it every second, and they hit 25% harder. Drop it where the raid gathers."],
         ["T", "Tip: Heal only works when someone is hurt, so you never waste it on full health."],
         ["T", "Tip: Rune Edge boosts healing too, not only damage. Healers, buy it."],
         ["T", "Tip: Stoneheart restores you to full health the moment you buy it. Shopping is healing."],
         ["T", "Tip: Wind Boots stack well with dodging. The best armour is not being there."],
         ["T", "Tip: the Quickening Sigil cuts every cooldown. At level 5 your skills come back 40% sooner."],
-        ["T", "Tip: beat the Warden in under 90 seconds for 20 bonus gold."],
+        ["T", "Tip: win a raid in under two and a half minutes for bonus gold and experience."],
         ["T", "Tip: come back every day. The Daily Rune Cache grows for seven days in a row."],
         ["T", "Tip: miss a day and your streak resets. The runes are patient, not forgiving."],
         ["T", "Tip: day seven of the Daily Cache pays 300 gold. Do not miss day six."],
         ["T", "Tip: the gold diamond above the Elder means a new quest. A grey one means you are still working on it."],
         ["T", "Tip: when an upgrade card glows, you can afford it. The runes want to be bought."],
         ["T", "Tip: press P or Esc to pause. Even heroes need to breathe."],
-        ["T", "Tip: the Warden turns crimson at half health. Save your cooldowns for that moment."],
-        ["T", "Tip: never stand behind the Warden's target. Stray runes do not ask whose side you are on."],
-        ["T", "Tip: if the Warden is chasing you, lead it in a circle around the arena edge."],
+        ["T", "Tip: bosses get angrier at half health. Save your ultimate (R) for that moment."],
+        ["T", "Tip: never stand behind the tank. Thornmaw's cleave and Earthsplitter do not ask whose side you are on."],
+        ["T", "Tip: running away from the boss is not safe. Kite too far and it Lunges at you."],
         ["T", "Tip: a raid that spreads out takes fewer hits from the big circles."],
         ["T", "Tip: watch the cooldown sweep on your skill buttons. A dark wedge means not yet."],
-        ["T", "Tip: in a big raid, give the tank space. A crowd around the Warden is a crowd under its runes."],
+        ["T", "Tip: in a big raid, give the tank space. A crowd around the boss is a crowd under its runes."],
         ["T", "Tip: healers, keep the tank alive first. A living tank keeps everyone else alive."],
         ["T", "Tip: the Rune Mastery bar fills as you upgrade. Fill it and see what happens."],
         ["T", "Tip: I have more stories than you have days. Come back and ask again."],
         /* boss weaknesses */
-        ["T", "Weakness: the Warden cannot move while stunned. Shield Bash, then everyone strike at once."],
-        ["T", "Weakness: after its great circle slam, the Warden rests three heartbeats. That is your window."],
-        ["T", "Weakness: the Warden always strikes where its target stood, not where they stand. Keep moving and it hits stone."],
-        ["T", "Weakness: in its fury the Warden is faster but blinder. Its four runes fall at random; stand still between them."],
-        ["T", "Weakness: a taunted Warden ignores the healer. Tanks, Taunt before your healer starts working."],
-        ["T", "Weakness: the Warden's second heart wakes at half health. Hold your Heavy Shot and Rapid Fire for that moment."],
+        ["T", "Weakness: a stunned boss cannot move or cast. Tanks, Bulwark (R) stuns it and shields the whole party."],
+        ["T", "Weakness: twice per fight the boss is weakened (at 75% and 35%). Miss the Shield Bash and it enrages."],
+        ["T", "Weakness: telegraphs land where they were drawn, not where you stand. Keep moving and the boss hits stone."],
+        ["T", "Weakness: the Doom marks a healer at 60%. Touch its three runes within 12 seconds or the whole party falls."],
+        ["T", "Weakness: a taunted boss ignores the healer. Tanks, Taunt before your healer starts working."],
+        ["T", "Weakness: Overdrive (R) spends the whole Engine. More stacks, far more damage: wait for x3 or a killing blow."],
         /* combat tips */
         ["T", "Combat: dash through a red circle, not away from it. The fastest way out is often across."],
         ["T", "Combat: the tank's dash grants armor. Dash into the slam and take half the hit."],
@@ -4420,12 +4811,12 @@
         /* hints */
         ["T", "Hint: the Archivist hides a secret page in some of his tales. Listen often and your purse grows."],
         ["T", "Hint: my voice returns every three minutes. A patient listener hears the rarest tales."],
-        ["T", "Hint: your level badge changes color every ten levels. The gold badge is said to scare the Warden."],
+        ["T", "Hint: your level badge changes color every ten levels. The gold badge is said to scare the Seer."],
         ["T", "Hint: open Titles to wear a name the runes have granted you. Some are only earned by the stubborn."],
         ["L", "The Raiders began as six sellswords who shared one cold campfire. They swore to take only the contracts that paid in honest steel."],
         ["L", "Every Raider carries a token of the first campfire: a copper ring. Ask one to see theirs, and watch how they answer."],
         ["L", "The Raiders' counter is older than the inn. The first contract was signed on its scarred oak, in blood and ink."],
-        ["L", "When the Raiders ride out, they leave a single banner at the gate. Those who see it know the Warden's road is about to change."],
+        ["L", "When the Raiders ride out, they leave a single banner at the gate. Those who see it know the Colossus's road is about to change."],
         ["L", "The Raiders keep no secret ledger. Their only rule is written on the wall: the party that carries the hurt is the party that gets the reward."],        ["E", "You found a crumpled note: 'If you are reading this, the Merchant owes me 40 gold. -J'"],
         ["E", "The Archivist squints at you. 'You have the face of someone who skips dialogue.' He is right."],
         ["E", "Psst. The Merchant's coin pile? It is painted on. He keeps the real gold in his boots."],
@@ -4434,22 +4825,22 @@
         ["E", "'Why do you keep talking to me?' he asks. 'Not that I mind. Nobody else does.'"],
         ["E", "He hands you a rune that reads 'You are doing great.' It is not magic. It is just nice."],
         ["E", "A pigeon lands on the Archivist's head. He does not acknowledge it. Neither should you."],
-        ["E", "He whispers: 'The Warden is afraid of one thing. I will tell you when you have earned it.'"],
-        ["E", "'Rumour has it a hundred heroes once raided together. The Warden filed a complaint.'"],
+        ["E", "He whispers: 'The Seer is afraid of one thing. I will tell you when you have earned it.'"],
+        ["E", "'Rumour has it a hundred heroes once raided together. Thornmaw filed a complaint.'"],
         ["E", "The Archivist offers you tea. It tastes like ink. He seems proud of it."],
-        ["E", "You notice the Archivist's quill is a Warden feather. He notices you noticing."],
+        ["E", "You notice the Archivist's quill is a Thornmaw thorn. He notices you noticing."],
         ["E", "'The Elder sends adventurers to buy upgrades first because he gets a cut.' He winks."],
         ["E", "A scrap in the margin reads: 'Day 1 of being a tank. They all stand behind me. I feel loved.'"],
         ["E", "'I was a healer once,' he says. 'Then I realised books do not take damage.'"],
         ["E", "He reads your future: 'You will press a button. Then another one.' Uncanny."],
-        ["E", "The ledger lists a hero who beat the Warden in four seconds. The entry is marked 'cheater (F2)'."],
+        ["E", "The ledger lists a hero who beat the Seer in four seconds. The entry is marked 'cheater (F2)'."],
         ["E", "'Talk to me a hundred times,' he says, 'and I will tell you the one tale I never wrote down.'"],
         ["E", "A small rune falls from the ledger: 'Made with love in the hub.'"],
         ["E", "You hear a faint chime. Somewhere, a Merchant just raised his prices."],
       ];
       /* fixed shuffled order so every player hears tales in a varied but stable sequence */
       /* milestones: talk count -> gold + message */
-      const TALE_MS = { 10: [100, "You have the patience of a scholar."], 25: [250, "A quarter of the ledger is yours."], 50: [500, "Half the archive lives in you now."], 100: [1000, "You have heard every tale. The one I never wrote down: the Warden fears being forgotten. So we remember it, every raid."] };
+      const TALE_MS = { 10: [100, "You have the patience of a scholar."], 25: [250, "A quarter of the ledger is yours."], 50: [500, "Half the archive lives in you now."], 100: [1000, "You have heard every tale. The one I never wrote down: the Seer fears being forgotten. So we remember it, every raid."] };
       /* loreNext(): random tale index, never one of the last 15 heard. Out: index into TALES. */
       let loreRecent = [];
       function loreNext() {
@@ -4564,13 +4955,19 @@
         V.ul = V.ul || {};
         V.ul[k] = true;
         save();
-        const n = { class: CLASSN, maiden: MAIDEN, smith: SMITH, herald: HERALD }[k];
+        const n = { class: CLASSN, maiden: MAIDEN, smith: SMITH, herald: HERALD, barkeep: BARKEEP }[k];
         n._rv = S.tm; /* slow fade-in */
         burst(n.x, n.y, n.col, 50, 260);
         RINGS.push({ x: n.x, y: n.y, col: n.col, t: 0 });
         RINGS.push({ x: n.x, y: n.y, col: "#fff", t: -0.15 });
         setTimeout(() => popMsg("🔓 " + n.nm + " has arrived in the hub!", 1.2, 4000), 300);
         return `🔓 The Archivist whispers a name… <b style="color:${n.col}">${n.nm}</b> joins the hub!`;
+      }
+      /* discordUnlock(): opens the Discord invite in a new tab and unlocks the Barkeep */
+      function discordUnlock() {
+        try { window.open(DISCORD_URL, "_blank", "noopener"); } catch (e) {}
+        closeDlg();
+        unlockNpc("barkeep");
       }
       /* classRoll(): Class Master luck. At most one 1-in-100 roll per 30 minutes (V.cr = last roll time); guaranteed by tale 300. */
       function classRoll() {
@@ -4582,6 +4979,12 @@
       }
       /* lockedUI(): what a still-hidden NPC says. */
       function lockedUI(k) {
+        if (k == "barkeep") {
+          $("dp").innerHTML = `<h2>🍺 The Barkeep</h2><p>"Card table's for regulars, friend. Come say hi in the tavern hall first."</p>
+            <p class="sm">Join the Runebound Discord to unlock the Barkeep and his blackjack table.</p>
+            <button class="claim" onclick="discordUnlock()">JOIN DISCORD TO UNLOCK</button><button class="alt" onclick="closeDlg()">Farewell</button>`;
+          return;
+        }
         if (k == "tut") { $("dp").innerHTML = `<h2>❓ ???</h2><p>A figure waits in the mist.</p><p class="sm">Follow the tutorial at the top of the screen.</p><button class="alt" onclick="closeDlg()">Farewell</button>`; return; }
         const need = UNLOCK_AT[k] || 0,
           hint =
@@ -4639,7 +5042,7 @@
       function maidenUI() {
         const ready = V.mb != dayKey(new Date());
         const opts = BLESS.map((b) => `<div class="up ${ready ? "can" : ""}" style="--uc:${b[3]}"><div style="min-width:0"><span class="nm">${b[1]}</span><div class="sm">${b[2]}</div></div><button ${ready ? "" : "disabled"} onclick="maidenPick('${b[0]}')">BLESS</button></div>`).join("");
-        $("dp").innerHTML = `<h2>🌹 The Maiden</h2><p>${ready ? '"Kneel, raider. Choose the grace you will carry into the Warden\'s hall."' : '"I have given all I can today. Return with the dawn."'}</p>${opts}<button class="alt" onclick="closeDlg()">Farewell</button>`;
+        $("dp").innerHTML = `<h2>🌹 The Maiden</h2><p>${ready ? '"Kneel, raider. Choose the grace you will carry into the raid."' : '"I have given all I can today. Return with the dawn."'}</p>${opts}<button class="alt" onclick="closeDlg()">Farewell</button>`;
       }
       function maidenPick(k) {
         if (V.mb == dayKey(new Date())) return;
@@ -4678,8 +5081,9 @@
           <button class="alt" onclick="closeDlg()">Farewell</button>`;
       }
       /* ---------- The Barkeep (bar, right wall) + the two wall boards ---------- */
-      /* Barkeep: an orange playing-card emblem. Shown after the tutorial (tu: 4). */
-      const BARKEEP = { tu: 5, x: 750, y: 350, ic: "🃏", nm: "The Barkeep", col: "#ffb347", gs: 1,
+      /* Barkeep: an orange playing-card emblem. Shown after the tutorial; opens for players who join the Discord (lk: "barkeep"). */
+      const DISCORD_URL = "https://discord.gg/jdGGGJBFSS";
+      const BARKEEP = { lk: "barkeep", tu: 5, x: 750, y: 350, ic: "🃏", nm: "The Barkeep", col: "#ffb347", gs: 1,
           g: "M-5-10h10q2 0 2 2v16q0 2-2 2h-10q-2 0-2-2v-16q0-2 2-2zM0-4l3 4-3 4-3-4z" };
       /* ---------- Quest Board: main quest + 3 daily bounties ---------- */
       /* bounty: id, text, n = amount needed, g = gold, x = XP */
@@ -4695,7 +5099,7 @@
       function bountyDay() {
         const day = dayKey(new Date());
         if (V.bo && V.bo.day == day) return V.bo;
-        const ids = BOUNTIES.map((b) => b.id).sort(() => Math.random() - 0.5).slice(0, 3);
+        const ids = BOUNTIES.filter((b) => b.id != "bj" || isUnl("barkeep")).map((b) => b.id).sort(() => Math.random() - 0.5).slice(0, 3);
         V.bo = { day, ids, prog: {}, done: {} };
         save();
         return V.bo;
@@ -4899,8 +5303,8 @@
       }
       function bjDeal(bet) {
         if (V.gold < bet) return;
-        const tutorialHand = tut() == 5;
-        tutNext(5);
+        const tutorialHand = !V.bj1; /* your very first hand is dealt to win */
+        V.bj1 = 1;
         goldAdd(-bet, "bj");
         BJ = tutorialHand
           ? { bet, p: [5, 6], d: [10, 7], end: "", win: 0, tutorial: true }
@@ -4945,7 +5349,7 @@
         const q = QUESTS[V.q];
         let h = `<h2>🧙 The Elder</h2>`;
         if (!q)
-          h += `<p>You have completed every quest I had. The hub is safe, hero. Keep hunting the Warden for gold.</p>`;
+          h += `<p>You have completed every quest I had. The hub is safe, hero. Keep raiding the Seer and the Colossus for gold.</p>`;
         else if (V.qs == 0)
           h +=
             qHead("new", q, "New quest") +
@@ -4975,15 +5379,28 @@
       }
       /* shop screen. In: V.gold, V.up. justBought = key of the card to flash after a purchase. */
       let justBought = "";
-      function shopUI() {
+      let SHOP_TAB = "up";
+      function shopUI(tab = SHOP_TAB) {
         tutNext(3);
+        SHOP_TAB = tab;
+        const tabs = `<div class="row"><button class="${tab == "up" ? "claim" : "alt"}" onclick="shopUI('up')">Upgrades</button><button class="${tab == "eq" ? "claim" : "alt"}" onclick="shopUI('eq')">Equipment</button></div>`;
+        if (tab == "eq") {
+          const n = Math.floor((V.rc || 0) / 2), own = V.eq?.bag || [];
+          V.eqs = V.eqs || 1 + Math.floor(Math.random() * 1e6);
+          let h = `<h2>💰 The Merchant</h2><div class="purse"><span class="coin"></span><b id="pg">${V.gold}</b></div>${tabs}
+            <div class="mast"><span class="sm">Today's stock · new stock in ${2 - ((V.rc || 0) % 2)} raid(s)${lvlInfo().L < EQ_LEG_LV ? ` · Legendary from level ${EQ_LEG_LV}` : ""}</span></div>`;
+          h += eqRoll(n).map((it, i) => eqCard(it, own.some((b) => b.id == it.id) ? "<button disabled>Owned</button>" : `<button ${V.gold >= EQ_PRICE[it.r] ? "" : "disabled"} onclick="eqBuy(${i})"><span class="coin"></span>${EQ_PRICE[it.r]}</button>`)).join("");
+          if (own.length) h += `<div class="mast"><span class="sm">Your gear (one per type)</span></div>` + own.map((it) => eqCard(it, `<button onclick="eqWear('${it.id}')">${V.eq.on[it.t] == it.id ? "Worn" : "Wear"}</button>`)).join("");
+          $("dp").innerHTML = h + `<button class="alt" onclick="closeDlg()">Close</button>`;
+          return;
+        }
         const total = UPG.reduce((a, u) => a + V.up[u.k], 0),
           all = UPG.length * MAXL;
-        let h = `<h2>💰 The Merchant</h2><div class="purse"><span class="coin"></span><b id="pg">${V.gold}</b></div>
+        let h = `<h2>💰 The Merchant</h2><div class="purse"><span class="coin"></span><b id="pg">${V.gold}</b></div>${tabs}
           <div class="mast"><span class="sm">Rune Mastery ${total}/${all}</span><div class="mbar"><i style="width:${(total / all) * 100}%"></i></div></div>`;
         for (const u of UPG) {
           const l = V.up[u.k],
-            cost = u.b * (l + 1),
+            cost = upCost(u, l),
             mx = l >= MAXL,
             can = !mx && V.gold >= cost,
             now = u.pl * l,
@@ -4992,6 +5409,7 @@
           h += `<div class="up ${can ? "can" : ""} ${justBought == u.k ? "bought" : ""}" style="--uc:${u.col}">${upIcon(u)}
             <div style="min-width:0"><span class="nm">${u.n}</span><span class="pips">${[...Array(MAXL)].map((_, i) => `<i class="${i < l ? "on" : ""}"></i>`).join("")}</span>
             <div class="sm">${mx ? f(now) + " " + u.w + " · MAXED" : `${f(now)} → <b style="color:${u.col}">${f(nxt)}</b> ${u.w}`}</div>
+            ${P && CLB[P.cls]?.k == u.k ? `<div class="sm" style="color:${SKC[P.cls]}">${CL[P.cls].n} bonus: ${CLB[P.cls].d}</div>` : ""}
             ${!mx && !can ? `<div class="sm need">Need ${cost - V.gold} more gold</div>` : ""}</div>
             <button ${can ? "" : "disabled"} onclick="buy('${u.k}')">${mx ? "MAX" : '<span class="coin"></span>' + cost}</button></div>`;
         }
@@ -5017,7 +5435,7 @@
       function buy(k) {
         const u = UPG.find((x) => x.k == k),
           l = V.up[k],
-          cost = u.b * (l + 1);
+          cost = upCost(u, l);
         if (l >= MAXL || V.gold < cost) return;
         V.gold -= cost;
         V.up[k]++;
@@ -5202,7 +5620,7 @@
       }
       let tt = [];
       cv.addEventListener("pointerdown", (e) => {
-        if (e.pointerType == "mouse" && e.button == 0 && SET.bind.s0 == "Mouse0" && P && !dlgOpen()) press(0); /* main attack on left click */
+        if (e.pointerType == "mouse" && e.button == 0 && SET.bind.s0 == "Mouse0" && P && !dlgOpen()) { press(0); HOLD.add("p" + e.pointerId); } /* main attack on left click, held = keeps firing */
         const r = cv.getBoundingClientRect(),
           d = cv.width / r.width,
           gx = ((e.clientX - r.left) * d - ox) / sc,
@@ -5297,7 +5715,7 @@
          The last device used wins. body[data-in] drives which button hints show (CSS). */
       let INMODE = typeof matchMedia == "function" && matchMedia("(pointer: coarse)").matches ? "touch" : "kb";
       /* hint per slot: skill 1, skill 2, skill 3, interact, dash */
-      const KEYHINT = { kb: ["", "", "", "", ""], pad: ["A", "X", "Y", "B", "RB"], touch: ["", "", "", "", ""] };
+      const KEYHINT = { kb: ["", "", "", "", "", ""], pad: ["A", "X", "Y", "B", "RB", "RT"], touch: ["", "", "", "", "", ""] };
       /* keyLabel(code): In: KeyboardEvent.code. Out: what is printed on that key for this keyboard layout (AZERTY shows A for KeyQ). */
       let LAYOUT = null;
       try { navigator.keyboard && navigator.keyboard.getLayoutMap().then((m) => { LAYOUT = m; refreshHints(); }); } catch (e) {}
@@ -5309,7 +5727,7 @@
       }
       /* refreshHints(): rebuilds the keyboard badges (skill 1-3, interact, dash) from the current binds */
       function refreshHints() {
-        KEYHINT.kb = ["s0", "s1", "s2", "int", "dash"].map((a) => keyLabel(SET.bind[a]));
+        KEYHINT.kb = ["s0", "s1", "s2", "int", "dash", "ult"].map((a) => keyLabel(SET.bind[a]));
       }
       refreshHints();
       let REBIND = null; /* action waiting for a new key in the settings menu, or null */
@@ -5332,10 +5750,12 @@
         PAD.y = dz(gp.axes[1] || 0) + (bt(13) ? 1 : 0) - (bt(12) ? 1 : 0);
         if (PAD.x || PAD.y || gp.buttons.some((b) => b.pressed)) setIn("pad");
         if (edge(0)) press(0);
+        bt(0) ? HOLD.add("pad") : HOLD.delete("pad");
         if (edge(2)) press(1);
         if (edge(3)) press(2);
         if (edge(1)) dlgOpen() ? closeDlg() : inter();
         if (edge(5) || edge(4)) dash(P); /* RB / LB */
+        if (edge(7)) press(3); /* RT: ultimate */
         if (edge(9) && P) togglePause();
         PAD.prev = gp.buttons.map((b) => b.pressed);
       }
@@ -5360,14 +5780,24 @@
       const press = (a) => {
         if (P && !dlgOpen()) act(P, a);
       };
+      /* HOLD: what is holding the main attack down ("p"+pointerId, "key", "pad"); while any is held it fires whenever ready */
+      const HOLD = new Set();
+      addEventListener("pointerup", (e) => HOLD.delete("p" + e.pointerId));
+      addEventListener("pointercancel", (e) => HOLD.delete("p" + e.pointerId));
+      addEventListener("blur", () => HOLD.clear());
       $("bd").addEventListener("pointerdown", (e) => {
         e.preventDefault();
         dash(P);
+      });
+      $("bu").addEventListener("pointerdown", (e) => {
+        e.preventDefault();
+        press(3);
       });
       [0, 1, 2].forEach((a) =>
         $("b" + a).addEventListener("pointerdown", (e) => {
           e.preventDefault();
           press(a);
+          if (a == 0) HOLD.add("p" + e.pointerId);
         }),
       );
       $("bi").addEventListener("pointerdown", (e) => {
@@ -5380,6 +5810,10 @@
           e.preventDefault();
           if (P && !dlgOpen()) { openDlg(w); sfx("ui"); }
         });
+      $("ptl").addEventListener("pointerdown", (e) => {
+        e.preventDefault();
+        if (P && !dlgOpen()) { partyUI(); sfx("ui"); }
+      });
       $("bp").addEventListener("pointerdown", (e) => {
         e.preventDefault();
         if (P && !dlgOpen()) { partyUI(); sfx("ui"); }
@@ -5387,6 +5821,10 @@
       $("bs").addEventListener("pointerdown", (e) => {
         e.preventDefault();
         if (P && !dlgOpen()) { $("dlg").hidden = false; cosShopUI(); sfx("ui"); }
+      });
+      $("bsv").addEventListener("pointerdown", (e) => {
+        e.preventDefault();
+        if (P && !dlgOpen()) { saveUI(); sfx("ui"); }
       });
       $("bt").addEventListener("pointerdown", (e) => {
         e.preventDefault();
@@ -5443,12 +5881,13 @@
         /* actions read from SET.bind (physical keys), so they follow the player's own binds */
         const B = SET.bind, c0 = e.code;
         if (c0 == B.dash || (B.dash == "ShiftLeft" && c0 == "ShiftRight")) dash(P);
-        if (c0 == B.s0) { press(0); e.preventDefault(); }
+        if (c0 == B.s0) { press(0); HOLD.add("key"); e.preventDefault(); }
         if (c0 == B.s1) press(1);
         if (c0 == B.s2) press(2);
+        if (c0 == B.ult) press(3);
         if (c0 == B.int) inter();
       });
-      addEventListener("keyup", (e) => { kk[e.key.toLowerCase()] = 0; kk[e.code] = 0; });
+      addEventListener("keyup", (e) => { kk[e.key.toLowerCase()] = 0; kk[e.code] = 0; if (e.code == SET.bind.s0) HOLD.delete("key"); });
       /* chat box: Enter opens it, Enter sends, Esc closes. Movement keys are released so you don't keep walking. */
       {
         const box = $("chat"),
@@ -5492,10 +5931,12 @@
         document.body.classList.toggle("tch", INMODE == "touch"); /* touch: chat sits above the joystick */
         $("chat").hidden = S.sc != "hub" || !P;
         $("bt").hidden = tut() < TUT_DONE; /* Titles button appears after the tutorial */
+        $("bsv").hidden = tut() < TUT_DONE;
         $("tlbar").hidden = !P || S.sc == "lobby";
         if ($("gn").textContent != V.gold) $("gn").textContent = V.gold;
         $("bq").hidden = $("bg").hidden = $("bs").hidden = $("bp").hidden = tut() < TUT_DONE || S.sc != "hub";
         $("bq").classList.toggle("hot", bountyReady()); /* glows when a bounty can be claimed */
+        partyFrame();
         loreBonusTick();
         const m = P;
         if (!m || S.sc == "lobby") return;
@@ -5524,6 +5965,24 @@
           const cn = b.querySelector(".cdn");
           if (cn && cn.textContent != tx) cn.textContent = tx;
         }
+        /* ultimate button: charge sweep; the healer's shows "used" after its one revive */
+        {
+          const b = $("bu"), u = ULT[m.cls], cd = m.ucd > 1e8 ? 0 : m.ucd || 0, used = m.ucd > 1e8 || (m.cls == "heal" && m.rev);
+          if (b.dataset.cls != m.cls) {
+            b.dataset.cls = m.cls;
+            b.style.setProperty("--sc", SKC[m.cls]);
+            b.innerHTML = `<svg viewBox="-20 -20 40 40" fill="currentColor" stroke="currentColor" stroke-linecap="round" stroke-linejoin="round">${ULTI[m.cls]}</svg><span class="cdv"></span><span class="cdn"></span><span class="sn">${u.n}</span><span class="kh k5"></span>`;
+          }
+          const kh = b.querySelector(".kh"), ht = KEYHINT[INMODE][5];
+          if (kh && kh.textContent != ht) kh.textContent = ht;
+          const on = cd > 0.05 || used;
+          if (b._on && !on) { b.classList.remove("rd"); void b.offsetWidth; b.classList.add("rd"); }
+          b._on = on;
+          b.classList.toggle("cd", on);
+          b.style.setProperty("--p", used ? "100%" : on ? (cd / (u.cd || ULT.start)) * 100 + "%" : "0%");
+          const tx = used ? "✓" : on ? Math.ceil(cd) : "", cn = b.querySelector(".cdn");
+          if (cn && cn.textContent != tx) cn.textContent = tx;
+        }
         /* dash button: same look and cooldown sweep as the skills */
         {
           const b = $("bd"),
@@ -5549,7 +6008,7 @@
         const n = nearby();
         $("bi").hidden = !n || dlgOpen();
         if (n) {
-          const lb = n == "raid" ? "CHOOSE RAID" : n.startsWith("player:") ? "INVITE · " + (HUBV.find((o) => "player:" + o.id == n)?.name || "") : n == "elder" ? "TALK" : n == "lore" ? "LISTEN" : ["class", "maiden", "smith", "herald"].includes(n) && !isUnl(n) ? "???" : n == "class" ? "CLASS" : n == "maiden" ? "PRAY" : n == "smith" ? "FORGE" : n == "herald" ? "RECORDS" : n == "barkeep" ? "BLACKJACK" : n == "qboard" ? "QUESTS" : n == "gboard" ? "GUILD" : "SHOP",
+          const lb = n == "raid" ? "CHOOSE RAID" : n.startsWith("player:") ? "INVITE · " + (HUBV.find((o) => "player:" + o.id == n)?.name || "") : n == "elder" ? "TALK" : n == "lore" ? "LISTEN" : n == "barkeep" && !isUnl(n) ? "JOIN DISCORD TO UNLOCK!" : ["class", "maiden", "smith", "herald"].includes(n) && !isUnl(n) ? "???" : n == "class" ? "CLASS" : n == "maiden" ? "PRAY" : n == "smith" ? "FORGE" : n == "herald" ? "RECORDS" : n == "barkeep" ? "BLACKJACK" : n == "qboard" ? "QUESTS" : n == "gboard" ? "GUILD" : "SHOP",
             ht = KEYHINT[INMODE][3],
             h = lb + (ht ? ` <span class="kh k3">${ht}</span>` : "");
           if ($("bi")._h != h) { $("bi")._h = h; $("bi").innerHTML = h; $("bi").classList.add("small"); } /* only touch the DOM when it changes */
@@ -8688,7 +9147,7 @@
           }
         };
         glyphRing(22, 0.86, 0.22, 13, 0);
-        /* the Warden's Seal, inlaid flat in the stone: three interlaced gold arcs (the river, the sky fall and the raid gate
+        /* the Raid Seal, inlaid flat in the stone: three interlaced gold arcs (the river, the sky fall and the raid gate
            meeting here) round a protection rune, ringed with short glyph-ticks. Drawn in the dais' own perspective. */
         ring(0.6, "#dcc6a0", "rgba(200,150,44,.8)", 1.5);
         g.save();
@@ -9107,13 +9566,26 @@
           npc(BARKEEP, "");
           npc(LORE, V.lbx > Date.now() ? "bonus" : V.lt ? "" : "new");
         }
+        /* healer Circles: soft green light, a turning rune ring, a pulse every second and rising motes */
         for (const z of S.zo) {
-          c.fillStyle = "rgba(90,255,140,.18)";
-          c.strokeStyle = "#7dff9a";
-          c.beginPath();
-          c.arc(z.x, z.y, z.r, 0, 6.3);
-          c.fill();
-          c.stroke();
+          const g = c.createRadialGradient(z.x, z.y, 0, z.x, z.y, z.r), fade = Math.min(1, z.l);
+          g.addColorStop(0, "rgba(140,255,170,.32)"); g.addColorStop(0.75, "rgba(90,255,140,.16)"); g.addColorStop(1, "rgba(90,255,140,.03)");
+          c.globalAlpha = fade;
+          c.fillStyle = g;
+          c.beginPath(); c.arc(z.x, z.y, z.r, 0, 6.3); c.fill();
+          c.strokeStyle = "#7dff9a"; c.lineWidth = 2;
+          c.beginPath(); c.arc(z.x, z.y, z.r, 0, 6.3); c.stroke();
+          c.save(); c.translate(z.x, z.y); c.rotate(S.tm * 0.6);
+          c.setLineDash([4, 10]); c.lineWidth = 3; c.strokeStyle = "#c8ffd4";
+          c.beginPath(); c.arc(0, 0, z.r - 9, 0, 6.3); c.stroke(); c.setLineDash([]);
+          c.fillStyle = "#eaffd0";
+          for (let i = 0; i < 6; i++) { const a = (i * Math.PI) / 3; c.beginPath(); c.arc(Math.cos(a) * (z.r - 9), Math.sin(a) * (z.r - 9), 3, 0, 6.3); c.fill(); }
+          c.restore();
+          const ph = S.tm % 1;
+          c.globalAlpha = fade * (1 - ph) * 0.7; c.strokeStyle = "#eaffd0"; c.lineWidth = 2;
+          c.beginPath(); c.arc(z.x, z.y, z.r * ph, 0, 6.3); c.stroke();
+          c.globalAlpha = 1;
+          if (SET.fx && Math.random() < 0.35) { const a = rnd(0, 6.3), d = rnd(0, z.r); FX.push({ x: z.x + Math.cos(a) * d, y: z.y + Math.sin(a) * d, vx: 0, vy: -rnd(25, 60), l: 0.9, m: 0.9, col: "#9dffb8", r: rnd(1, 2), g: 1 }); }
         }
         /* Doom runes: the doomed player's 3 orbs, a tether, and a shrinking ring for the time left */
         if (ar && b && b.doom) {
@@ -9216,15 +9688,20 @@
           }
           c.restore();
         }
+        /* projectiles: glowing head, fading tail, white core (Heavy Shot is bigger) */
+        c.save();
+        c.globalCompositeOperation = "lighter";
+        c.lineCap = "round";
         for (const o of S.pr) {
-          c.fillStyle = CL[o.c].col;
-          c.shadowColor = CL[o.c].col;
-          c.shadowBlur = 8;
-          c.beginPath();
-          c.arc(o.x, o.y, 5, 0, 6.3);
-          c.fill();
-          c.shadowBlur = 0;
+          const col = CL[o.c].col, r = o.big ? 8 : 4.5, tl = o.big ? 0.12 : 0.07;
+          c.globalAlpha = 0.45; c.strokeStyle = col; c.lineWidth = r * 1.6;
+          c.beginPath(); c.moveTo(o.x - o.vx * tl, o.y - o.vy * tl); c.lineTo(o.x, o.y); c.stroke();
+          glowDot(o.x, o.y, r * 3, col, 0.7);
+          c.globalAlpha = 1; c.fillStyle = "#fff";
+          c.beginPath(); c.arc(o.x, o.y, r * 0.55, 0, 6.3); c.fill();
+          if (o.big && SET.fx && Math.random() < 0.5) FX.push({ x: o.x, y: o.y, vx: rnd(-30, 30), vy: rnd(-30, 30), l: 0.3, m: 0.3, col, r: 2, g: 1 });
         }
+        c.restore();
         /* dash afterimages: fading rings in the class color */
         for (const g of GH) {
           g.l -= dt;
@@ -9253,6 +9730,7 @@
         /* hub: you and the visitors, drawn top to bottom so whoever stands lower overlaps the one behind */
         const who = S.sc == "hub" ? S.ps.concat(HUBV).sort((a, b) => a.y - b.y) : S.ps;
         for (const p of who) drawPlayer(p, dt);
+        drawVX(dt);
         c.save();
         c.globalCompositeOperation = "lighter";
         for (const p of FX) {
@@ -9266,6 +9744,7 @@
           c.beginPath();
           c.arc(p.x, p.y, p.r, 0, 6.3);
           c.fill();
+          if (p.g) { c.globalAlpha *= 0.3; c.beginPath(); c.arc(p.x, p.y, p.r * 3, 0, 6.3); c.fill(); } /* spark halo */
         }
         c.restore();
         FX = FX.filter((p) => p.l > 0);
@@ -9301,7 +9780,7 @@
             const tx = "TUTORIAL " + (tut() + 1) + "/" + TUT_DONE + " · " + TUT_TXT[tut()];
             c.strokeText(tx, 450, 24);
             c.fillText(tx, 450, 24);
-            const tg = [null, CLASSN, ELDER, SHOP, LORE, BARKEEP][tut()];
+            const tg = [null, CLASSN, ELDER, SHOP, LORE][tut()];
             if (tg) {
               /* arrow position converted from world to screen-fixed units (HUD transform is active here) */
               const ax = (tg.x - CAM.x),
