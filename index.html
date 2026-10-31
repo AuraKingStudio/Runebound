@@ -3858,7 +3858,7 @@
       const BRIDGES = [{ i: 72, kind: "arch" }];
       function bridgeFrame(b) {
         const q = streamPts()[b.i];
-        return { q, half: q.w + 44, wid: 58 };
+        return { q, half: q.w + 62, wid: 82 };
       }
       function bridgeAt(p) {
         for (const b of BRIDGES) {
@@ -3978,8 +3978,8 @@
           L = { x: q.x - tx * off, y: q.y - ty * off },
           R = { x: q.x + tx * off, y: q.y + ty * off },
           [A, B] = L.x < R.x ? [L, R] : [R, L],
-          H = 64,
-          pw = 12;
+          H = 96,
+          pw = 17;
         c.save();
         for (const P0 of [A, B]) {
           c.fillStyle = "rgba(0,0,0,.22)";
@@ -3999,32 +3999,32 @@
         const mx = (A.x + B.x) / 2,
           my = Math.min(A.y, B.y) - H - 2,
           span = (B.x - A.x) / 2;
-        c.lineWidth = 12;
+        c.lineWidth = 17;
         c.strokeStyle = "#b39a74";
         c.beginPath();
-        c.ellipse(mx, my + 2, span, 24, 0, Math.PI, 0);
+        c.ellipse(mx, my + 2, span, 36, 0, Math.PI, 0);
         c.stroke();
-        c.lineWidth = 8;
+        c.lineWidth = 12;
         c.strokeStyle = "#ead7b2";
         c.beginPath();
-        c.ellipse(mx, my, span, 24, 0, Math.PI, 0);
+        c.ellipse(mx, my, span, 36, 0, Math.PI, 0);
         c.stroke();
         /* keystone with a glowing rune */
         c.fillStyle = "#d6bf96";
         c.beginPath();
-        c.moveTo(mx - 8, my - 32);
-        c.lineTo(mx + 8, my - 32);
-        c.lineTo(mx + 6, my - 18);
-        c.lineTo(mx - 6, my - 18);
+        c.moveTo(mx - 11, my - 46);
+        c.lineTo(mx + 11, my - 46);
+        c.lineTo(mx + 8, my - 28);
+        c.lineTo(mx - 8, my - 28);
         c.closePath();
         c.fill();
         c.shadowColor = "#5af0dc";
         c.shadowBlur = 6 + 4 * Math.sin(t * 1.6);
         c.fillStyle = "#7fe8da";
-        c.font = "bold 11px Georgia";
+        c.font = "bold 14px Georgia";
         c.textAlign = "center";
         c.textBaseline = "middle";
-        c.fillText("ᛉ", mx, my - 25);
+        c.fillText("ᛉ", mx, my - 37);
         c.shadowBlur = 0;
         /* vines and flowers climbing the left pillar and over the arch */
         for (let k = 0; k < 8; k++) {
@@ -4037,7 +4037,7 @@
           const a = Math.PI + (k / 6) * Math.PI * 0.6;
           c.fillStyle = "#62a84a";
           c.beginPath();
-          c.ellipse(mx + Math.cos(a) * span, my + Math.sin(a) * 24, 4, 2, a, 0, 6.3);
+          c.ellipse(mx + Math.cos(a) * span, my + Math.sin(a) * 36, 4, 2, a, 0, 6.3);
           c.fill();
         }
         for (const [fx, fy] of [[A.x + 3, A.y - 30], [mx - span * 0.6, my - 18], [A.x - 2, A.y - 52]]) {
