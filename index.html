@@ -3757,18 +3757,17 @@
       /* riverEnd(t): the river pours over the stone lip and runs down the platform's curved side wall into the pool below */
       function riverEnd(t) {
         const e = streamPts()[streamPts().length - 1],
-          top = e.y - 2,
-          bot = e.y + 22,
-          hw = e.w;
+          top = e.y - 10,
+          bot = e.y + 38,
+          hw = e.w - 1;
         c.save();
-        /* clip to the side face: inside the side wall ellipse, outside the top surface */
-        c.beginPath();
-        c.ellipse(PLAT.x, PLAT.y + 18, PLAT.rx + 1, PLAT.ry + 1, 0, 0, 6.3);
-        c.ellipse(PLAT.x, PLAT.y, PLAT.rx - 1, PLAT.ry - 1, 0, 0, 6.3);
-        c.clip("evenodd");
+        /* one continuous band of water: from the end of the river, down the wall, into the ground stream.
+           It overlaps both ends and starts and ends in the river color, so there is no seam. */
         const sh = c.createLinearGradient(0, top, 0, bot);
         sh.addColorStop(0, "#5aa7a6");
-        sh.addColorStop(1, "#9fd6d2");
+        sh.addColorStop(0.35, "#7cc0bd");
+        sh.addColorStop(0.55, "#a9dcd8");
+        sh.addColorStop(1, "#5aa7a6");
         c.fillStyle = sh;
         c.fillRect(e.x - hw, top, hw * 2, bot - top);
         c.globalCompositeOperation = "lighter";
