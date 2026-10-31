@@ -3407,7 +3407,7 @@
       /* the hub is a floating island. Its round edge curves across the top-right; beyond it we look down
          onto a far-away landscape (fields, a river, woods, a village) under haze, with mountains on the horizon.
          EDGE = the jagged rim of the island, following a big ellipse around the hub. */
-      const ISLE = { x: 420, y: 370, rx: 500, ry: 330 };
+      const ISLE = { x: 470, y: 330, rx: 420, ry: 290 };
       const EDGE = (() => {
         const r = rng(77),
           pts = [[430, -14]];
@@ -3429,7 +3429,7 @@
         ctx.closePath();
       }
       /* horizon line, slightly tilted, near the top of the screen */
-      const horizonY = (x) => 14 + (x - 430) * 0.06;
+      const horizonY = (x) => 46 + (x - 430) * 0.05;
       function skyEdge(g) {
         const r = rng(78);
         g.save();
@@ -3444,7 +3444,7 @@
         g.fillRect(400, -30, 520, 340);
         /* patchwork fields in rows, smaller near the horizon (perspective) */
         const FC = ["#9cbf6a", "#b9c97a", "#d6c27a", "#8fb35c", "#c9b06a", "#a7c47e", "#7fa65a"];
-        let ry0 = 24;
+        let ry0 = horizonY(660) + 4;
         for (let row = 0; ry0 < 300; row++) {
           const rh = 6 + row * 3.2;
           let fx = 400 + r() * 20;
@@ -3462,6 +3462,16 @@
             g.strokeStyle = "rgba(70,95,55,.35)";
             g.lineWidth = 0.8;
             g.stroke();
+            if (rh > 10 && r() < 0.6) {
+              g.strokeStyle = "rgba(255,255,255,.12)";
+              g.lineWidth = 0.7;
+              for (let cy = ry0 + 2; cy < ry0 + rh - 1; cy += 2.5) {
+                g.beginPath();
+                g.moveTo(fx + 1, cy);
+                g.lineTo(fx + fw - 1, cy);
+                g.stroke();
+              }
+            }
             fx += fw;
           }
           ry0 += rh;
@@ -3505,29 +3515,75 @@
         haze.addColorStop(1, "rgba(236,242,246,0)");
         g.fillStyle = haze;
         g.fillRect(400, -30, 520, 190);
-        /* mountains on the horizon */
-        for (const [lift, amp, col] of [[0, 18, "#c2d0dc"], [-4, 12, "#aebfcd"]]) {
-          g.fillStyle = col;
-          g.beginPath();
-          g.moveTo(400, horizonY(400) + 10);
-          for (let x = 400; x <= 940; x += 14) {
-            const h = amp * (0.3 + 0.7 * Math.abs(Math.sin(x * 0.035 + lift)));
-            g.lineTo(x, horizonY(x) - h + lift);
-          }
-          g.lineTo(940, horizonY(940) + 10);
-          g.closePath();
-          g.fill();
-        }
-        /* sky above the horizon */
-        g.fillStyle = "#cfe3ef";
+        /* a far lake catching the sky, and a dirt road to the village */
+        g.fillStyle = "#b8dbe4";
         g.beginPath();
-        g.moveTo(400, -30);
-        g.lineTo(940, -30);
-        for (let x = 940; x >= 400; x -= 14) g.lineTo(x, horizonY(x) - 18 * (0.3 + 0.7 * Math.abs(Math.sin(x * 0.035))) - 1);
-        g.closePath();
-        g.globalCompositeOperation = "destination-over";
+        g.ellipse(560, horizonY(560) + 22, 36, 6, -0.05, 0, 6.3);
         g.fill();
+        g.strokeStyle = "rgba(200,170,120,.7)";
+        g.lineWidth = 1.4;
+        g.beginPath();
+        g.moveTo(640, 300);
+        g.quadraticCurveTo(700, 190, 762, 124);
+        g.stroke();
+        /* mountain ranges on the horizon: back range palest, front range darker, each peak with a lit and a shaded face */
+        const range = (base, amp, step, seed, lit, dark, snow) => {
+          const rr = rng(seed),
+            peaks = [];
+          for (let x = 380; x <= 960; x += step * (0.7 + rr() * 0.6)) peaks.push([x, base(x) - amp * (0.45 + rr() * 0.55)]);
+          for (let i = 0; i < peaks.length - 1; i++) {
+            const [x0, y0] = peaks[i],
+              [x1, y1] = peaks[i + 1],
+              mx = (x0 + x1) / 2,
+              vy = Math.max(y0, y1) + amp * 0.35;
+            /* lit face (left of each peak) and shaded face (right) */
+            g.fillStyle = lit;
+            g.beginPath();
+            g.moveTo(x0, y0);
+            g.lineTo(mx, vy);
+            g.lineTo(mx, base(mx) + 30);
+            g.lineTo(x0, base(x0) + 30);
+            g.closePath();
+            g.fill();
+            g.fillStyle = dark;
+            g.beginPath();
+            g.moveTo(mx, vy);
+            g.lineTo(x1, y1);
+            g.lineTo(x1, base(x1) + 30);
+            g.lineTo(mx, base(mx) + 30);
+            g.closePath();
+            g.fill();
+          }
+          if (snow)
+            for (const [x, y] of peaks) {
+              g.fillStyle = snow;
+              g.beginPath();
+              g.moveTo(x, y);
+              g.lineTo(x - amp * 0.22, y + amp * 0.24);
+              g.lineTo(x - amp * 0.05, y + amp * 0.18);
+              g.lineTo(x + amp * 0.08, y + amp * 0.26);
+              g.lineTo(x + amp * 0.2, y + amp * 0.2);
+              g.closePath();
+              g.fill();
+            }
+        };
+        /* sky behind everything */
+        const sk = g.createLinearGradient(0, -30, 0, horizonY(700));
+        sk.addColorStop(0, "#9ccbe8");
+        sk.addColorStop(1, "#e9f1f4");
+        g.globalCompositeOperation = "destination-over";
+        g.fillStyle = sk;
+        g.fillRect(380, -30, 560, horizonY(940) + 40);
         g.globalCompositeOperation = "source-over";
+        range((x) => horizonY(x) - 4, 62, 46, 91, "#c9d6e2", "#b3c3d2", "#f4f8fb");
+        range((x) => horizonY(x), 44, 38, 92, "#a9bccb", "#93a8b9", "#eef4f8");
+        range((x) => horizonY(x) + 6, 26, 30, 93, "#8fa98f", "#7c977c", null);
+        /* haze pooling in the valleys at the foot of the range */
+        const vh = g.createLinearGradient(0, horizonY(660) - 6, 0, horizonY(660) + 26);
+        vh.addColorStop(0, "rgba(240,245,248,.75)");
+        vh.addColorStop(1, "rgba(240,245,248,0)");
+        g.fillStyle = vh;
+        g.fillRect(380, horizonY(380) - 10, 560, 60);
         /* wisps of cloud floating between us and the ground */
         for (let i = 0; i < 26; i++) {
           const cx = 440 + r() * 480,
