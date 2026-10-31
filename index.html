@@ -309,6 +309,20 @@
         box-sizing: border-box;
         margin: 6px 0 10px;
       }
+      /* top-of-screen HUD buttons: Quests and Guild */
+      #btns .hb {
+        top: 1.5%;
+        width: auto;
+        height: 38px;
+        border-radius: 10px;
+        padding: 0 14px;
+        font: bold 13px "Cinzel", Georgia, serif;
+        background-color: #1b2a33;
+        border-color: #d9a40099;
+      }
+      #btns #bq { left: calc(50% - 126px); }
+      #btns #bg { left: calc(50% + 8px); }
+      #btns #bq.hot { box-shadow: 0 0 14px #ffd84a; border-color: #ffd84a; }
       #btns #bt {
         /* under the gold counter (game y ≈ 80 of 600) */
         left: 1.4%;
@@ -702,7 +716,7 @@
     <div id="jb"><div id="jk"></div></div>
     <div id="btns">
       <button id="b0"></button><button id="b1"></button><button id="b2"></button
-      ><button id="bi" hidden>Enter arena</button><button id="bt">🏷 Titles</button>
+      ><button id="bi" hidden>Enter arena</button><button id="bt">🏷 Titles</button><button id="bq" class="hb">📜 Quests</button><button id="bg" class="hb">🛡 Guild</button>
     </div>
     <script>
       const W = 900,
@@ -757,26 +771,26 @@
       const PORTAL = { x: 450, y: 165, ir: 120 },
         /* NPCs. g = emblem path (SVG path syntax, drawn on a 40x40 box centered at 0,0), gs = stroke instead of fill */
         /* Elder: wizard hat (wide brim + bent cone) */
-        ELDER = { tu: 1, x: 152, y: 373, ic: "🧙", nm: "The Elder", col: "#b48cff",
+        ELDER = { tu: 1, x: 155, y: 319, ic: "🧙", nm: "The Elder", col: "#b48cff",
           g: "M-14 9q14 6 28 0q-2 4-14 5q-12-1-14-5zM-9 8L-1-12q3-5 9-3q-4 1-5 4L9 8q-9 3-18 0z" },
         /* Merchant: round coin bag with a tied neck and a coin mark */
-        SHOP = { tu: 2, x: 538, y: 527, ic: "💰", nm: "The Merchant", col: "#ffcf4d",
+        SHOP = { tu: 2, x: 347, y: 517, ic: "💰", nm: "The Merchant", col: "#ffcf4d",
           g: "M-3-8q-6 3-10 10q-3 10 7 11h12q10-1 7-11q-4-7-10-10zM-3-9l-4-5q7 2 14 0l-4 5zM-1 0h4a2 2 0 0 1 0 4h-2a2 2 0 0 0 0 4h4" },
-        LORE = { tu: 3, x: 220, y: 469, ic: "📜", nm: "The Archivist", col: "#5ad7ff", gs: 1,
+        LORE = { tu: 3, x: 190, y: 439, ic: "📜", nm: "The Archivist", col: "#5ad7ff", gs: 1,
           /* Archivist: rolled scroll with text lines */
           g: "M-10-13h20a3 3 0 0 1 0 6h-20a3 3 0 0 1 0-6M-8-7v13M8-7v13M-10 6h20a3 3 0 0 1 0 6h-20a3 3 0 0 1 0-6M-4-3h8M-4 1h6" },
         /* the 4 NPCs standing where the old torches were */
         /* Class Master (green): three class orbs */
-        CLASSN = { lk: "class", x: 748, y: 373, ic: "⚔", nm: "The Class Master", col: "#5dff8a",
+        CLASSN = { lk: "class", x: 745, y: 319, ic: "⚔", nm: "The Class Master", col: "#5dff8a",
           g: "M-4-6a4 4 0 1 0 8 0a4 4 0 1 0-8 0zM-11 5a4 4 0 1 0 8 0a4 4 0 1 0-8 0zM3 5a4 4 0 1 0 8 0a4 4 0 1 0-8 0z" },
         /* The Maiden (rose): a rose bloom */
-        MAIDEN = { lk: "maiden", x: 680, y: 469, ic: "🌹", nm: "The Maiden", col: "#ff8fc8",
+        MAIDEN = { lk: "maiden", x: 710, y: 439, ic: "🌹", nm: "The Maiden", col: "#ff8fc8",
           g: "M0-11c5 0 8 4 6 8 4 0 5 5 1 7-1 4-6 5-7 2-1 3-6 2-7-2-4-2-3-7 1-7-2-4 1-8 6-8z" },
         /* The Smith (orange): an anvil */
-        SMITH = { lk: "smith", x: 362, y: 527, ic: "🔨", nm: "The Smith", col: "#ff9f43",
+        SMITH = { lk: "smith", x: 553, y: 517, ic: "🔨", nm: "The Smith", col: "#ff9f43",
           g: "M-12-6h20q4 0 4 4h-6v4l4 6h-18l4-6v-4h-6q-2 0-2-4z" },
         /* The Herald (silver): a banner */
-        HERALD = { lk: "herald", x: 600, y: 190, ic: "📯", nm: "The Herald", col: "#cfe6ff",
+        HERALD = { lk: "herald", x: 643, y: 214, ic: "📯", nm: "The Herald", col: "#cfe6ff",
           g: "M-8-12v24h2.5v-10h12l-3-5 3-5h-12v-4z" };
       /* ---------- progress (saved) ---------- */
       /* upgrades. k = save key, b = base cost (cost = b * next level), pl = % per level, ic = SVG icon, col = card color */
@@ -1044,12 +1058,21 @@
             p.x = HUB.x + (dx / l) * rx;
             p.y = HUB.y + (dy / l) * ry;
           }
+          /* fountain blocks the center: push the player out to its rim */
+          const fx = (p.x - FOUNT.x) / (FOUNT.rx + 10),
+            fy = (p.y - FOUNT.y) / (FOUNT.ry + 10),
+            fl = Math.hypot(fx, fy);
+          if (fl < 1) {
+            const k = fl > 0.001 ? 1 / fl : 1;
+            p.x = FOUNT.x + fx * k * (FOUNT.rx + 10);
+            p.y = FOUNT.y + (fl > 0.001 ? fy * k : 1) * (FOUNT.ry + 10);
+          }
         }
       }
       function place(a) {
         P.mh = Math.round(CL[P.cls].hp * hpm());
         P.x = 450;
-        P.y = a ? 430 : 380;
+        P.y = a ? 430 : 440; /* hub spawn: in front of the fountain */
         P.hp = P.mh;
         P.cd = [0, 0, 0];
         P.dx = P.dy = 0;
@@ -1428,8 +1451,6 @@
           ["smith", SMITH],
           ["herald", HERALD],
           ["barkeep", BARKEEP],
-          ["qboard", QBOARD],
-          ["gboard", GBOARD],
           ["portal", PORTAL],
         ])
           if (!npcHidden(n[1]) && dist(P, n[1]) < (n[1].ir || (n[0] == "portal" ? 90 : 75))) return n[0];
@@ -1851,7 +1872,7 @@
       }
       /* ---------- The Barkeep (bar, right wall) + the two wall boards ---------- */
       /* Barkeep: a mug. Shown after the tutorial (tu: 4). Boards: no disc, bigger reach (ir). */
-      const BARKEEP = { tu: 4, x: 183, y: 266, ic: "🍺", nm: "The Barkeep", col: "#ffb347",
+      const BARKEEP = { tu: 4, x: 257, y: 214, ic: "🍺", nm: "The Barkeep", col: "#ffb347",
           g: "M-9-9h13v18h-13zM4-5h3a4 4 0 0 1 0 9h-3M-9-9q0-4 4-4h5q4 0 4 4" },
         QBOARD = { x: 300, y: 190, ir: 110, col: "#ffd84a" },
         GBOARD = { x: 717, y: 266, ir: 110, col: "#5af0dc" };
@@ -2569,6 +2590,12 @@
         e.preventDefault();
         inter();
       });
+      /* Quests / Guild HUD buttons open the same menus the boards used to */
+      for (const [id, w] of [["bq", "qboard"], ["bg", "gboard"]])
+        $(id).addEventListener("pointerdown", (e) => {
+          e.preventDefault();
+          if (P && !dlgOpen()) { openDlg(w); sfx("ui"); }
+        });
       $("bt").addEventListener("pointerdown", (e) => {
         e.preventDefault();
         if (P && !dlgOpen()) { $("dlg").hidden = false; titleUI(); sfx("ui"); }
@@ -2646,6 +2673,8 @@
       function uiUpd() {
         document.body.classList.toggle("hub", S.sc == "hub"); /* hub: skill buttons shrink and fade */
         $("bt").hidden = tut() < 4; /* Titles button appears after the tutorial */
+        $("bq").hidden = $("bg").hidden = tut() < 4 || S.sc != "hub";
+        $("bq").classList.toggle("hot", bountyReady()); /* glows when a bounty can be claimed */
         loreBonusTick();
         const m = P;
         if (!m || S.sc == "lobby") return;
@@ -3083,16 +3112,23 @@
           r = rng(7),
           { x, y, rx, ry } = PLAT;
         g.scale(k, k);
-        /* night sky */
-        const sky = g.createRadialGradient(x, y, 100, x, y, 620);
-        sky.addColorStop(0, "#13222a");
-        sky.addColorStop(1, "#070b0f");
+        /* dusk sky: deep blue up top, warm glow near the horizon, a few stars */
+        const sky = g.createLinearGradient(0, 0, 0, H);
+        sky.addColorStop(0, "#1b2340");
+        sky.addColorStop(0.55, "#2c2d4a");
+        sky.addColorStop(1, "#4a3346");
         g.fillStyle = sky;
         g.fillRect(0, 0, W, H);
+        for (let i = 0; i < 90; i++) {
+          g.fillStyle = `rgba(255,244,220,${0.25 + r() * 0.6})`;
+          g.beginPath();
+          g.arc(r() * W, r() * H * 0.6, 0.5 + r() * 1.1, 0, 6.3);
+          g.fill();
+        }
         /* portal arch behind the platform's top edge */
         arch(g, x, y - ry);
         /* platform side wall (drum) */
-        g.fillStyle = "#3b3a35";
+        g.fillStyle = "#6e6152";
         g.beginPath();
         g.ellipse(x, y + 16, rx, ry, 0, 0, 6.3);
         g.fill();
@@ -3103,14 +3139,14 @@
         }
         /* top surface */
         const top = g.createRadialGradient(x, y - 40, 40, x, y, rx);
-        top.addColorStop(0, "#d6d0c2");
-        top.addColorStop(1, "#a29b8b");
+        top.addColorStop(0, "#f1e4c8");
+        top.addColorStop(1, "#c9b393");
         g.fillStyle = top;
         g.beginPath();
         g.ellipse(x, y, rx, ry, 0, 0, 6.3);
         g.fill();
         /* outer flagstone band: two rings + radial joints */
-        g.strokeStyle = "#7d7668";
+        g.strokeStyle = "#a38f72";
         g.lineWidth = 1.6;
         for (const s of [0.86, 0.72]) {
           g.beginPath();
@@ -3125,38 +3161,7 @@
           g.lineTo(x + Math.cos(a) * rx * (s0 == 0.86 ? 1 : 0.86), y + Math.sin(a) * ry * (s0 == 0.86 ? 1 : 0.86));
           g.stroke();
         }
-        /* cracks across the inner disc */
-        g.strokeStyle = "#8a8373";
-        g.lineWidth = 1.2;
-        for (let i = 0; i < 14; i++) {
-          let a = r() * 6.283,
-            d = r() * 0.5,
-            px = x + Math.cos(a) * rx * d,
-            py = y + Math.sin(a) * ry * d;
-          g.beginPath();
-          g.moveTo(px, py);
-          for (let j = 0; j < 4; j++) {
-            px += (r() - 0.5) * 70;
-            py += (r() - 0.5) * 40;
-            g.lineTo(px, py);
-          }
-          g.stroke();
-        }
-        /* moss along the rim */
-        for (let i = 0; i < 70; i++) {
-          const a = r() * 6.283,
-            d = 0.9 + r() * 0.1,
-            mx = x + Math.cos(a) * rx * d,
-            my = y + Math.sin(a) * ry * d,
-            mr = 8 + r() * 18;
-          const mg = g.createRadialGradient(mx, my, 1, mx, my, mr);
-          mg.addColorStop(0, "#5f8a2ecc");
-          mg.addColorStop(1, "#5f8a2e00");
-          g.fillStyle = mg;
-          g.beginPath();
-          g.ellipse(mx, my, mr, mr * 0.6, 0, 0, 6.3);
-          g.fill();
-        }
+        fountain(g);
         /* rune ring (glow pulses in drawHub) */
         g.strokeStyle = "#3aa89a";
         g.lineWidth = 2;
@@ -3180,7 +3185,6 @@
           g.fillStyle = "#00000055";
           g.fillRect(392 - i * 10, y + ry + 11 + i * 9, 116 + i * 20, 2);
         }
-        boards(g);
         HUBC = cv2;
       }
       /* arch(g, cx, by): stone portal arch standing on the platform edge. by = base y. */
@@ -3257,6 +3261,92 @@
           }
         }
       }
+      /* fountain in the middle of the platform. FOUNT = basin footprint, also used to block walking through it. */
+      const FOUNT = { x: 450, y: 352, rx: 74, ry: 42 };
+      /* fountain(g): static stone basin, center column and upper bowl */
+      function fountain(g) {
+        const { x, y, rx, ry } = FOUNT;
+        g.fillStyle = "#00000055";
+        g.beginPath();
+        g.ellipse(x, y + 12, rx + 6, ry + 6, 0, 0, 6.3);
+        g.fill();
+        /* basin wall */
+        g.fillStyle = "#a8916f";
+        g.beginPath();
+        g.ellipse(x, y + 10, rx, ry, 0, 0, 6.3);
+        g.fill();
+        /* basin rim */
+        g.fillStyle = "#ead9b8";
+        g.beginPath();
+        g.ellipse(x, y, rx, ry, 0, 0, 6.3);
+        g.fill();
+        g.strokeStyle = "#a38f72";
+        g.lineWidth = 2;
+        g.stroke();
+        /* water pool */
+        g.fillStyle = "#1d6f78";
+        g.beginPath();
+        g.ellipse(x, y, rx - 9, ry - 7, 0, 0, 6.3);
+        g.fill();
+        /* center column */
+        g.fillStyle = "#d6c3a0";
+        g.fillRect(x - 7, y - 42, 14, 42);
+        g.fillStyle = "#a8916f";
+        g.fillRect(x - 7, y - 42, 4, 42);
+        /* upper bowl */
+        g.fillStyle = "#ead9b8";
+        g.beginPath();
+        g.ellipse(x, y - 42, 26, 10, 0, 0, 6.3);
+        g.fill();
+        g.strokeStyle = "#a38f72";
+        g.stroke();
+        g.fillStyle = "#2a8c95";
+        g.beginPath();
+        g.ellipse(x, y - 43, 20, 6, 0, 0, 6.3);
+        g.fill();
+      }
+      /* fountainWater(t): animated spout, falling streams and ripples */
+      function fountainWater(t) {
+        const { x, y, rx, ry } = FOUNT;
+        c.save();
+        c.globalCompositeOperation = "lighter";
+        /* ripples spreading in the pool */
+        for (let i = 0; i < 3; i++) {
+          const p = (t * 0.5 + i / 3) % 1;
+          c.strokeStyle = `rgba(160,240,255,${0.35 * (1 - p)})`;
+          c.lineWidth = 1.5;
+          c.beginPath();
+          c.ellipse(x, y, 10 + p * (rx - 22), 5 + p * (ry - 14), 0, 0, 6.3);
+          c.stroke();
+        }
+        /* spout jet from the top bowl */
+        const h = 26 + 3 * Math.sin(t * 7);
+        c.strokeStyle = "rgba(170,240,255,.75)";
+        c.lineWidth = 3;
+        c.beginPath();
+        c.moveTo(x, y - 46);
+        c.lineTo(x, y - 46 - h);
+        c.stroke();
+        /* streams arcing down from the bowl into the pool */
+        c.strokeStyle = "rgba(140,220,240,.55)";
+        c.lineWidth = 2;
+        for (const s of [-1, 1]) {
+          c.beginPath();
+          c.moveTo(x + s * 22, y - 42);
+          c.quadraticCurveTo(x + s * 38, y - 40, x + s * 42, y - 4);
+          c.stroke();
+        }
+        /* droplets */
+        c.fillStyle = "rgba(200,250,255,.8)";
+        for (let i = 0; i < 10; i++) {
+          const p = (t * 1.3 + i / 10) % 1,
+            a = (i / 10) * 6.283;
+          c.beginPath();
+          c.arc(x + Math.cos(a) * 26 * p, y - 46 - h + p * (h + 40) + Math.sin(a) * 6 * p, 1.6, 0, 6.3);
+          c.fill();
+        }
+        c.restore();
+      }
       function drawHub() {
         if (!HUBC) paintHub();
         c.drawImage(HUBC, 0, 0, W, H);
@@ -3271,6 +3361,7 @@
         c.ellipse(x, y, rx * 0.56, ry * 0.56, 0, 0, 6.3);
         c.stroke();
         c.globalCompositeOperation = "source-over";
+        fountainWater(t);
         /* mist drifting around the platform rim */
         for (let i = 0; i < 18; i++) {
           const a = (i / 18) * 6.283 + t * 0.03 * (i % 2 ? 1 : -1),
@@ -3278,10 +3369,42 @@
             my = y + 20 + Math.sin(a) * (ry + 26),
             mr = 70 + 25 * Math.sin(t * 0.5 + i);
           const mg = c.createRadialGradient(mx, my, 4, mx, my, mr);
-          mg.addColorStop(0, "rgba(70,150,140,.28)");
-          mg.addColorStop(1, "rgba(70,150,140,0)");
+          mg.addColorStop(0, i % 3 ? "rgba(150,200,210,.22)" : "rgba(200,170,220,.2)");
+          mg.addColorStop(1, "rgba(150,200,210,0)");
           c.fillStyle = mg;
           c.fillRect(mx - mr, my - mr, mr * 2, mr * 2);
+        }
+        c.globalCompositeOperation = "lighter";
+        /* warm welcome light pooled on the plaza */
+        const wl = c.createRadialGradient(x, y + 20, 20, x, y + 20, rx * 0.9);
+        wl.addColorStop(0, `rgba(255,190,110,${0.13 + 0.03 * Math.sin(t * 1.3)})`);
+        wl.addColorStop(1, "rgba(255,170,90,0)");
+        c.fillStyle = wl;
+        c.fillRect(x - rx, y - ry, rx * 2, ry * 2 + 40);
+        /* floating lanterns: soft warm orbs bobbing above the rim */
+        for (let i = 0; i < 6; i++) {
+          const a = -2.6 + i * 1.04,
+            lx = x + Math.cos(a) * rx * 0.94,
+            ly = y + Math.sin(a) * ry * 0.94 - 34 + 5 * Math.sin(t * 1.4 + i),
+            lg = c.createRadialGradient(lx, ly, 1, lx, ly, 30);
+          lg.addColorStop(0, "rgba(255,214,140,.55)");
+          lg.addColorStop(1, "rgba(255,180,90,0)");
+          c.fillStyle = lg;
+          c.fillRect(lx - 30, ly - 30, 60, 60);
+          c.fillStyle = "rgba(255,236,190,.95)";
+          c.beginPath();
+          c.arc(lx, ly, 3.2, 0, 6.3);
+          c.fill();
+        }
+        /* fireflies drifting over the stones */
+        for (let i = 0; i < 22; i++) {
+          const fx = x + Math.sin(t * 0.21 + i * 2.3) * rx * 0.8,
+            fy = y + Math.cos(t * 0.17 + i * 1.7) * ry * 0.75,
+            fa = 0.35 + 0.35 * Math.sin(t * 3 + i);
+          c.fillStyle = `rgba(255,232,150,${fa})`;
+          c.beginPath();
+          c.arc(fx, fy, 1.7, 0, 6.3);
+          c.fill();
         }
         c.restore();
       }
@@ -3326,9 +3449,12 @@
           c.fillRect(0, 0, W, H);
         }
         if (S.sc == "hub") {
-          /* Ancient portal: static rune ring. Runes are Elder Futhark letters. */
+          /* ancient portal (drawn in code): turning rune ring, orbiting motes, slow pulse. Runes are Elder Futhark letters. */
+          const pulse = 0.85 + 0.15 * Math.sin(S.tm * 2.2);
           c.save();
           c.translate(PORTAL.x, PORTAL.y - 8);
+          c.globalAlpha = pulse;
+          c.rotate(S.tm * 0.4);
           c.strokeStyle = "rgba(90,240,220,0.7)";
           c.lineWidth = 2;
           c.setLineDash([10, 8]);
@@ -3350,21 +3476,31 @@
             c.restore();
           }
           c.restore();
+          for (let i = 0; i < 4; i++) {
+            const a = S.tm * (1.2 + i * 0.3) + i * 1.7, r = 60 + Math.sin(S.tm * 2 + i) * 6;
+            c.fillStyle = "#c8fff4";
+            c.globalAlpha = 0.8;
+            c.beginPath();
+            c.arc(PORTAL.x + Math.cos(a) * r, PORTAL.y - 8 + Math.sin(a) * r * 0.8, 2.2, 0, 6.3);
+            c.fill();
+          }
           c.globalAlpha = 1;
-          /* Static highlight when the player can enter. */
+          /* portal highlight when the player can enter: soft glow + rising sparks */
           if (nearby() == "portal") {
-            const gl = c.createRadialGradient(PORTAL.x, PORTAL.y - 6, 4, PORTAL.x, PORTAL.y - 6, 80);
-            gl.addColorStop(0, "rgba(120,255,235,.48)");
+            const k = 0.5 + 0.5 * Math.sin(S.tm * 6), gl = c.createRadialGradient(PORTAL.x, PORTAL.y - 6, 4, PORTAL.x, PORTAL.y - 6, 80);
+            gl.addColorStop(0, `rgba(120,255,235,${0.35 + 0.25 * k})`);
             gl.addColorStop(1, "rgba(60,220,200,0)");
             c.fillStyle = gl;
             c.beginPath();
             c.ellipse(PORTAL.x, PORTAL.y - 6, 80, 60, 0, 0, 6.3);
             c.fill();
+            if (Math.random() < 0.3) burst(PORTAL.x + rnd(-30, 30), PORTAL.y + rnd(-10, 14), "#7dffe9", 1, 40);
           }
-          c.strokeStyle = "rgba(90,255,230,.6)";
+          const g = 0.5 + 0.5 * Math.sin(S.tm * 3);
+          c.strokeStyle = `rgba(90,255,230,${0.4 + 0.4 * g})`;
           c.lineWidth = 3;
           c.beginPath();
-          c.ellipse(PORTAL.x, PORTAL.y - 6, 34, 24, 0, 0, 6.3);
+          c.ellipse(PORTAL.x, PORTAL.y - 6, 32 + 4 * g, 22 + 3 * g, 0, 0, 6.3);
           c.stroke();
           c.fillStyle = "rgba(60,220,200,.18)";
           c.fill();
