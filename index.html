@@ -4929,19 +4929,35 @@
           g.ellipse(gx, gy, 10 + r() * 16, 5 + r() * 7, 0, 0, 6.3);
           g.fill();
         }
-        /* grass blades: thick on the ring, two-tone, little tufts of three */
-        for (let i = 0; i < 4200; i++) {
+        /* grass tufts: each a fan of tapered, curved blades, darker at the back and lighter at the tips, a soft shadow at the
+           base. Painted back to front so nearer tufts overlap the ones behind. */
+        const tufts = [];
+        for (let i = 0; i < 5200; i++) {
           const gx = r() * W,
             gy = r() * H;
-          if (!ring(gx, gy)) continue;
-          const lit = r() < 0.55;
-          g.strokeStyle = lit ? "#8fcf63" : "#3f7a34";
-          g.lineWidth = 1.1;
-          for (let k = -1; k <= 1; k++) {
+          if (ring(gx, gy)) tufts.push([gx, gy, 0.75 + r() * 0.6, r()]);
+        }
+        tufts.sort((p, q) => p[1] - q[1]);
+        const BLADE = ["#2f5f2a", "#3f7a34", "#4f8f3f", "#62a34a", "#7cbd55", "#9ad46c"];
+        for (const [gx, gy, ts, seed] of tufts) {
+          g.fillStyle = "rgba(30,60,25,.16)";
+          g.beginPath();
+          g.ellipse(gx, gy + 0.5, 3.5 * ts, 1.2 * ts, 0, 0, 6.3);
+          g.fill();
+          const n = 5 + ((seed * 3) | 0);
+          for (let k = 0; k < n; k++) {
+            const u = k / (n - 1) - 0.5,
+              h = (5 + r() * 6) * ts * (1 - Math.abs(u) * 0.5),
+              lean = (u * 7 + (r() - 0.5) * 3) * ts,
+              bw = 0.9 * ts,
+              bx = gx + u * 4 * ts;
+            g.fillStyle = BLADE[Math.min(5, ((k % 3) + (seed > 0.5 ? 2 : 1) + (k > n / 2 ? 1 : 0)) | 0)];
             g.beginPath();
-            g.moveTo(gx + k * 1.4, gy);
-            g.lineTo(gx + k * 2.4 + (r() - 0.5) * 2, gy - 3.5 - r() * 4.5);
-            g.stroke();
+            g.moveTo(bx - bw, gy);
+            g.quadraticCurveTo(bx - bw * 0.3 + lean * 0.4, gy - h * 0.55, bx + lean, gy - h);
+            g.quadraticCurveTo(bx + bw * 0.6 + lean * 0.4, gy - h * 0.5, bx + bw, gy);
+            g.closePath();
+            g.fill();
           }
         }
         /* clover and flower patches */
