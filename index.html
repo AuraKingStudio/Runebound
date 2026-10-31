@@ -5838,17 +5838,19 @@
         g.arc(0, by - 49, 0.9, 0, 6.3);
         g.fill();
         /* bodice: full bust, the gown over one shoulder, the other bare */
-        P([-4.4, by - 53, -7.4, by - 55, -8, by - 59, -6, by - 62.5, -2, by - 63, 2, by - 62.5, 6, by - 62, 8, by - 59, 7.4, by - 55, 4.4, by - 53, 0, by - 52.5, -4.4, by - 53], M);
-        P([-4.4, by - 53, -7.4, by - 55, -8, by - 59, -6, by - 62.5, -3, by - 63, -1.5, by - 60, -2, by - 56, -1, by - 53, -4.4, by - 53], L);
-        g.strokeStyle = "rgba(95,75,50,.5)";
+        /* seen in profile, facing right: a straight back on the left, one full bust curving out on the right */
+        P([-4.4, by - 53, -5.6, by - 56, -6, by - 60, -5, by - 63, -1, by - 63.5, 3, by - 62.5, 6.5, by - 60.5, 9, by - 57.5, 7.5, by - 54.2, 4.4, by - 53, 0, by - 52.5, -4.4, by - 53], M);
+        P([-4.4, by - 53, -5.6, by - 56, -6, by - 60, -5, by - 63, -2, by - 63.5, -1, by - 60, -1.6, by - 56, -1, by - 53, -4.4, by - 53], L);
+        g.fillStyle = "rgba(255,248,225,.5)"; /* light along the top of the curve */
+        g.beginPath();
+        g.ellipse(4.6, by - 59.6, 2.6, 1.2, 0.5, 0, 6.3);
+        g.fill();
+        g.strokeStyle = "rgba(95,75,50,.5)"; /* the soft shadow beneath */
         g.lineWidth = 0.6;
         g.beginPath();
-        g.arc(-3.6, by - 57.6, 3.6, 0.35, 2.6);
+        g.moveTo(8.6, by - 56.8);
+        g.quadraticCurveTo(6.5, by - 54, 3, by - 54.4);
         g.stroke();
-        g.beginPath();
-        g.arc(3.8, by - 57.6, 3.6, 0.5, 2.8);
-        g.stroke();
-        line([0.2, by - 60, 0.4, by - 57, 0.2, by - 54], "rgba(95,75,50,.4)", 0.5);
         /* strap over the right shoulder, bare left shoulder and collarbone */
         line([5, by - 61, 7, by - 64, 8, by - 66], M, 2);
         P([-8, by - 60, -10, by - 64, -8.5, by - 66.5, -4, by - 66, -1.5, by - 65, -3, by - 63, -6, by - 62, -8, by - 60], L);
@@ -7130,7 +7132,18 @@
         const t = S.tm * HUB_ANIM,
           { x, y, rx, ry } = PLAT;
         c.save();
-        /* rune ring glow pulse */
+        /* rune ring glow pulse, kept off the canal (the ring runs under it) */
+        c.save();
+        {
+          const cp = streamPts().filter((p) => !p.drop),
+            gw = (p) => p.w + 10;
+          c.beginPath();
+          c.rect(-60, -60, W + 120, H + 120);
+          cp.forEach((p, i) => (i ? c.lineTo : c.moveTo).call(c, p.x + p.nx * gw(p), p.y + p.ny * gw(p)));
+          for (let i = cp.length - 1; i >= 0; i--) c.lineTo(cp[i].x - cp[i].nx * gw(cp[i]), cp[i].y - cp[i].ny * gw(cp[i]));
+          c.closePath();
+          c.clip("evenodd");
+        }
         c.globalCompositeOperation = "lighter";
         c.strokeStyle = `rgba(90,240,220,${0.06 + 0.05 * Math.sin(t * 2)})`;
         c.lineWidth = 12;
@@ -7151,6 +7164,7 @@
           c.stroke();
         }
         c.globalCompositeOperation = "source-over";
+        c.restore(); /* end of the canal clip */
         streamFlow(t);
         wallSpill(t);
         riverDecor(t);
