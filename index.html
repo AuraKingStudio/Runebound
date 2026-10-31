@@ -3446,98 +3446,24 @@
         g.save();
         skyClip(g);
         g.clip();
-        /* the land far below: richer near us, hazy toward the horizon */
-        const land = g.createLinearGradient(0, 0, 0, 300);
-        land.addColorStop(0, "#c8d6cc");
-        land.addColorStop(0.35, "#a9c08f");
-        land.addColorStop(1, "#7fa36a");
-        g.fillStyle = land;
-        g.fillRect(-30, -30, 960, 340);
-        /* patchwork fields in rows, smaller near the horizon (perspective) */
-        const FC = ["#9cbf6a", "#b9c97a", "#d6c27a", "#8fb35c", "#c9b06a", "#a7c47e", "#7fa65a"];
-        let ry0 = horizonY(660) + 4;
-        for (let row = 0; ry0 < 300; row++) {
-          const rh = 6 + row * 3.2;
-          let fx = -30 + r() * 20;
-          while (fx < 930) {
-            const fw = (18 + r() * 30) * (0.5 + row * 0.12),
-              sk = (fx - 660) * 0.08;
-            g.fillStyle = FC[(r() * FC.length) | 0];
-            g.beginPath();
-            g.moveTo(fx, ry0);
-            g.lineTo(fx + fw, ry0);
-            g.lineTo(fx + fw + sk * 0.2, ry0 + rh);
-            g.lineTo(fx + sk * 0.2, ry0 + rh);
-            g.closePath();
-            g.fill();
-            g.strokeStyle = "rgba(70,95,55,.35)";
-            g.lineWidth = 0.8;
-            g.stroke();
-            if (rh > 10 && r() < 0.6) {
-              g.strokeStyle = "rgba(255,255,255,.12)";
-              g.lineWidth = 0.7;
-              for (let cy = ry0 + 2; cy < ry0 + rh - 1; cy += 2.5) {
-                g.beginPath();
-                g.moveTo(fx + 1, cy);
-                g.lineTo(fx + fw - 1, cy);
-                g.stroke();
-              }
-            }
-            fx += fw;
-          }
-          ry0 += rh;
-        }
-        /* woods: clumps of dark trees */
-        for (let i = 0; i < 26; i++) {
-          const wx = 420 + r() * 500,
-            wy = 30 + r() * 230,
-            sz = 2 + wy * 0.025;
-          for (let k = 0; k < 6; k++) {
-            g.fillStyle = k % 2 ? "#4f7a3a" : "#3f6a30";
-            g.beginPath();
-            g.arc(wx + (r() - 0.5) * sz * 5, wy + (r() - 0.5) * sz * 2.4, sz, 0, 6.3);
-            g.fill();
-          }
-        }
-        /* a river winding across the land toward the horizon */
-        g.strokeStyle = "#a8d4dc";
-        g.lineCap = "round";
+        /* sky: pastel blue fading to a warm glow at the horizon */
+        const sky = g.createLinearGradient(0, -30, 0, 330);
+        sky.addColorStop(0, "#8fc4e6");
+        sky.addColorStop(0.45, "#cfe6f2");
+        sky.addColorStop(1, "#f7e1c8");
+        g.fillStyle = sky;
+        g.fillRect(-30, -30, 970, 360);
+        /* a huge pale ringed moon hanging in the sky */
+        g.fillStyle = "rgba(255,250,240,.55)";
         g.beginPath();
-        g.moveTo(940, 280);
-        g.bezierCurveTo(820, 210, 900, 150, 760, 110);
-        g.bezierCurveTo(660, 80, 720, 50, 600, 28);
-        g.lineWidth = 5;
-        g.stroke();
-        g.lineWidth = 2.5;
-        g.strokeStyle = "#d4eef2";
-        g.stroke();
-        /* a small village by the river: tiny roofs */
-        for (let i = 0; i < 14; i++) {
-          const vx = 760 + (r() - 0.5) * 60,
-            vy = 120 + (r() - 0.5) * 30;
-          g.fillStyle = "#f2e6d0";
-          g.fillRect(vx, vy, 4, 3);
-          g.fillStyle = r() < 0.6 ? "#b8573c" : "#7a5a44";
-          g.fillRect(vx - 0.5, vy - 1.5, 5, 2);
-        }
-        /* haze thickening toward the horizon */
-        const haze = g.createLinearGradient(0, 0, 0, 160);
-        haze.addColorStop(0, "rgba(236,242,246,.85)");
-        haze.addColorStop(1, "rgba(236,242,246,0)");
-        g.fillStyle = haze;
-        g.fillRect(-30, -30, 960, 190);
-        /* a far lake catching the sky, and a dirt road to the village */
-        g.fillStyle = "#b8dbe4";
-        g.beginPath();
-        g.ellipse(560, horizonY(560) + 22, 36, 6, -0.05, 0, 6.3);
+        g.arc(800, 34, 26, 0, 6.3);
         g.fill();
-        g.strokeStyle = "rgba(200,170,120,.7)";
-        g.lineWidth = 1.4;
+        g.strokeStyle = "rgba(255,240,220,.5)";
+        g.lineWidth = 2;
         g.beginPath();
-        g.moveTo(640, 300);
-        g.quadraticCurveTo(700, 190, 762, 124);
+        g.ellipse(800, 36, 44, 9, -0.25, 0, 6.3);
         g.stroke();
-        /* mountain ranges on the horizon: back range palest, front range darker, each peak with a lit and a shaded face */
+        /* mountain ranges on the horizon: back range palest, each peak with a lit and a shaded face, snowcaps */
         const range = (base, amp, step, seed, lit, dark, snow) => {
           const rr = rng(seed),
             peaks = [];
@@ -3547,7 +3473,6 @@
               [x1, y1] = peaks[i + 1],
               mx = (x0 + x1) / 2,
               vy = Math.max(y0, y1) + amp * 0.35;
-            /* lit face (left of each peak) and shaded face (right) */
             g.fillStyle = lit;
             g.beginPath();
             g.moveTo(x0, y0);
@@ -3578,32 +3503,47 @@
               g.fill();
             }
         };
-        /* sky behind everything */
-        const sk = g.createLinearGradient(0, -30, 0, horizonY(700));
-        sk.addColorStop(0, "#9ccbe8");
-        sk.addColorStop(1, "#e9f1f4");
-        g.globalCompositeOperation = "destination-over";
-        g.fillStyle = sk;
-        g.fillRect(-30, -30, 970, horizonY(940) + 40);
-        g.globalCompositeOperation = "source-over";
-        range((x) => horizonY(x) - 4, 62, 46, 91, "#c9d6e2", "#b3c3d2", "#f4f8fb");
-        range((x) => horizonY(x), 44, 38, 92, "#a9bccb", "#93a8b9", "#eef4f8");
-        range((x) => horizonY(x) + 6, 26, 30, 93, "#8fa98f", "#7c977c", null);
-        /* haze pooling in the valleys at the foot of the range */
-        const vh = g.createLinearGradient(0, horizonY(660) - 6, 0, horizonY(660) + 26);
-        vh.addColorStop(0, "rgba(240,245,248,.75)");
-        vh.addColorStop(1, "rgba(240,245,248,0)");
-        g.fillStyle = vh;
-        g.fillRect(-30, horizonY(-30) - 10, 970, 60);
-        /* wisps of cloud floating between us and the ground */
-        for (let i = 0; i < 26; i++) {
-          const cx = 440 + r() * 480,
-            cy = 40 + r() * 240,
-            cr = 8 + r() * 18;
-          g.fillStyle = "rgba(255,255,255,.55)";
+        range((x) => horizonY(x) - 4, 62, 46, 91, "#d3dcea", "#bccadb", "#f6f9fc");
+        /* a far crystal citadel on the back range: slender spires with glowing tips */
+        for (const [cx, ch, cw] of [[300, 54, 7], [316, 72, 8], [332, 48, 6], [346, 62, 7], [290, 36, 5]]) {
+          const by = horizonY(cx) + 6;
+          g.fillStyle = "#c7cfe6";
+          g.fillRect(cx - cw / 2, by - ch, cw, ch);
+          g.fillStyle = "#b2bcd8";
+          g.fillRect(cx + cw / 2 - 2, by - ch, 2, ch);
+          g.fillStyle = "#aeb8d8";
           g.beginPath();
-          g.ellipse(cx, cy, cr * 1.8, cr * 0.55, 0, 0, 6.3);
+          g.moveTo(cx - cw / 2 - 1, by - ch);
+          g.lineTo(cx, by - ch - cw * 2.2);
+          g.lineTo(cx + cw / 2 + 1, by - ch);
           g.fill();
+          g.fillStyle = "#bff6ff";
+          g.beginPath();
+          g.arc(cx, by - ch - cw * 2.2, 1.8, 0, 6.3);
+          g.fill();
+        }
+        range((x) => horizonY(x), 44, 38, 92, "#b6c4d6", "#9fb1c6", "#eef4f8");
+        range((x) => horizonY(x) + 8, 26, 30, 93, "#9eb6c8", "#8aa2b6", null);
+        /* the endless sea of clouds far below, tinted by the warm light */
+        const sea = g.createLinearGradient(0, horizonY(660), 0, 330);
+        sea.addColorStop(0, "#f4ece6");
+        sea.addColorStop(1, "#dfe9f2");
+        g.fillStyle = sea;
+        g.fillRect(-30, horizonY(-30) + 14, 970, 340);
+        for (let row = 0; row < 9; row++) {
+          const cy = horizonY(660) + 18 + row * row * 3.6 + row * 6,
+            sz = 6 + row * 4;
+          for (let x = -30 + (row % 2) * sz; x < 960; x += sz * 1.6) {
+            const cr = sz * (0.8 + r() * 0.5);
+            g.fillStyle = r() < 0.5 ? "rgba(255,255,255,.9)" : "rgba(250,236,240,.85)";
+            g.beginPath();
+            g.ellipse(x, cy + (r() - 0.5) * sz * 0.4, cr * 1.4, cr * 0.6, 0, Math.PI, 0);
+            g.fill();
+            g.fillStyle = "rgba(190,200,225,.35)";
+            g.beginPath();
+            g.ellipse(x, cy + cr * 0.15, cr * 1.4, cr * 0.25, 0, 0, Math.PI);
+            g.fill();
+          }
         }
         /* soft shadow of the island falling into the void near its edge */
         g.lineJoin = "round";
@@ -3646,10 +3586,46 @@
         }
       }
       /* skyClouds(t): a few soft clouds drifting slowly across the open sky, and birds far away */
+      /* floatIsle(x, y, s, k): a small floating island at scale s: grassy top, a tree or two, a rocky underside, maybe a waterfall */
+      function floatIsle(x, y, s, k) {
+        c.fillStyle = "#8a7a6a";
+        c.beginPath();
+        c.moveTo(x - 20 * s, y);
+        c.lineTo(x - 8 * s, y + 16 * s);
+        c.lineTo(x, y + 28 * s);
+        c.lineTo(x + 7 * s, y + 15 * s);
+        c.lineTo(x + 20 * s, y);
+        c.closePath();
+        c.fill();
+        c.fillStyle = "#6f6152";
+        c.beginPath();
+        c.moveTo(x, y + 28 * s);
+        c.lineTo(x + 7 * s, y + 15 * s);
+        c.lineTo(x + 20 * s, y);
+        c.lineTo(x + 4 * s, y + 4 * s);
+        c.closePath();
+        c.fill();
+        c.fillStyle = "#7fbf5a";
+        c.beginPath();
+        c.ellipse(x, y, 21 * s, 5 * s, 0, 0, 6.3);
+        c.fill();
+        c.fillStyle = k % 2 ? "#4f8a3a" : "#d9779a";
+        c.beginPath();
+        c.arc(x - 6 * s, y - 6 * s, 6 * s, 0, 6.3);
+        c.arc(x + 4 * s, y - 8 * s, 5 * s, 0, 6.3);
+        c.fill();
+        if (k % 3 == 0) {
+          c.fillStyle = "rgba(170,225,235,.7)";
+          c.fillRect(x + 12 * s, y + 2 * s, 2.5 * s, 22 * s);
+        }
+      }
       function skyClouds(t) {
         c.save();
         skyClip(c);
         c.clip();
+        /* floating islands at different distances, bobbing slowly */
+        for (const [ix, iy, is, k] of [[660, 34, 0.45, 1], [760, 96, 0.8, 3], [880, 160, 1.1, 2], [520, 22, 0.35, 4], [860, 60, 0.55, 0], [120, 8, 0.3, 5]])
+          floatIsle(ix + Math.sin(t * 0.2 + k) * 3, iy + Math.sin(t * 0.5 + k * 1.7) * 2.5 * is, is, k);
         for (let i = 0; i < 5; i++) {
           const cx = ((t * (4 + i) + i * 90) % 460) + 520,
             cy = 20 + i * 34 + Math.sin(t * 0.3 + i) * 4,
@@ -4014,11 +3990,13 @@
       }
       /* the river's end: it pours off the platform's stone lip, down the side wall, then runs away through the forest off screen.
          outflowPath(ctx) traces that last stretch on the ground. */
+      /* SPILL: where the stream reaches the island's edge and pours off into the sky */
+      const SPILL = { x: 884, y: 268 };
       function outflowPath(ctx) {
         const e = streamPts()[streamPts().length - 1];
         ctx.beginPath();
         ctx.moveTo(e.x, e.y + 8);
-        ctx.quadraticCurveTo(e.x, e.y + 74, W + 30, e.y + 104);
+        ctx.quadraticCurveTo(e.x + 64, e.y + 10, SPILL.x, SPILL.y);
       }
       /* outflowGround(g): the stream on the forest floor. Painted before the platform so it starts hidden under the side wall
          and comes out at the wall's foot, the same width as the river. */
@@ -4077,7 +4055,7 @@
           c.fillRect(sx - 1, head, 2, len);
         }
         c.restore();
-        /* the river's current lines keep going along the ground stream, off screen */
+        /* the river's current lines keep going along the ground stream to the island's edge */
         c.save();
         c.globalCompositeOperation = "lighter";
         c.lineCap = "round";
@@ -4085,12 +4063,45 @@
         c.lineDashOffset = -t * 50;
         c.strokeStyle = "rgba(210,250,255,.4)";
         c.lineWidth = 1.6;
-        for (const lane of [-0.45, 0, 0.45]) {
-          const ox = lane * hw;
+        outflowPath(c);
+        c.stroke();
+        c.restore();
+        /* off the edge: a ribbon of water falls away into the sky, thinning into mist, with spray rising at the lip */
+        c.save();
+        skyClip(c);
+        c.clip();
+        const fall = c.createLinearGradient(SPILL.x, SPILL.y, SPILL.x + 40, SPILL.y - 70);
+        fall.addColorStop(0, "rgba(140,205,205,.9)");
+        fall.addColorStop(1, "rgba(230,245,250,0)");
+        c.fillStyle = fall;
+        c.beginPath();
+        c.moveTo(SPILL.x - 14, SPILL.y + 4);
+        c.quadraticCurveTo(SPILL.x + 10, SPILL.y - 30, SPILL.x + 30, SPILL.y - 80);
+        c.lineTo(SPILL.x + 52, SPILL.y - 76);
+        c.quadraticCurveTo(SPILL.x + 26, SPILL.y - 26, SPILL.x + 14, SPILL.y + 4);
+        c.closePath();
+        c.fill();
+        c.globalCompositeOperation = "lighter";
+        for (let k = 0; k < 6; k++) {
+          const p = (t * 0.7 + k / 6) % 1,
+            sx = SPILL.x - 8 + k * 3 + p * 30,
+            sy = SPILL.y - p * 76;
+          c.fillStyle = `rgba(235,255,255,${0.55 * (1 - p)})`;
           c.beginPath();
-          c.moveTo(e.x + ox, e.y + 24);
-          c.quadraticCurveTo(e.x + ox, e.y + 74 + lane * 10, W + 30, e.y + 104 + lane * 16);
-          c.stroke();
+          c.ellipse(sx, sy, 1.5, 4, 0.4, 0, 6.3);
+          c.fill();
+        }
+        c.restore();
+        c.save();
+        c.globalCompositeOperation = "lighter";
+        for (let k = 0; k < 4; k++) {
+          const p = (t * 0.5 + k / 4) % 1,
+            mr = 8 + p * 16,
+            mg = c.createRadialGradient(SPILL.x + p * 10, SPILL.y - p * 18, 1, SPILL.x + p * 10, SPILL.y - p * 18, mr);
+          mg.addColorStop(0, `rgba(235,250,255,${0.35 * (1 - p)})`);
+          mg.addColorStop(1, "rgba(235,250,255,0)");
+          c.fillStyle = mg;
+          c.fillRect(SPILL.x + p * 10 - mr, SPILL.y - p * 18 - mr, mr * 2, mr * 2);
         }
         c.restore();
       }
