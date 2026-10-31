@@ -5799,6 +5799,8 @@
         g.textBaseline = "middle";
         g.fillText("ᛟ", 0, -15);
         const by = -23;
+        /* she turns toward the cistern: the figure (not the plinth) is drawn three-quarter on, leaning into the reach */
+        g.transform(0.88, 0, -0.14, 1, 0, 0);
         /* the veil, behind her: from the outstretched hand, falling and trailing out over the basin */
         P([33, by - 63, 40, by - 56, 38, by - 46, 46, by - 38, 54, by - 31, 63, by - 33, 70, by - 28, 64, by - 27, 56, by - 25, 47, by - 31, 37, by - 40, 33, by - 52, 31, by - 61], D);
         P([33, by - 63, 39, by - 57, 37, by - 47, 44, by - 40, 51, by - 35, 58, by - 35, 64, by - 32, 54, by - 31, 45, by - 36, 36, by - 44, 32, by - 54, 33, by - 63], L);
@@ -6160,7 +6162,7 @@
         c.globalCompositeOperation = "source-over";
         /* the statue's staff crystal glows in time with the cistern */
         {
-          const sx = STATUE.x - 7.8 * STATUE.k,
+          const sx = STATUE.x + (0.88 * -7.8 + 0.14 * 123.5) * STATUE.k, /* the orb, after her turn */
             sy = STATUE.y - 123.5 * STATUE.k,
             gl = c.createRadialGradient(sx, sy, 1, sx, sy, 16);
           gl.addColorStop(0, `rgba(120,255,235,${0.3 + 0.15 * Math.sin(t * 2.2)})`);
