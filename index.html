@@ -11184,23 +11184,41 @@
         if ("filter" in g) g.filter = "blur(0.6px)";
         g.scale(2, 2);
         g.translate(20, h - 20);
-        const leaf = (x, y, a, sz, col) => { g.save(); g.translate(x, y); g.rotate(a); g.fillStyle = col; g.beginPath(); g.ellipse(sz * 0.9, 0, sz, sz * 0.42, 0, 0, 6.3); g.fill(); g.restore(); };
-        g.strokeStyle = "#1d2a1c";
+        /* same look as the hub trees: soft greens lit from the top-right, a pale vein, a few pink blossoms; back leaves darker */
+        const leaf = (x, y, a, sz, base, hi) => {
+          g.save(); g.translate(x, y); g.rotate(a);
+          const lg = g.createLinearGradient(0, -sz * 0.42, 0, sz * 0.42);
+          lg.addColorStop(0, hi); lg.addColorStop(1, base);
+          g.fillStyle = lg;
+          g.beginPath(); g.moveTo(0, 0); g.quadraticCurveTo(sz * 0.9, -sz * 0.55, sz * 1.9, 0); g.quadraticCurveTo(sz * 0.9, sz * 0.55, 0, 0); g.fill();
+          g.strokeStyle = "rgba(230,245,200,.35)"; g.lineWidth = 0.8;
+          g.beginPath(); g.moveTo(sz * 0.15, 0); g.lineTo(sz * 1.6, 0); g.stroke();
+          g.restore();
+        };
+        const BACK = [["#2f5a35", "#467a44"], ["#355f38", "#4d8448"]], FRONT = [["#4a8a46", "#86c060"], ["#56964c", "#9ccf6c"], ["#3f7c40", "#7ab858"]];
         g.lineCap = "round";
         for (let k = 0; k < 3; k++) { /* three branches fanning up and out */
-          const a0 = -0.35 - k * 0.38 + (r() - 0.5) * 0.2, L = 170 + r() * 80;
-          g.lineWidth = 7 - k * 1.5;
-          g.beginPath();
-          g.moveTo(0, 0);
-          const ex = Math.cos(a0) * L, ey = Math.sin(a0) * L;
-          g.quadraticCurveTo(ex * 0.5, ey * 0.5 + 25, ex, ey);
-          g.stroke();
-          for (let i = 0; i < 26; i++) {
-            const u = 0.25 + r() * 0.8, x = ex * u, y = ey * u + 25 * u * (1 - u) * 2, a = a0 + (r() - 0.5) * 2.4, sz = 11 + r() * 12;
-            leaf(x, y, a, sz, ["#16301c", "#1f3d22", "#2a4a26"][(r() * 3) | 0]);
-            if (r() < 0.45) leaf(x + 2, y - 2, a, sz * 0.7, "rgba(190,210,120,.55)"); /* sunlit leaf tops */
+          const a0 = -0.35 - k * 0.38 + (r() - 0.5) * 0.2, L = 170 + r() * 80, ex = Math.cos(a0) * L, ey = Math.sin(a0) * L;
+          const lw = 7 - k * 1.5;
+          g.strokeStyle = "#5a3f2a"; g.lineWidth = lw;
+          g.beginPath(); g.moveTo(0, 0); g.quadraticCurveTo(ex * 0.5, ey * 0.5 + 25, ex, ey); g.stroke();
+          g.strokeStyle = "rgba(220,180,130,.45)"; g.lineWidth = lw * 0.35; /* bark highlight */
+          g.beginPath(); g.moveTo(1, -lw * 0.3); g.quadraticCurveTo(ex * 0.5 + 1, ey * 0.5 + 25 - lw * 0.3, ex, ey - 1); g.stroke();
+          const pt = () => { const u = 0.25 + r() * 0.8; return [ex * u, ey * u + 25 * u * (1 - u) * 2]; };
+          for (let i = 0; i < 14; i++) { const [x, y] = pt(), c2 = BACK[(r() * 2) | 0]; leaf(x, y, a0 + (r() - 0.5) * 2.4, 12 + r() * 10, c2[0], c2[1]); }
+          for (let i = 0; i < 18; i++) { const [x, y] = pt(), c2 = FRONT[(r() * 3) | 0]; leaf(x, y - 2, a0 + (r() - 0.5) * 2.2, 10 + r() * 10, c2[0], c2[1]); }
+          for (let i = 0; i < 4; i++) { /* blossoms, like the hub's pink trees */
+            const [x, y] = pt();
+            for (let q = 0; q < 5; q++) { const pa = (q / 5) * 6.28; g.fillStyle = q % 2 ? "#f6b8cf" : "#ffd3e2"; g.beginPath(); g.arc(x + Math.cos(pa) * 3, y + Math.sin(pa) * 3, 2.6, 0, 6.3); g.fill(); }
+            g.fillStyle = "#ffe08a"; g.beginPath(); g.arc(x, y, 1.4, 0, 6.3); g.fill();
           }
         }
+        /* soft warm haze over it, so it sits in the same light as the hub */
+        g.setTransform(1, 0, 0, 1, 0, 0);
+        g.filter = "none";
+        g.globalCompositeOperation = "source-atop";
+        g.fillStyle = "rgba(255,226,214,.12)";
+        g.fillRect(0, 0, cv5.width, cv5.height);
         return cv5;
       }
       function hubFore(t) {
