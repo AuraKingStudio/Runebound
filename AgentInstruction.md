@@ -239,7 +239,7 @@ Built and tested (unit tests plus the `cheat`, `flood`, `econ`, `hphack`, `chat`
 - Public hosting: GitHub Pages can't run `src/app.js`. A stable Cloudflare named tunnel or server is needed; Quick Tunnel URLs expire. `cloudflared` is installed at `%LOCALAPPDATA%\Runebound\cloudflared\cloudflared.exe`.
 - A player-controlled host can still cheat. Don't claim robust anti-cheat or real-network scale; the benchmark is a simulation.
 - Older owner reports still open: pause softlock; guild kick/disband.
-- Dev tools (F2, `?dev`, triple-tap) still ship in the normal build (owner's choice for now).
+- Dev tools open only with the friend code: `?dev=<code>` (only its FNV hash ships, `DEV_OK`); then F2 / triple-tap work. Plain `?dev` still works on localhost. The owner has the code.
 
 ## Rules for agents
 

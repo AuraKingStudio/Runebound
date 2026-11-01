@@ -3581,7 +3581,7 @@
       /* shopPay(id): real-money purchase. Needs a payment provider + server to confirm the payment (not connected yet).
          With ?dev in the url it grants the item so the cosmetics can be tested. */
       function shopPay(id) {
-        if (/[?&]dev\b/.test(location.search)) {
+        if (DEV_OK) {
           if (id == "pass") V.pass = 1;
           else cosV().own[id] = 1;
           save();
@@ -6356,7 +6356,16 @@
         if (V.up[k] >= MAXL) popMsg("⭐ " + u.n + " MAXED!");
         if (UPG.every((x) => V.up[x.k] >= MAXL)) popMsg("🏆 Rune Mastery complete!");
       }
-      /* ---------- dev tools: F2, ?dev in the URL, or triple-tap the top-left corner ---------- */
+      /* ---------- dev tools: only with the friend code in the URL (?dev=<code>); then F2 or triple-tap the gold HUD ----------
+         Only a hash of the code ships, so players can't read it from the page. Localhost with plain ?dev also works (owner, tests). */
+      const DEV_OK = (() => {
+        const q = location.search || "", m = /[?&]dev=([\w-]{4,40})/.exec(q);
+        if (["localhost", "127.0.0.1"].includes(location.hostname) && /[?&]dev\b/.test(q)) return true;
+        if (!m) return false;
+        let h = 2166136261;
+        for (const ch of m[1]) { h ^= ch.charCodeAt(0); h = Math.imul(h, 16777619) >>> 0; }
+        return h == 549108934;
+      })();
       const DEV = {
           god: 0,
           nocd: 0,
@@ -6525,13 +6534,13 @@
           /* triple-tap the gold coin HUD */ const n = performance.now();
           tt = tt.filter((x) => n - x < 700);
           tt.push(n);
-          if (tt.length >= 3) {
+          if (tt.length >= 3 && DEV_OK) {
             tt = [];
             toggleDev();
           }
         }
       });
-      if (/[?&]dev\b/.test(location.search)) toggleDev();
+      if (DEV_OK) toggleDev();
       const botsQ = /[?&]bots=(\d+)/.exec(location.search);
       if (botsQ) HUB_MIN = Math.max(HUB_MIN, +botsQ[1] + 1);
       /* dev: skip the class menu and jump straight into the hub. Set to false before release. */
@@ -6775,7 +6784,7 @@
           settingsUI();
           return;
         }
-        if (k == "f2") {
+        if (k == "f2" && DEV_OK) {
           toggleDev();
           e.preventDefault();
           return;
