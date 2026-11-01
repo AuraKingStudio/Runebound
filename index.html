@@ -11181,7 +11181,7 @@
         cv5.height = h;
         const g = cv5.getContext("2d"), r = rng(seed);
         if (!g) return cv5;
-        if ("filter" in g) g.filter = "blur(3px)";
+        if ("filter" in g) g.filter = "blur(1px)";
         g.translate(20, h - 20);
         const leaf = (x, y, a, sz, col) => { g.save(); g.translate(x, y); g.rotate(a); g.fillStyle = col; g.beginPath(); g.ellipse(sz * 0.9, 0, sz, sz * 0.42, 0, 0, 6.3); g.fill(); g.restore(); };
         g.strokeStyle = "#1d2a1c";
