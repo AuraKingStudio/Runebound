@@ -3627,6 +3627,8 @@
       /* healer Empower: tank gets a shield, DPS gets damage + fire rate, another healer gets a small shield; cast with nobody near = self heal */
       const EMP = { t: 5, sh: 70, shH: 35, dmg: 1.15, cd: 0.8, self: 55, r: 260, low: 0.4 };
       const RUSH = { t: 3, cd: 0.7 }; /* DPS dash: attacks come 30% faster for 3 s */
+      /* per-class damage scale: aims for DPS ~60% of a raid's damage, tank ~25%, healer ~15% (bench prints the share) */
+      const CLASS_DMG = { dps: 0.7, tank: 2.1, heal: 3 };
       const BUMP = { d: 8, cd: 0.8 }; /* boss contact: damage per touch, seconds between touches */
       const HEAVY_KB = 22; /* px the boss is pushed by a Heavy Shot hit */
       const DASH_HEAL = 25; /* HP a healer's dash gives each ally it passes through (once per dash) */
@@ -4004,13 +4006,14 @@
         save();
       }
       const ZONE_DMG = 1.25; /* damage bonus while standing in a healer's Circle */
-      function hitB(d, src = P) {
+      function hitB(d, src = P, full = 0) { /* full: skip CLASS_DMG (Overdrive keeps its whole punch) */
         d = d * SKM; /* skill level bonus for direct hits */
         const b = S.b;
         if (!b || S.end) return;
         const z = S.zo && S.zo.some((o) => dist(src, o) < o.r) ? ZONE_DMG : 1; /* standing in a healer's Circle: hits harder */
-        const v = Math.min(b.hp, d * aDm(src) * z * (b.brk > 0 ? 1.5 : 1)); /* broken poise: everyone hits 50% harder */
+        const v = Math.min(b.hp, d * aDm(src) * z * (b.brk > 0 ? 1.5 : 1) * (full ? 1 : CLASS_DMG[src.cls] || 1)); /* broken poise: everyone hits 50% harder */
         b.hp -= v;
+        b.dmg = b.dmg || {}; b.dmg[src.cls] = (b.dmg[src.cls] || 0) + v; /* damage share per class (balance checks) */
         b.hf = 0.08;
         b.thr[src.id] = (b.thr[src.id] || 0) + v * (src.cls == "tank" ? 3 : 1); /* tanks draw 3x threat */
         ftxt(b.x, b.y - b.r - 4, Math.round(v), d >= 25 ? "#ffd84a" : "#fff");
@@ -4204,7 +4207,7 @@
         } else {
           const n = p.eng || 1;
           SKM = 1;
-          hitB(ultDmg(p), p);
+          hitB(ultDmg(p), p, 1);
           p.life = 0; p.eng = 1; /* the Engine restarts */
           p.ovr = n; /* for the beam's size */
         }
