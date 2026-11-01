@@ -239,6 +239,9 @@ Built and tested (unit tests plus the `cheat`, `flood`, `econ`, `hphack`, `chat`
 - LAN playtest: `npm run playtest` (src/playtest.js) serves the game on :8080 and the hub service on :8787 (0.0.0.0) and prints the Wi-Fi link. Pages opened from a private IP use `http://<that ip>:8787` as signaling (not the public room relay). Windows firewall must allow Node on private networks. Stop live-server first (both use 8080).
 - Performance: frame cap in Settings (30 / 60 / 144 / Max, `SET.fps`, loop skips early frames), Show FPS (`SET.showFps`), Low spec mode (`SET.low`: 1x resolution, shadowBlur ignored via a setter on the context, grass every 3rd tuft and static, no light map / haze / motes / foreground / arena motes, 40% particles). Always: canvas resolution capped at 1.5x DPR; grass drawn into its own layer refreshed at 30 Hz (`GRASS_L`); haze + vignette baked (`ATMOS`); statue layer cropped (`STATUE_BOX`); rim mist uses a cached blob (`softBlob`). Headless Chrome renders in software, so its ms/frame overstates GPU cost; compare runs only within one session.
 
+- Arena perf: rim pillars, light wash and vignette baked into ARENAC; orb glows and motes stamped from cached softBlob(rgb, alpha). Raids over 6 players (bigRaid()) drop shadowBlur. Headless 1600x900: 6p 103->145+ fps, 12p 78->132 fps at the 144 cap.
+- Blackjack Stand button is red (.bjst).
+
 ## Not done / open
 
 - Host migration and reconnect: a hub dies when its host leaves.
