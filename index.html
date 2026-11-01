@@ -11177,11 +11177,12 @@
       const FORE = [], FORE_AT = [[-20, 610, 1, 0.25], [920, 615, -1, 0.3], [-10, -10, 1, 1.1]];
       function foreSprite(seed) {
         const w = 300, h = 220, cv5 = document.createElement("canvas");
-        cv5.width = w;
-        cv5.height = h;
+        cv5.width = w * 2; /* baked at 2x so the branches stay crisp on HiDPI */
+        cv5.height = h * 2;
         const g = cv5.getContext("2d"), r = rng(seed);
         if (!g) return cv5;
-        if ("filter" in g) g.filter = "blur(1px)";
+        if ("filter" in g) g.filter = "blur(0.6px)";
+        g.scale(2, 2);
         g.translate(20, h - 20);
         const leaf = (x, y, a, sz, col) => { g.save(); g.translate(x, y); g.rotate(a); g.fillStyle = col; g.beginPath(); g.ellipse(sz * 0.9, 0, sz, sz * 0.42, 0, 0, 6.3); g.fill(); g.restore(); };
         g.strokeStyle = "#1d2a1c";
@@ -11211,7 +11212,7 @@
           c.scale(fx * 1.1, i == 2 ? -1.1 : 1.1);
           c.rotate(rot * fx + Math.sin(t * 0.9 + i * 2) * 0.025 + Math.sin(t * 2.1 + i) * 0.008);
           c.globalAlpha = 0.78 * cl((near - 90) / 160, 0.25, 1);
-          c.drawImage(FORE[i], -20, -200);
+          c.drawImage(FORE[i], -20, -200, 300, 220);
           c.restore();
         }
       }
