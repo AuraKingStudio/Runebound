@@ -1294,7 +1294,7 @@
     <div id="chat" hidden><div id="chlog"></div><div id="chrow"><input id="chin" maxlength="80" autocomplete="off" placeholder="Press Enter to chat" /><div id="emo"></div></div></div>
     <div id="btns">
       <button id="bd" class="sk"></button><button id="bu" class="sk"></button><button id="b0"></button><button id="b1"></button><button id="b2"></button
-      ><button id="bi" hidden>Enter arena</button><button id="bil" class="bic" hidden onclick="invCycle(-1)">◀</button><button id="bir" class="bic" hidden onclick="invCycle(1)">▶</button><div id="tlbar"><span id="gp"><i class="coin"></i><b id="gn">0</b></span></div><div id="mlbar"><button id="binv" data-ic="🎒" onclick="invOpen()">🎒 Inventory</button><button id="bt" data-ic="🎖️">🎖️ Titles</button><button id="bfb" data-ic="💬" onclick="fbOpen()" title="Tell us what you think, or report a bug">💬 Feedback</button><button id="blk" data-ic="🔗" class="hb" title="Copy the lobby link: friends who open it join you" hidden>🔗 Copy ID</button></div><div id="topc"><button id="bq" data-ic="📜" class="hb">📜 Quests</button><button id="bg" class="hb">🛡 Guild</button><button id="bs" data-ic="✨" class="hb">✨ Shop</button><button id="bp" data-ic="👥" class="hb">👥 Party</button></div><div id="ptl" hidden></div>
+      ><button id="bi" hidden>Enter arena</button><button id="bil" class="bic" hidden onclick="invCycle(-1)">◀</button><button id="bir" class="bic" hidden onclick="invCycle(1)">▶</button><div id="tlbar"><span id="gp"><i class="coin"></i><b id="gn">0</b></span></div><div id="mlbar"><button id="bset" data-ic="⚙️" onclick="setOpen()" title="Settings">⚙️ Settings</button><button id="binv" data-ic="🎒" onclick="invOpen()">🎒 Inventory</button><button id="bt" data-ic="🎖️">🎖️ Titles</button><button id="bfb" data-ic="💬" onclick="fbOpen()" title="Tell us what you think, or report a bug">💬 Feedback</button><button id="blk" data-ic="🔗" class="hb" title="Copy the lobby link: friends who open it join you" hidden>🔗 Copy ID</button></div><div id="topc"><button id="bq" data-ic="📜" class="hb">📜 Quests</button><button id="bg" class="hb">🛡 Guild</button><button id="bs" data-ic="✨" class="hb">✨ Shop</button><button id="bp" data-ic="👥" class="hb">👥 Party</button></div><div id="ptl" hidden></div>
     </div>
     <script>
       /* Browser networking block: inputs are hub leases, SDP and game messages; outputs are peer events.
@@ -6947,6 +6947,30 @@
         e.preventDefault();
         if (P && !dlgOpen()) { $("dlg").hidden = false; titleUI(); sfx("ui"); }
       });
+      /* ---------- settings (⚙ button): sound, screen shake, effects, damage numbers, key binds, plus Titles, invite link,
+         feedback and (with the dev code) dev tools. Saved in SET (runebound_settings). Rebinding: click a bind, press a key. */
+      const BIND_N = { s0: "Main attack", s1: "Skill 2", s2: "Skill 3", ult: "Ultimate", dash: "Dash", int: "Interact", up: "Up", down: "Down", left: "Left", right: "Right", pause: "Pause" };
+      function setOpen() { if (P && !dlgOpen()) { CUR_DLG = "set"; $("dlg").hidden = false; settingsUI(); sfx("ui"); } }
+      function settingsUI() {
+        $("dp").className = "pn";
+        const sl = (k, lab, max, step) => `<label class="row" style="justify-content:space-between;gap:10px"><span>${lab}</span><input type="range" min="0" max="${max}" step="${step}" value="${SET[k]}" style="flex:1;max-width:180px;accent-color:#d9a94a" oninput="SET.${k}=+this.value;saveSet()"></label>`;
+        const tg = (k, lab) => `<label class="row" style="justify-content:space-between"><span>${lab}</span><input type="checkbox" style="accent-color:#d9a94a" ${SET[k] ? "checked" : ""} onchange="SET.${k}=this.checked?1:0;saveSet()"></label>`;
+        const binds = `<div style="display:grid;grid-template-columns:1fr 1fr;gap:4px 14px">` + Object.keys(BIND_N).map((k) => `<div style="display:flex;align-items:center;justify-content:space-between;gap:6px"><span class="sm">${BIND_N[k]}</span><span ${k == "s0" ? "title='Mouse button'" : `onclick="REBIND='${k}';settingsUI()"`} style="cursor:${k == "s0" ? "default" : "pointer"};min-width:54px;text-align:center;padding:3px 8px;border:1px solid ${REBIND == k ? "#ffe08a" : "var(--ln)"};border-bottom-width:2px;border-radius:6px;font:bold 12px Georgia;color:${REBIND == k ? "#ffe08a" : "#f3e6c8"};background:rgba(0,0,0,.25)">${REBIND == k ? "…" : keyLabel(SET.bind[k])}</span></div>`).join("") + `</div>`;
+        $("dp").innerHTML = `<h2>⚙️ Settings</h2>
+          <div class="mast"><span class="sm">Sound &amp; screen</span></div>${sl("vol", "Volume", 1, 0.05)}${sl("shake", "Screen shake", 1.5, 0.1)}${tg("fx", "Full particle effects")}${tg("dmg", "Damage numbers")}
+          <div class="mast"><span class="sm">Keys (keyboard)</span></div>${binds}<div class="row"><button class="alt" onclick="SET.bind={...BIND_DEF};saveSet();refreshHints();settingsUI()">Reset keys</button></div>
+          <div class="mast"><span class="sm">More</span></div><div class="row" style="flex-wrap:wrap;gap:6px">
+            <button onclick="closeDlg();$('dlg').hidden=false;titleUI()">🎖️ Titles</button>
+            <button onclick="setInvite()" title="Copy the invite link">🔗 Invite</button>
+            <button onclick="closeDlg();fbOpen()">💬 Feedback</button>
+            ${DEV_OK ? `<button onclick="closeDlg();toggleDev()">🛠 Dev tools</button>` : ""}</div>
+          <button class="alt x" onclick="REBIND=null;closeDlg()" title="Close">Close</button>`;
+      }
+      function setInvite() {
+        const link = lobbyLink();
+        (navigator.clipboard?.writeText(link) || Promise.reject()).then(() => toast("Invite link copied: send it to friends"), () => chatSys("Invite link: " + link));
+        sfx("ui");
+      }
       /* titles menu: list every title, locked ones show how to unlock */
       function titleUI() {
         $("dp").className = "pn";
@@ -7050,10 +7074,10 @@
         document.body.classList.toggle("hub", S.sc == "hub"); /* hub: skill buttons shrink and fade */
         document.body.classList.toggle("tch", INMODE == "touch"); /* touch: chat sits above the joystick */
         $("chat").hidden = S.sc != "hub" || !P;
-        $("bt").hidden = tut() < TUT_DONE; /* Titles button appears after the tutorial */
+        $("bt").hidden = true; /* Titles, Feedback and Copy ID moved into Settings (cleaner HUD) */
         $("binv").hidden = tut() < TUT_DONE || S.sc != "hub";
-        $("bfb").hidden = S.sc != "hub";
-        $("blk").hidden = tut() < TUT_DONE; /* copy the lobby link */
+        $("bfb").hidden = true;
+        $("blk").hidden = true;
         $("tlbar").hidden = !P || S.sc == "lobby";
         goldHud();
         $("bq").hidden = $("bs").hidden = $("bp").hidden = tut() < TUT_DONE || S.sc != "hub";
