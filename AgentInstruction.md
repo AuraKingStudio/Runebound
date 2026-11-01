@@ -244,6 +244,10 @@ Built and tested (unit tests plus the `cheat`, `flood`, `econ`, `hphack`, `chat`
 
 - Hot restore (runebound_hot) is fail-safe: if restoring the snapshot throws, it is dropped (HOT_OFF stops beforeunload re-saving it) and the page reloads clean. Before, a bad snapshot re-saved itself on every reload and froze the start.
 
+- Grass: 4 band layers (GB), each redrawn ~30 Hz, at most 2 per frame, oldest first: spreads the ~4 ms tuft redraw instead of spiking.
+- NPCs stand out: light pillar + glow in their colour, dashed ring turning on the rug, 3 orbiting sparks, lit rim. Name shows within 160 px.
+- Hub bots: river slide uses the radial normal (bends); pinned >0.5 s near the bank -> detour waypoint out and along the bank; give up after 2.5 s (BOT_STUCK counts; test: <=2 in 240 s).
+
 ## Not done / open
 
 - Host migration and reconnect: a hub dies when its host leaves.

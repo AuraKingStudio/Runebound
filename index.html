@@ -4021,6 +4021,7 @@
         }
         v.st = 0;
       }
+      let BOT_STUCK = 0; /* give-ups (tests watch it) */
       /* botStep(v, dt): follow the plan. Reports a new target 10 times a second, like a network update would. */
       function botStep(v, dt) {
         if (v.wait > 0) {
@@ -4060,7 +4061,16 @@
           v.st = Math.hypot(v.x - (v.lx ?? v.x), v.y - (v.ly ?? v.y)) < 1 ? v.st + 0.1 : 0;
           v.lx = v.x;
           v.ly = v.y;
-          if (v.st > 1.5) {
+          /* pinned against the bank (a bend the slide can't get round): step back from the water and along it toward the goal */
+          if (v.st > 0.5 && v.st < 0.65 && v.goal && !bridgeAt(v)) {
+            const rv = riverNear(v.x, v.y), g0 = v.via[0] || v.goal;
+            if (rv.d < rv.bw + PR + 30) {
+              const nx = (v.x - rv.bx) / (rv.d || 1), ny = (v.y - rv.by) / (rv.d || 1), tx = -ny, ty = nx, sg = (g0.x - v.x) * tx + (g0.y - v.y) * ty >= 0 ? 1 : -1;
+              v.via.unshift({ x: v.x + nx * 34 + tx * sg * 50, y: v.y + ny * 34 + ty * sg * 50 });
+            }
+          }
+          if (v.st > 2.5) {
+            BOT_STUCK++;
             v.goal = null;
             v.npc = null;
             v.wait = rnd(4, 10);
@@ -4086,8 +4096,8 @@
         if (!bridgeAt(v)) {
           /* close to the water: drop the part of the move that heads into it, so the bot slides along the bank */
           const rv = riverNear(v.x, v.y),
-            nx = rv.bnx * rv.side,
-            ny = rv.bny * rv.side,
+            nx = (v.x - rv.bx) / (rv.d || 1), /* straight out from the closest water point: right on bends too */
+            ny = (v.y - rv.by) / (rv.d || 1),
             into = ux * nx + uy * ny;
           if (rv.d < rv.bw + PR + 22 && into < 0) {
             ux -= nx * into;
@@ -7344,6 +7354,32 @@
         c.fill();
         c.globalAlpha = ga * 0.5;
         c.stroke();
+        /* stand-out: a soft light pillar in the NPC's colour, a slow dashed ring on the rug and three orbiting sparks,
+           so NPCs read clearly over the busy, animated hub */
+        if (!ghost) {
+          const [cr, cg, cb] = [1, 3, 5].map((k) => parseInt(n.col.slice(k, k + 2), 16)), pu = 0.75 + 0.25 * Math.sin(t * 2 + n.x);
+          c.globalCompositeOperation = "lighter";
+          c.globalAlpha = ga * 0.5 * pu;
+          c.drawImage(softBlob(`${cr},${cg},${cb}`, 0.55), -rr * 1.3, 12 - rr * 0.9, rr * 2.6, rr * 1.8);
+          const bm = c.createLinearGradient(0, 12, 0, -90);
+          bm.addColorStop(0, `rgba(${cr},${cg},${cb},${0.32 * pu})`); bm.addColorStop(1, `rgba(${cr},${cg},${cb},0)`);
+          c.globalAlpha = ga;
+          c.fillStyle = bm;
+          c.beginPath(); c.moveTo(-rr * 0.55, 12); c.lineTo(-rr * 0.3, -90); c.lineTo(rr * 0.3, -90); c.lineTo(rr * 0.55, 12); c.closePath(); c.fill();
+          c.globalCompositeOperation = "source-over";
+          c.save();
+          c.strokeStyle = n.col; c.globalAlpha = ga * 0.8; c.lineWidth = 1.5;
+          c.setLineDash([6, 7]); c.lineDashOffset = -t * 12;
+          c.beginPath(); c.ellipse(0, 12, rr - 5, (rr - 5) * 0.55, 0, 0, 6.3); c.stroke();
+          c.restore();
+          for (let k = 0; k < 3; k++) {
+            const a = t * 1.3 + k * 2.09 + n.x, sx = Math.cos(a) * (rr - 2), sy = 12 + Math.sin(a) * (rr - 2) * 0.55 - 10 - Math.sin(t * 2 + k) * 6;
+            c.globalAlpha = ga * (Math.sin(a) > 0 ? 1 : 0.45);
+            c.fillStyle = "#fff"; c.beginPath(); c.arc(sx, sy, 1.6, 0, 6.3); c.fill();
+            c.fillStyle = n.col; c.globalAlpha *= 0.5; c.beginPath(); c.arc(sx, sy, 3.4, 0, 6.3); c.fill();
+          }
+          c.globalAlpha = ga;
+        }
         c.globalAlpha = ga;
         c.fillStyle = "#0008";
         c.beginPath();
@@ -7366,6 +7402,9 @@
         c.fill();
         c.stroke();
         c.shadowBlur = 0;
+        c.strokeStyle = "rgba(255,255,255,.55)"; /* lit rim, top-right */
+        c.lineWidth = 1.5;
+        c.beginPath(); c.arc(0, 0, R - 2.5, -1.9, -0.2); c.stroke();
         /* emblem (cached Path2D) */
         c.lineWidth = 2.6;
         c.lineCap = c.lineJoin = "round";
@@ -7415,7 +7454,7 @@
         c.textAlign = "center";
         /* NPC names: logo font, tinted with the NPC's color (players use plain white Georgia) */
         /* name only when the player is close (less clutter), small */
-        const near = P && dist(P, n) < 80;
+        const near = P && dist(P, n) < 160; /* name shows within 160px */
         c.globalAlpha = near ? (ghost ? 0.2 : 1) : 0;
         c.font = 'bold 10px "Cinzel", Georgia';
         c.fillStyle = n.col;
@@ -11000,30 +11039,46 @@
         });
       }
       let GRASS_F = 0;
-      /* the grass is drawn into its own screen-size layer about 30 times a second and that layer is reused between
-         refreshes (sway still looks smooth; at 144 fps this saves ~80% of the grass work) */
-      let GRASS_L = null, GRASS_AT = -1, GRASS_M = "";
+      /* the grass is drawn into 4 horizontal band layers; each band is redrawn about 30 times a second and reused in
+         between. Bands refresh in turn (oldest first, at most 2 per frame), so the cost is spread evenly over frames
+         instead of one 4 ms spike every other frame (that spike read as lag). */
+      const GB_N = 4, GB_PAD = 34;
+      let GB = [], GB_M = "", GB_SRC = null, GB_LEN = -1;
       function grassLive(t) {
         if (!GRASS_T.length) return;
-        const M0 = c.getTransform(), key = [cv.width, cv.height, M0.a, M0.e, M0.f].join(",");
-        if (!GRASS_L || !GRASS_L.getContext) { GRASS_L = document.createElement("canvas"); }
-        const gl = GRASS_L.getContext && GRASS_L.getContext("2d");
-        if (!gl || !gl.setTransform) return grassPaint(t, c);
-        if (key != GRASS_M || Math.abs(t - GRASS_AT) >= 1 / 30) {
-          if (GRASS_L.width != cv.width || GRASS_L.height != cv.height) { GRASS_L.width = cv.width; GRASS_L.height = cv.height; }
-          gl.setTransform(1, 0, 0, 1, 0, 0);
-          gl.clearRect(0, 0, GRASS_L.width, GRASS_L.height);
-          gl.setTransform(M0);
-          grassPaint(t, gl);
-          GRASS_AT = t;
-          GRASS_M = key;
+        const M0 = c.getTransform(), key = [cv.width, cv.height, M0.a, M0.d, M0.e, M0.f].join(",");
+        if (typeof document == "undefined" || !document.createElement("canvas").getContext("2d")?.setTransform) return grassPaint(t, c);
+        if (GB_SRC !== GRASS_T || GB_LEN != GRASS_T.length || key != GB_M) { /* (re)build the bands */
+          GB_SRC = GRASS_T; GB_LEN = GRASS_T.length; GB_M = key;
+          let y0 = 1e9, y1 = -1e9;
+          for (const q of GRASS_T) { if (q.y < y0) y0 = q.y; if (q.y > y1) y1 = q.y; }
+          const hb = (y1 - y0) / GB_N + 0.01;
+          GB = [];
+          for (let b = 0; b < GB_N; b++) {
+            const lo = y0 + hb * b, hi = lo + hb, list = GRASS_T.filter((q) => q.y >= lo && (q.y < hi || b == GB_N - 1));
+            const top = Math.floor(M0.d * (lo - GB_PAD) + M0.f), bot = Math.ceil(M0.d * (hi + 6) + M0.f);
+            const cvb = GB[b]?.cv || document.createElement("canvas");
+            cvb.width = cv.width; cvb.height = Math.max(1, bot - top);
+            GB.push({ cv: cvb, list, top, at: -1 });
+          }
+        }
+        let n = 0;
+        for (const b of [...GB].sort((p, q) => p.at - q.at)) {
+          if (b.at >= 0 && (Math.abs(t - b.at) < 1 / 30 || n >= 2)) continue;
+          const g = b.cv.getContext("2d");
+          g.setTransform(1, 0, 0, 1, 0, 0);
+          g.clearRect(0, 0, b.cv.width, b.cv.height);
+          g.setTransform(M0.a, M0.b, M0.c, M0.d, M0.e, M0.f - b.top);
+          grassPaint(t, g, b.list);
+          b.at = t;
+          n++;
         }
         c.save();
         c.setTransform(1, 0, 0, 1, 0, 0);
-        c.drawImage(GRASS_L, 0, 0);
+        for (const b of GB) c.drawImage(b.cv, 0, b.top);
         c.restore();
       }
-      function grassPaint(t, c) {
+      function grassPaint(t, c, list = GRASS_T) {
         if (!GRASS_SPR.length) grassSprites();
         const ppl = [P, ...HUBV].filter((o) => o && !o.out), M = c.getTransform();
         /* wind field: patches ~45 px wide sway together; gust fronts sweep across the island every few seconds */
@@ -11034,8 +11089,8 @@
         };
         const lite = INMODE == "touch", half = (GRASS_F = (GRASS_F + 1) & 1); /* phones: the wind is worked out every other frame */
         const low = SET.low;
-        for (let i = 0; i < GRASS_T.length; i += low ? 3 : 1) {
-          const q = GRASS_T[i];
+        for (let i = 0; i < list.length; i += low ? 3 : 1) {
+          const q = list[i];
           let lean = low ? 0.1 : lite && (i & 1) != half && q.w != null ? q.w : (q.w = wind(q.x, q.y) + Math.sin(t * 3.4 + q.ph) * 0.04);
           for (const o of ppl) { const dx = q.x - o.x, dy = (q.y - o.y) * 1.6; if (Math.abs(dx) < 22 && Math.abs(dy) < 16) lean += (dx > 0 ? 1 : -1) * (1 - Math.hypot(dx, dy) / 26) * 0.9; } /* pushed aside */
           const s0 = q.s, fx = q.f || 1; /* fx: mirrored tufts */
