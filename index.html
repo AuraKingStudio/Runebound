@@ -10859,6 +10859,49 @@
         c.restore();
       }
       const HUB_ANIM = 0.55; /* hub scenery animation speed (1 = original) */
+      /* hubFore(t): the nearest depth plane. Out-of-focus leafy branches hang into three corners of the screen (baked once,
+         blurred, dark with a warm sunlit edge), sway with the same slow wind as the grass, and fade out when you walk under them. */
+      const FORE = [], FORE_AT = [[-20, 610, 1, 0.25], [920, 615, -1, 0.3], [-10, -10, 1, 1.1]];
+      function foreSprite(seed) {
+        const w = 300, h = 220, cv5 = document.createElement("canvas");
+        cv5.width = w;
+        cv5.height = h;
+        const g = cv5.getContext("2d"), r = rng(seed);
+        if (!g) return cv5;
+        if ("filter" in g) g.filter = "blur(3px)";
+        g.translate(20, h - 20);
+        const leaf = (x, y, a, sz, col) => { g.save(); g.translate(x, y); g.rotate(a); g.fillStyle = col; g.beginPath(); g.ellipse(sz * 0.9, 0, sz, sz * 0.42, 0, 0, 6.3); g.fill(); g.restore(); };
+        g.strokeStyle = "#1d2a1c";
+        g.lineCap = "round";
+        for (let k = 0; k < 3; k++) { /* three branches fanning up and out */
+          const a0 = -0.35 - k * 0.38 + (r() - 0.5) * 0.2, L = 170 + r() * 80;
+          g.lineWidth = 7 - k * 1.5;
+          g.beginPath();
+          g.moveTo(0, 0);
+          const ex = Math.cos(a0) * L, ey = Math.sin(a0) * L;
+          g.quadraticCurveTo(ex * 0.5, ey * 0.5 + 25, ex, ey);
+          g.stroke();
+          for (let i = 0; i < 26; i++) {
+            const u = 0.25 + r() * 0.8, x = ex * u, y = ey * u + 25 * u * (1 - u) * 2, a = a0 + (r() - 0.5) * 2.4, sz = 11 + r() * 12;
+            leaf(x, y, a, sz, ["#16301c", "#1f3d22", "#2a4a26"][(r() * 3) | 0]);
+            if (r() < 0.45) leaf(x + 2, y - 2, a, sz * 0.7, "rgba(190,210,120,.55)"); /* sunlit leaf tops */
+          }
+        }
+        return cv5;
+      }
+      function hubFore(t) {
+        if (!FORE.length) for (let i = 0; i < FORE_AT.length; i++) FORE.push(foreSprite(4100 + i));
+        for (let i = 0; i < FORE_AT.length; i++) {
+          const [x, y, fx, rot] = FORE_AT[i], near = P ? Math.hypot(P.x - x, P.y - y) : 999;
+          c.save();
+          c.translate(x, y);
+          c.scale(fx * 1.1, i == 2 ? -1.1 : 1.1);
+          c.rotate(rot * fx + Math.sin(t * 0.9 + i * 2) * 0.025 + Math.sin(t * 2.1 + i) * 0.008);
+          c.globalAlpha = 0.78 * cl((near - 90) / 160, 0.25, 1);
+          c.drawImage(FORE[i], -20, -200);
+          c.restore();
+        }
+      }
       function drawHub() {
         if (!HUBC) paintHub();
         c.drawImage(HUBC, 0, 0, W, H);
@@ -11312,6 +11355,7 @@
         }
         c.restore();
         FX = FX.filter((p) => p.l > 0);
+        if (S.sc == "hub") hubFore(S.tm); /* nearest plane: out-of-focus leaves over the corners */
         c.save();
         c.textAlign = "center";
         c.font = "bold 15px Georgia";

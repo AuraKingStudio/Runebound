@@ -228,6 +228,7 @@ Built and tested (unit tests plus the `cheat`, `flood`, `econ`, `hphack`, `chat`
 - **Limits, stated honestly:** this is detection during online play, not prevention. The browser owns the save, so a skilled cheater can forge a consistent ledger within the reward limits; only a server-owned economy stops that. HP in raids isn't networked yet. A master and slave cheating together are only caught by the other slaves. Not yet tested in real browsers.
 
 - Autopilot (`P.auto`) is test/bench only: no player-facing toggle, keep it that way. raidSim clears `ai_ignoreDoom` after each run (it leaked and made the "you heal" bench lose every Doom). Remote members' dash boost no longer ticks twice. Phones work out grass wind every other frame.
+- Hub foreground (hubFore): blurred leafy branches in the bottom corners (nearest depth plane), sway, fade when you walk under them. The Doom wipe test now puts the runes out of reach (was flaky: the bot brushed them by chance).
 
 ## Not done / open
 

@@ -226,7 +226,7 @@ function raidSim(key,cls,setup){
  ok(l.end=='win'&&l.size==6&&l.time<=270,`raid: the large raid (6) is won by a full role team (${l.end} in ${Math.round(l.time)} s)`);
  const nt=raidSim('small','dps',S=>S.ps.forEach(p=>{if(p.cls=='tank')p.noTaunt=true;}));console.log('RAID small no taunt',JSON.stringify(nt));
  ok(nt.end=='lose'||nt.deaths>=1,'raid: without Taunt the boss eats the healer and DPS');
- const nd=raidSim('small','dps',S=>{S.b.hp=S.b.mh*0.61;S.ps.forEach(p=>{p.ai_ignoreDoom=true;}); /* whoever the Doom lands on (the healer, or anyone if the healer already fell) ignores it */});
+ const nd=raidSim('small','dps',S=>{const h=S.ps.find(p=>p.cls=='heal');S.b.doomed=true;S.b.doom={id:h.id,t:12,m:12,orbs:[0,1,2].map(i=>({x:-9999,y:-9999+i*200,got:false}))}; /* runes out of reach: the timer must run out */});
  ok(nd.end=='lose'&&/Doom/.test(nd.why),'raid: an uncleansed Doom wipes the whole party');
 }
 /* ---------- party messages between real players go through the master ---------- */
