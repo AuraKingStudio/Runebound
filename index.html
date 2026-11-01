@@ -2526,7 +2526,7 @@
           netSnapshot(full);
         } else {
           /* 15 updates/s while moving, one keep-alive per second while standing still */
-          const x = Math.round(P.x), y = Math.round(P.y), f = Math.max(0, NET_F.indexOf(P.f || "d")), d = P.ds > 0 ? 1 : 0, key = [x, y, f, d].join();
+          const x = Math.round(P.x), y = Math.round(P.y), f = Math.max(0, NET_F.indexOf(P.f || "d")), d = P.ds > 0 || performance.now() - (P.dashAt || -1e9) < 400 ? 1 : 0, key = [x, y, f, d].join(); /* dash flag outlives the 0.13 s dash so a move message carries it */
           if (now - NET_LAST_SEND < 66 || (key == NET_SENT_KEY && now - NET_LAST_SEND < 1000)) return;
           NET_LAST_SEND = now;
           NET_SENT_KEY = key;
@@ -3615,7 +3615,7 @@
          Circle: {x, y, r}. Line: {ln: 1, x, y, a (angle), len, w}. t = seconds until it lands, m = full telegraph time. */
       const SPELLS = {
         slam: (b, f) => { S.ao.push({ x: b.x, y: b.y, r: 110, t: 1.6, m: 1.6, d: 30 * f, n: "Rune Slam" }); b.cd = 3; },
-        hex: (b, f) => { const t = pick(raidAlive().filter((p) => p.cls != "tank")) || raidAlive()[0]; S.ao.push({ x: t.x, y: t.y, r: 44, t: 1.1, m: 1.1, d: 28 * f, n: "Hex" }); b.cd = 2.2; },
+        hex: (b, f) => { const t = pick(raidAlive().filter((p) => p.cls != "tank")) || raidAlive()[0]; S.ao.push({ x: t.x, y: t.y, r: 44, t: 1.1, m: 1.1, d: 28 * f, n: "Hex" }); b.cd = 2.2 * SQUISHY_CD; },
         rain: (b, f) => { for (let i = 0; i < 5; i++) { const a = rnd(0, 6.28), r = rnd(0, ARENA.r * 0.85); S.ao.push({ x: ARENA.x + Math.cos(a) * r, y: ARENA.y + Math.sin(a) * r, r: 40, t: 1.4, m: 1.4, d: 30 * f, n: "Void Rain" }); } b.cd = 2.4; },
         split: (b, f, tg) => { S.ao.push({ ln: 1, x: b.x, y: b.y, a: Math.atan2(tg.y - b.y, tg.x - b.x), len: 340, w: 46, t: 1.4, m: 1.4, d: 38 * f, n: "Earthsplitter" }); b.cd = 2.6; },
         nova: (b, f) => { for (let i = 0; i < 8; i++) { const a = (i / 8) * 6.283; S.ao.push({ x: b.x + Math.cos(a) * 120, y: b.y + Math.sin(a) * 120, r: 34, t: 1.5, m: 1.5, d: 30 * f, n: "Thorn Nova" }); } b.cd = 2.8; },
@@ -3623,13 +3623,13 @@
         marks: (b, f) => { /* Hunting Marks: 4 circles land one after another on the target's spot at each drop: keep moving */
           const t = squishy();
           for (let i = 0; i < 4; i++) bossLater(b, i * 0.45, () => t.hp > 0 && S.ao.push({ x: t.x, y: t.y, r: 40, t: 0.85, m: 0.85, d: 22 * f, n: "Hunting Marks" }));
-          b.cd = 3.2;
+          b.cd = 3.2 * SQUISHY_CD;
         },
         cross: (b, f) => { /* Cross Burst: a plus on the target: step out diagonally */
           const t = squishy();
           for (let i = 0; i < 4; i++) S.ao.push({ ln: 1, x: t.x, y: t.y, a: i * 1.5708 + (b.ph == 2 ? 0.785 : 0), len: 260, w: 40, t: 1.3, m: 1.3, d: 26 * f, n: "Cross Burst" });
           S.ao.push({ x: t.x, y: t.y, r: 30, t: 1.3, m: 1.3, d: 0.01, n: "Cross Burst" }); /* center mark (the lines already hit there) */
-          b.cd = 2.8;
+          b.cd = 2.8 * SQUISHY_CD;
         },
         ring: (b, f) => { /* Ring of Ruin: a blast at the center and a ring of circles with one gap: run out through it or dash across */
           const t = squishy(), gap = rnd(0, 6.283), n = 12;
@@ -3638,7 +3638,7 @@
             const a = gap + ((i + 1) / (n + 1)) * 6.283;
             S.ao.push({ x: t.x + Math.cos(a) * 112, y: t.y + Math.sin(a) * 112, r: 32, t: 1.6, m: 1.6, d: 22 * f, n: "Ring of Ruin" });
           }
-          b.cd = 3.4;
+          b.cd = 3.4 * SQUISHY_CD;
         },
         judge: (b, f) => { /* Judgement: a mark on every living player at once, aimed where each one is heading (predictive) */
           for (const p of raidAlive()) {
@@ -3651,6 +3651,7 @@
         charge: (b, f) => { const far = raidAlive().reduce((m, p) => (dist(p, b) > dist(m, b) ? p : m)); S.ao.push({ ln: 1, x: b.x, y: b.y, a: Math.atan2(far.y - b.y, far.x - b.x), len: Math.min(320, dist(far, b) + 30), w: 54, t: 1.2, m: 1.2, d: 40 * f, n: "Rampage", charge: 1 }); b.cd = 3.2; },
       };
       /* squishy(): a random living healer or DPS (anyone if none); bossLater(b, s, fn): run fn after s seconds of fight time */
+      const SQUISHY_CD = 0.5; /* healer/DPS patterns (Hex, Marks, Cross, Ring) come back twice as fast */
       const JUDGE_LEAD = 0.7; /* Judgement aims this many seconds ahead of each player's current movement */
       const squishy = () => pick(raidAlive().filter((p) => p.cls != "tank")) || raidAlive()[0];
       function bossLater(b, s, fn) { if (s <= 0) return fn(); (b.q || (b.q = [])).push({ t: s, f: fn }); }
@@ -3927,6 +3928,7 @@
         p.dvx = (x / l) * (D.d / D.t);
         p.dvy = (y / l) * (D.d / D.t);
         p.ds = D.t;
+        if (p === P) p.dashAt = performance.now();
         p.dcd = DEV.nocd ? 0 : D.cd * cdm() * (bless("swift") ? 0.5 : 1);
         if (p === P && eqSt("dd") && !p.d2) { p.d2 = 1; p.dcd = Math.min(p.dcd, 0.35); } else p.d2 = 0; /* Twin Feather: a second dash right after */
         if (D.ar) { p.ar = D.ar * (p === P ? 1 + eqSt("bd") : 1); ftxt(p.x, p.y - 30, "+armor", "#cfe6ff", 11); }
@@ -4295,6 +4297,7 @@
         if (a == 3) return ult(p);
         SKM = p === P ? 1 + 0.15 * ((V.sk[p.cls] || [])[a] || 0) : 1;
         if (p === P && p.cls == "heal" && a == 1 && S.sc == "arena") p.aim = mouseAlly(); /* Empower goes to the ally nearest the cursor */
+        if (p === P && p.cls == "heal" && a == 2 && S.sc == "arena") p.aimPt = mousePoint(p); /* Circle lands at the cursor */
         if (p === P && p.cd[a] <= 0 && p.hp > 0) bountyAdd("skill");
         if (S.sc == "hub" && p.hp > 0 && p.cd[a] <= 0) return hubSkill(p, a);
         if (S.sc != "arena" || S.end || p.hp <= 0 || p.cd[a] > 0 || !S.b) return;
@@ -4303,10 +4306,13 @@
           if (p !== P) return;
           p.cd[a] = Math.max(ENGINE.minCd, CL[p.cls].cd[a] * aCdm(p) * cdMul(p, a));
           raidFx(p, a);
-          return netParty(S.net.lead, p.aim != null && a == 1 ? { type: "ra", a, s: ++S.net.seq, t: p.aim } : { type: "ra", a, s: ++S.net.seq });
+          const ra = { type: "ra", a, s: ++S.net.seq };
+          if (a == 1 && p.aim != null) ra.t = p.aim;
+          if (a == 2 && p.aimPt) ra.p = [Math.round(p.aimPt.x), Math.round(p.aimPt.y)];
+          return netParty(S.net.lead, ra);
         }
         raidEvent(["fx", p.id, a]);
-        skillFx(p, a, p.cls == "heal" && a > 0 ? (a == 1 ? buffTarget(p) : healTarget(p) || p) : null);
+        skillFx(p, a, p.cls == "heal" && a > 0 ? (a == 1 ? buffTarget(p) : p.aimPt || healTarget(p) || p) : null);
         const b = S.b,
           d = dist(p, b),
           eng = p.cls == "dps" ? p.eng || 1 : 1; /* DPS skills scale with the Engine */
@@ -4326,7 +4332,7 @@
         } else {
           if (a == 0) shoot(p, 7);
           else if (a == 1) { empower(p, buffTarget(p)); p.aim = null; }
-          else { const t = healTarget(p) || p; S.zo.push({ x: t.x, y: t.y, r: 90, l: 5 * (p === P ? 1 + eqSt("bd") : 1), t: 0, src: p.id }); } /* circle lands on the most hurt ally */
+          else { const t = p.aimPt || healTarget(p) || p; p.aimPt = null; S.zo.push({ x: t.x, y: t.y, r: 90, l: 5 * (p === P ? 1 + eqSt("bd") : 1), t: 0, src: p.id }); } /* circle lands on the most hurt ally */
         }
         if (ok && !DEV.nocd) p.cd[a] = Math.max(ENGINE.minCd, CL[p.cls].cd[a] * aCdm(p) * cdMul(p, a));
       }
@@ -4372,6 +4378,16 @@
         const t = raidAlive().sort((x, y) => dist(x, MOUSE) - dist(y, MOUSE))[0];
         return t ? t.id : null;
       }
+      /* mousePoint(p): the cursor in game space (kept within CIRCLE_RANGE of p, inside the floor); null without a mouse */
+      const CIRCLE_RANGE = 300;
+      function mouseClamp(p, pt) {
+        const dx = pt.x - p.x, dy = pt.y - p.y, d = Math.hypot(dx, dy), k = d > CIRCLE_RANGE ? CIRCLE_RANGE / d : 1, e = { x: p.x + dx * k, y: p.y + dy * k, hp: 1 };
+        clampW(e);
+        return { x: e.x, y: e.y };
+      }
+      function mousePoint(p) {
+        return INMODE == "kb" && MOUSE.on ? mouseClamp(p, MOUSE) : null;
+      }
       function empower(p, t) {
         const bd = p === P ? 1 + eqSt("bd") : 1;
         if (t === p) return heal(p, EMP.self, p);
@@ -4399,16 +4415,23 @@
           a.seq = m.s;
           a.heard = performance.now(); /* even a fallen member is still there: it keeps getting the fight to watch */
           if (a.hp <= 0) return;
-          if (m.type == "ra") { if (Number.isInteger(m.a) && m.a >= 0 && m.a <= 3) { a.aim = Number.isInteger(m.t) ? m.t : null; act(a, m.a); } return; }
+          if (m.type == "ra") { if (Number.isInteger(m.a) && m.a >= 0 && m.a <= 3) { a.aim = Number.isInteger(m.t) ? m.t : null; a.aimPt = Array.isArray(m.p) && m.p.length == 2 && m.p.every(Number.isFinite) ? mouseClamp(a, { x: m.p[0], y: m.p[1] }) : null; act(a, m.a); } return; }
           if (!Number.isFinite(m.x) || !Number.isFinite(m.y) || !NET_F[m.f]) return;
           /* same refilling budget as the hub: 1.3x class speed, 0.5 s of slack, plus a dash when off cooldown */
           const now = performance.now(), rate = CL[a.cls].sp * RAID_SPEED * 1.3, cap = rate * 0.5 + 24, D = DASH[a.cls];
           a.budget = Math.min(cap, (a.budget ?? cap) + (rate * (now - (a.movedAt || now))) / 1000);
           a.movedAt = now;
-          const dash = m.d === 1 && now - (a.dashAt || -1e9) >= D.cd * 900, mx = m.x - (a.tx ?? a.x), my = m.y - (a.ty ?? a.y), dd = Math.hypot(mx, my), allow = a.budget + (dash ? D.d : 0);
-          if (dash && dd > a.budget) { a.dashAt = a.dash2 ?? -1e9; a.dash2 = now; if (D.ar) a.ar = D.ar; if (D.inv) a.inv = D.inv; if (a.cls == "dps") a.rush = RUSH.t; }
+          /* a dash opens a 0.6 s window with D.d px of extra allowance: the dash spans several move messages, not just the flagged one */
+          if (m.d === 1 && !(now < (a.dashUntil || 0)) && now - (a.dashAt || -1e9) >= D.cd * 900) {
+            a.dashAt = a.dash2 ?? -1e9; a.dash2 = now; a.dashUntil = now + 600; a.dashLeft = D.d;
+            if (D.ar) a.ar = D.ar; if (D.inv) a.inv = D.inv; if (a.cls == "dps") a.rush = RUSH.t;
+          }
+          const extra = now < (a.dashUntil || 0) ? a.dashLeft || 0 : 0;
+          const mx = m.x - (a.tx ?? a.x), my = m.y - (a.ty ?? a.y), dd = Math.hypot(mx, my), allow = a.budget + extra;
           const k = dd > allow ? allow / dd : 1, pos = { x: (a.tx ?? a.x) + mx * k, y: (a.ty ?? a.y) + my * k, hp: 1 };
-          a.budget = Math.max(0, a.budget - Math.max(0, dd * k - (dash ? D.d : 0)));
+          const used = dd * k, fromBudget = Math.min(a.budget, used);
+          a.budget -= fromBudget;
+          if (extra) a.dashLeft = Math.max(0, extra - (used - fromBudget));
           clampW(pos);
           a.tx = pos.x; a.ty = pos.y; a.f = NET_F[m.f];
         } else if (N.role == "member" && m.type == "rs" && from == N.lead) raidApply(m);
@@ -4418,7 +4441,7 @@
         const b = S.b, N = S.net, r = (v) => Math.round(v), tn = (v) => Math.round(v * 10);
         const m = { type: "rs", t: tn(S.at),
           b: [r(b.x), r(b.y), r(b.hp), b.ph, b.cur, tn(b.tt), tn(b.weak), tn(b.brk), tn(b.enr), tn(b.stun), tn(b.fl)],
-          p: S.ps.map((a) => [a.id, r(a.x), r(a.y), r(a.hp), r(a.mh), tn(a.eng || 1), NET_F.indexOf(a.f || "d")]) };
+          p: S.ps.map((a) => [a.id, r(a.remote && a.tx != null ? a.tx : a.x), r(a.remote && a.ty != null ? a.ty : a.y), r(a.hp), /* members: the accepted spot, not the eased drawing (a dash would look 100 px behind) */ r(a.mh), tn(a.eng || 1), NET_F.indexOf(a.f || "d")]) };
         if (b.doom) m.d = [b.doom.id, tn(b.doom.t), ...b.doom.orbs.flatMap((o) => [r(o.x), r(o.y), o.got ? 1 : 0])];
         const ao = S.ao.filter((a) => !a.sent).map((a) => { a.sent = 1; return a.ln ? [1, r(a.x), r(a.y), Math.round(a.a * 1000), r(a.len), r(a.w), tn(a.t), tn(a.m)] : [0, r(a.x), r(a.y), r(a.r), tn(a.t), tn(a.m)]; });
         if (ao.length) m.ao = ao;
@@ -4445,7 +4468,7 @@
           if (ahp < a.hp - 0.5) { ftxt(a.x, a.y - 24, "-" + Math.round(a.hp - ahp), "#ff6070"); if (a === P) { shake(0.25); sfx("hurt"); } }
           if (ahp > a.hp + 0.5) ftxt(a.x, a.y - 24, "+" + Math.round(ahp - a.hp), "#7dff9a");
           a.hp = cl(ahp, 0, 1e5); a.mh = Math.max(1, amh); a.eng = eng / 10;
-          if (a === P) { if (Math.hypot(P.x - x, P.y - y) > 70) { P.x = x; P.y = y; } } /* the leader disagrees a lot: trust it */
+          if (a === P) { if (Math.hypot(P.x - x, P.y - y) > 70 && performance.now() - (P.dashAt || -1e9) > 700) { P.x = x; P.y = y; } } /* the leader disagrees a lot: trust it (not right after our dash: its snapshots are still catching up) */
           else { a.tx = x; a.ty = y; a.f = NET_F[f] || "d"; }
         }
         if (Array.isArray(m.d) && m.d.length == 11) {
@@ -4500,7 +4523,7 @@
           const to = S.ps.filter((a) => a.remote && now - (a.heard || 0) < RAID_SILENT_MS * 3).map((a) => a.remote);
           if (to.length) netParty(to, raidState());
         } else if (!S.end) {
-          const x = Math.round(P.x), y = Math.round(P.y), f = Math.max(0, NET_F.indexOf(P.f || "d")), d = P.ds > 0 ? 1 : 0, key = [x, y, f, d].join();
+          const x = Math.round(P.x), y = Math.round(P.y), f = Math.max(0, NET_F.indexOf(P.f || "d")), d = P.ds > 0 || performance.now() - (P.dashAt || -1e9) < 400 ? 1 : 0, key = [x, y, f, d].join(); /* dash flag outlives the 0.13 s dash so a move message carries it */
           if (now - N.at < 66 || (key == N.key && now - N.at < 1000)) return;
           N.at = now; N.key = key;
           netParty(N.lead, { type: "rm", x, y, f, d, s: ++N.seq });
