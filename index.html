@@ -1648,7 +1648,8 @@
           roomInviteLink,
           /* public site (or any ?room= link) uses room mode; localhost keeps the hub service (npm run signaling) for tests */
           defaultConfig: () => ({ signalingUrl: NETWORK_CONFIG.signalingUrl || hubFromLink() ||
-            (roomFromLink() || !["localhost", "127.0.0.1"].includes(location.hostname) ? "room" : "http://localhost:8787"), iceServers: NETWORK_CONFIG.iceServers.map((server) => ({ ...server })) }),
+            (!roomFromLink() && /^(192\.168|10|172\.(1[6-9]|2\d|3[01]))\./.test(location.hostname) ? `http://${location.hostname}:8787` : /* LAN playtest: the host PC's service */
+            roomFromLink() || !["localhost", "127.0.0.1"].includes(location.hostname) ? "room" : "http://localhost:8787"), iceServers: NETWORK_CONFIG.iceServers.map((server) => ({ ...server })) }),
           createPeerOffer,
           createPeerAnswer,
           acceptPeerAnswer,

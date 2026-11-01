@@ -6,7 +6,8 @@
     "dev": "live-server --port=8080 --no-browser --ignore=node_modules",
     "signaling": "node src/app.js",
     "test": "node src/test.js",
-    "bench": "node src/test.js --bench"
+    "bench": "node src/test.js --bench",
+    "playtest": "node src/playtest.js"
   },
   "devDependencies": {
     "live-server": "^1.2.2"

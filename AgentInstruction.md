@@ -236,6 +236,7 @@ Built and tested (unit tests plus the `cheat`, `flood`, `econ`, `hphack`, `chat`
 - Boss sprites (`bossSprite`): Seer = hovering hooded wraith (tattered cloak, one eye tracking its target, orbiting rune shards); Thornmaw = bark-armoured beast facing its target (claws sway, moss, thorn spines, horns). Phase 2 cracks glow. Dev menu: Seer/Thornmaw/Phase 2, level & XP, inventory (random/legendary gear, mats, clear, open), unlocks.
 - HUD left column is now just ⚙ Settings + 🎒 Inventory. Settings (`settingsUI`): volume, shake, effects, damage numbers, key rebinding (click a key, press one; Esc cancels), Reset keys, and Titles / Invite link / Feedback / Dev tools (with code). The old Titles/Copy ID/Feedback HUD buttons stay in the DOM but hidden.
 - Playtest feedback (`fbOpen`/`fbSend`): note + class/level/scene + last 8 JS errors -> `POST /api/feedback` on the hub service -> `feedback.log` (gitignored); falls back to the clipboard. The hub service accepts LAN origins (192.168/10/172.16-31) for local playtests.
+- LAN playtest: `npm run playtest` (src/playtest.js) serves the game on :8080 and the hub service on :8787 (0.0.0.0) and prints the Wi-Fi link. Pages opened from a private IP use `http://<that ip>:8787` as signaling (not the public room relay). Windows firewall must allow Node on private networks. Stop live-server first (both use 8080).
 
 ## Not done / open
 
