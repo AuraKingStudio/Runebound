@@ -38,6 +38,9 @@ function createDirectoryServer(options = {}) {
     "http://localhost:8080",
     "http://127.0.0.1:8080",
   ]);
+  const feedbackFile = options.feedbackFile || require("path").join(__dirname, "..", "feedback.log");
+  /* local playtests: any page served from this network (192.168.x.x, 10.x.x.x, 172.16-31.x.x) may use the service */
+  const lanOrigin = (o) => options.allowLan !== false && /^http:\/\/(192\.168\.\d+\.\d+|10\.\d+\.\d+\.\d+|172\.(1[6-9]|2\d|3[01])\.\d+\.\d+)(:\d+)?$/.test(o);
   const hubs = new Map();
   const sessions = new Map();
   const requestCounts = new Map();
@@ -98,7 +101,7 @@ function createDirectoryServer(options = {}) {
 
   async function handle(req, res) {
     const origin = req.headers.origin;
-    if (origin && !allowedOrigins.has(origin)) return send(res, 403, { error: "Origin is not allowed." });
+    if (origin && !allowedOrigins.has(origin) && !lanOrigin(origin)) return send(res, 403, { error: "Origin is not allowed." });
     if (origin) {
       res.setHeader("access-control-allow-origin", origin);
       res.setHeader("vary", "Origin");
@@ -140,6 +143,16 @@ function createDirectoryServer(options = {}) {
     try { body = await readJson(req); }
     catch (error) { return send(res, error.status || 400, { error: error.message }); }
 
+    if (url.pathname === "/api/feedback") {
+      /* playtest notes: one JSON line per note in feedback.log (no session needed; size-capped, rate-limited above) */
+      if (typeof body.text !== "string" || !body.text.trim() || body.text.length > 1500) return send(res, 400, { error: "Feedback is invalid." });
+      const clean = (v, n) => (typeof v === "string" ? v.slice(0, n) : typeof v === "number" ? v : undefined);
+      const line = JSON.stringify({ at: new Date().toISOString(), text: body.text, name: clean(body.name, 24), cls: clean(body.cls, 8), lv: clean(body.lv, 4), sc: clean(body.sc, 8), raid: clean(body.raid, 8),
+        wins: clean(body.wins, 6), errors: Array.isArray(body.errors) ? body.errors.slice(0, 8).map((e) => String(e).slice(0, 200)) : [], ua: clean(body.ua, 120) });
+      try { require("fs").appendFileSync(feedbackFile, line + "\n"); } catch (error) { return send(res, 500, { error: "Could not save feedback." }); }
+      console.log("Feedback: " + body.text.slice(0, 80).replace(/\s+/g, " "));
+      return send(res, 200, { ok: true });
+    }
     if (url.pathname === "/api/join") {
       cleanup();
       if (!validProfile(body.profile)) return send(res, 400, { error: "Player profile is invalid." });

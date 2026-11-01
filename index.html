@@ -1294,7 +1294,7 @@
     <div id="chat" hidden><div id="chlog"></div><div id="chrow"><input id="chin" maxlength="80" autocomplete="off" placeholder="Press Enter to chat" /><div id="emo"></div></div></div>
     <div id="btns">
       <button id="bd" class="sk"></button><button id="bu" class="sk"></button><button id="b0"></button><button id="b1"></button><button id="b2"></button
-      ><button id="bi" hidden>Enter arena</button><button id="bil" class="bic" hidden onclick="invCycle(-1)">◀</button><button id="bir" class="bic" hidden onclick="invCycle(1)">▶</button><div id="tlbar"><span id="gp"><i class="coin"></i><b id="gn">0</b></span></div><div id="mlbar"><button id="binv" data-ic="🎒" onclick="invOpen()">🎒 Inventory</button><button id="bt" data-ic="🎖️">🎖️ Titles</button><button id="blk" data-ic="🔗" class="hb" title="Copy the lobby link: friends who open it join you" hidden>🔗 Copy ID</button></div><div id="topc"><button id="bq" data-ic="📜" class="hb">📜 Quests</button><button id="bg" class="hb">🛡 Guild</button><button id="bs" data-ic="✨" class="hb">✨ Shop</button><button id="bp" data-ic="👥" class="hb">👥 Party</button></div><div id="ptl" hidden></div>
+      ><button id="bi" hidden>Enter arena</button><button id="bil" class="bic" hidden onclick="invCycle(-1)">◀</button><button id="bir" class="bic" hidden onclick="invCycle(1)">▶</button><div id="tlbar"><span id="gp"><i class="coin"></i><b id="gn">0</b></span></div><div id="mlbar"><button id="binv" data-ic="🎒" onclick="invOpen()">🎒 Inventory</button><button id="bt" data-ic="🎖️">🎖️ Titles</button><button id="bfb" data-ic="💬" onclick="fbOpen()" title="Tell us what you think, or report a bug">💬 Feedback</button><button id="blk" data-ic="🔗" class="hb" title="Copy the lobby link: friends who open it join you" hidden>🔗 Copy ID</button></div><div id="topc"><button id="bq" data-ic="📜" class="hb">📜 Quests</button><button id="bg" class="hb">🛡 Guild</button><button id="bs" data-ic="✨" class="hb">✨ Shop</button><button id="bp" data-ic="👥" class="hb">👥 Party</button></div><div id="ptl" hidden></div>
     </div>
     <script>
       /* Browser networking block: inputs are hub leases, SDP and game messages; outputs are peer events.
@@ -1629,7 +1629,13 @@
           return directoryUrl;
         }
 
+        /* sendFeedback(data): playtest notes go to the hub service, which appends them to feedback.log on the host PC */
+        function sendFeedback(data) {
+          const url = directoryUrl && directoryUrl != "room" ? directoryUrl : "http://localhost:8787";
+          return fetch(url + "/api/feedback", { method: "POST", headers: { "content-type": "application/json" }, body: JSON.stringify(data), cache: "no-store" }).then((r) => r.ok);
+        }
         window.RBNet = Object.freeze({
+          sendFeedback,
           setHandlers,
           setIceServers,
           configureDirectory,
@@ -2053,6 +2059,30 @@
         return out;
       }
       let DROPS = [];
+      /* ---------- playtest feedback: a note + the last game errors, sent to the hub service (feedback.log), or copied ---------- */
+      const ERRLOG = [];
+      addEventListener("error", (e) => { ERRLOG.push(String(e.message || e.error || "error").slice(0, 200) + " @" + (e.lineno || "?")); ERRLOG.splice(0, ERRLOG.length - 8); });
+      addEventListener("unhandledrejection", (e) => { ERRLOG.push("promise: " + String(e.reason && e.reason.message || e.reason).slice(0, 200)); ERRLOG.splice(0, ERRLOG.length - 8); });
+      function fbOpen() {
+        if (!P) return;
+        CUR_DLG = "fb";
+        $("dlg").hidden = false;
+        $("dp").className = "pn";
+        $("dp").innerHTML = `<h2>💬 Feedback</h2><p class="sm">Bug, idea, something confusing? Tell us. Your class, level, scene and any recent errors are attached.</p>
+          <textarea id="fbt" maxlength="1500" rows="6" style="width:100%;box-sizing:border-box;background:rgba(0,0,0,.3);color:inherit;border:1px solid var(--ln);border-radius:8px;padding:8px;font:inherit;resize:vertical" placeholder="What happened?"></textarea>
+          <div class="row" style="margin-top:8px"><button class="claim" onclick="fbSend()">Send</button></div><p id="fbm" class="sm"></p>
+          <button class="alt x" onclick="closeDlg()" title="Close">Close</button>`;
+        setTimeout(() => $("fbt") && $("fbt").focus(), 50);
+      }
+      function fbSend() {
+        const t = ($("fbt").value || "").trim().slice(0, 1500);
+        if (!t) return ($("fbm").textContent = "Write something first.");
+        const data = { text: t, name: pname(), cls: P && P.cls, lv: lvlInfo().L, sc: S.sc, raid: S.sc == "arena" ? S.raid : "", wins: V.wins || 0, errors: ERRLOG.slice(), ua: navigator.userAgent.slice(0, 120), at: new Date().toISOString() };
+        const copy = () => { try { navigator.clipboard.writeText(JSON.stringify(data, null, 1)); $("fbm").textContent = "Couldn't reach the server: copied to your clipboard, paste it to the host."; } catch (e) { $("fbm").textContent = "Couldn't send."; } };
+        (window.RBNet && RBNet.sendFeedback ? RBNet.sendFeedback(data) : Promise.reject())
+          .then((ok) => { if (!ok) throw 0; $("fbm").textContent = "Thanks! Sent."; $("fbt").value = ""; sfx("coin", 1.3); })
+          .catch(copy);
+      }
       /* ---------- inventory (I key or the Bag button): what you wear, your gear bag, your materials ----------
          Slots: Armor (tank gear), Weapon (damage gear), Charm (utility gear). Click a bag item to wear it, a worn one to take it off. */
       /* paper doll: a human silhouette with square slots around it. Gear types fill Armor (tank), Weapon (dmg), Charm (util);
@@ -7022,6 +7052,7 @@
         $("chat").hidden = S.sc != "hub" || !P;
         $("bt").hidden = tut() < TUT_DONE; /* Titles button appears after the tutorial */
         $("binv").hidden = tut() < TUT_DONE || S.sc != "hub";
+        $("bfb").hidden = S.sc != "hub";
         $("blk").hidden = tut() < TUT_DONE; /* copy the lobby link */
         $("tlbar").hidden = !P || S.sc == "lobby";
         goldHud();
