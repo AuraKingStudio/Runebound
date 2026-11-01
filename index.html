@@ -3607,9 +3607,9 @@
       };
       const BOSSES = {
         seer: { n: "The Hollow Seer", hp: 20000, r: 34, sp: 34, atk: 40, atkT: 1.5, body: "#1b1233", ring: ["#a78bff", "#ff4d8d"], eye: ["#7aa2ff", "#ff4d8d"],
-          weak: [0.75, 0.35], doom: 0.6, spells: [["slam", "marks", "hex", "cross"], ["slam", "ring", "hex", "marks", "rain", "cross"]] },
+          weak: [0.75, 0.35], doom: 0.6, spells: [["slam", "marks", "hex", "cross", "judge"], ["slam", "ring", "hex", "judge", "marks", "rain", "cross"]] },
         thornmaw: { n: "Thornmaw Colossus", hp: 40000, r: 44, sp: 30, atk: 44, atkT: 1.6, body: "#1d2a14", ring: ["#9bd16a", "#ff7a3c"], eye: ["#d8ff7a", "#ff7a3c"],
-          horns: 1, cleave: 70, weak: [0.75, 0.35], doom: 0.6, spells: [["split", "marks", "nova", "cross"], ["split", "ring", "nova", "marks", "charge", "cross"]] },
+          horns: 1, cleave: 70, weak: [0.75, 0.35], doom: 0.6, spells: [["split", "marks", "nova", "cross", "judge"], ["split", "ring", "nova", "judge", "marks", "charge", "cross"]] },
       };
       /* SPELLS[name](b, f, tg): starts a telegraph (S.ao) and sets the next cast delay. f = phase/enrage damage factor.
          Circle: {x, y, r}. Line: {ln: 1, x, y, a (angle), len, w}. t = seconds until it lands, m = full telegraph time. */
@@ -3640,12 +3640,21 @@
           }
           b.cd = 3.4;
         },
+        judge: (b, f) => { /* Judgement: a mark on every living player at once, aimed where each one is heading (predictive) */
+          for (const p of raidAlive()) {
+            const e = { x: p.x + (p.vx || 0) * JUDGE_LEAD, y: p.y + (p.vy || 0) * JUDGE_LEAD, hp: 1 };
+            clampW(e);
+            S.ao.push({ x: e.x, y: e.y, r: 46, t: 1.4, m: 1.4, d: 26 * f, n: "Judgement" });
+          }
+          b.cd = 2.8;
+        },
         charge: (b, f) => { const far = raidAlive().reduce((m, p) => (dist(p, b) > dist(m, b) ? p : m)); S.ao.push({ ln: 1, x: b.x, y: b.y, a: Math.atan2(far.y - b.y, far.x - b.x), len: Math.min(320, dist(far, b) + 30), w: 54, t: 1.2, m: 1.2, d: 40 * f, n: "Rampage", charge: 1 }); b.cd = 3.2; },
       };
       /* squishy(): a random living healer or DPS (anyone if none); bossLater(b, s, fn): run fn after s seconds of fight time */
+      const JUDGE_LEAD = 0.7; /* Judgement aims this many seconds ahead of each player's current movement */
       const squishy = () => pick(raidAlive().filter((p) => p.cls != "tank")) || raidAlive()[0];
       function bossLater(b, s, fn) { if (s <= 0) return fn(); (b.q || (b.q = [])).push({ t: s, f: fn }); }
-      const SPELL_NAME = { marks: "Hunting Marks", cross: "Cross Burst", ring: "Ring of Ruin", slam: "Rune Slam", hex: "Hex", rain: "Void Rain", split: "Earthsplitter", nova: "Thorn Nova", charge: "Rampage" };
+      const SPELL_NAME = { judge: "Judgement", marks: "Hunting Marks", cross: "Cross Burst", ring: "Ring of Ruin", slam: "Rune Slam", hex: "Hex", rain: "Void Rain", split: "Earthsplitter", nova: "Thorn Nova", charge: "Rampage" };
       /* ENGINE (DPS passive): attack speed grows forever while the DPS is alive: x(1 + seconds / ENGINE.t). Cooldowns shrink by
          that factor and Heavy Shot / Rapid Fire damage grows with it. Around 2-3 minutes the DPS outscales the boss. */
       /* healer Empower: tank gets a shield, DPS gets damage + fire rate, another healer gets a small shield; cast with nobody near = self heal */
@@ -4657,6 +4666,10 @@
         }
         S.zo = S.zo.filter((z) => z.l > 0);
         const f = (b.ph == 2 ? 1.25 : 1) * (b.enr > 0 ? 1.3 : 1);
+        for (const p of S.ps) { /* measured velocity (px/s, smoothed) for predictive aims */
+          if (p.lx != null && dt > 0) { const k = Math.min(1, dt * 8); p.vx = (p.vx || 0) * (1 - k) + ((p.x - p.lx) / dt) * k; p.vy = (p.vy || 0) * (1 - k) + ((p.y - p.ly) / dt) * k; }
+          p.lx = p.x; p.ly = p.y;
+        }
         if (b.q) { for (const e of b.q) if ((e.t -= dt) <= 0) e.f(); b.q = b.q.filter((e) => e.t > 0); } /* delayed spell parts */
         for (const a of S.ao) {
           a.t -= dt;
