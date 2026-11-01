@@ -188,7 +188,7 @@ function raidSim(key,cls,setup){
  S.net={role:'lead',t:0}; /* measure what the leader would send its members (no real members here) */
  while(!S.end&&ticks<30*360){T.step(1/30);ticks++;if(S.ps.some(p=>p.hp<=0))minHp=0;if(ticks%3==0){const n=JSON.stringify(T.raidState()).length;rsN++;rsB+=n;rsMax=Math.max(rsMax,n);}}
  const r={rsAvg:Math.round(rsB/Math.max(1,rsN)),rsMax,key,cls,end:S.end,time:S.at,why:S.why,dead:S.ps.filter(p=>p.hp<=0).map(p=>p.cls).join(','),deaths:S.ps.filter(p=>p.hp<=0).length,size:S.ps.length,boss:S.b.def.n,brk:S.b.wk,doomed:S.b.doomed,share:(()=>{const d=S.b.dmg||{},t=Object.values(d).reduce((x,y)=>x+y,0)||1;return Object.fromEntries(Object.entries(d).map(([k,v])=>[k,Math.round(v/t*100)]))})()};
- T.P().auto=false;T.S().res=0.01;T.step(0.02);return r;
+ T.P().auto=false;delete T.P().ai_ignoreDoom;T.S().res=0.01;T.step(0.02);return r;
 }
 {
  T.devHub();T.P().cls='dps';

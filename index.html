@@ -5011,12 +5011,11 @@
             if (p.sht > 0 && (p.sht -= dt) <= 0) p.sh = 0;
             if (p.emp > 0) p.emp -= dt;
             if (p.rush > 0) p.rush -= dt;
-        if (p.rush > 0) p.rush -= dt;
             continue;
           }
           if (p.remote && p.tx != null) { p.tx = p.ty = null; } /* went silent: the AI plays them */
-          raidAI(p, dt);
           if (p !== P) {
+            raidAI(p, dt); /* autopilot you already thought in step() */
             if (!dashStep(p, dt)) { p.x += p.dx * CL[p.cls].sp * RAID_SPEED * dt; p.y += p.dy * CL[p.cls].sp * RAID_SPEED * dt; clampW(p); }
             for (let i = 0; i < 3; i++) p.cd[i] = Math.max(0, p.cd[i] - dt);
           }
@@ -10720,6 +10719,7 @@
             g.fillStyle = "#ffcc33"; g.beginPath(); g.arc(x, y, 0.75, 0, 6.3); g.fill(); }
         });
       }
+      let GRASS_F = 0;
       function grassLive(t) {
         if (!GRASS_T.length) return;
         if (!GRASS_SPR.length) grassSprites();
@@ -10730,8 +10730,10 @@
           const front = Math.pow(Math.max(0, Math.sin(t * 0.55 - x * 0.007 - y * 0.004)), 4); /* rolling gust */
           return 0.1 + Math.sin(t * 1.25 + ph * 6) * 0.14 + front * 0.6 + Math.sin(t * 2.2 + gx * 0.7) * 0.05 * (1 + front * 2);
         };
-        for (const q of GRASS_T) {
-          let lean = wind(q.x, q.y) + Math.sin(t * 3.4 + q.ph) * 0.04;
+        const lite = INMODE == "touch", half = (GRASS_F = (GRASS_F + 1) & 1); /* phones: the wind is worked out every other frame */
+        for (let i = 0; i < GRASS_T.length; i++) {
+          const q = GRASS_T[i];
+          let lean = lite && (i & 1) != half && q.w != null ? q.w : (q.w = wind(q.x, q.y) + Math.sin(t * 3.4 + q.ph) * 0.04);
           for (const o of ppl) { const dx = q.x - o.x, dy = (q.y - o.y) * 1.6; if (Math.abs(dx) < 22 && Math.abs(dy) < 16) lean += (dx > 0 ? 1 : -1) * (1 - Math.hypot(dx, dy) / 26) * 0.9; } /* pushed aside */
           const s0 = q.s, fx = q.f || 1; /* fx: mirrored tufts */
           c.setTransform(M.a * s0 * fx, M.b * s0 * fx, M.a * -lean * s0 + M.c * s0, M.d * s0, M.a * q.x + M.c * (q.y + 1) + M.e, M.b * q.x + M.d * (q.y + 1) + M.f);

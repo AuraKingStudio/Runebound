@@ -227,6 +227,8 @@ Built and tested (unit tests plus the `cheat`, `flood`, `econ`, `hphack`, `chat`
 - **F2 dev tools stay (owner's choice):** their edits are recorded as `dev`. They're allowed and flagged while `AUDIT_ALLOW_DEV = true`; set it false before release.
 - **Limits, stated honestly:** this is detection during online play, not prevention. The browser owns the save, so a skilled cheater can forge a consistent ledger within the reward limits; only a server-owned economy stops that. HP in raids isn't networked yet. A master and slave cheating together are only caught by the other slaves. Not yet tested in real browsers.
 
+- Autopilot (`P.auto`) is test/bench only: no player-facing toggle, keep it that way. raidSim clears `ai_ignoreDoom` after each run (it leaked and made the "you heal" bench lose every Doom). Remote members' dash boost no longer ticks twice. Phones work out grass wind every other frame.
+
 ## Not done / open
 
 - Host migration and reconnect: a hub dies when its host leaves.
