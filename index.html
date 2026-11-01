@@ -2993,7 +2993,7 @@
           return v;
         }
         botLook(v);
-        v.chatty = Math.random() < 0.3; /* most players never say a word */
+        v.chatty = Math.random() < 0.55; /* about half the hub talks */
         v.dasher = Math.random() < 0.35; /* some dash whenever they can to get places faster */
         return v;
       }
@@ -3120,13 +3120,84 @@
         if (NET?.peerIds().length && S.sc == "hub") {
           if (NET_ROLE == "guest") { const shown = P.say; netQuery({ type: "chat", text: t }, () => { if (P.say === shown) P.say = null; }); }
           else if (NET_ROLE == "host") NET.broadcast({ type: "chat", id: "host-player", name: netProfile().name, text: t });
-        } else if (/^(hi+|hey+|hello|yo|sup|o\/|hiya)\b/i.test(t)) botReply(BOT_REPLY);
-        else if (/raid/i.test(t) && Math.random() < 0.5) botReply(["sure", "im in", "maybe later", "need a healer?", "1 sec"]);
+        } else botAnswer(t);
+      }
+      /* botAnswer(t): bots react to what you type. Someone named answers you directly; questions about the game get a real tip
+         (from the game's own rules); greetings, gg, jokes and raid calls get the kind of reply a person would give. */
+      const BOT_TIPS = [
+        [/doom/i, ["touch the 3 runes before the timer ends", "doom = healer runs to the 3 purple runes", "if the doom isnt cleansed everyone dies lol"]],
+        [/bash|poise|weak/i, ["tank shield bash when the boss is WEAKENED", "bash the weak window, everyone hits +50%"]],
+        [/taunt|aggro/i, ["taunt holds 6s, cd 10s, strike to keep it", "tank: taunt then strike spam"]],
+        [/circle|heal/i, ["stand in the healer circle, +25% dmg", "healer circle on the most hurt guy"]],
+        [/engine|dps|build/i, ["dps: engine stacks the longer u live, dont die", "dash then volley, overdrive at x4"]],
+        [/gold|money|rich/i, ["raids pay best", "quests from the elder pay well", "barkeep blackjack if u feel lucky", "daily blessing from the maiden"]],
+        [/smith|gear|equip/i, ["smith unlocks with levels", "merchant stock rerolls every 2 raids"]],
+        [/level|xp/i, ["raids give the most xp", "levels give +1% raid gold each"]],
+        [/blackjack|barkeep|bj/i, ["natural pays 3x", "the chart next to the table is free", "never hit on 17 lol"]],
+        [/quest|elder/i, ["elder has the quests, the ! over his head", "do the elder quests first, free gold"]],
+        [/boss|seer|thornmaw|colossus/i, ["thornmaw hits so hard", "seer is easy once u know the doom", "phase 2 gets spicy"]],
+      ];
+      function botAnswer(t) {
+        const bots = HUBV.filter((v) => v.bot && !v.out);
+        if (!bots.length) return;
+        const named = bots.find((v) => t.toLowerCase().includes(v.name.toLowerCase().slice(0, 5)));
+        const who = named || pick(bots), me = pname();
+        let lines = null, sure = !!named;
+        if (/^(hi+|hey+|hello|yo|sup|o\/|hiya|howdy)\b/i.test(t)) { lines = [...BOT_REPLY, `hey ${me}`, `yo ${me}`, "welcome back"]; sure = sure || Math.random() < 0.7; }
+        else if (/\b(gg|wp|nice)\b/i.test(t)) lines = ["gg", "ggs", "wp", "ty :)"];
+        else if (/\b(lol|lmao|xd|haha)\b/i.test(t)) lines = ["lol", "😂", "lmao", "xd"];
+        else if (/\b(raid|lf|party|inv|group)\b/i.test(t)) { lines = ["im in", "inv me", "sure", "1 sec", "need a healer?", "what raid?", `${who.cls == "heal" ? "healer" : who.cls} here, inv`]; sure = sure || Math.random() < 0.75; }
+        else if (/\b(ty|thx|thanks)\b/i.test(t)) lines = ["np", "np :)", "anytime"];
+        else if (/\b(bye|cya|gn|gtg)\b/i.test(t)) lines = ["cya", "bye o/", "gn!", "cya " + me];
+        else if (/\?/.test(t)) { const tip = BOT_TIPS.find(([re]) => re.test(t)); lines = tip ? tip[1] : ["idk tbh", "no idea", "ask the elder", "good question lol", "yeah i think so"]; sure = sure || !!tip; }
+        else if (named) lines = ["?", "hm?", "yes?", "what", "o/"];
+        if (!lines || (!sure && Math.random() < 0.55)) return;
+        botSay(who, pick(lines), 0.5);
+        if (Math.random() < 0.2) { const o = bots.filter((b) => b !== who); if (o.length) botSay(pick(o), pick(["same", "^", "fr", "true", "lol"]), 3); }
       }
       /* botSay(v, t, wait): v says t after noticing (wait + 1.5-4s) and typing it out; the "…" bubble shows while typing */
       function botSay(v, t, wait = 0) {
         const ty = S.tm + wait + rnd(1.5, 4);
         chatQ.push({ ty, at: ty + t.length / rnd(4, 7), v, t });
+      }
+      /* contextLine(v): something about what v is, sees or just did (class, level, the NPC next to them, you, your wins and title) */
+      function contextLine(v) {
+        const near = HUB_NPCS().filter((n) => dist(v, n) < 120)[0], me = pname(), cl0 = { tank: "tank", heal: "healer", dps: "dps" }[v.cls] || "dps";
+        const opts = [`${cl0} lf raid`, `lv ${v.lv || 1} grind continues`, `${cl0} main btw`, `anyone else ${cl0}?`, `almost lv ${(v.lv || 1) + 1}`];
+        if (near == SHOP) opts.push("merchant pls restock", "window shopping again lol");
+        if (near == BARKEEP) opts.push("one more hand...", "barkeep took all my gold", "blackjack!! finally");
+        if (near == ELDER) opts.push("elder gives the best quests", "the elder never stops talking lol");
+        if (near == LORE) opts.push("the archivist knows so much", "reading tales rn");
+        if (near == MAIDEN) opts.push("free blessing ty maiden", "maiden blessing is so good");
+        if (P && dist(v, P) < 90) opts.push(`hi ${me}`, `${me} nice look`, `${me} wanna raid?`);
+        if ((V.wins || 0) >= 5) opts.push(`${me} is a veteran ngl`);
+        if (V.title) opts.push(`${me} has a title, respect`);
+        return pick(opts);
+      }
+      /* botConvo(v): a short talk between two bots, 2-4 lines, each answer after the other finished typing */
+      const BOT_CONVOS = [
+        ["anyone tanking tonight?", "i can tank", "inv me then", "sent"],
+        ["thornmaw or seer?", "seer, i need the xp", "ok go"],
+        ["how do u beat the doom", "run to the 3 runes", "oh thats it?", "yeah but fast"],
+        ["new here, any tips?", "do the elder quests", "and buy upgrades at the merchant", "ty!!"],
+        ["blackjack is rigged", "u just hit on 18 again didnt u", "...maybe"],
+        ["is healer fun?", "yeah, circle + empower feels great", "ok trying it"],
+        ["lost 200 gold at the barkeep", "lmaooo", "dont tell me"],
+        ["gg last raid", "gg! that bash timing was clean", "ty"],
+        ["what lv are u", "LV", "nice"],
+        ["the view from here is crazy", "the cloud sea is so pretty", "fr"],
+        ["who has the champions ring", "need 20 wins for that", "oof"],
+      ];
+      function botConvo(v) {
+        const o = HUBV.filter((b) => b.bot && !b.out && b !== v);
+        if (!o.length) return botSay(v, pick(BOT_LINES));
+        const w = pick(o), c0 = pick(BOT_CONVOS);
+        let at = 0;
+        c0.forEach((line, i) => {
+          const sp = i % 2 ? w : v, t = line.replace("LV", "lv " + (sp.lv || 1));
+          botSay(sp, t, at);
+          at += 4.5 + t.length / 3.5; /* after the last line is surely out */
+        });
       }
       /* a bot answers in a moment, like someone typing */
       function botReply(lines) {
@@ -3152,11 +3223,12 @@
         if (HUB_T < chatNext) return;
         /* like a real hub: long quiet stretches, then a line now and then. Only chatty ones start talk;
            a question or a raid call sometimes gets an answer from someone else a little later */
-        chatNext = HUB_T + rnd(12, 40); /* chatty hub: a line every 12-40 s */
+        chatNext = HUB_T + rnd(7, 22); /* chatty hub: a line every 7-22 s */
         const bots = HUBV.filter((v) => v.bot && v.chatty && !v.out && !(v.inn && S.tm - v.inn < ARRIVE));
         if (!bots.length) return;
-        const v = pick(bots),
-          t = Math.random() < 0.45 ? shopLine() : pick(BOT_LINES);
+        const v = pick(bots), roll = Math.random();
+        if (roll < 0.22) return botConvo(v);
+        const t = roll < 0.45 ? contextLine(v) : roll < 0.7 ? shopLine() : pick(BOT_LINES);
         botSay(v, t);
         if (/\?$|^lf|raid/.test(t) && Math.random() < 0.45) {
           const o = HUBV.filter((o) => o.bot && !o.out && o !== v),
