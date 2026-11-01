@@ -229,7 +229,7 @@ Built and tested (unit tests plus the `cheat`, `flood`, `econ`, `hphack`, `chat`
 
 - Autopilot (`P.auto`) is test/bench only: no player-facing toggle, keep it that way. raidSim clears `ai_ignoreDoom` after each run (it leaked and made the "you heal" bench lose every Doom). Remote members' dash boost no longer ticks twice. Phones work out grass wind every other frame.
 - Hub foreground (hubFore): blurred leafy branches in the bottom corners (nearest depth plane), sway, fade when you walk under them. The Doom wipe test now puts the runes out of reach (was flaky: the bot brushed them by chance).
-- Inventory (🎒 Bag button / I key, `invUI`): Armor / Weapon / Charm slots (= tank / dmg / util gear), bag, materials. Raid materials (`MATS`, `raidDrops`, `V.mat`): Rune Dust every raid, Seer -> Void Shard (+ rare Seer's Eye), Thornmaw -> Thornbark (+ rare Colossus Heart); shown on the victory screen. Crafting not built yet.
+- Inventory (🎒 Inventory button / I key, `invUI`): paper doll (silhouette + square slots: Helmet, Armor, Gloves, Weapon, Charm, Boots; `DOLL`). Armor / Weapon / Charm = tank / dmg / util gear; Helmet, Gloves, Boots wait for future items, bag, materials. Raid materials (`MATS`, `raidDrops`, `V.mat`): Rune Dust every raid, Seer -> Void Shard (+ rare Seer's Eye), Thornmaw -> Thornbark (+ rare Colossus Heart); shown on the victory screen. Crafting not built yet.
 - Dev tools: always on localhost; elsewhere `?dev=<code>` once, then remembered in that browser (`rb_dev`).
 - Bots talk more: `botAnswer` (tips, name mentions, greetings), `contextLine`, `botConvo` (2-4 line talks).
 
