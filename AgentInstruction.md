@@ -97,6 +97,12 @@ Small raid 3, large raid 6, hub and epic raid **12** (the most the game will eve
 - **Emotes:** all bought with gold.
 - **2-browser test (headless Chrome, real directory + WebRTC):** invite popup → party → Small Raid → won on both screens; Bravo's position gap ≤ 19 px, boss HP gap ≤ 0.4%; leader sent 1.35 KB/s, member 0.69 KB/s; no page errors (boss started at 25% HP).
 
+**Done (2026-11-01)**
+- Raiding players are hidden in the hub (`rz` flag: guest → master → others; newcomers told on join; master's own raid as slot 0).
+- Bots (DPS/healer) step into a nearby healer Circle, so the +25% helps the whole team.
+- **Internet play without a server (room mode):** on the public site the first player opens a room (URL gets `?room=CODE`, 🔗 button `#blk` copies the invite link); friends open the link and join as guests. Only the offer/answer (deflated SDP) goes through the free ntfy.sh relay (`ROOM_RELAY`, SSE + POST); game data stays peer to peer. It mimics the directory API inside `RBNet`, so game code is unchanged. Localhost without `?room=` still uses `npm run signaling`. Host reloading its own link stays host (`sessionStorage.rbRoom`). Limits: STUN only (no TURN), so strict networks may fail; room ends when the host leaves.
+- **2-browser room test (headless Chrome, real ntfy.sh relay, same PC):** guest connected in 2–3 s → invite → party → Small Raid → won on both screens, no page errors. Fresh saves are both Tank: set one to another class or the raid refuses to start.
+
 **Upcoming**
 - Random levels on the paid shop's preview characters.
 - Ultimates: healer revive (once per raid per healer), tank shield-all + boss stun, DPS Engine burst (spends stacks; damage scales with stacks).
@@ -104,7 +110,6 @@ Small raid 3, large raid 6, hub and epic raid **12** (the most the game will eve
 
 **Concerns**
 - Bench CPU is wall-clock time: a run over 80% of the phone budget is rerun and the faster run is kept (a busy PC once failed 1 check). Passes with 3 benches running at once. If a non-CPU check ever fails at random, that's a real bug.
-- Bots don't stand in Circles on purpose, so the +25% only helps humans for now.
 - A raid member's stats aren't audited during the fight (the leader trusts its own sim; members only send moves and casts).
 
 ## Earlier (2026-10-31)
@@ -141,8 +146,6 @@ Small raid 3, large raid 6, hub and epic raid **12** (the most the game will eve
 
 **Concerns**
 - Bot teams never die with Taunt held; humans will, but difficulty for real players is untested.
-- Lore tales and tips still talk about the Rune Warden and its old moves.
-- While a guest is in a raid, it stops sending hub positions (others see it frozen).
 - Earlier concerns still stand: no real-browser or phone test of the newer netcode.
 
 ## Verified (2026-10-31)

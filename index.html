@@ -943,7 +943,7 @@
     <div id="chat" hidden><div id="chlog"></div><div id="chrow"><input id="chin" maxlength="80" autocomplete="off" placeholder="Press Enter to chat" /><div id="emo"></div></div></div>
     <div id="btns">
       <button id="bd" class="sk"></button><button id="bu" class="sk"></button><button id="b0"></button><button id="b1"></button><button id="b2"></button
-      ><button id="bi" hidden>Enter arena</button><div id="tlbar"><span id="gp"><i class="coin"></i><b id="gn">0</b></span><button id="bt">🏷 Titles</button><button id="bsv" class="hb" title="Save code: export / import your progress">💾</button></div><button id="bq" class="hb">📜 Quests</button><button id="bg" class="hb">🛡 Guild</button><button id="bs" class="hb">✨ Shop</button><button id="bp" class="hb">👥 Party</button><div id="ptl" hidden></div><div id="netBadge" class="net-badge" title="Trying to join the first available hub">CONNECTING ONLINE…</div>
+      ><button id="bi" hidden>Enter arena</button><div id="tlbar"><span id="gp"><i class="coin"></i><b id="gn">0</b></span><button id="bt">🏷 Titles</button><button id="bsv" class="hb" title="Save code: export / import your progress">💾</button><button id="blk" class="hb" title="Copy the invite link: friends who open it join your room" hidden>🔗</button></div><button id="bq" class="hb">📜 Quests</button><button id="bg" class="hb">🛡 Guild</button><button id="bs" class="hb">✨ Shop</button><button id="bp" class="hb">👥 Party</button><div id="ptl" hidden></div>
     </div>
     <script>
       /* Browser networking block: inputs are hub leases, SDP and game messages; outputs are peer events.
@@ -969,7 +969,75 @@
           return new RTCPeerConnection({ iceServers });
         }
 
+        /* ---------- room mode: serverless internet play ----------
+           No hub service: the first player opens a room (?room=CODE link), friends open the same link and join as guests.
+           Only the WebRTC setup (offer/answer, deflated) passes through the free public ntfy.sh relay; game data is peer to peer.
+           It mimics the directory API below so the game code doesn't change. */
+        const ROOM_RELAY = "https://ntfy.sh/";
+        let room = null;
+        function roomFromLink() {
+          const m = /[?&]room=([a-z0-9]{8,24})(?:&|#|$)/.exec(location.search || "");
+          return m ? m[1] : "";
+        }
+        function roomToken() {
+          const b = new Uint8Array(24);
+          crypto.getRandomValues(b);
+          return [...b].map((x) => x.toString(16).padStart(2, "0")).join("");
+        }
+        async function packSdp(d) {
+          if (typeof CompressionStream == "undefined") return { t: d.type, s: d.sdp };
+          const buf = await new Response(new Blob([d.sdp]).stream().pipeThrough(new CompressionStream("deflate-raw"))).arrayBuffer();
+          let bin = "";
+          for (const x of new Uint8Array(buf)) bin += String.fromCharCode(x);
+          return { t: d.type, z: btoa(bin) };
+        }
+        async function unpackSdp(p) {
+          if (!p || !["offer", "answer"].includes(p.t)) return null;
+          if (typeof p.s == "string") return p.s.length <= 16000 ? { type: p.t, sdp: p.s } : null;
+          if (typeof p.z != "string" || p.z.length > 12000 || typeof DecompressionStream == "undefined") return null;
+          const bytes = Uint8Array.from(atob(p.z), (ch) => ch.charCodeAt(0));
+          const sdp = await new Response(new Blob([bytes]).stream().pipeThrough(new DecompressionStream("deflate-raw"))).text();
+          return sdp.length <= 16000 ? { type: p.t, sdp } : null;
+        }
+        function roomPost(body) {
+          return fetch(ROOM_RELAY + "runebound-" + room.code, { method: "POST", body: JSON.stringify(body), cache: "no-store" })
+            .then((r) => { if (!r.ok) throw new Error(`Room relay failed (${r.status}).`); return { ok: true }; });
+        }
+        async function roomGot(raw) {
+          let msg;
+          try { msg = JSON.parse(JSON.parse(raw).message); } catch { return; }
+          if (!room || !msg || typeof msg != "object" || typeof msg.peerId != "string" || msg.peerId.length != 48) return;
+          const description = await unpackSdp(msg.d).catch(() => null);
+          if (!description || !room) return;
+          if (room.role == "host" && msg.k == "offer") room.events.push({ type: "offer", peerId: msg.peerId, profile: msg.profile, description });
+          else if (room.role == "guest" && msg.k == "answer" && msg.peerId == room.peerId) room.events.push({ type: "answer", peerId: msg.peerId, description });
+          if (room.events.length > 40) room.events.shift();
+        }
+        function roomJoin(profile) {
+          const linked = roomFromLink(), mine = sessionStorage.getItem("rbRoom");
+          const role = linked && linked != mine ? "guest" : "host"; /* a host reloading its own room link stays host */
+          const code = linked || roomToken().slice(0, 12);
+          if (role == "host") {
+            sessionStorage.setItem("rbRoom", code);
+            if (!linked) history.replaceState(null, "", location.pathname + (location.search ? location.search + "&" : "?") + "room=" + code + location.hash);
+          }
+          room = { code, role, profile, peerId: role == "guest" ? roomToken() : "", events: [], es: null };
+          return new Promise((resolve, reject) => {
+            const es = (room.es = new EventSource(ROOM_RELAY + "runebound-" + code + "/sse"));
+            const timer = setTimeout(() => { es.close(); room = null; reject(new Error("Room relay unreachable.")); }, 10000);
+            es.onopen = () => {
+              clearTimeout(timer);
+              resolve({ role, hubId: 1, token: roomToken(), peerId: room.peerId || undefined, room: code,
+                reason: role == "host" ? "You opened a room: share the invite link." : "You joined a friend's room." });
+            };
+            es.onmessage = (e) => roomGot(e.data);
+          });
+        }
+        function roomInviteLink() {
+          return room ? location.origin + location.pathname + "?room=" + room.code : "";
+        }
         function configureDirectory(url) {
+          if (url === "room") { directoryUrl = "room"; return; }
           if (typeof url !== "string" || !url.trim()) throw new Error("Signaling directory URL is not configured.");
           const parsed = new URL(url.trim());
           if (!["https:", "http:"].includes(parsed.protocol) ||
@@ -997,6 +1065,7 @@
 
         async function directoryJoin(profile) {
           if (!profile || typeof profile !== "object") throw new Error("Player display profile is invalid.");
+          if (directoryUrl === "room") return { ...(directorySession = await roomJoin(profile)) };
           const result = await directoryRequest("/api/join", { profile });
           if (!["host", "guest"].includes(result.role) || !Number.isInteger(result.hubId) ||
               typeof result.token !== "string" || result.token.length !== 48 ||
@@ -1010,11 +1079,17 @@
 
         async function directoryPoll() {
           if (!directorySession) throw new Error("No active signaling directory session.");
+          if (room) return { events: room.events.splice(0, 20) };
           return directoryRequest("/api/poll", { token: directorySession.token });
         }
 
         function directorySend(path, data = {}) {
           if (!directorySession) throw new Error("No active signaling directory session.");
+          if (room) {
+            if (path == "/api/offer") return packSdp(data.description).then((d) => roomPost({ k: "offer", peerId: room.peerId, profile: room.profile, d }));
+            if (path == "/api/answer") return packSdp(data.description).then((d) => roomPost({ k: "answer", peerId: data.peerId, d }));
+            return Promise.resolve({ ok: true }); /* heartbeat, report, kick: nothing to tell a relay */
+          }
           return directoryRequest(path, { ...data, token: directorySession.token });
         }
 
@@ -1026,6 +1101,7 @@
           if (!directorySession) return;
           const session = directorySession;
           directorySession = null;
+          if (room) { room.es?.close(); room = null; return; }
           await directoryRequest("/api/leave", { token: session.token });
         }
 
@@ -1212,7 +1288,10 @@
           directoryHeartbeat,
           directoryLeave,
           directoryConfig,
-          defaultConfig: () => ({ signalingUrl: NETWORK_CONFIG.signalingUrl || hubFromLink() || "http://localhost:8787" /* no public hub yet: use the hub service on this PC (npm run signaling) */, iceServers: NETWORK_CONFIG.iceServers.map((server) => ({ ...server })) }),
+          roomInviteLink,
+          /* public site (or any ?room= link) uses room mode; localhost keeps the hub service (npm run signaling) for tests */
+          defaultConfig: () => ({ signalingUrl: NETWORK_CONFIG.signalingUrl || hubFromLink() ||
+            (roomFromLink() || !["localhost", "127.0.0.1"].includes(location.hostname) ? "room" : "http://localhost:8787"), iceServers: NETWORK_CONFIG.iceServers.map((server) => ({ ...server })) }),
           createPeerOffer,
           createPeerAnswer,
           acceptPeerAnswer,
@@ -1801,7 +1880,7 @@
       const NET = window.RBNet || null, NET_CONFIG = NET?.defaultConfig?.() || { signalingUrl: "", iceServers: [] };
       const NET_LOCAL_ID = "player-" + (window.crypto?.randomUUID ? window.crypto.randomUUID() : Math.random().toString(36).slice(2));
       let NET_ROLE = "", NET_LAST_SEND = 0, NET_STATUS = "Offline", NET_SESSION = null, NET_AUTO_STARTED = false, NET_CONNECTED = false, NET_DIRECTORY_STATE = "idle";
-      let NET_POLL_TIMER = 0, NET_HEARTBEAT_TIMER = 0, NET_GUEST_POLLING = false, NET_LAST_STATE = 0, NET_CONNECT_TIMER = 0, NET_BADGE_AT = 0, NET_SEQ = 0;
+      let NET_RZ = 0, NET_POLL_TIMER = 0, NET_HEARTBEAT_TIMER = 0, NET_GUEST_POLLING = false, NET_LAST_STATE = 0, NET_CONNECT_TIMER = 0, NET_BADGE_AT = 0, NET_SEQ = 0;
       /* optimistic networking: the guest shows its own action at once, then the host confirms it (ack) or undoes it (reject/correct) */
       const NET_PENDING = new Map(), NET_MOVES = [];
       /* wire format is kept small for many players: facing is 0-3, positions are whole pixels, players are slot numbers
@@ -1865,6 +1944,7 @@
           NET_ROLE = NET_SESSION.role;
           NET_DIRECTORY_STATE = "assigned";
           netPrepareHub(NET_ROLE);
+          if (NET_SESSION.room && NET_ROLE == "host") chatSys("Room open: press 🔗 to copy the invite link for friends");
           netStatus(`Assigned to hub ${NET_SESSION.hubId}; connecting…`);
           if (NET_ROLE == "guest") {
             const offer = await NET.createPeerOffer(NET_SESSION.peerId);
@@ -1932,7 +2012,7 @@
         try { await NET?.directoryLeave(); } catch (error) { netStatus("Could not leave lobby cleanly: " + error.message); }
         NET_SESSION = null;
         NET_ROLE = "";
-        NET_CONNECTED = false;
+        NET_CONNECTED = false; NET_RZ = 0;
         NET_AUTO_STARTED = false;
         NET_DIRECTORY_STATE = "idle";
         NET_CLIENTS.clear();
@@ -2218,6 +2298,8 @@
             netStatus("Connected players: " + (NET_CLIENTS.size + 1));
             netRoster(id);
             netTell({ type: "j", e: netEntry(v) }, id);
+            for (const o of HUBV) if (o.rz && !o.bot && o.netSlot != null) NET.send(id, { type: "rz", e: [o.netSlot, 1] });
+            if (S.sc == "arena") NET.send(id, { type: "rz", e: [0, 1] });
           } else if (message.type == "m") {
             /* the guest moves itself; the host accepts only a step it could have walked (or dashed) since the last one */
             const v = HUBV.find((item) => item.id == id && !item.bot && !item.out);
@@ -2246,6 +2328,9 @@
             if (performance.now() - (HUBV.find((o) => o.id == id)?.netAnsweredAt || 0) < 1000) return; /* one answer per second */
             const v = HUBV.find((o) => o.id == id && !o.bot);
             if (v) { v.netAnsweredAt = performance.now(); NET.send(id, netStats(id, message.n)); }
+          } else if (message.type == "rz" && (message.on === 0 || message.on === 1)) {
+            const v = HUBV.find((o) => o.id == id && !o.bot && !o.out);
+            if (v && !!v.rz != !!message.on) { v.rz = message.on; netTell({ type: "rz", e: [v.netSlot, message.on] }, id); }
           } else if (message.type == "a") {
             const v = HUBV.find((o) => o.id == id && !o.bot);
             if (!v?.netAud) return;
@@ -2298,6 +2383,9 @@
             const pid = NET_SLOT_IDS.get(message.s);
             NET_SLOT_IDS.delete(message.s); NET_SLOT_INFO.delete(message.s); NET_SLOT_LAST.delete(message.s); NET_SLOT_POS.delete(message.s);
             if (pid && pid != NET_LOCAL_ID) hubLeave(pid);
+          } else if (message.type == "rz" && Array.isArray(message.e) && message.e.length == 2) {
+            const v = HUBV.find((o) => o.id == NET_SLOT_IDS.get(message.e[0]));
+            if (v && (message.e[1] === 0 || message.e[1] === 1)) v.rz = message.e[1];
           } else if (message.type == "u" && Array.isArray(message.e) && message.e.length == 3) {
             const [slot, lv, spd] = message.e, info = NET_SLOT_INFO.get(slot), v = HUBV.find((o) => o.id == NET_SLOT_IDS.get(slot));
             if (!info || !Number.isInteger(lv) || lv < 1 || lv > 60 || !Number.isFinite(spd) || spd < 1 || spd > 1.3) return;
@@ -2402,6 +2490,11 @@
       function netStep() {
         const now = performance.now();
         if (now - NET_BADGE_AT > 500) { NET_BADGE_AT = now; netBadgeUpdate(); }
+        const rz = S.sc == "arena" ? 1 : 0; /* in a raid: the others hide you in the hub instead of seeing you frozen */
+        if (NET && NET.peerIds().length && (NET_ROLE == "host" || NET_CONNECTED) && rz != NET_RZ) {
+          NET_RZ = rz;
+          if (NET_ROLE == "host") netTell({ type: "rz", e: [0, rz] }); else NET.send(NET_SESSION?.peerId, { type: "rz", on: rz });
+        }
         if (!NET || !NET.peerIds().length || !P || S.sc != "hub") return;
         if (NET_ROLE == "host") for (const v of HUBV) { if (!v.bot && v.netAud && !v.netKicked) netAuditTick(v.id, v.netAud, now, (n, why) => netStrike(v, n, why)); }
         else if (NET_CONNECTED) netAuditTick(NET_SESSION?.peerId, NET_HOST_AUD || (NET_HOST_AUD = newAudit(now)), now, hostStrike);
@@ -4308,7 +4401,7 @@
           if (p.cls == "tank" ? hurt >= 2 || S.b.enr > 0 : p.cls == "heal" ? !p.rev && S.ps.some((a) => a.hp <= 0) : (p.eng || 1) >= ULT.dps.min && (ultDmg(p) * aDm(p) >= S.b.hp || p.eng >= 4)) ult(p);
         }
         const b = S.b, doomMe = b.doom && b.doom.id == p.id && !p.ai_ignoreDoom; /* ai_ignoreDoom: tests of a failed Doom */
-        let mx = 0, my = 0;
+        let mx = 0, my = 0, zc;
         const danger = S.ao.find((a) => a.t < 1.25 && inTele(p, a, PR + 8));
         if (danger && !(doomMe && b.doom.t < 4)) {
           if (danger.ln) { const nx = -Math.sin(danger.a), ny = Math.cos(danger.a), side = (p.x - danger.x) * nx + (p.y - danger.y) * ny >= 0 ? 1 : -1; mx = nx * side; my = ny * side; }
@@ -4317,6 +4410,9 @@
         } else if (doomMe) {
           const o = b.doom.orbs.filter((o) => !o.got).sort((x, y) => dist(p, x) - dist(p, y))[0];
           if (o) { const d = dist(p, o) || 1; mx = (o.x - p.x) / d; my = (o.y - p.y) / d; }
+        } else if ((zc = p.cls != "tank" && (S.zo || []).filter((o) => o.l > 0.8 && dist(p, o) < 260).sort((x, y) => dist(p, x) - dist(p, y))[0])) {
+          const d = dist(p, zc) || 1; /* a healer's Circle nearby: step in (+25% damage) and hold there */
+          if (d > zc.r * 0.55) { mx = (zc.x - p.x) / d; my = (zc.y - p.y) / d; }
         } else {
           const d = dist(p, b) || 1, want = p.cls == "tank" ? b.r + 26 : p.cls == "heal" ? 150 : 175;
           if (d > want + 12) { mx = (b.x - p.x) / d; my = (b.y - p.y) / d; }
@@ -4635,7 +4731,7 @@
           }
         if (hit) return hit;
         /* other players (bots and real ones): walk up to them and press interact to invite */
-        for (const v of HUBV) if (!v.out && !(v.inn && S.tm - v.inn < ARRIVE)) { const d = dist(P, v); if (d < 36 && d < best) (best = d), (hit = "player:" + v.id); }
+        for (const v of HUBV) if (!v.out && !v.rz && !(v.inn && S.tm - v.inn < ARRIVE)) { const d = dist(P, v); if (d < 36 && d < best) (best = d), (hit = "player:" + v.id); }
         return hit;
       }
       function inter() {
@@ -5826,6 +5922,13 @@
         e.preventDefault();
         if (P && !dlgOpen()) { saveUI(); sfx("ui"); }
       });
+      $("blk").addEventListener("pointerdown", (e) => {
+        e.preventDefault();
+        const link = NET?.roomInviteLink?.();
+        if (!link) return;
+        navigator.clipboard?.writeText(link).then(() => toast("Invite link copied: send it to friends"), () => chatSys("Invite link: " + link));
+        sfx("ui");
+      });
       $("bt").addEventListener("pointerdown", (e) => {
         e.preventDefault();
         if (P && !dlgOpen()) { $("dlg").hidden = false; titleUI(); sfx("ui"); }
@@ -5932,6 +6035,7 @@
         $("chat").hidden = S.sc != "hub" || !P;
         $("bt").hidden = tut() < TUT_DONE; /* Titles button appears after the tutorial */
         $("bsv").hidden = tut() < TUT_DONE;
+        $("blk").hidden = !NET_SESSION?.room || NET_ROLE != "host"; /* room host: copy the invite link */
         $("tlbar").hidden = !P || S.sc == "lobby";
         if ($("gn").textContent != V.gold) $("gn").textContent = V.gold;
         $("bq").hidden = $("bg").hidden = $("bs").hidden = $("bp").hidden = tut() < TUT_DONE || S.sc != "hub";
@@ -9728,7 +9832,7 @@
         c.globalAlpha = 1;
         RINGS = RINGS.filter((r) => r.t < 0.6);
         /* hub: you and the visitors, drawn top to bottom so whoever stands lower overlaps the one behind */
-        const who = S.sc == "hub" ? S.ps.concat(HUBV).sort((a, b) => a.y - b.y) : S.ps;
+        const who = S.sc == "hub" ? S.ps.concat(HUBV.filter((v) => !v.rz)).sort((a, b) => a.y - b.y) : S.ps;
         for (const p of who) drawPlayer(p, dt);
         drawVX(dt);
         c.save();

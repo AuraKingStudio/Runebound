@@ -147,6 +147,7 @@ const remote=T.HUBV().find(v=>v.netClientId=='player-test1234'),remoteX=remote&&
 ok(remote&&!T.HUBV().some(v=>v.bot),'network hub: real guest joins without simulated bot filler');
 ok(fakeBroadcast.some(x=>x.msg.type=='r'&&x.msg.p.length==2),'network hub: host sends the roster when a guest joins');
 T.netReceive('peer-one',{type:'m',x:'far',y:0,f:3,d:0,s:1});ok(remote.netX==remoteX,'network hub: rejects malformed movement');
+T.netReceive('peer-one',{type:'rz',on:1});ok(remote.rz===1,'network hub: a guest in a raid is hidden in the hub');T.netReceive('peer-one',{type:'rz',on:'x'});ok(remote.rz===1,'network hub: rejects a malformed raid flag');T.netReceive('peer-one',{type:'rz',on:0});ok(remote.rz===0,'network hub: a guest back from a raid shows again');
 netClock+=100;fakeBroadcast=[];T.netReceive('peer-one',{type:'m',x:remoteX+10,y:remote.netY,f:3,d:0,s:2});
 ok(Math.abs(remote.netX-(remoteX+10))<1e-6&&!fakeBroadcast.some(x=>x.msg.type=='c'),'network hub: host accepts a walkable guest step without correcting');
 netClock+=100;fakeBroadcast=[];const beforeX=remote.netX;T.netReceive('peer-one',{type:'m',x:beforeX+400,y:remote.netY,f:3,d:0,s:3});
@@ -202,6 +203,7 @@ function raidSim(key,cls,setup){
  T.taunt(tank);ok(b.tt>0&&b.tg==tank.id,'tank: Taunt holds the boss');
  b.weak=3;tank.x=b.x;tank.y=b.y+30;T.bash(tank);ok(b.brk>0&&b.stun>=4&&b.weak==0,'tank: Shield Bash in the weak window breaks poise (+50% damage)');
  {const d=T.S().ps.find(p=>p.cls=='dps');d.x=100;d.y=100;b.brk=0;T.S().zo=[];let h=b.hp;T.hitB(10,d);const out=h-b.hp;T.S().zo=[{x:100,y:100,r:90,l:5,t:1}];h=b.hp;T.hitB(10,d);ok(Math.abs((h-b.hp)/out-T.ZONE_DMG)<1e-6&&T.ZONE_DMG>1,'healer: allies standing in the Circle hit harder');}
+ {const d=T.S().ps.find(p=>p.cls=='dps');T.S().ao=[];b.doom=null;d.x=b.x+200;d.y=b.y;T.S().zo=[{x:b.x+60,y:b.y+80,r:90,l:5,t:0}];T.raidAI(d,0.016);const z=T.S().zo[0];ok(d.dx*(z.x-d.x)+d.dy*(z.y-d.y)>0,'bots: step into a healer Circle');T.S().zo=[];}
  ok(T.DASH.dps.d>T.DASH.heal.d&&T.DASH.heal.d>T.DASH.tank.d,'dash: DPS longest, healer normal, tank shortest');
  ok(T.inTele({x:100,y:0},{ln:1,x:0,y:0,a:0,len:200,w:40})&&!T.inTele({x:100,y:40},{ln:1,x:0,y:0,a:0,len:200,w:40}),'boss: line telegraphs hit only inside the lane');
  T.S().res=0.01;T.step(0.02);
@@ -372,7 +374,8 @@ async function networkTests(){
  const createContext=()=>{const c={window:null,RTCPeerConnection:Peer,crypto:require('crypto').webcrypto,TextEncoder,TextDecoder,Uint8Array,Map,Promise,Error,Date,JSON,Array,String,Math,atob,btoa,setTimeout,clearTimeout};c.window=c;vm.createContext(c);vm.runInContext(NETSRC,c);return c;};
  const linkHub=(search,hostname='aurakingstudio.github.io')=>{const c={window:null,location:{search,hostname},crypto:require('crypto').webcrypto,URL,Map,Error,Date,JSON,Array,String,Math};c.window=c;vm.createContext(c);vm.runInContext(NETSRC,c);return c.RBNet.defaultConfig().signalingUrl;};
  ok(linkHub('?hub=https://abc-def.trycloudflare.com')=='https://abc-def.trycloudflare.com','network: ?hub= accepts an https Quick Tunnel address');
- ok(linkHub('?hub=https://evil.example.com')=='http://localhost:8787'&&linkHub('?hub=http://abc.trycloudflare.com')=='http://localhost:8787'&&linkHub('?hub=javascript:alert(1)')=='http://localhost:8787','network: ?hub= rejects other hosts, http and scripts (falls back to the local hub)');
+ ok(linkHub('?hub=https://evil.example.com')=='room'&&linkHub('?hub=http://abc.trycloudflare.com')=='room'&&linkHub('?hub=javascript:alert(1)','localhost')=='http://localhost:8787','network: ?hub= rejects other hosts, http and scripts (public site falls back to room mode, localhost to the local hub)');
+ ok(linkHub('?room=abcdef123456','localhost')=='room'&&linkHub('?room=BAD','localhost')=='http://localhost:8787','network: ?room= links use serverless room mode');
  ok(linkHub('','localhost')=='http://localhost:8787','network: localhost uses the local hub directory');
  const host=createContext(),h=host.RBNet;let received=0,errors=0;
  h.setHandlers({onMessage:(_id,m)=>{if(m.type=='test')received++;},onError:()=>errors++});
