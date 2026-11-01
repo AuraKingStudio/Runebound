@@ -1066,7 +1066,7 @@
         text-shadow: 0 2px 0 #000, 0 0 3px #000, 0 0 12px #f0c35a88; }
       #gp .coin { width: 24px; height: 24px; }
       #topc { position: absolute; top: 1.5%; left: 50%; transform: translateX(-50%); display: flex; gap: 12px; pointer-events: none; }
-      #btns #topc button { position: static; pointer-events: auto; height: 50px; padding: 0 22px 0 30px; font-size: 16px; }
+      #btns #topc button { position: static; pointer-events: auto; height: 50px; padding: 0 18px 0 28px; font-size: 15px; }
       #btns #topc .hb::before { left: 11px; width: 8px; height: 8px; }
       #mlbar { position: absolute; left: 1.4%; top: 50%; transform: translateY(-50%); display: flex; flex-direction: column; gap: 10px; pointer-events: none; }
       #btns #mlbar button { position: static; pointer-events: auto; height: 32px; padding: 0 10px; width: auto; font-size: 12px; }
@@ -1294,7 +1294,7 @@
     <div id="chat" hidden><div id="chlog"></div><div id="chrow"><input id="chin" maxlength="80" autocomplete="off" placeholder="Press Enter to chat" /><div id="emo"></div></div></div>
     <div id="btns">
       <button id="bd" class="sk"></button><button id="bu" class="sk"></button><button id="b0"></button><button id="b1"></button><button id="b2"></button
-      ><button id="bi" hidden>Enter arena</button><button id="bil" class="bic" hidden onclick="invCycle(-1)">◀</button><button id="bir" class="bic" hidden onclick="invCycle(1)">▶</button><div id="tlbar"><span id="gp"><i class="coin"></i><b id="gn">0</b></span></div><div id="mlbar"><button id="bset" data-ic="⚙️" onclick="setOpen()" title="Settings">⚙️ Settings</button><button id="binv" data-ic="🎒" onclick="invOpen()">🎒 Inventory</button><button id="bt" data-ic="🎖️">🎖️ Titles</button><button id="bfb" data-ic="💬" onclick="fbOpen()" title="Tell us what you think, or report a bug">💬 Feedback</button><button id="blk" data-ic="🔗" class="hb" title="Copy the lobby link: friends who open it join you" hidden>🔗 Copy ID</button></div><div id="topc"><button id="bq" data-ic="📜" class="hb">📜 Quests</button><button id="bg" class="hb">🛡 Guild</button><button id="bs" data-ic="✨" class="hb">✨ Shop</button><button id="bp" data-ic="👥" class="hb">👥 Party</button></div><div id="ptl" hidden></div>
+      ><button id="bi" hidden>Enter arena</button><button id="bil" class="bic" hidden onclick="invCycle(-1)">◀</button><button id="bir" class="bic" hidden onclick="invCycle(1)">▶</button><div id="tlbar"><span id="gp"><i class="coin"></i><b id="gn">0</b></span></div><div id="mlbar"><button id="bt" data-ic="🎖️">🎖️ Titles</button><button id="bfb" data-ic="💬" onclick="fbOpen()" title="Tell us what you think, or report a bug">💬 Feedback</button><button id="blk" data-ic="🔗" class="hb" title="Copy the lobby link: friends who open it join you" hidden>🔗 Copy ID</button></div><div id="topc"><button id="bq" data-ic="📜" class="hb">📜 Quests</button><button id="bg" class="hb">🛡 Guild</button><button id="bs" data-ic="✨" class="hb">✨ Shop</button><button id="bp" data-ic="👥" class="hb">👥 Party</button><button id="binv" data-ic="🎒" class="hb" onclick="invOpen()">🎒 Inventory</button><button id="bset" data-ic="⚙️" class="hb" onclick="setOpen()" title="Settings">⚙️ Settings</button></div><div id="ptl" hidden></div>
     </div>
     <script>
       /* Browser networking block: inputs are hub leases, SDP and game messages; outputs are peer events.
@@ -7077,6 +7077,7 @@
         $("chat").hidden = S.sc != "hub" || !P;
         $("bt").hidden = true; /* Titles, Feedback and Copy ID moved into Settings (cleaner HUD) */
         $("binv").hidden = tut() < TUT_DONE || S.sc != "hub";
+        $("bset").hidden = !P;
         $("bfb").hidden = true;
         $("blk").hidden = true;
         $("tlbar").hidden = !P || S.sc == "lobby";
@@ -12046,7 +12047,7 @@
             c.fillText(BL[0] + " blessing", 14, 62);
             c.restore();
           }
-          if (tut() >= TUT_DONE) qTrack(ar ? 62 : 12);
+          if (tut() >= TUT_DONE) qTrack(ar ? 62 : document.body.classList && document.body.classList.contains("ph") ? 98 : 72); /* below the top button bar */
         }
         if (ar && b) {
           const D = b.def || BOSSES.seer;
