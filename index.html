@@ -9485,18 +9485,6 @@
           c.quadraticCurveTo(cx, top + 26 + b * 13, cx + 70 - b * 10, top + 18 + b * 12);
           c.stroke();
         }
-        /* hanging roots and mossy vines, swaying a little */
-        for (let k = 0; k < 9; k++) {
-          const rx0 = cx - 110 + k * 26,
-            len = 18 + ((k * 37) % 26),
-            sw = Math.sin(t * 0.8 + k) * 2;
-          c.strokeStyle = k % 2 ? "#5a4330" : "#4f8f3f";
-          c.lineWidth = 1.2;
-          c.beginPath();
-          c.moveTo(rx0, top + 30 + ((k * 13) % 20));
-          c.quadraticCurveTo(rx0 + sw, top + 40 + len * 0.6, rx0 + sw * 1.5, top + 34 + len + ((k * 13) % 20));
-          c.stroke();
-        }
         c.fillStyle = "#5c9e45";
         for (const [mx, my, mw] of [[-60, 10, 14], [40, 4, 12], [-10, 40, 9], [90, -4, 10]]) {
           c.beginPath();
