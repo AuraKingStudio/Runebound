@@ -201,9 +201,11 @@ function raidSim(key,cls,setup){
 {
  T.devHub();T.toArena('small');const b=T.S().b,tank=T.S().ps.find(p=>p.cls=='tank');
  T.taunt(tank);ok(b.tt>0&&b.tg==tank.id,'tank: Taunt holds the boss');
+ ok(b.tt==6&&T.S().ps.find(p=>p.cls=='tank').cd!=null,'tank: Taunt holds 6 s (cooldown 10 s leaves a gap)');{const S=T.S(),d=S.ps.find(p=>p.cls=='dps');b.tt=0;b.thr={};b.thr[d.id]=500;b.thr[tank.id]=100;b.weak=0;b.stun=0;b.fl=0;T.arena(0.016);ok(b.cur!=tank.id,'tank: an idle tank loses the boss when Taunt ends');b.thr[tank.id]=2000;b.tAt=T.S().at;T.arena(0.016);ok(b.cur==tank.id,'tank: Strikes (3x threat) keep the boss after Taunt');b.tAt=T.S().at-20;T.arena(0.016);ok(b.cur!=tank.id,'tank: threat alone never holds the boss without a recent Taunt');b.sun=4;b.sunId=tank.id;b.weak=0;T.bash(tank);ok(b.sun==0,'tank: Shield Bash clears Sunder');b.stun=0;}
  b.weak=3;tank.x=b.x;tank.y=b.y+30;T.bash(tank);ok(b.brk>0&&b.stun>=4&&b.weak==0,'tank: Shield Bash in the weak window breaks poise (+50% damage)');
  {const d=T.S().ps.find(p=>p.cls=='dps');d.x=100;d.y=100;b.brk=0;T.S().zo=[];let h=b.hp;T.hitB(10,d);const out=h-b.hp;T.S().zo=[{x:100,y:100,r:90,l:5,t:1}];h=b.hp;T.hitB(10,d);ok(Math.abs((h-b.hp)/out-T.ZONE_DMG)<1e-6&&T.ZONE_DMG>1,'healer: allies standing in the Circle hit harder');}
  {const d=T.S().ps.find(p=>p.cls=='dps');T.S().ao=[];b.doom=null;d.x=b.x+200;d.y=b.y;T.S().zo=[{x:b.x+60,y:b.y+80,r:90,l:5,t:0}];T.raidAI(d,0.016);const z=T.S().zo[0];ok(d.dx*(z.x-d.x)+d.dy*(z.y-d.y)>0,'bots: step into a healer Circle');T.S().zo=[];}
+ {T.devHub();T.toArena('small');const S=T.S(),b=S.b;b.tt=0;b.weak=0;b.stun=0;b.fl=0;b.seek=0.01;S.ao=[];for(const p of S.ps)p.auto=0;let shot=0;for(let i=0;i<4&&!shot;i++){T.arena(0.016);shot=(b.bolts||[]).length;}ok(shot>0,'boss: Seeker Bolt flies as a visible orb');const t=S.ps.find(p=>p.id==b.bolts[0].id),h=t.hp;let n=0;while((b.bolts||[]).length&&n++<200)T.arena(0.016);ok(t.hp<h||t.sh>0,'boss: Seeker Bolt hurts its target on arrival');}
  ok(T.DASH.dps.d>T.DASH.heal.d&&T.DASH.heal.d>T.DASH.tank.d,'dash: DPS longest, healer normal, tank shortest');
  ok(T.inTele({x:100,y:0},{ln:1,x:0,y:0,a:0,len:200,w:40})&&!T.inTele({x:100,y:40},{ln:1,x:0,y:0,a:0,len:200,w:40}),'boss: line telegraphs hit only inside the lane');
  T.S().res=0.01;T.step(0.02);

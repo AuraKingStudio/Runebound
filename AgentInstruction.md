@@ -100,8 +100,22 @@ Small raid 3, large raid 6, hub and epic raid **12** (the most the game will eve
 **Done (2026-11-01)**
 - Raiding players are hidden in the hub (`rz` flag: guest → master → others; newcomers told on join; master's own raid as slot 0).
 - Bots (DPS/healer) step into a nearby healer Circle, so the +25% helps the whole team.
+- Party frames show each member's ultimate meter (charging / ready / used); DPS show ⚙xN Engine stacks under their feet.
+- Seeker Bolt is a visible homing orb (`b.bolts`, damage on arrival) with a reticle on the target 0.6 s before it fires. Leader-side only: raid members' puppet view doesn't get `b.bolts`/`b.seek` yet (netcode agent).
+- Tank rework: Taunt holds 6 s / cooldown 10 s; Taunt puts the tank on top of threat; tank damage draws 3x threat, and the boss stays on the tank in the gap only if it kept the lead (no Seeker Bolts while on a tank). Sunder: each blow on the same tank +12% damage taken (max 5), cleared by Shield Bash or 4 s without blows.
+- Removed the hidden `#netBadge` element (no lobby status text in the UI).
 - **Internet play without a server (room mode):** on the public site the first player opens a room (URL gets `?room=CODE`, 🔗 button `#blk` copies the invite link); friends open the link and join as guests. Only the offer/answer (deflated SDP) goes through the free ntfy.sh relay (`ROOM_RELAY`, SSE + POST); game data stays peer to peer. It mimics the directory API inside `RBNet`, so game code is unchanged. Localhost without `?room=` still uses `npm run signaling`. Host reloading its own link stays host (`sessionStorage.rbRoom`). Limits: STUN only (no TURN), so strict networks may fail; room ends when the host leaves.
 - **2-browser room test (headless Chrome, real ntfy.sh relay, same PC):** guest connected in 2–3 s → invite → party → Small Raid → won on both screens, no page errors. Fresh saves are both Tank: set one to another class or the raid refuses to start.
+
+**Done (2026-11-01, later)**
+- Healer: Empower (skill 2, replaces Heal; `EMP`, `buffTarget`, `empower`): tank shield + next stun ×1.5 (`stunUp`), DPS +15% dmg / faster attacks (`emp`), healer small shield, self heal when alone or under 40%. Target = ally nearest the mouse (`mouseAlly`, sent as `ra.t`), dashed gold ring shows it. Auto-Resurrect on death when ready (`selfRes`). Dash through allies heals 25 (`DASH_HEAL`, leader-side only).
+- Tank Strike is a 140° frontal cleave (`CLEAVE`, `cleaveHits`); bots turn to the boss first.
+- DPS: Rapid Fire hits add Engine time (`ENGINE.volley`); Heavy Shot knocks the boss back (`HEAVY_KB`); dash = 30% faster attacks for 3 s (`RUSH`).
+- All dashes have i-frames; touching the boss shoves you out and deals 8 (`BUMP`, not to its current target).
+- Boss HP +~17% (Seer 20000, Thornmaw 40000) so raids stay ≥ 90 s.
+- Quests: added Raid Veteran (5 wins) and Sharpen Your Craft (5 skill levels) before Colossus Slayer; `ok()` goals checked in `save()`.
+- Fix: left click on the touch joystick zone with a mouse now attacks (was opening the virtual stick).
+- Known: bench "small, you heal" (autopilot P as healer) loses 0%; it already failed before these changes.
 
 **Upcoming**
 - Random levels on the paid shop's preview characters.
@@ -109,6 +123,7 @@ Small raid 3, large raid 6, hub and epic raid **12** (the most the game will eve
 - Epic raid (12) content; a phone as master in a raid.
 
 **Concerns**
+- Bench: healer-as-you runs lose to the Doom (small 0%, large ~60%); same on the previous commit, so it's the autopilot healer, not the tank change. A no-Taunt team always wipes: threat holds the boss only within 10.5 s of the tank's last Taunt.
 - Bench CPU is wall-clock time: a run over 80% of the phone budget is rerun and the faster run is kept (a busy PC once failed 1 check). Passes with 3 benches running at once. If a non-CPU check ever fails at random, that's a real bug.
 - A raid member's stats aren't audited during the fight (the leader trusts its own sim; members only send moves and casts).
 
