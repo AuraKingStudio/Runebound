@@ -3607,9 +3607,9 @@
       };
       const BOSSES = {
         seer: { n: "The Hollow Seer", hp: 20000, r: 34, sp: 34, atk: 40, atkT: 1.5, body: "#1b1233", ring: ["#a78bff", "#ff4d8d"], eye: ["#7aa2ff", "#ff4d8d"],
-          weak: [0.75, 0.35], doom: 0.6, spells: [["slam", "hex"], ["slam", "hex", "rain"]] },
+          weak: [0.75, 0.35], doom: 0.6, spells: [["slam", "marks", "hex", "cross"], ["slam", "ring", "hex", "marks", "rain", "cross"]] },
         thornmaw: { n: "Thornmaw Colossus", hp: 40000, r: 44, sp: 30, atk: 44, atkT: 1.6, body: "#1d2a14", ring: ["#9bd16a", "#ff7a3c"], eye: ["#d8ff7a", "#ff7a3c"],
-          horns: 1, cleave: 70, weak: [0.75, 0.35], doom: 0.6, spells: [["split", "nova"], ["split", "nova", "charge"]] },
+          horns: 1, cleave: 70, weak: [0.75, 0.35], doom: 0.6, spells: [["split", "marks", "nova", "cross"], ["split", "ring", "nova", "marks", "charge", "cross"]] },
       };
       /* SPELLS[name](b, f, tg): starts a telegraph (S.ao) and sets the next cast delay. f = phase/enrage damage factor.
          Circle: {x, y, r}. Line: {ln: 1, x, y, a (angle), len, w}. t = seconds until it lands, m = full telegraph time. */
@@ -3619,9 +3619,33 @@
         rain: (b, f) => { for (let i = 0; i < 5; i++) { const a = rnd(0, 6.28), r = rnd(0, ARENA.r * 0.85); S.ao.push({ x: ARENA.x + Math.cos(a) * r, y: ARENA.y + Math.sin(a) * r, r: 40, t: 1.4, m: 1.4, d: 30 * f, n: "Void Rain" }); } b.cd = 2.4; },
         split: (b, f, tg) => { S.ao.push({ ln: 1, x: b.x, y: b.y, a: Math.atan2(tg.y - b.y, tg.x - b.x), len: 340, w: 46, t: 1.4, m: 1.4, d: 38 * f, n: "Earthsplitter" }); b.cd = 2.6; },
         nova: (b, f) => { for (let i = 0; i < 8; i++) { const a = (i / 8) * 6.283; S.ao.push({ x: b.x + Math.cos(a) * 120, y: b.y + Math.sin(a) * 120, r: 34, t: 1.5, m: 1.5, d: 30 * f, n: "Thorn Nova" }); } b.cd = 2.8; },
+        /* the 3 dodge patterns aimed at healers and DPS (squishy: anyone but a tank) */
+        marks: (b, f) => { /* Hunting Marks: 4 circles land one after another on the target's spot at each drop: keep moving */
+          const t = squishy();
+          for (let i = 0; i < 4; i++) bossLater(b, i * 0.45, () => t.hp > 0 && S.ao.push({ x: t.x, y: t.y, r: 40, t: 0.85, m: 0.85, d: 22 * f, n: "Hunting Marks" }));
+          b.cd = 3.2;
+        },
+        cross: (b, f) => { /* Cross Burst: a plus on the target: step out diagonally */
+          const t = squishy();
+          for (let i = 0; i < 4; i++) S.ao.push({ ln: 1, x: t.x, y: t.y, a: i * 1.5708 + (b.ph == 2 ? 0.785 : 0), len: 260, w: 40, t: 1.3, m: 1.3, d: 26 * f, n: "Cross Burst" });
+          S.ao.push({ x: t.x, y: t.y, r: 30, t: 1.3, m: 1.3, d: 0.01, n: "Cross Burst" }); /* center mark (the lines already hit there) */
+          b.cd = 2.8;
+        },
+        ring: (b, f) => { /* Ring of Ruin: a blast at the center and a ring of circles with one gap: run out through it or dash across */
+          const t = squishy(), gap = rnd(0, 6.283), n = 12;
+          S.ao.push({ x: t.x, y: t.y, r: 64, t: 1.6, m: 1.6, d: 30 * f, n: "Ring of Ruin" });
+          for (let i = 0; i < n; i++) {
+            const a = gap + ((i + 1) / (n + 1)) * 6.283;
+            S.ao.push({ x: t.x + Math.cos(a) * 112, y: t.y + Math.sin(a) * 112, r: 32, t: 1.6, m: 1.6, d: 22 * f, n: "Ring of Ruin" });
+          }
+          b.cd = 3.4;
+        },
         charge: (b, f) => { const far = raidAlive().reduce((m, p) => (dist(p, b) > dist(m, b) ? p : m)); S.ao.push({ ln: 1, x: b.x, y: b.y, a: Math.atan2(far.y - b.y, far.x - b.x), len: Math.min(320, dist(far, b) + 30), w: 54, t: 1.2, m: 1.2, d: 40 * f, n: "Rampage", charge: 1 }); b.cd = 3.2; },
       };
-      const SPELL_NAME = { slam: "Rune Slam", hex: "Hex", rain: "Void Rain", split: "Earthsplitter", nova: "Thorn Nova", charge: "Rampage" };
+      /* squishy(): a random living healer or DPS (anyone if none); bossLater(b, s, fn): run fn after s seconds of fight time */
+      const squishy = () => pick(raidAlive().filter((p) => p.cls != "tank")) || raidAlive()[0];
+      function bossLater(b, s, fn) { if (s <= 0) return fn(); (b.q || (b.q = [])).push({ t: s, f: fn }); }
+      const SPELL_NAME = { marks: "Hunting Marks", cross: "Cross Burst", ring: "Ring of Ruin", slam: "Rune Slam", hex: "Hex", rain: "Void Rain", split: "Earthsplitter", nova: "Thorn Nova", charge: "Rampage" };
       /* ENGINE (DPS passive): attack speed grows forever while the DPS is alive: x(1 + seconds / ENGINE.t). Cooldowns shrink by
          that factor and Heavy Shot / Rapid Fire damage grows with it. Around 2-3 minutes the DPS outscales the boss. */
       /* healer Empower: tank gets a shield, DPS gets damage + fire rate, another healer gets a small shield; cast with nobody near = self heal */
@@ -4633,6 +4657,7 @@
         }
         S.zo = S.zo.filter((z) => z.l > 0);
         const f = (b.ph == 2 ? 1.25 : 1) * (b.enr > 0 ? 1.3 : 1);
+        if (b.q) { for (const e of b.q) if ((e.t -= dt) <= 0) e.f(); b.q = b.q.filter((e) => e.t > 0); } /* delayed spell parts */
         for (const a of S.ao) {
           a.t -= dt;
           if (a.t <= 0) {
