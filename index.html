@@ -2070,10 +2070,10 @@
         $("dp").className = "pn";
         const bag = V.eq?.bag || [], on = V.eq?.on || {};
         const sq = ([k, lab, ghost, lx, ty]) => {
-          const it = bag.find((b) => b.id == on[k]), col = it ? TIERS[it.r][1] : "#6b5a3e";
+          const it = bag.find((b) => b.id == on[k]), col = it ? TIERS[it.r][1] : "#c9a45a";
           const tip = it ? `${TIERS[it.r][0]} ${EQ_N[it.k]}: ${EQ_D[it.k](eqV(it))}. Click to take off.` : SLOT_N[k] ? `${lab}: empty` : `${lab}: coming soon`;
           return `<div title="${tip}" ${it ? `onclick="invWear('${it.id}')"` : ""} style="position:absolute;left:${lx}%;top:${ty}%;transform:translate(-50%,-50%);width:58px;height:58px;border-radius:8px;
-            border:2px solid ${col};background:${it ? `radial-gradient(circle at 50% 40%, ${col}33, #0b1218 70%)` : "#0b121899"};box-shadow:${it ? `0 0 10px ${col}66` : "inset 0 0 8px #000"};cursor:${it ? "pointer" : "default"}">
+            border:1px solid ${it ? col : "var(--ln)"};border-bottom:3px solid ${col};background:linear-gradient(180deg, color-mix(in srgb, ${col} ${it ? 22 : 8}%, transparent), rgba(0,0,0,.18));box-shadow:${it ? `0 0 10px ${col}55` : "none"};cursor:${it ? "pointer" : "default"}">
             <svg viewBox="-20 -20 40 40" width="54" height="54"><g fill="none" stroke="${col}" stroke-width="2.4" stroke-linecap="round" stroke-linejoin="round" opacity="${it ? 1 : 0.45}">${it ? EQ_G[it.t] : ghost}</g></svg>
             <div style="position:absolute;left:50%;top:100%;transform:translateX(-50%);font-size:10px;white-space:nowrap;color:${it ? col : "#b9a888"};margin-top:2px">${it ? EQ_N[it.k] : lab}</div></div>`;
         };
@@ -6582,7 +6582,10 @@
    CK.indexOf(st),
  )}${B("devCls()", "Switch")}</div>
  <h3>Combat</h3><div class="row"><label><input type="checkbox" ${DEV.god ? "checked" : ""} onchange="DEV.god=this.checked">God mode</label><label><input type="checkbox" ${DEV.nocd ? "checked" : ""} onchange="DEV.nocd=this.checked">No cooldowns</label></div><div class="row">${B("devHeal()", "Full heal")}${B("devCd()", "Reset cooldowns")}</div>
- <h3>Navigation &amp; boss</h3><div class="row">${B("devHub()", "Go to hub")}${B("devPortal()", "To portal")}${B("devArena()", "Start boss")}${B("devBoss(.1)", "Boss 10%")}${B("devBoss(1)", "Kill boss")}</div>
+ <h3>Navigation &amp; boss</h3><div class="row">${B("devHub()", "Go to hub")}${B("devPortal()", "To portal")}${B("devArena()", "Start boss")}${B("devArena('small')", "Seer")}${B("devArena('large')", "Thornmaw")}${B("devBoss(.1)", "Boss 10%")}${B("devBoss(1)", "Kill boss")}${B("devPhase()", "Phase 2")}</div>
+ <h3>Level &amp; XP</h3><div class="row"><span>Lv ${lvlInfo().L}</span>${B("gainXP(1000,'dev');devUI()", "+1000 XP")}${B("devLevel(10)", "Lv 10")}${B("devLevel(30)", "Lv 30")}</div>
+ <h3>Inventory</h3><div class="row"><span>${(V.eq?.bag || []).length} items · ${Object.values(V.mat || {}).reduce((a, n) => a + n, 0)} mats</span>${B("devGear()", "+Random gear")}${B("devGear(4)", "+Legendary")}${B("devMats()", "+10 all mats")}${B("devClearInv()", "Clear")}${B("invOpen()", "Open")}</div>
+ <h3>Unlocks</h3><div class="row">${B("devUnlock()", "Unlock all NPCs")}${B("V.tut=TUT_DONE;save();devUI()", "Skip tutorial")}${B("V.wins=(V.wins||0)+5;save();devUI()", "+5 wins")}</div>
  <h3>Danger</h3><div class="row">${B("devWipe()", "Reset ALL progress")}</div>`;
         $("dev").scrollTop = st0;
       }
@@ -6645,9 +6648,21 @@
           P.y = PORTAL.y + 40;
         }
       }
-      function devArena() {
-        if (P && S.sc == "hub") toArena();
+      function devArena(k) {
+        if (P && S.sc == "hub") toArena(k);
       }
+      function devPhase() { if (S.b && !S.end) { S.b.hp = Math.min(S.b.hp, S.b.mh * 0.49); } }
+      function devLevel(L) { let n = 0; while (lvlInfo().L < L && n++ < 500) gainXP(500, "dev"); devS(); }
+      function devGear(tier) {
+        const r = Math.random, t = ["tank", "dmg", "util"][(r() * 3) | 0], k = EQ_K[t][(r() * EQ_K[t].length) | 0];
+        V.eq = V.eq || { bag: [], on: {} };
+        V.eq.bag.push({ id: "d" + Date.now().toString(36).slice(-6) + ((r() * 99) | 0), t, k, r: tier != null ? tier : k == "dd" ? 2 + ((r() * 3) | 0) : (r() * 5) | 0 });
+        V.eq.bag = V.eq.bag.slice(-40);
+        devS();
+      }
+      function devMats() { for (const k in MATS) matAdd(k, 10); devS(); }
+      function devClearInv() { V.eq = { bag: [], on: {} }; V.mat = {}; devS(); }
+      function devUnlock() { V.ul = { class: true, maiden: true, smith: true, herald: true, barkeep: true }; devS(); }
       function devBoss(f) {
         const b = S.b;
         if (!b || S.end) return;
@@ -11282,6 +11297,137 @@
         c.fillStyle = vg; c.fillRect(0, 0, W, H);
         c.restore();
       }
+      /* bossSprite(b, D, rc, ec, f): the boss body, drawn at the origin (already translated to the boss). Light from the top-right.
+         Seer: a hovering hooded wraith, tattered cloak, one great eye that follows its target, rune shards orbiting it.
+         Thornmaw: a hulking bark-armoured beast seen from above, mossy back with thorn spines, curled horns, clawed arms that sway.
+         Phase 2: the body cracks with its rage colour. f = flash (wind-up), b.hf = hit flash. */
+      function bossSprite(b, D, rc, ec, f) {
+        const R = b.r, t = S.tm, p2 = b.ph == 2, tg = actor(b.cur || b.tg), look = tg ? Math.atan2(tg.y - b.y, tg.x - b.x) : Math.PI / 2;
+        const lx = Math.cos(look), ly = Math.sin(look);
+        const crack = (pts, w) => { c.strokeStyle = rc; c.lineWidth = w; c.shadowColor = rc; c.shadowBlur = 10; c.beginPath(); pts.forEach((q, k) => (k ? c.lineTo : c.moveTo).call(c, q[0] * R, q[1] * R)); c.stroke(); c.shadowBlur = 0; };
+        if (!D.horns) {
+          const bob = Math.sin(t * 2.2) * 4;
+          /* ground shadow (doesn't bob) and a void pool under it */
+          c.fillStyle = "rgba(0,0,0,.45)";
+          c.beginPath(); c.ellipse(4, R * 0.75, R * 0.95, R * 0.32, 0, 0, 6.3); c.fill();
+          const pool = c.createRadialGradient(0, R * 0.7, 2, 0, R * 0.7, R * 1.2);
+          pool.addColorStop(0, p2 ? "rgba(255,60,140,.35)" : "rgba(150,90,255,.35)"); pool.addColorStop(1, "rgba(0,0,0,0)");
+          c.fillStyle = pool; c.beginPath(); c.ellipse(0, R * 0.7, R * 1.2, R * 0.45, 0, 0, 6.3); c.fill();
+          c.translate(0, bob - 6);
+          /* orbiting rune shards behind the body (back half of the orbit) then in front */
+          const shards = p2 ? 6 : 4, orb = (front) => {
+            for (let k = 0; k < shards; k++) {
+              const a = t * (p2 ? 1.4 : 0.8) + (k / shards) * 6.283, sx = Math.cos(a) * R * 1.45, sy = Math.sin(a) * R * 0.5 - R * 0.1;
+              if ((Math.sin(a) > 0) != front) continue;
+              c.save(); c.translate(sx, sy); c.rotate(a * 2);
+              c.shadowColor = rc; c.shadowBlur = 12; c.fillStyle = rc;
+              c.beginPath(); c.moveTo(0, -7); c.lineTo(4, 0); c.lineTo(0, 7); c.lineTo(-4, 0); c.closePath(); c.fill();
+              c.shadowBlur = 0; c.fillStyle = "rgba(255,255,255,.7)"; c.beginPath(); c.moveTo(0, -5); c.lineTo(2, 0); c.lineTo(0, -1); c.fill();
+              c.restore();
+            }
+          };
+          orb(false);
+          /* cloak: a bell from the hood down to a tattered hem that ripples */
+          const cg = c.createLinearGradient(R * 0.6, -R * 1.2, -R * 0.6, R);
+          cg.addColorStop(0, p2 ? "#5a1838" : "#3d2a6a"); cg.addColorStop(0.55, p2 ? "#2a0a1c" : "#1d1238"); cg.addColorStop(1, "#08040f");
+          c.fillStyle = cg;
+          c.shadowColor = rc; c.shadowBlur = 18;
+          c.beginPath();
+          c.moveTo(0, -R * 1.25);
+          c.bezierCurveTo(R * 0.75, -R * 1.2, R * 0.95, -R * 0.2, R * 1.05, R * 0.55);
+          const n = 9;
+          for (let k = 0; k <= n; k++) { const u = k / n, x = R * 1.05 - u * R * 2.1, y = R * 0.55 + (k % 2 ? R * 0.28 : 0) + Math.sin(t * 4 + k) * 3; c.lineTo(x, y); }
+          c.bezierCurveTo(-R * 0.95, -R * 0.2, -R * 0.75, -R * 1.2, 0, -R * 1.25);
+          c.fill();
+          c.shadowBlur = 0;
+          /* cloak folds and a lit edge on the sun side */
+          c.strokeStyle = "rgba(0,0,0,.35)"; c.lineWidth = 2;
+          for (const fx of [-0.45, 0, 0.45]) { c.beginPath(); c.moveTo(fx * R * 0.6, -R * 0.2); c.quadraticCurveTo(fx * R * 0.9, R * 0.3, fx * R * 1.05, R * 0.7); c.stroke(); }
+          c.strokeStyle = p2 ? "rgba(255,140,190,.35)" : "rgba(190,160,255,.35)"; c.lineWidth = 2;
+          c.beginPath(); c.moveTo(R * 0.1, -R * 1.22); c.bezierCurveTo(R * 0.75, -R * 1.15, R * 0.92, -R * 0.2, R * 1.02, R * 0.5); c.stroke();
+          /* rune band across the chest */
+          c.strokeStyle = rc; c.lineWidth = 1.5; c.globalAlpha = 0.7;
+          c.beginPath(); c.ellipse(0, R * 0.05, R * 0.82, R * 0.22, 0, 0.15, Math.PI - 0.15); c.stroke();
+          c.fillStyle = rc;
+          for (let k = 0; k < 7; k++) { const a = 0.35 + (k / 6) * (Math.PI - 0.7); c.fillRect(Math.cos(a) * R * 0.82 - 1.5, R * 0.05 + Math.sin(a) * R * 0.22 - 1.5, 3, 3); }
+          c.globalAlpha = 1;
+          /* hood: dark opening with the eye inside */
+          c.fillStyle = "#050208";
+          c.beginPath(); c.ellipse(0, -R * 0.55, R * 0.5, R * 0.42, 0, 0, 6.3); c.fill();
+          const hg = c.createRadialGradient(0, -R * 0.55, 1, 0, -R * 0.55, R * 0.5);
+          hg.addColorStop(0, f ? "rgba(255,255,255,.6)" : p2 ? "rgba(255,60,140,.45)" : "rgba(120,150,255,.4)"); hg.addColorStop(1, "rgba(0,0,0,0)");
+          c.fillStyle = hg; c.beginPath(); c.ellipse(0, -R * 0.55, R * 0.5, R * 0.42, 0, 0, 6.3); c.fill();
+          /* the eye: white of the eye, an iris that looks at its target, a slit pupil; blinks now and then */
+          const blink = (t % 5.3) < 0.12 ? 0.15 : 1, ex = lx * R * 0.12, ey = -R * 0.55 + ly * R * 0.08;
+          c.save();
+          c.beginPath(); c.ellipse(0, -R * 0.55, R * 0.32, R * 0.2 * blink, 0, 0, 6.3); c.clip();
+          c.fillStyle = "#e8e0ff"; c.fillRect(-R, -R * 1.2, R * 2, R);
+          c.shadowColor = ec; c.shadowBlur = 14;
+          c.fillStyle = f ? "#fff" : ec; c.beginPath(); c.arc(ex, ey, R * 0.16, 0, 6.3); c.fill();
+          c.shadowBlur = 0;
+          c.fillStyle = "#05010a"; c.beginPath(); c.ellipse(ex, ey, R * 0.035, R * 0.12, 0, 0, 6.3); c.fill();
+          c.fillStyle = "rgba(255,255,255,.85)"; c.beginPath(); c.arc(ex + R * 0.06, ey - R * 0.06, 2, 0, 6.3); c.fill();
+          c.restore();
+          /* phase 2: the cloak splits with light */
+          if (p2) { crack([[-0.3, -0.1], [-0.15, 0.2], [-0.35, 0.5]], 2); crack([[0.35, -0.3], [0.2, 0.05], [0.45, 0.35], [0.3, 0.6]], 2); crack([[0, 0.25], [0.08, 0.6]], 1.5); }
+          orb(true);
+          if (b.hf > 0) { c.fillStyle = `rgba(255,255,255,${Math.min(0.6, b.hf * 6)})`; c.beginPath(); c.ellipse(0, -R * 0.2, R, R * 1.05, 0, 0, 6.3); c.fill(); }
+          c.translate(0, -(bob - 6));
+          return;
+        }
+        /* ---- Thornmaw ---- */
+        const step = Math.sin(t * 3.2), moving = Math.hypot(b.vx || 0, b.vy || 0) > 1 || true;
+        c.fillStyle = "rgba(0,0,0,.45)";
+        c.beginPath(); c.ellipse(5, R * 0.55, R * 1.25, R * 0.5, 0, 0, 6.3); c.fill();
+        c.save();
+        c.rotate(look - Math.PI / 2); /* the beast faces its target (head toward +y in local space) */
+        /* arms with claws, swaying as it lumbers */
+        for (const sd of [-1, 1]) {
+          const sw = (moving ? step * sd : 0) * 0.25;
+          c.save(); c.translate(sd * R * 0.85, R * 0.1); c.rotate(sd * 0.35 + sw);
+          const ag = c.createLinearGradient(-8, 0, 8, 0); ag.addColorStop(0, "#2a2216"); ag.addColorStop(1, "#5a4a30");
+          c.fillStyle = ag;
+          c.beginPath(); c.ellipse(0, R * 0.35, R * 0.26, R * 0.48, 0, 0, 6.3); c.fill();
+          c.fillStyle = "#d8c8a0";
+          for (const cx of [-0.14, 0, 0.14]) { c.beginPath(); c.moveTo(cx * R - 3, R * 0.75); c.lineTo(cx * R + sd * 2, R * 0.98); c.lineTo(cx * R + 3, R * 0.75); c.fill(); }
+          c.restore();
+        }
+        /* body: layered bark plates */
+        const bg = c.createRadialGradient(R * 0.3, -R * 0.3, R * 0.1, 0, 0, R * 1.05);
+        bg.addColorStop(0, p2 ? "#5a3a24" : "#4a5a30"); bg.addColorStop(0.6, p2 ? "#2e1a10" : "#2a3418"); bg.addColorStop(1, "#11160a");
+        c.fillStyle = bg;
+        c.shadowColor = rc; c.shadowBlur = 16;
+        c.beginPath();
+        for (let k = 0; k <= 20; k++) { const a = (k / 20) * 6.283, rr = R * (1 + 0.07 * Math.sin(k * 3.7)); (k ? c.lineTo : c.moveTo).call(c, Math.cos(a) * rr, Math.sin(a) * rr * 0.92); }
+        c.fill();
+        c.shadowBlur = 0;
+        c.strokeStyle = "rgba(0,0,0,.4)"; c.lineWidth = 2;
+        for (let k = 0; k < 7; k++) { const a = (k / 7) * 6.283 + 0.3; c.beginPath(); c.moveTo(Math.cos(a) * R * 0.3, Math.sin(a) * R * 0.3); c.quadraticCurveTo(Math.cos(a + 0.3) * R * 0.7, Math.sin(a + 0.3) * R * 0.7, Math.cos(a + 0.1) * R * 0.95, Math.sin(a + 0.1) * R * 0.88); c.stroke(); }
+        /* moss on the back */
+        for (let k = 0; k < 9; k++) { const a = k * 2.4, d = R * (0.15 + (k % 4) * 0.15), mx = Math.cos(a) * d, my = -Math.abs(Math.sin(a)) * d - R * 0.1, mr = R * (0.16 + (k % 3) * 0.05); const mg = c.createRadialGradient(mx + mr * 0.3, my - mr * 0.3, 1, mx, my, mr); mg.addColorStop(0, p2 ? "#7a6a2a" : "#8ac24e"); mg.addColorStop(1, p2 ? "rgba(60,40,10,0)" : "rgba(40,80,20,0)"); c.fillStyle = mg; c.beginPath(); c.arc(mx, my, mr, 0, 6.3); c.fill(); }
+        /* thorn spines down the back, in two rows */
+        for (let k = 0; k < 6; k++) for (const sd of [-1, 1]) {
+          const y0 = -R * 0.75 + k * R * 0.22, x0 = sd * R * (0.18 + Math.sin(k) * 0.05), h = R * (0.28 - k * 0.02);
+          c.fillStyle = "#1a1208"; c.beginPath(); c.moveTo(x0 - 4, y0 + 3); c.lineTo(x0 + sd * h * 0.5, y0 - h); c.lineTo(x0 + 4, y0 + 3); c.fill();
+          c.fillStyle = rc; c.globalAlpha = 0.55; c.beginPath(); c.moveTo(x0, y0); c.lineTo(x0 + sd * h * 0.5, y0 - h); c.lineTo(x0 + 2, y0); c.fill(); c.globalAlpha = 1;
+        }
+        /* head at the front, horns curling back, burning eyes */
+        const hy = R * 0.72;
+        c.fillStyle = "#cbb68a";
+        for (const sd of [-1, 1]) { c.beginPath(); c.moveTo(sd * R * 0.22, hy - R * 0.05); c.quadraticCurveTo(sd * R * 0.95, hy + R * 0.1, sd * R * 0.85, hy - R * 0.55); c.quadraticCurveTo(sd * R * 0.7, hy - R * 0.05, sd * R * 0.12, hy - R * 0.2); c.fill(); }
+        c.strokeStyle = "rgba(90,70,40,.6)"; c.lineWidth = 1.2;
+        for (const sd of [-1, 1]) for (let k = 1; k < 4; k++) { const u = k / 4; c.beginPath(); c.arc(sd * R * (0.3 + u * 0.55), hy - u * R * 0.35, 4, 0, 3.14); c.stroke(); }
+        const hg = c.createRadialGradient(R * 0.05, hy - R * 0.1, 2, 0, hy, R * 0.38);
+        hg.addColorStop(0, "#5a4a32"); hg.addColorStop(1, "#1e180e");
+        c.fillStyle = hg; c.beginPath(); c.ellipse(0, hy, R * 0.36, R * 0.3, 0, 0, 6.3); c.fill();
+        c.shadowColor = ec; c.shadowBlur = 12; c.fillStyle = f ? "#fff" : ec;
+        for (const sd of [-1, 1]) { c.beginPath(); c.ellipse(sd * R * 0.15, hy + R * 0.08, 4.5, 3, sd * 0.4, 0, 6.3); c.fill(); }
+        c.shadowBlur = 0;
+        c.fillStyle = "#e8dcc0"; for (const sd of [-1, 1]) { c.beginPath(); c.moveTo(sd * R * 0.12, hy + R * 0.22); c.lineTo(sd * R * 0.16, hy + R * 0.36); c.lineTo(sd * R * 0.2, hy + R * 0.2); c.fill(); }
+        if (p2) { crack([[-0.5, -0.4], [-0.3, -0.1], [-0.45, 0.25]], 2.5); crack([[0.45, -0.5], [0.3, -0.2], [0.55, 0.1], [0.4, 0.35]], 2.5); crack([[0, -0.6], [0.05, -0.3]], 2); }
+        if (b.hf > 0) { c.fillStyle = `rgba(255,255,255,${Math.min(0.6, b.hf * 6)})`; c.beginPath(); c.arc(0, 0, R * 1.05, 0, 6.3); c.fill(); }
+        c.restore();
+      }
       function drawHub() {
         if (!HUBC) paintHub();
         c.drawImage(HUBC, 0, 0, W, H);
@@ -11631,41 +11777,9 @@
           c.save();
           c.translate(b.x, b.y);
           const D = b.def || BOSSES.seer, rc = D.ring[b.ph - 1], ec = D.eye[b.ph - 1];
-          if (D.horns) {
-            /* Thornmaw: two curved horns and a mane of thorns, drawn in code */
-            c.fillStyle = "#cbb68a";
-            for (const s of [-1, 1]) { c.beginPath(); c.moveTo(s * b.r * 0.45, -b.r * 0.7); c.quadraticCurveTo(s * b.r * 1.25, -b.r * 1.15, s * b.r * 1.05, -b.r * 1.75); c.quadraticCurveTo(s * b.r * 0.95, -b.r * 1.05, s * b.r * 0.2, -b.r * 0.85); c.fill(); }
-            c.fillStyle = rc;
-            for (let i = 0; i < 12; i++) { const a = (i / 12) * 6.283 + Math.sin(S.tm + i) * 0.04; c.beginPath(); c.moveTo(Math.cos(a - 0.12) * b.r, Math.sin(a - 0.12) * b.r); c.lineTo(Math.cos(a) * (b.r + 11), Math.sin(a) * (b.r + 11)); c.lineTo(Math.cos(a + 0.12) * b.r, Math.sin(a + 0.12) * b.r); c.fill(); }
-          }
           if (b.weak > 0) { c.strokeStyle = `rgba(255,224,102,${0.5 + 0.5 * Math.sin(S.tm * 14)})`; c.lineWidth = 3; c.setLineDash([3, 5]); c.beginPath(); c.arc(0, 0, b.r + 16, 0, 6.3); c.stroke(); c.setLineDash([]); }
+          bossSprite(b, D, rc, ec, f);
           if (b.brk > 0) { c.strokeStyle = "#ffe066"; c.lineWidth = 2; for (let i = 0; i < 6; i++) { const a = i * 1.05 + S.tm; c.beginPath(); c.moveTo(Math.cos(a) * b.r * 0.3, Math.sin(a) * b.r * 0.3); c.lineTo(Math.cos(a + 0.3) * b.r, Math.sin(a + 0.3) * b.r); c.stroke(); } }
-          c.shadowColor = rc;
-          c.shadowBlur = 24;
-          c.fillStyle = b.ph == 2 ? "#3a0a22" : D.body;
-          c.beginPath();
-          c.arc(0, 0, b.r, 0, 6.3);
-          c.fill();
-          if (b.hf > 0) {
-            c.fillStyle = `rgba(255,255,255,${b.hf * 6})`;
-            c.fill();
-          }
-          c.shadowBlur = 0;
-          c.strokeStyle = rc;
-          c.lineWidth = 3;
-          c.stroke();
-          c.rotate(S.tm * (b.ph == 2 ? 1.2 : 0.5));
-          c.setLineDash([6, 8]);
-          c.beginPath();
-          c.arc(0, 0, b.r - 8, 0, 6.3);
-          c.stroke();
-          c.setLineDash([]);
-          c.rotate(-S.tm * (b.ph == 2 ? 1.2 : 0.5));
-          c.fillStyle = f ? "#fff" : ec;
-          c.beginPath();
-          c.ellipse(-11, -4, 6, 4, 0, 0, 6.3);
-          c.ellipse(11, -4, 6, 4, 0, 0, 6.3);
-          c.fill();
           if (b.stun > 0) {
             c.strokeStyle = "#ffe066";
             c.lineWidth = 4;

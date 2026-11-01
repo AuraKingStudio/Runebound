@@ -233,6 +233,7 @@ Built and tested (unit tests plus the `cheat`, `flood`, `econ`, `hphack`, `chat`
 - Dev tools: always on localhost; elsewhere `?dev=<code>` once, then remembered in that browser (`rb_dev`).
 - Bots talk more: `botAnswer` (tips, name mentions, greetings), `contextLine`, `botConvo` (2-4 line talks).
 - Raid arenas are drawn in code per boss (`arenaPaint` bakes at 2x, `arenaDraw` adds pulsing cracks/roots, rune glyphs, rim orbs, motes): Seer = void (purple nebula, stars, floating rocks, pillars with blue orbs), Thornmaw = overgrown ruin (forest dusk, mossy flagstones, thorny glowing roots, broken mossy columns). The old arena JPEG is gone: only icon.png remains an image.
+- Boss sprites (`bossSprite`): Seer = hovering hooded wraith (tattered cloak, one eye tracking its target, orbiting rune shards); Thornmaw = bark-armoured beast facing its target (claws sway, moss, thorn spines, horns). Phase 2 cracks glow. Dev menu: Seer/Thornmaw/Phase 2, level & XP, inventory (random/legendary gear, mats, clear, open), unlocks.
 
 ## Not done / open
 
