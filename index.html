@@ -3930,6 +3930,8 @@
         burst(p.x, p.y, "#ff6070", 8, 110);
         if (p === P) { shake(0.3); sfx("hurt"); }
         if (p.hp <= 0 && S.sc == "arena") { burst(p.x, p.y, SKC[p.cls], 24, 160); ftxt(p.x, p.y - 30, p === P ? "You fell" : p.name + " fell", "#ff6070", 13); }
+        /* a healer falling with Resurrect ready casts it on itself (the screen running the fight decides) */
+        if (p.hp <= 0 && S.sc == "arena" && p.cls == "heal" && !p.rev && !(p.ucd > 0) && !(S.net && S.net.role == "member")) { p.selfRes = 1; ult(p); p.selfRes = 0; }
       }
       function heal(p, n, src = P) {
         if (p.hp > 0 && p.hp < p.mh) {
@@ -4074,13 +4076,27 @@
         VX.push({ k: "flash", x: o.x, y: o.y, r: o.big ? 46 : 20, col, l: o.big ? 0.3 : 0.15, m: o.big ? 0.3 : 0.15 });
         sparks(o.x, o.y, col, o.big ? 14 : 4, o.big ? 180 : 90);
       }
+      /* cleaveHits(p, b): the tank's Strike hits whatever is within reach (CLEAVE.r past its edge) inside a 140° cone in front */
+      const CLEAVE = { r: 60, cone: (70 * Math.PI) / 180 };
+      function cleaveHits(p, b) {
+        const [fx0, fy0] = DIRV[p.f || "d"], dx = b.x - p.x, dy = b.y - p.y, d = Math.hypot(dx, dy);
+        if (d > b.r + CLEAVE.r) return false;
+        if (d < b.r) return true; /* standing inside it */
+        const off = Math.abs(Math.atan2(fx0 * dy - fy0 * dx, fx0 * dx + fy0 * dy)), edge = Math.asin(Math.min(1, b.r / d));
+        return off - edge <= CLEAVE.cone;
+      }
       /* skillFx(p, a, t): the look of skill a (on the leader's screen and on members' screens). t = heal target if known. */
       function skillFx(p, a, t) {
         const b = S.b, col = SKC[p.cls];
         if (!b) return;
         const ang = Math.atan2(b.y - p.y, b.x - p.x);
         if (p.cls == "tank") {
-          if (a == 0) { VX.push({ k: "slash", x: p.x, y: p.y, r: 30, a: ang, col, l: 0.22, m: 0.22 }); sparks(p.x + Math.cos(ang) * 30, p.y + Math.sin(ang) * 30, col, 6, 120); }
+          if (a == 0) { /* cleave: a wide arc in front of the tank */
+            const [fx0, fy0] = DIRV[p.f || "d"], fa = Math.atan2(fy0, fx0);
+            VX.push({ k: "slash", x: p.x, y: p.y, r: CLEAVE.r * 0.7, a: fa + 0.4, col, l: 0.25, m: 0.25 });
+            VX.push({ k: "slash", x: p.x, y: p.y, r: CLEAVE.r * 0.9, a: fa + 0.9, col, l: 0.25, m: 0.25 });
+            sparks(p.x + fx0 * CLEAVE.r * 0.7, p.y + fy0 * CLEAVE.r * 0.7, col, 8, 130);
+          }
           else if (a == 1) { VX.push({ k: "slash", x: p.x, y: p.y, r: 34, a: ang, col: "#ffe066", l: 0.3, m: 0.3 }); VX.push({ k: "flash", x: b.x, y: b.y, r: b.r * 1.8, col: "#ffe066", l: 0.35, m: 0.35 }); sparks(b.x, b.y, "#ffe066", 16, 200); }
           else { VX.push({ k: "nova", x: p.x, y: p.y, r0: 12, r1: 120, w: 7, col: "#ff8a5c", l: 0.5, m: 0.5 }); VX.push({ k: "flash", x: b.x, y: b.y, r: b.r * 1.4, col: "#ff5c3a", l: 0.4, m: 0.4 }); }
         } else if (p.cls == "heal") {
@@ -4114,7 +4130,7 @@
       /* ultWhy(p): "" when p can use its ultimate now, else the reason */
       function ultWhy(p) {
         if (S.sc != "arena" || !S.b || S.end) return "Ultimates work in raids.";
-        if (p.hp <= 0) return "You are down.";
+        if (p.hp <= 0 && !p.selfRes) return "You are down.";
         if ((p.ucd || 0) > 0) return ULT[p.cls].n + " is charging (" + Math.ceil(p.ucd) + " s).";
         if (p.cls == "heal") return p.rev ? "Resurrect is used: once per raid." : S.ps.some((a) => a.hp <= 0) ? "" : "Nobody to revive.";
         if (p.cls == "dps" && (p.eng || 1) < ULT.dps.min) return "The Engine needs x" + ULT.dps.min + " to Overdrive.";
@@ -4222,7 +4238,10 @@
           eng = p.cls == "dps" ? p.eng || 1 : 1; /* DPS skills scale with the Engine */
         let ok = 1;
         if (p.cls == "tank") {
-          if (a == 0) d < b.r + 50 ? hitB(12, p) : (ok = 0);
+          if (a == 0) {
+            if (p === P ? P.auto : !p.remote) { const dx = b.x - p.x, dy = b.y - p.y; p.f = Math.abs(dx) > Math.abs(dy) ? (dx > 0 ? "r" : "l") : dy > 0 ? "d" : "u"; } /* bots turn to the boss */
+            if (cleaveHits(p, b)) hitB(12, p);
+          } /* Strike is a cleave: swings in front even with nothing there */
           else if (a == 1) {
             if (d < b.r + 60) { hitB(25, p); bash(p); } else ok = 0;
           } else taunt(p);
@@ -6459,6 +6478,17 @@
               c.arc(Math.cos(a) * (PR + 7), Math.sin(a) * (PR + 7) - ph * 14, 1.6, 0, 6.3);
               c.fill();
             }
+          c.restore();
+          /* Engine stacks as a number under the feet: x1.0 slow, x2+ hot, x4 white-hot */
+          c.save();
+          c.font = `bold ${p.eng >= 4 ? 13 : 11}px Georgia`;
+          c.textAlign = "center";
+          c.lineWidth = 3;
+          c.strokeStyle = "#000c";
+          c.fillStyle = p.eng >= 4 ? "#fff3c0" : p.eng >= 2 ? "#ffa040" : "#ff8a5a";
+          const et = "⚙x" + p.eng.toFixed(1);
+          c.strokeText(et, 0, PR + 20);
+          c.fillText(et, 0, PR + 20);
           c.restore();
         }
         /* body disc, ring and class emblem (cached sprite) */
@@ -9926,13 +9956,19 @@
           /* party frames: name, class color, health */
           c.textAlign = "left";
           S.ps.forEach((p, i) => {
-            const y = 96 + i * 22;
+            const y = 96 + i * 28;
             c.fillStyle = SKC[p.cls];
             c.fillRect(12, y - 9, 4, 14);
             c.fillStyle = p.hp > 0 ? "#e6f1ef" : "#7d8790";
             c.font = "12px Georgia";
             c.fillText((p === P ? pname() : p.name) + (b.cur == p.id ? "  ◎" : "") + (p.cls == "dps" && p.eng > 1 ? `  ⚙x${p.eng.toFixed(1)}` : ""), 20, y);
             bar(20, y + 3, 110, 4, p.hp / p.mh, p.hp > 0 ? "#48e07a" : "#555");
+            /* ultimate meter: fills while charging, glows gold when ready, grey once spent */
+            const u = ULT[p.cls], used = p.ucd > 1e8 || (p.cls == "heal" && p.rev), uc = p.ucd > 1e8 ? 0 : p.ucd || 0, rdy = !used && uc <= 0.05;
+            bar(20, y + 8, 110, 3, used ? 1 : 1 - uc / (u.cd || ULT.start), used ? "#555" : rdy ? `rgba(255,216,74,${0.7 + 0.3 * Math.sin(S.tm * 6)})` : "#b08a2a");
+            c.fillStyle = used ? "#7d8790" : rdy ? "#ffd84a" : "#b9a77a";
+            c.font = "9px Georgia";
+            c.fillText(used ? "ULT used" : rdy ? "ULT ready" : "ULT " + Math.ceil(uc) + "s", 134, y + 11);
           });
           c.font = "13px Georgia";
           if (b.fl > 0) {
