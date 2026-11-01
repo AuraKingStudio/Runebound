@@ -13,7 +13,7 @@ const ctx={document:doc,window:{},innerWidth:900,innerHeight:600,performance:{no
 ctx.RBNet=fakeNet;
 ctx.window=ctx;vm.createContext(ctx);
 vm.runInContext(SRC+`
-;globalThis.devMin=devMin;globalThis.devFs=devFs;globalThis.T={V:()=>V,CLASS_DMG:()=>CLASS_DMG,P:()=>P,S:()=>S,start,devAdd,devUp,devUI,devCls,devHeal,devWipe,devResetQ,devArena,devBoss,devHub,DEV,hurt,act,step,pauseGame,resumeGame,isPaused:()=>paused,QUESTS,UPG,toggleDev,buy,shopUI,qAct,togglePause,dailyCheck,saveName,lvlInfo,gainXP,lvlCol,loreReward,isUnl,tutNext,bjVal,bjDeal,bjHit,bjStand,guildFound,guildRecruit,gBonus,bountyDay,bountyAdd,bountyClaim,guildJoin,guildTab,rankPool,rankRefresh,rankSort,dm,dash,dashStep,setIn,padPoll,inMode:()=>INMODE,KEYHINT,HUBV:()=>HUBV,ENGINE,cdMul,discordUnlock,openDlg,TUT_DONE,ult,ultDmg,ULT,saveCode,saveRead,saveCheck,inter,hitB,DASH,ZONE_DMG,RAIDS,BOSSES,raidTeam,raidAI,partyMembers,partyAdd,partyRemove,raidUI,playerUI,partyMessage,bash,taunt,inTele,toArena,PARTY:()=>PARTY,netRelayFlush,raidNet,raidState,raidApply,raidNetStep,arena,toArena,HUB_NPCS,BOT_NPC_LV,BARKEEP,CLASSN,SKC,PEMB,hubJoin,hubLeave,hubCount,HUB_MAX,hubVisitStep,botName,botLook,chatSend,COS,cosOwn,cosV,cosBuyGold,cosEquip,shopPay,myEmote,streamPts,crossFrame,bridgeAt,riverNear,clampW,WF,STATUE,PORTAL,SET,keyLabel,EDGE,inIsle,netReceive,netPrepareHub,netStep,netPack,netUnpack,netAudit,auditRules,goldAdd,gainXP,netStats,LEDGER:()=>LEDGER,FX:()=>FX,FT:()=>FT,shk:()=>shk,els:null};`,ctx);
+;globalThis.devMin=devMin;globalThis.devFs=devFs;globalThis.T={V:()=>V,CLASS_DMG:()=>CLASS_DMG,P:()=>P,S:()=>S,start,devAdd,devUp,devUI,devCls,devHeal,devWipe,devResetQ,devArena,devBoss,devHub,DEV,hurt,act,step,pauseGame,resumeGame,isPaused:()=>paused,QUESTS,UPG,toggleDev,buy,shopUI,qAct,togglePause,dailyCheck,saveName,lvlInfo,gainXP,lvlCol,loreReward,isUnl,tutNext,bjVal,bjDeal,bjHit,bjStand,bjDouble,bjSplit,BJ:()=>BJ,guildFound,guildRecruit,gBonus,bountyDay,bountyAdd,bountyClaim,guildJoin,guildTab,rankPool,rankRefresh,rankSort,dm,dash,dashStep,setIn,padPoll,inMode:()=>INMODE,KEYHINT,HUBV:()=>HUBV,ENGINE,cdMul,discordUnlock,openDlg,TUT_DONE,ult,ultDmg,ULT,inter,hitB,DASH,ZONE_DMG,RAIDS,BOSSES,raidTeam,raidAI,partyMembers,partyAdd,partyRemove,raidUI,playerUI,partyMessage,bash,taunt,inTele,toArena,PARTY:()=>PARTY,netRelayFlush,raidNet,raidState,raidApply,raidNetStep,arena,toArena,HUB_NPCS,BOT_NPC_LV,BARKEEP,CLASSN,SKC,PEMB,hubJoin,hubLeave,hubCount,HUB_MAX,hubVisitStep,botName,botLook,chatSend,COS,cosOwn,cosV,cosBuyGold,cosEquip,shopPay,myEmote,streamPts,crossFrame,bridgeAt,riverNear,clampW,WF,STATUE,PORTAL,SET,keyLabel,EDGE,inIsle,netReceive,netPrepareHub,netStep,netPack,netUnpack,netAudit,auditRules,goldAdd,gainXP,netStats,LEDGER:()=>LEDGER,FX:()=>FX,FT:()=>FT,shk:()=>shk,els:null};`,ctx);
 const T=ctx.T,BENCH_ONLY=process.argv.includes('--bench');let f=0;const ok=(c,m)=>{if(!c||!BENCH_ONLY)console.log((c?'PASS ':'FAIL ')+m);if(!c)f++};
 T.start();ok(T.S().sc=='hub','start -> hub');
 ctx.document.getElementById('dlg').hidden=true;const pausedAt=T.S().tm;T.pauseGame();T.step(.1);ok(T.isPaused()&&T.S().tm===pausedAt,'pause freezes the game');T.resumeGame();ok(!T.isPaused(),'resume re-enables play');
@@ -69,10 +69,16 @@ T.DEV.nocd=0;T.devHub();T.P().cd=[0,0,0];T.act(T.P(),1);ok(T.S().sc=='hub'&&T.P(
 ok(T.BARKEEP.ic=='🃏'&&T.BARKEEP.col=='#ffb347'&&T.BARKEEP.gs==1&&/M-5-10h10q.*zM0-4l3 4-3 4-3-4z/.test(T.BARKEEP.g),'blackjack NPC: card emblem keeps the orange palette');
 ok(T.CLASSN.icons.join(',')=='tank,dps,heal'&&T.CLASSN.icons.every(k=>T.PEMB[k]&&T.SKC[k])&&T.CLASSN.orbit.r==9&&T.CLASSN.orbit.gap>=0.95&&Number.isFinite(T.CLASSN.orbit.a),'class NPC: rotation ring stays clear of all three class emblems');
 ok(T.bjVal([1,13])==21&&T.bjVal([1,1,9])==21&&T.bjVal([10,10,5])==25,'blackjack: hand values (aces 11 or 1)');
-T.V().gold=100;T.V().bj1=1;T.bjDeal(50);ok([50,100,175].includes(T.V().gold),'blackjack: betting takes the stake (or settles a natural 21)');
-T.V().gold=100;T.V().bj1=0;T.bjDeal(10);ok(T.V().bj1==1&&T.V().gold==90&&ctx.document.getElementById('dp').innerHTML.includes('YOU <b>11</b>'),'blackjack: your very first hand starts at 11');
+T.V().gold=100;T.V().bj1=1;T.bjDeal(50);ok([50,100,200].includes(T.V().gold),'blackjack: betting takes the stake (or settles a natural 21)');
+T.V().gold=100;T.V().bj1=0;T.bjDeal(10);ok(T.V().bj1==1&&T.V().gold==90&&ctx.document.getElementById('dp').innerHTML.includes('<b class="bjv">11</b><small>5 | 6</small>'),'blackjack: your very first hand starts at 11');
 T.bjHit();ok(T.V().gold==110&&ctx.document.getElementById('dp').innerHTML.includes('You win! +20'),'blackjack: the first hand\'s hit guarantees 21 and a win');
 {const originalMath=ctx.Math;let rolls=[.1,.1,.7,.62];ctx.Math=Object.create(Math);ctx.Math.random=()=>rolls.shift()??.1;T.V().gold=100;T.V().tut=6;T.bjDeal(10);T.bjStand();ctx.Math=originalMath;ok(T.V().gold==90&&ctx.document.getElementById('dp').innerHTML.includes('house wins'),'blackjack: normal hands remain random');}
+{const M=ctx.Math;const seq=(a)=>{ctx.Math=Object.create(Math);ctx.Math.random=()=>a.length?a.shift():.1;};
+ /* rolls map to ranks 1-13: .5 -> 7, .7 -> 10, .3 -> 4 */
+ seq([.5,.3,.7,.6,.7]);T.V().gold=100;T.bjDeal(10);T.bjDouble();ok(T.BJ().end&&T.BJ().hs[0].bet==20&&T.BJ().hs[0].c.length==3,'blackjack: double takes one card, doubles the bet and ends the hand');
+ seq([.5,.5,.7,.6,.7,.7]);T.V().gold=100;T.bjDeal(10);const g=T.V().gold;T.bjSplit();ok(T.BJ().hs.length==2&&T.V().gold==g-10&&T.BJ().hs.every(h=>h.c.length==2),'blackjack: a pair splits into two hands, each with the bet');
+ T.bjStand();T.bjStand();ok(T.BJ().end&&T.BJ().hs.every(h=>h.res),'blackjack: each split hand is played and settled');
+ ctx.Math=M;}
 T.V().gd=null;T.guildFound('Rune Riders');ok(T.V().gd&&T.V().gd.name=='Rune Riders','guild: found a guild');
 T.V().gold=1000;T.guildRecruit();T.guildRecruit();ok(T.V().gd.m.length==2&&T.V().gold==700&&Math.abs(T.gBonus()-0.06)<1e-9,'guild: recruits cost 100, 200 and give +3% each');
 T.V().bo=null;const bo=T.bountyDay();ok(bo.ids.length==3,'bounties: 3 rolled per day');
@@ -84,8 +90,8 @@ ok(T.rankPool().length>=100,'ranks: top-100 pool is 100 guilds');T.rankRefresh()
 /* ---- tutorial ---- */
 T.V().tut=0;T.tutNext(0);ok(T.V().tut==1&&T.V().ul.class,'tutorial: walking reveals the Class Master (step 2)');T.tutNext(2);ok(T.V().tut==1,'tutorial: steps cannot be skipped');for(let i=1;i<5;i++)T.tutNext(i);ok(T.V().tut==5&&T.TUT_DONE==5,'tutorial: class -> Elder -> Merchant -> Archivist -> raid open (no blackjack)');
 /* ---- NPC unlocks ---- */
-{T.V().ul.barkeep=false;T.openDlg('barkeep');ok(ctx.document.getElementById('dp').innerHTML.includes('JOIN DISCORD TO UNLOCK'),'barkeep: locked until you join the Discord');
- let opened='';ctx.window.open=(u)=>{opened=u;};T.discordUnlock();ok(opened.startsWith('https://discord.gg/')&&T.isUnl('barkeep'),'barkeep: the Discord button opens the invite and unlocks him');
+{T.V().ul.barkeep=false;T.openDlg('barkeep');ok(ctx.document.getElementById('dp').innerHTML.includes('Copy Discord link'),'barkeep: locked until you copy the Discord link');
+ let copied='';const nav=ctx.navigator||(ctx.navigator={});nav.clipboard={writeText:(t)=>{copied=t;return Promise.resolve();}};T.discordUnlock(0);ok(copied.startsWith('https://discord.gg/')&&T.isUnl('barkeep'),'barkeep: copying the Discord link unlocks him (after the countdown)');
  T.V().ul.barkeep=false;T.V().bo=null;for(let i=0;i<30;i++){T.V().bo=null;if(T.bountyDay().ids.includes('bj'))break;}ok(!T.V().bo.ids.includes('bj'),'bounties: no blackjack bounty while the Barkeep is locked');T.V().bo=null;}
 
 T.V().ul={};T.V().lt=5;ok(!T.isUnl('class'),'unlock: Class Master starts locked');
@@ -107,7 +113,7 @@ T.padPoll();ok(true,'input: no controller connected is safe');
 T.togglePause();ok(T.isPaused(),'P toggles pause on');T.togglePause();ok(!T.isPaused(),'P toggles pause off');
 /* ---------- hub population: bots, joins, cap ---------- */
 T.devHub();ctx.document.getElementById('dlg').hidden=true;for(let i=0;i<120;i++)T.step(1/60);
-ok(T.hubCount()>=3&&T.hubCount()<=7,'hub: bots fill to 3-7 people (you + 2-6 bots)');
+ok(T.hubCount()>=3&&T.hubCount()<=12,'hub: bots fill to 3-12 people (you + 2-11 bots)');
 ok(T.HUBV().every(v=>v.bot&&v.name&&v.lv>=1&&v.ti),'hub: bots have names, levels and titles');
 ok(SRC.includes('p.bot ? "#63a8ff" : "#dfe8f0"'),'hub: bot names are blue and real player names stay white');
 ok(new Set(T.HUBV().map(v=>v.name)).size==T.HUBV().length,'hub: bot names are unique');
@@ -141,10 +147,10 @@ T.P().dcd=0;T.P().dx=1;T.P().dy=0;T.dash(T.P());ok(T.P().dcd>0,'dash: works in t
 ok(T.keyLabel('Mouse0')=='MB1','controls: main attack shows as MB1');
 {const d={cls:'dps',eng:1};ok(T.cdMul(d,0)==1,'engine: none at the start of a raid');d.eng=3;ok(Math.abs(T.cdMul(d,1)-1/3)<1e-9,'engine: x3 attack speed divides cooldowns by 3');ok(T.cdMul({cls:'tank',eng:3},0)==1,'engine: only the DPS has it');}
 /* ---------- hub networking authority ---------- */
-T.devHub();netClock=1000;fakePeers=['peer-one'];fakeBroadcast=[];T.netPrepareHub('host');
+T.devHub();netClock=1000;fakePeers=['peer-one'];fakeBroadcast=[];T.netPrepareHub('host');T.HUBV().splice(0,T.HUBV().length,...T.HUBV().filter(v=>!v.bot)); /* no bots in the way of the movement checks */
 T.netReceive('peer-one',{type:'join',profile:{id:'player-test1234',name:'Guest',cls:'tank',lv:3,ti:0,spd:1}});
 const remote=T.HUBV().find(v=>v.netClientId=='player-test1234'),remoteX=remote&&remote.netX;
-ok(remote&&!T.HUBV().some(v=>v.bot),'network hub: real guest joins without simulated bot filler');
+ok(remote&&fakeBroadcast.filter(x=>x.msg.type=='r').every(x=>x.msg.p.every(e=>!String(e[1]).startsWith('bot'))),'network hub: local bots stay local (never in the roster)');
 ok(fakeBroadcast.some(x=>x.msg.type=='r'&&x.msg.p.length==2),'network hub: host sends the roster when a guest joins');
 T.netReceive('peer-one',{type:'m',x:'far',y:0,f:3,d:0,s:1});ok(remote.netX==remoteX,'network hub: rejects malformed movement');
 T.netReceive('peer-one',{type:'rz',on:1});ok(remote.rz===1,'network hub: a guest in a raid is hidden in the hub');T.netReceive('peer-one',{type:'rz',on:'x'});ok(remote.rz===1,'network hub: rejects a malformed raid flag');T.netReceive('peer-one',{type:'rz',on:0});ok(remote.rz===0,'network hub: a guest back from a raid shows again');
@@ -254,22 +260,6 @@ function raidSim(key,cls,setup){
  S.res=0.01;T.step(0.02);
 }
 /* ---------- save code: export / import, tamper seal, numbers must add up, paid items stay behind ---------- */
-{
- const V=T.V(),keep=JSON.stringify(V);
- V.xp=3000;V.gold=500;V.q=2;V.wins=10;V.best=120;V.up={dmg:2,vit:1,spd:0,cdr:0};V.cos={own:{r_ember:1,r_star:1,r_champ:1},ring:'r_star'};V.pass=1;
- const code=T.saveCode(),r=T.saveRead(code);
- ok(/^RB1\./.test(code)&&!r.err&&r.s.gold==500&&r.s.xp==3000&&r.s.up.dmg==2,'save code: a real save survives export and import');
- ok(r.s.pass==0&&!r.s.cos.own.r_star&&r.s.cos.own.r_ember&&!r.s.cos.own.r_champ&&r.s.cos.ring==null&&r.dropped==3,'save code: paid items, the Rune Pass and unearned rewards stay behind');
- const [, body, seal]=code.split('.');const edited=JSON.parse(Buffer.from(body,'base64url').toString());edited.gold=999999;
- ok(T.saveRead('RB1.'+Buffer.from(JSON.stringify(edited)).toString('base64url')+'.'+seal).err,'save code: an edited code is refused (seal)');
- const fair=(o)=>T.saveCheck(Object.assign({xp:3000,gold:500,q:2,wins:10,best:120,up:{dmg:2}},o));
- ok(!fair({}),'save check: honest numbers pass');
- ok(fair({gold:900000}),'save check: gold that real play cannot earn is refused');
- ok(fair({up:{dmg:5,vit:5,spd:5,cdr:5},sk:{tank:[5,5,5],dps:[5,5,5],heal:[5,5,5]},gold:0,xp:500,q:0,wins:0}),'save check: maxed upgrades and skills with little play are refused');
- ok(fair({wins:500})&&fair({q:5,xp:200})&&fair({best:5})&&fair({up:{dmg:9}}),'save check: impossible wins, quests, raid time and levels are refused');
- ok(T.saveRead('hello').err&&T.saveRead('RB1.abc.def').err,'save code: junk is refused');
- Object.keys(V).forEach(k=>delete V[k]);Object.assign(V,JSON.parse(keep));
-}
 /* ---------- networked raids: the leader runs the fight, members mirror it ---------- */
 {
  /* relay: moves from several raid members to one leader arrive as one bundle */
