@@ -232,6 +232,7 @@ Built and tested (unit tests plus the `cheat`, `flood`, `econ`, `hphack`, `chat`
 - Inventory (🎒 Inventory button / I key, `invUI`): paper doll (silhouette + square slots: Helmet, Armor, Gloves, Weapon, Charm, Boots; `DOLL`). Armor / Weapon / Charm = tank / dmg / util gear; Helmet, Gloves, Boots wait for future items, bag, materials. Raid materials (`MATS`, `raidDrops`, `V.mat`): Rune Dust every raid, Seer -> Void Shard (+ rare Seer's Eye), Thornmaw -> Thornbark (+ rare Colossus Heart); shown on the victory screen. Crafting not built yet.
 - Dev tools: always on localhost; elsewhere `?dev=<code>` once, then remembered in that browser (`rb_dev`).
 - Bots talk more: `botAnswer` (tips, name mentions, greetings), `contextLine`, `botConvo` (2-4 line talks).
+- Raid arenas are drawn in code per boss (`arenaPaint` bakes at 2x, `arenaDraw` adds pulsing cracks/roots, rune glyphs, rim orbs, motes): Seer = void (purple nebula, stars, floating rocks, pillars with blue orbs), Thornmaw = overgrown ruin (forest dusk, mossy flagstones, thorny glowing roots, broken mossy columns). The old arena JPEG is gone: only icon.png remains an image.
 
 ## Not done / open
 
