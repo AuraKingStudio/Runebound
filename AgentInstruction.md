@@ -242,6 +242,8 @@ Built and tested (unit tests plus the `cheat`, `flood`, `econ`, `hphack`, `chat`
 - Arena perf: rim pillars, light wash and vignette baked into ARENAC; orb glows and motes stamped from cached softBlob(rgb, alpha). Raids over 6 players (bigRaid()) drop shadowBlur. Headless 1600x900: 6p 103->145+ fps, 12p 78->132 fps at the 144 cap.
 - Blackjack Stand button is red (.bjst).
 
+- Hot restore (runebound_hot) is fail-safe: if restoring the snapshot throws, it is dropped (HOT_OFF stops beforeunload re-saving it) and the page reloads clean. Before, a bad snapshot re-saved itself on every reload and froze the start.
+
 ## Not done / open
 
 - Host migration and reconnect: a hub dies when its host leaves.

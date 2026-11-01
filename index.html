@@ -6766,7 +6766,9 @@
       /* dev hot-reload: when the page reloads (live-server, F5), keep the current run.
          Out: on unload, writes {S, at} to sessionStorage. In: on load, restores it if it is < 30s old. */
       const HOT_KEY = "runebound_hot";
+      let HOT_OFF = 0;
       addEventListener("beforeunload", () => {
+        if (HOT_OFF) return;
         /* localStorage (not sessionStorage): VS Code's preview iframe can drop sessionStorage on reload */
         try { localStorage.setItem(HOT_KEY, JSON.stringify({ S: P && S.sc != "lobby" ? S : null, dlg: dlgOpen() ? CUR_DLG : "", at: Date.now() })); } catch (e) {}
       });
@@ -6775,8 +6777,17 @@
         try { snap = JSON.parse(localStorage.getItem(HOT_KEY) || "null"); localStorage.removeItem(HOT_KEY); } catch (e) {}
         if (!snap || Date.now() - snap.at > 30000) return false;
         if (!snap.S || !snap.S.ps || !snap.S.ps[0]) return false;
-        selK = snap.S.ps[0].cls;
-        start(); S = snap.S; P = S.ps[0];
+        try { /* a snapshot from older code can break the start: then drop it and start clean (else every reload re-saves it) */
+          selK = snap.S.ps[0].cls;
+          start(); S = snap.S; P = S.ps[0];
+          draw(0);
+        } catch (e) {
+          console.warn("hot restore failed, starting fresh", e);
+          HOT_OFF = 1;
+          localStorage.removeItem(HOT_KEY);
+          location.reload();
+          return true;
+        }
         closeDlg(); /* don't re-show the daily popup on every save */
         if (["elder", "shop", "lore"].includes(snap.dlg) && snap.dlg != "lore") openDlg(snap.dlg); /* reopen the menu you had open (not lore: it would use a tale) */
         return true;
