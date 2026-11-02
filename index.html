@@ -12378,6 +12378,12 @@
         }
         if (SET.showFps) { c.textAlign = "left"; c.font = "bold 12px Georgia"; c.lineWidth = 3; c.strokeStyle = "#000"; c.fillStyle = FPSV >= 55 ? "#7dff9a" : FPSV >= 28 ? "#ffd84a" : "#ff6070"; c.strokeText(FPSV + " FPS", 10, 46); c.fillText(FPSV + " FPS", 10, 46); }
         c.restore();
+        /* letterbox: whatever spilled outside the play area (statue, isles, sparks) is covered by the black bars */
+        c.setTransform(1, 0, 0, 1, 0, 0);
+        c.fillStyle = "#05070a";
+        const bx = Math.round(ox), by = Math.round(oy), bw = Math.round(W * sc), bh = Math.round(H * sc);
+        if (by > 0) { c.fillRect(0, 0, cv.width, by); c.fillRect(0, by + bh, cv.width, cv.height - by - bh); }
+        if (bx > 0) { c.fillRect(0, 0, bx, cv.height); c.fillRect(bx + bw, 0, cv.width - bx - bw, cv.height); }
       }
       let last = performance.now();
       let FPSN = 0, FPST = 0, FPSV = 0;
