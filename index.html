@@ -2112,7 +2112,7 @@
         const bag = V.eq?.bag || [], on = V.eq?.on || {};
         const sq = ([k, lab, ghost, lx, ty]) => {
           const it = bag.find((b) => b.id == on[k]), col = it ? TIERS[it.r][1] : "#c9a45a";
-          const tip = it ? `${TIERS[it.r][0]} ${EQ_N[it.k]}: ${EQ_D[it.k](eqV(it))}. Click to take off.` : SLOT_N[k] ? `${lab}: empty` : `${lab}: coming soon`;
+          const tip = it ? `${TIERS[it.r][0]} ${EQ_N[it.k]}: ${EQ_D[it.k](eqV(it), it)}. Click to take off.` : SLOT_N[k] ? `${lab}: empty` : `${lab}: coming soon`;
           return `<div title="${tip}" ${it ? `onclick="invWear('${it.id}')"` : ""} style="position:absolute;left:${lx}%;top:${ty}%;transform:translate(-50%,-50%);width:58px;height:58px;border-radius:8px;
             border:1px solid ${it ? col : "var(--ln)"};border-bottom:3px solid ${col};background:linear-gradient(180deg, color-mix(in srgb, ${col} ${it ? 22 : 8}%, transparent), rgba(0,0,0,.18));box-shadow:${it ? `0 0 10px ${col}55` : "none"};cursor:${it ? "pointer" : "default"}">
             <svg viewBox="-20 -20 40 40" width="54" height="54"><g fill="none" stroke="${col}" stroke-width="2.4" stroke-linecap="round" stroke-linejoin="round" opacity="${it ? 1 : 0.45}">${it ? EQ_G[it.t] : ghost}</g></svg>
@@ -2155,23 +2155,44 @@
       const TIERS = [["Common", "#e8e8e8", 45], ["Uncommon", "#5dff8a", 28], ["Rare", "#4da3ff", 16], ["Epic", "#b48cff", 8], ["Legendary", "#ff9f43", 3]];
       const EQ_V = { dr: [0.04, 0.06, 0.08, 0.11, 0.15], dmg: [0.04, 0.06, 0.09, 0.12, 0.16], bd: [0.1, 0.15, 0.2, 0.3, 0.4], hl: [0.06, 0.09, 0.12, 0.16, 0.22], dd: [1, 1, 1, 1, 1] };
       const EQ_PRICE = [120, 220, 380, 600, 950], EQ_LEG_LV = 30;
-      const EQ_K = { tank: ["dr"], dmg: ["dmg"], util: ["dd", "bd", "hl"] };
-      const EQ_N = { dr: "Bulwark", dmg: "Fang", dd: "Twin Feather", bd: "Everbloom Sash", hl: "Mender's Lantern" };
-      const EQ_D = { dr: (v) => `-${Math.round(v * 100)}% damage taken`, dmg: (v) => `+${Math.round(v * 100)}% damage`, dd: () => "Dash twice in a row", bd: (v) => `Your buffs last ${Math.round(v * 100)}% longer`, hl: (v) => `+${Math.round(v * 100)}% healing done and received` };
+      const EQ_K = { tank: ["dr"], dmg: ["wt", "wd", "wh"], util: ["dd", "bd", "hl"] };
+      const EQ_N = { dr: "Bulwark", dmg: "Fang", dd: "Twin Feather", bd: "Everbloom Sash", hl: "Mender's Lantern", wt: "Warden's Maul", wd: "Twin Fangs", wh: "Lifebloom Staff" };
+      /* ---------- class weapons (Weapon slot): one per class, only works for that class ----------
+         Every tier gives more damage (EQ_V.dmg); each rarity step adds one more perk (cumulative, WPERK[k][1..4]).
+         Perk keys: dr less damage taken, dmg more damage, hl more healing done, cd [skill] cooldown cut, dcd dash cooldown cut,
+         ar dash armor, zl Circle lasts longer, ult ultimate charges faster. The old generic Fang ("dmg") stays valid for any class. */
+      const WCLS = { wt: "tank", wd: "dps", wh: "heal" };
+      const WPERK = {
+        wt: [null, ["dr", 0.04, "-4% damage taken"], ["cd1", 0.15, "Taunt cooldown -15%"], ["ar", 0.25, "Dash armor +25%"], ["ult", 0.25, "Ultimate charges 25% faster"]],
+        wd: [null, ["dmg", 0.05, "+5% more damage"], ["cd", 0.1, "Skill cooldowns -10%"], ["dcd", 0.2, "Dash cooldown -20%"], ["ult", 0.25, "Ultimate charges 25% faster"]],
+        wh: [null, ["hl", 0.06, "+6% healing done"], ["zl", 0.2, "Circle lasts 20% longer"], ["cd", 0.1, "Skill cooldowns -10%"], ["ult", 0.25, "Ultimate charges 25% faster"]],
+      };
+      /* wp(key): the worn weapon's perk total for key (0 if none, or it is another class's weapon) */
+      function wp(key) {
+        const it = eqOn().find((i) => WCLS[i.k]);
+        if (!it || !P || WCLS[it.k] != P.cls) return 0;
+        let v = 0;
+        for (let r = 1; r <= it.r; r++) if (WPERK[it.k][r][0] == key) v += WPERK[it.k][r][1];
+        return v;
+      }
+      const wpCd = (p, a) => (p === P ? 1 - wp("cd") - wp("cd" + a) : 1);
+      const EQ_D = { dr: (v) => `-${Math.round(v * 100)}% damage taken`, dmg: (v) => `+${Math.round(v * 100)}% damage`, wt: (v, it) => wpDesc("wt", v, it), wd: (v, it) => wpDesc("wd", v, it), wh: (v, it) => wpDesc("wh", v, it), dd: () => "Dash twice in a row", bd: (v) => `Your buffs last ${Math.round(v * 100)}% longer`, hl: (v) => `+${Math.round(v * 100)}% healing done and received` };
       const EQ_G = { tank: '<path d="M0-14 12-9v7c0 8-5 13-12 16-7-3-12-8-12-16v-7z"/>', dmg: '<path d="M-10 12 10-12M4-12h6v6M-12 6l6 6"/>', util: '<circle r="9"/><path d="M0-5v5l4 3"/>' };
-      const eqOk = (it) => it && EQ_K[it.t] && EQ_K[it.t].includes(it.k) && Number.isInteger(it.r) && it.r >= 0 && it.r <= 4 && (it.k != "dd" || it.r >= 2);
-      const eqV = (it) => EQ_V[it.k][it.r];
+      const wpDesc = (k, v, it) => `${CL[WCLS[k]].n} only. +${Math.round(v * 100)}% damage` + WPERK[k].slice(1, (it ? it.r : 0) + 1).map((q) => ", " + q[2]).join("") + (P && P.cls != WCLS[k] ? " (not your class)" : "");
+      const eqOk = (it) => it && EQ_K[it.t] && (EQ_K[it.t].includes(it.k) || (it.t == "dmg" && it.k == "dmg")) && Number.isInteger(it.r) && it.r >= 0 && it.r <= 4 && (it.k != "dd" || it.r >= 2);
+      const eqV = (it) => (EQ_V[it.k] || EQ_V.dmg)[it.r];
       const eqOn = () => (V.eq ? Object.values(V.eq.on || {}).map((id) => (V.eq.bag || []).find((i) => i.id == id)).filter(eqOk) : []);
-      const eqSt = (k) => eqOn().filter((i) => i.k == k).reduce((a, i) => a + eqV(i), 0);
-      /* eqRoll(n): the stock for roll n: one item per type, seeded so reopening the shop shows the same stock */
+      const eqSt = (k) => eqOn().filter((i) => i.k == k || (k == "dmg" && WCLS[i.k] && P && WCLS[i.k] == P.cls)).reduce((a, i) => a + eqV(i), 0);
+      /* eqRoll(n): the stock for roll n: 3 random armor/charm pieces + 1 weapon for your class, seeded so reopening the shop shows the same stock */
       function eqRoll(n) {
         let x = ((V.eqs || 1) * 9973 + n * 7919) >>> 0;
         const r = () => ((x = (Math.imul(x ^ (x >>> 15), 2246822507) + 0x6d2b79f5) >>> 0) / 4294967296);
         const top = lvlInfo().L >= EQ_LEG_LV ? 5 : 4, sum = TIERS.slice(0, top).reduce((a, t) => a + t[2], 0);
-        return ["tank", "dmg", "util"].map((t, i) => {
+        const types = [0, 1, 2].map(() => (r() < 0.5 ? "tank" : "util")).concat("dmg"); /* 3 random armor / charms + 1 weapon */
+        return types.map((t, i) => {
           let roll = r() * sum, tier = 0;
           while (tier < top - 1 && roll >= TIERS[tier][2]) roll -= TIERS[tier++][2];
-          const k = EQ_K[t][Math.floor(r() * EQ_K[t].length)];
+          const k = t == "dmg" ? { tank: "wt", dps: "wd", heal: "wh" }[(P && P.cls) || "dps"] : EQ_K[t][Math.floor(r() * EQ_K[t].length)];
           return { id: "e" + n + "_" + i, t, k, r: k == "dd" ? Math.max(2, tier) : tier };
         });
       }
@@ -2196,14 +2217,14 @@
       function eqCard(it, btn) {
         const [tn, col] = TIERS[it.r];
         return `<div class="up" style="--uc:${col}"><svg viewBox="-20 -20 40 40" width="46" height="46"><circle r="18" fill="#0b1218" stroke="${col}" stroke-width="2"/><g fill="none" stroke="${col}" stroke-width="2.6" stroke-linecap="round">${EQ_G[it.t]}</g></svg>
-          <div style="min-width:0;flex:1"><span class="nm">${tn} ${EQ_N[it.k]}</span><div class="sm">${EQ_D[it.k](eqV(it))}</div></div>${btn}</div>`;
+          <div style="min-width:0;flex:1"><span class="nm">${tn} ${EQ_N[it.k]}</span><div class="sm">${EQ_D[it.k](eqV(it), it)}</div></div>${btn}</div>`;
       }
       /* CLB: class bonus from one shop stat (per level): tank Stoneheart less damage taken, DPS Rune Edge faster Engine, healer Sigil more healing */
       const CLB = { tank: { k: "vit", v: 0.03, d: "-3% damage taken per level" }, dps: { k: "dmg", v: 0.06, d: "Engine grows 6% faster per level" }, heal: { k: "cdr", v: 0.05, d: "+5% healing per level" } };
       const clb = (p) => (p === P && CLB[p.cls] ? CLB[p.cls].v * (V.up[CLB[p.cls].k] || 0) : 0);
       /* upCost(u, l): next upgrade level price; gentle ramp so early levels come fast and the last ones are a goal */
       const upCost = (u, l) => u.b * (l + 1) + 10 * l * l;
-      const dm = () => (1 + 0.12 * V.up.dmg) * (1 + eqSt("dmg")),
+      const dm = () => (1 + 0.12 * V.up.dmg) * (1 + eqSt("dmg")) * (1 + wp("dmg")),
         hpm = () => (1 + 0.15 * V.up.vit) * (bless("stone") ? 1.3 : 1),
         spm = () => 1 + 0.06 * V.up.spd,
         cdm = () => 1 - 0.08 * V.up.cdr;
@@ -4488,9 +4509,9 @@
         p.dvy = (y / l) * (D.d / D.t);
         p.ds = D.t;
         if (p === P) p.dashAt = performance.now();
-        p.dcd = DEV.nocd ? 0 : D.cd * cdm() * (bless("swift") ? 0.5 : 1);
+        p.dcd = DEV.nocd ? 0 : D.cd * cdm() * (bless("swift") ? 0.5 : 1) * (p === P ? 1 - wp("dcd") : 1);
         if (p === P && eqSt("dd") && !p.d2) { p.d2 = 1; p.dcd = Math.min(p.dcd, 0.35); } else p.d2 = 0; /* Twin Feather: a second dash right after */
-        if (D.ar) { p.ar = D.ar * (p === P ? 1 + eqSt("bd") : 1); ftxt(p.x, p.y - 30, "+armor", "#cfe6ff", 11); }
+        if (D.ar) { p.ar = D.ar * (p === P ? (1 + eqSt("bd")) * (1 + wp("ar")) : 1); ftxt(p.x, p.y - 30, "+armor", "#cfe6ff", 11); }
         if (D.inv) p.inv = D.inv;
         if (D.hl) heal(p, D.hl);
         if (p.cls == "dps") p.rush = RUSH.t;
@@ -4504,7 +4525,7 @@
         p.dcd = Math.max(0, (p.dcd || 0) - dt);
         p.ar = Math.max(0, (p.ar || 0) - dt);
         p.inv = Math.max(0, (p.inv || 0) - dt);
-        if (p.ucd > 0 && p.ucd < 1e8) p.ucd = Math.max(0, p.ucd - dt);
+        if (p.ucd > 0 && p.ucd < 1e8) p.ucd = Math.max(0, p.ucd - dt * (p === P ? 1 + wp("ult") : 1));
         if (p.sht > 0 && (p.sht -= dt) <= 0) p.sh = 0;
         if (p.emp > 0) p.emp -= dt;
         if (p.rush > 0) p.rush -= dt;
@@ -4551,7 +4572,7 @@
         if (p.hp <= 0) return;
         if (p.inv > 0) { ftxt(p.x, p.y - 24, "DODGE", "#ff9f43"); return; }
         if (p.ar > 0) d *= 0.5;
-        if (p === P) d *= 1 - eqSt("dr") - (p.cls == "tank" ? clb(p) : 0);
+        if (p === P) d *= 1 - eqSt("dr") - wp("dr") - (p.cls == "tank" ? clb(p) : 0);
         if (p.sh > 0) {
           const s = Math.min(p.sh, d);
           p.sh -= s; d -= s;
@@ -4568,7 +4589,7 @@
       }
       function heal(p, n, src = P) {
         if (p.hp > 0 && p.hp < p.mh) {
-          n *= (src === P ? 1 + eqSt("hl") + (P.cls == "heal" ? clb(P) : 0) : 1) * (p === P ? 1 + eqSt("hl") : 1);
+          n *= (src === P ? 1 + eqSt("hl") + wp("hl") + (P.cls == "heal" ? clb(P) : 0) : 1) * (p === P ? 1 + eqSt("hl") : 1);
           const v = Math.min(p.mh - p.hp, n * aDm(src));
           if (S.b && S.sc == "arena") S.b.thr[src.id] = (S.b.thr[src.id] || 0) + v * 0.6; /* healing draws the boss's eye */
           p.hp += v;
@@ -4875,7 +4896,7 @@
         if (S.net && S.net.role == "member") {
           /* a member shows its own press at once; the leader decides what it does */
           if (p !== P) return;
-          p.cd[a] = Math.max(ENGINE.minCd, CL[p.cls].cd[a] * aCdm(p) * cdMul(p, a));
+          p.cd[a] = Math.max(ENGINE.minCd, CL[p.cls].cd[a] * aCdm(p) * cdMul(p, a) * wpCd(p, a));
           raidFx(p, a);
           const ra = { type: "ra", a, s: ++S.net.seq };
           if (a == 1 && p.aim != null) ra.t = p.aim;
@@ -4903,9 +4924,9 @@
         } else {
           if (a == 0) shoot(p, 7);
           else if (a == 1) { empower(p, buffTarget(p)); p.aim = null; }
-          else { const t = p.aimPt || healTarget(p) || p; p.aimPt = null; S.zo.push({ x: t.x, y: t.y, r: 90, l: 5 * (p === P ? 1 + eqSt("bd") : 1), t: 0, src: p.id }); } /* circle lands on the most hurt ally */
+          else { const t = p.aimPt || healTarget(p) || p; p.aimPt = null; S.zo.push({ x: t.x, y: t.y, r: 90, l: 5 * (p === P ? 1 + eqSt("bd") + wp("zl") : 1), t: 0, src: p.id }); } /* circle lands on the most hurt ally */
         }
-        if (ok && !DEV.nocd) p.cd[a] = Math.max(ENGINE.minCd, CL[p.cls].cd[a] * aCdm(p) * cdMul(p, a));
+        if (ok && !DEV.nocd) p.cd[a] = Math.max(ENGINE.minCd, CL[p.cls].cd[a] * aCdm(p) * cdMul(p, a) * wpCd(p, a));
       }
       /* bash(p): Shield Bash stuns 2 s; during a poise window it breaks the boss: stunned 4 s and +50% damage for 8 s */
       function bash(p) {
@@ -5217,7 +5238,7 @@
             p.dx = (p.x - ox) / Math.max(1e-3, dt * 200); p.dy = (p.y - oy) / Math.max(1e-3, dt * 200);
             p.ar = Math.max(0, (p.ar || 0) - dt); p.inv = Math.max(0, (p.inv || 0) - dt);
             for (let i = 0; i < 3; i++) p.cd[i] = Math.max(0, p.cd[i] - dt);
-            if (p.ucd > 0 && p.ucd < 1e8) p.ucd = Math.max(0, p.ucd - dt);
+            if (p.ucd > 0 && p.ucd < 1e8) p.ucd = Math.max(0, p.ucd - dt * (p === P ? 1 + wp("ult") : 1));
             if (p.sht > 0 && (p.sht -= dt) <= 0) p.sh = 0;
             if (p.emp > 0) p.emp -= dt;
             if (p.rush > 0) p.rush -= dt;
@@ -5992,10 +6013,11 @@
         smithUI();
       }
       function forgeUI() {
+        if (!EQ_K[FORGE.t].includes(FORGE.k)) FORGE.k = FORGE.t == "dmg" ? { tank: "wt", dps: "wd", heal: "wh" }[(P && P.cls) || "dps"] : EQ_K[FORGE.t][0];
         const F = FORGE, r = F.k == "dd" ? Math.max(2, F.r) : F.r, c = craftCost(F.t, r), ok = craftHave(c) && craftLvOk(r);
         const pill = (on, js, lab, col) => `<span onclick="${js};smithUI()" style="cursor:pointer;padding:3px 9px;border-radius:6px;border:1px solid ${on ? col || "#ffe08a" : "var(--ln)"};color:${on ? col || "#ffe08a" : "#f3e6c8"};background:rgba(0,0,0,.25);font:bold 12px Georgia">${lab}</span>`;
         let h = `<div class="mast"><span class="sm">Forge new gear</span></div>
-          <div class="row" style="gap:4px;flex-wrap:wrap">${["tank", "dmg", "util"].map((t) => pill(F.t == t, `FORGE.t='${t}';FORGE.k=EQ_K['${t}'][0]`, SLOT_N[t][1] + " " + SLOT_N[t][0])).join("")}</div>`;
+          <div class="row" style="gap:4px;flex-wrap:wrap">${["tank", "dmg", "util"].map((t) => pill(F.t == t, `FORGE.t='${t}';FORGE.k=`, SLOT_N[t][1] + " " + SLOT_N[t][0])).join("")}</div>`;
         if (EQ_K[F.t].length > 1) h += `<div class="row" style="gap:4px;flex-wrap:wrap">${EQ_K[F.t].map((k) => pill(F.k == k, `FORGE.k='${k}'`, EQ_N[k])).join("")}</div>`;
         h += `<div class="row" style="gap:4px;flex-wrap:wrap">${TIERS.map((T, i) => pill(r == i, `FORGE.r=${i}`, T[0], T[1])).join("")}</div>`;
         h += eqCard({ t: F.t, k: F.k, r }, `<button ${ok ? "" : "disabled"} onclick="craftMake()">Forge</button>`);
@@ -6004,7 +6026,7 @@
         h += `<div class="mast"><span class="sm">Temper (+1 tier) or salvage your gear</span></div>`;
         h += bag.length ? bag.map((it) => {
           const worn = on.includes(it.id), tc = it.r < 4 && craftCost(it.t, it.r + 1, 1), tok = tc && craftHave(tc) && craftLvOk(it.r + 1);
-          return eqCard(it, `<span style="display:flex;flex-direction:column;gap:3px;align-items:flex-end">${tc ? `<button ${tok ? "" : "disabled"} title="To ${TIERS[it.r + 1][0]}" onclick="craftTemper('${it.id}')">Temper</button><span class="sm">${costHtml(tc)}</span>` : `<span class="sm">Max tier</span>`}
+          return eqCard(it, `<span style="display:flex;flex-direction:column;gap:3px;align-items:flex-end">${tc ? `<button ${tok ? "" : "disabled"} title="To ${TIERS[it.r + 1][0]}" onclick="craftTemper('${it.id}')">Temper</button><span class="sm">${craftLvOk(it.r + 1) ? costHtml(tc) : `<span style="color:#ff7a6a">Legendary: level ${EQ_LEG_LV}</span>`}</span>` : `<span class="sm">Max tier</span>`}
             ${worn ? `<span class="sm" style="opacity:.7">worn</span>` : `<button class="alt" title="Break it down for ${SALV[it.r]} Rune Dust" onclick="craftSalvage('${it.id}')">Salvage ✨${SALV[it.r]}</button>`}</span>`);
         }).join("") : `<div class="sm" style="opacity:.7;padding:4px 2px">No gear yet. Forge some above, or buy from the Merchant.</div>`;
         const mats = Object.keys(MATS).map((k) => `<span title="${MATS[k].n}">${MATS[k].e}${(V.mat || {})[k] || 0}</span>`).join(" &nbsp;");
