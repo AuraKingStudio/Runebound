@@ -13,7 +13,7 @@ const ctx={document:doc,window:{},innerWidth:900,innerHeight:600,performance:{no
 ctx.RBNet=fakeNet;
 ctx.window=ctx;vm.createContext(ctx);
 vm.runInContext(SRC+`
-;globalThis.devMin=devMin;globalThis.devFs=devFs;globalThis.T={V:()=>V,raidDrops,invUI,invWear,MATS,setRaid:(k)=>S.raid=k,CLASS_DMG:()=>CLASS_DMG,P:()=>P,S:()=>S,start,devAdd,devUp,devUI,devCls,devHeal,devWipe,devResetQ,devArena,devBoss,devHub,DEV,hurt,act,step,pauseGame,resumeGame,isPaused:()=>paused,QUESTS,UPG,toggleDev,buy,shopUI,qAct,togglePause,dailyCheck,saveName,lvlInfo,gainXP,lvlCol,loreReward,isUnl,tutNext,bjVal,bjDeal,bjHit,bjStand,bjDouble,bjSplit,BJ:()=>BJ,guildFound,guildRecruit,gBonus,bountyDay,bountyAdd,bountyClaim,guildJoin,guildTab,rankPool,rankRefresh,rankSort,dm,dash,dashStep,setIn,padPoll,inMode:()=>INMODE,KEYHINT,HUBV:()=>HUBV,BOT_STUCK:()=>BOT_STUCK,ENGINE,cdMul,discordUnlock,openDlg,TUT_DONE,ult,ultDmg,ULT,inter,hitB,DASH,ZONE_DMG,RAIDS,BOSSES,raidTeam,raidAI,partyMembers,partyAdd,partyRemove,raidUI,playerUI,partyMessage,bash,taunt,inTele,toArena,PARTY:()=>PARTY,netRelayFlush,raidNet,raidState,raidApply,raidNetStep,arena,toArena,HUB_NPCS,BOT_NPC_LV,BARKEEP,CLASSN,SKC,PEMB,hubJoin,hubLeave,hubCount,HUB_MAX,hubVisitStep,botName,botLook,chatSend,COS,cosOwn,cosV,cosBuyGold,cosEquip,shopPay,myEmote,streamPts,crossFrame,bridgeAt,riverNear,clampW,WF,STATUE,PORTAL,SET,keyLabel,EDGE,inIsle,netReceive,netPrepareHub,netStep,netPack,netUnpack,netAudit,auditRules,goldAdd,gainXP,netStats,LEDGER:()=>LEDGER,FX:()=>FX,FT:()=>FT,shk:()=>shk,els:null};`,ctx);
+;globalThis.devMin=devMin;globalThis.devFs=devFs;globalThis.T={V:()=>V,raidDrops,invUI,craftCost,craftMake,craftTemper,craftSalvage,FORGE,smithUI,invWear,MATS,setRaid:(k)=>S.raid=k,CLASS_DMG:()=>CLASS_DMG,P:()=>P,S:()=>S,start,devAdd,devUp,devUI,devCls,devHeal,devWipe,devResetQ,devArena,devBoss,devHub,DEV,hurt,act,step,pauseGame,resumeGame,isPaused:()=>paused,QUESTS,UPG,toggleDev,buy,shopUI,qAct,togglePause,dailyCheck,saveName,lvlInfo,gainXP,lvlCol,loreReward,isUnl,tutNext,bjVal,bjDeal,bjHit,bjStand,bjDouble,bjSplit,BJ:()=>BJ,guildFound,guildRecruit,gBonus,bountyDay,bountyAdd,bountyClaim,guildJoin,guildTab,rankPool,rankRefresh,rankSort,dm,dash,dashStep,setIn,padPoll,inMode:()=>INMODE,KEYHINT,HUBV:()=>HUBV,BOT_STUCK:()=>BOT_STUCK,ENGINE,cdMul,discordUnlock,openDlg,TUT_DONE,ult,ultDmg,ULT,inter,hitB,DASH,ZONE_DMG,RAIDS,BOSSES,raidTeam,raidAI,partyMembers,partyAdd,partyRemove,raidUI,playerUI,partyMessage,bash,taunt,inTele,toArena,PARTY:()=>PARTY,netRelayFlush,raidNet,raidState,raidApply,raidNetStep,arena,toArena,HUB_NPCS,BOT_NPC_LV,BARKEEP,CLASSN,SKC,PEMB,hubJoin,hubLeave,hubCount,HUB_MAX,hubVisitStep,botName,botLook,chatSend,COS,cosOwn,cosV,cosBuyGold,cosEquip,shopPay,myEmote,streamPts,crossFrame,bridgeAt,riverNear,clampW,WF,STATUE,PORTAL,SET,keyLabel,EDGE,inIsle,netReceive,netPrepareHub,netStep,netPack,netUnpack,netAudit,auditRules,goldAdd,gainXP,netStats,LEDGER:()=>LEDGER,FX:()=>FX,FT:()=>FT,shk:()=>shk,els:null};`,ctx);
 const T=ctx.T,BENCH_ONLY=process.argv.includes('--bench');let f=0;const ok=(c,m)=>{if(!c||!BENCH_ONLY)console.log((c?'PASS ':'FAIL ')+m);if(!c)f++};
 T.start();ok(T.S().sc=='hub','start -> hub');
 ctx.document.getElementById('dlg').hidden=true;const pausedAt=T.S().tm;T.pauseGame();T.step(.1);ok(T.isPaused()&&T.S().tm===pausedAt,'pause freezes the game');T.resumeGame();ok(!T.isPaused(),'resume re-enables play');
@@ -127,6 +127,19 @@ ok(T.hubJoin('real0',{})===null,'hub: the same player cannot join twice');
 for(let i=0;i<12;i++)T.hubLeave('real'+i);ok(!T.HUBV().some(v=>!v.bot),'hub: leaving removes the player');
 {const s0=T.BOT_STUCK(),n0=T.HUBV().length;for(let i=0;i<60*240;i++)T.step(1/60);const g=T.BOT_STUCK()-s0;console.log('  bot give-ups in 240s:',g,'bots',n0);ok(g<=2,'hub: bots path around the river (rarely give up stuck)');}
 {const lo=T.HUB_NPCS({lv:1}),hi=T.HUB_NPCS({lv:60});ok(lo.every(n=>!n.lk||n.lk=='barkeep')&&hi.length==8,'hub: bots only visit NPCs their level has unlocked');}
+/* ---------- crafting at the Smith ---------- */
+{const V=T.V();V.mat={dust:100,shard:30,bark:30};V.gold=2000;V.eq={bag:[],on:{}};
+Object.assign(T.FORGE,{t:'dmg',k:'dmg',r:2});const c=T.craftCost('dmg',2);T.craftMake();
+ok(V.eq.bag.length==1&&V.eq.bag[0].r==2&&V.eq.on.dmg==V.eq.bag[0].id,'craft: forging makes the item and wears it into an empty slot');
+ok(V.mat.dust==100-c.mats.dust&&V.mat.shard==30-c.mats.shard&&V.gold==2000-c.gold,'craft: forging takes the materials and gold');
+ok(T.craftCost('tank',1).mats.bark>0&&!T.craftCost('tank',1).mats.shard&&T.craftCost('dmg',1).mats.shard>0,'craft: armor uses Thornbark, weapons Void Shards');
+ok(T.craftCost('dmg',4).mats.eye==1&&T.craftCost('tank',4).mats.heart==1,'craft: Legendary needs a rare drop');
+const id=V.eq.bag[0].id;T.craftTemper(id);ok(V.eq.bag[0].r==3,'craft: tempering raises the tier by one');
+Object.assign(T.FORGE,{t:'tank',k:'dr',r:0});T.craftMake();const sp=V.eq.bag[1];V.eq.on.tank=null;const d0=V.mat.dust;T.craftSalvage(sp.id);
+ok(V.eq.bag.length==1&&V.mat.dust>d0,'craft: salvaging a spare item gives Rune Dust back');
+T.craftSalvage(id);ok(V.eq.bag.length==1,'craft: worn gear cannot be salvaged');
+V.mat={};const g0=V.gold;Object.assign(T.FORGE,{t:'dmg',k:'dmg',r:3});T.craftMake();ok(V.eq.bag.length==1&&V.gold==g0,'craft: no materials, no forging');
+V.eq={bag:[],on:{}};V.mat={};}
 /* ---------- chat and emotes ---------- */
 T.chatSend('hello there');ok(T.P().say&&T.P().say.t=='hello there','chat: your line shows as a bubble');
 T.chatSend('/wave');ok(T.P().emo&&T.P().emo.e=='👋','chat: /wave plays the emote');
