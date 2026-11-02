@@ -2115,7 +2115,7 @@
           const tip = it ? `${TIERS[it.r][0]} ${EQ_N[it.k]}: ${EQ_D[it.k](eqV(it), it)}. Click to take off.` : SLOT_N[k] ? `${lab}: empty` : `${lab}: coming soon`;
           return `<div title="${tip}" ${it ? `onclick="invWear('${it.id}')"` : ""} style="position:absolute;left:${lx}%;top:${ty}%;transform:translate(-50%,-50%);width:58px;height:58px;border-radius:8px;
             border:1px solid ${it ? col : "var(--ln)"};border-bottom:3px solid ${col};background:linear-gradient(180deg, color-mix(in srgb, ${col} ${it ? 22 : 8}%, transparent), rgba(0,0,0,.18));box-shadow:${it ? `0 0 10px ${col}55` : "none"};cursor:${it ? "pointer" : "default"}">
-            <svg viewBox="-20 -20 40 40" width="54" height="54"><g fill="none" stroke="${col}" stroke-width="2.4" stroke-linecap="round" stroke-linejoin="round" opacity="${it ? 1 : 0.45}">${it ? EQ_G[it.t] : ghost}</g></svg>
+            <svg viewBox="-20 -20 40 40" width="54" height="54"><g fill="none" stroke="${col}" stroke-width="2.4" stroke-linecap="round" stroke-linejoin="round" opacity="${it ? 1 : 0.45}">${it ? (EQ_GK[it.k] || EQ_G[it.t]) : ghost}</g></svg>
             <div style="position:absolute;left:50%;top:100%;transform:translateX(-50%);font-size:10px;white-space:nowrap;color:${it ? col : "#b9a888"};margin-top:2px">${it ? EQ_N[it.k] : lab}</div></div>`;
         };
         /* the silhouette: head, neck, torso, arms, legs, a soft rune glow behind */
@@ -2156,16 +2156,16 @@
       const EQ_V = { dr: [0.04, 0.06, 0.08, 0.11, 0.15], dmg: [0.04, 0.06, 0.09, 0.12, 0.16], bd: [0.1, 0.15, 0.2, 0.3, 0.4], hl: [0.06, 0.09, 0.12, 0.16, 0.22], dd: [1, 1, 1, 1, 1] };
       const EQ_PRICE = [120, 220, 380, 600, 950], EQ_LEG_LV = 30;
       const EQ_K = { tank: ["dr"], dmg: ["wt", "wd", "wh"], util: ["dd", "bd", "hl"] };
-      const EQ_N = { dr: "Bulwark", dmg: "Fang", dd: "Twin Feather", bd: "Everbloom Sash", hl: "Mender's Lantern", wt: "Warden's Maul", wd: "Twin Fangs", wh: "Lifebloom Staff" };
-      /* ---------- class weapons (Weapon slot): one per class, only works for that class ----------
+      const EQ_N = { dr: "Bulwark", dmg: "Fang", dd: "Twin Feather", bd: "Everbloom Sash", hl: "Mender's Lantern", wt: "Warden's Aegis", wd: "Twin Fangs", wh: "Lifebloom Staff" };
+      /* ---------- class weapons (Weapon slot): one per class (tank: a shield), only works for that class ----------
          Every tier gives more damage (EQ_V.dmg); each rarity step adds one more perk (cumulative, WPERK[k][1..4]).
          Perk keys: dr less damage taken, dmg more damage, hl more healing done, cd [skill] cooldown cut, dcd dash cooldown cut,
-         ar dash armor, zl Circle lasts longer, ult ultimate charges faster. The old generic Fang ("dmg") stays valid for any class. */
+         ar dash armor, zl Circle lasts longer, hp max health, crit double-damage chance, emp Empower lasts longer. The old generic Fang ("dmg") stays valid for any class. */
       const WCLS = { wt: "tank", wd: "dps", wh: "heal" };
       const WPERK = {
-        wt: [null, ["dr", 0.04, "-4% damage taken"], ["cd1", 0.15, "Taunt cooldown -15%"], ["ar", 0.25, "Dash armor +25%"], ["ult", 0.25, "Ultimate charges 25% faster"]],
-        wd: [null, ["dmg", 0.05, "+5% more damage"], ["cd", 0.1, "Skill cooldowns -10%"], ["dcd", 0.2, "Dash cooldown -20%"], ["ult", 0.25, "Ultimate charges 25% faster"]],
-        wh: [null, ["hl", 0.06, "+6% healing done"], ["zl", 0.2, "Circle lasts 20% longer"], ["cd", 0.1, "Skill cooldowns -10%"], ["ult", 0.25, "Ultimate charges 25% faster"]],
+        wt: [null, ["dr", 0.04, "-4% damage taken"], ["cd1", 0.15, "Taunt cooldown -15%"], ["ar", 0.25, "Dash armor +25%"], ["hp", 0.2, "+20% max health"]],
+        wd: [null, ["dmg", 0.05, "+5% more damage"], ["cd", 0.1, "Skill cooldowns -10%"], ["dcd", 0.2, "Dash cooldown -20%"], ["crit", 0.15, "15% chance to crit for double damage"]],
+        wh: [null, ["hl", 0.06, "+6% healing done"], ["zl", 0.2, "Circle lasts 20% longer"], ["cd", 0.1, "Skill cooldowns -10%"], ["emp", 0.4, "Empower and its shields last 40% longer"]],
       };
       /* wp(key): the worn weapon's perk total for key (0 if none, or it is another class's weapon) */
       function wp(key) {
@@ -2177,6 +2177,7 @@
       }
       const wpCd = (p, a) => (p === P ? 1 - wp("cd") - wp("cd" + a) : 1);
       const EQ_D = { dr: (v) => `-${Math.round(v * 100)}% damage taken`, dmg: (v) => `+${Math.round(v * 100)}% damage`, wt: (v, it) => wpDesc("wt", v, it), wd: (v, it) => wpDesc("wd", v, it), wh: (v, it) => wpDesc("wh", v, it), dd: () => "Dash twice in a row", bd: (v) => `Your buffs last ${Math.round(v * 100)}% longer`, hl: (v) => `+${Math.round(v * 100)}% healing done and received` };
+      const EQ_GK = { wt: '<path d="M0-14 12-9v7c0 8-5 13-12 16-7-3-12-8-12-16v-7z"/><path d="M0-9v18M-7-3h14"/>', wh: '<path d="M-8 13 6-5"/><circle cx="8" cy="-8" r="4.5"/><path d="M8-15v2M14-8h-2"/>' };
       const EQ_G = { tank: '<path d="M0-14 12-9v7c0 8-5 13-12 16-7-3-12-8-12-16v-7z"/>', dmg: '<path d="M-10 12 10-12M4-12h6v6M-12 6l6 6"/>', util: '<circle r="9"/><path d="M0-5v5l4 3"/>' };
       const wpDesc = (k, v, it) => `${CL[WCLS[k]].n} only. +${Math.round(v * 100)}% damage` + WPERK[k].slice(1, (it ? it.r : 0) + 1).map((q) => ", " + q[2]).join("") + (P && P.cls != WCLS[k] ? " (not your class)" : "");
       const eqOk = (it) => it && EQ_K[it.t] && (EQ_K[it.t].includes(it.k) || (it.t == "dmg" && it.k == "dmg")) && Number.isInteger(it.r) && it.r >= 0 && it.r <= 4 && (it.k != "dd" || it.r >= 2);
@@ -2216,7 +2217,7 @@
       }
       function eqCard(it, btn) {
         const [tn, col] = TIERS[it.r];
-        return `<div class="up" style="--uc:${col}"><svg viewBox="-20 -20 40 40" width="46" height="46"><circle r="18" fill="#0b1218" stroke="${col}" stroke-width="2"/><g fill="none" stroke="${col}" stroke-width="2.6" stroke-linecap="round">${EQ_G[it.t]}</g></svg>
+        return `<div class="up" style="--uc:${col}"><svg viewBox="-20 -20 40 40" width="46" height="46"><circle r="18" fill="#0b1218" stroke="${col}" stroke-width="2"/><g fill="none" stroke="${col}" stroke-width="2.6" stroke-linecap="round">${(EQ_GK[it.k] || EQ_G[it.t])}</g></svg>
           <div style="min-width:0;flex:1"><span class="nm">${tn} ${EQ_N[it.k]}</span><div class="sm">${EQ_D[it.k](eqV(it), it)}</div></div>${btn}</div>`;
       }
       /* CLB: class bonus from one shop stat (per level): tank Stoneheart less damage taken, DPS Rune Edge faster Engine, healer Sigil more healing */
@@ -2225,7 +2226,7 @@
       /* upCost(u, l): next upgrade level price; gentle ramp so early levels come fast and the last ones are a goal */
       const upCost = (u, l) => u.b * (l + 1) + 10 * l * l;
       const dm = () => (1 + 0.12 * V.up.dmg) * (1 + eqSt("dmg")) * (1 + wp("dmg")),
-        hpm = () => (1 + 0.15 * V.up.vit) * (bless("stone") ? 1.3 : 1),
+        hpm = () => (1 + 0.15 * V.up.vit) * (bless("stone") ? 1.3 : 1) * (1 + wp("hp")),
         spm = () => 1 + 0.06 * V.up.spd,
         cdm = () => 1 - 0.08 * V.up.cdr;
       /* ---------- simulation (runs locally) ---------- */
@@ -4624,6 +4625,7 @@
       const ZONE_DMG = 1.25; /* damage bonus while standing in a healer's Circle */
       function hitB(d, src = P, full = 0) { /* full: skip CLASS_DMG (Overdrive keeps its whole punch) */
         d = d * SKM; /* skill level bonus for direct hits */
+        if (src === P && wp("crit") && Math.random() < wp("crit")) { d *= 2; if (S.b) ftxt(S.b.x, S.b.y - S.b.r - 18, "CRIT!", "#ff9f43", 13); } /* Twin Fangs (Legendary) */
         const b = S.b;
         if (!b || S.end) return;
         const z = S.zo && S.zo.some((o) => dist(src, o) < o.r) ? ZONE_DMG : 1; /* standing in a healer's Circle: hits harder */
@@ -4981,7 +4983,7 @@
         return INMODE == "kb" && MOUSE.on ? mouseClamp(p, MOUSE) : null;
       }
       function empower(p, t) {
-        const bd = p === P ? 1 + eqSt("bd") : 1;
+        const bd = p === P ? 1 + eqSt("bd") + wp("emp") : 1;
         if (t === p) return heal(p, EMP.self, p);
         if (t.cls == "dps") { t.emp = EMP.t * bd; ftxt(t.x, t.y - 30, "EMPOWERED", "#ffd84a", 11); }
         else { t.sh = Math.max(t.sh || 0, t.cls == "tank" ? EMP.sh : EMP.shH); t.sht = EMP.t * bd; ftxt(t.x, t.y - 30, "+shield", "#9fd4ff", 11); if (t.cls == "tank") t.stunUp = 1; /* next stun lasts 50% longer */ }

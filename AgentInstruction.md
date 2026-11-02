@@ -249,7 +249,7 @@ Built and tested (unit tests plus the `cheat`, `flood`, `econ`, `hphack`, `chat`
 - Hub bots: river slide uses the radial normal (bends); pinned >0.5 s near the bank -> detour waypoint out and along the bank; give up after 2.5 s (BOT_STUCK counts; test: <=2 in 240 s).
 
 - Crafting (Smith > Forge tab): CRAFT_R[tier] = [dust, boss mat, gold]; armor = Thornbark, weapon = Void Shard, charm = half each; Legendary +1 rare (heart/eye) and level EQ_LEG_LV. Temper = 60% of next tier's cost. Salvage (not worn) gives SALV[tier] dust. Bag max 40.
-- Class weapons (Weapon slot, t "dmg"): wt Warden's Maul (tank), wd Twin Fangs (dps), wh Lifebloom Staff (heal). Base +dmg by tier (EQ_V.dmg) only for its class; WPERK[k][1..4] adds a perk per rarity (cumulative); wp(key) reads them (dr, dmg, hl, cd/cdN, dcd, ar, zl, ult). The old generic Fang ("dmg") stays valid. Shop stock: 3 random armor/charm + 1 weapon for your class.
+- Class weapons (Weapon slot, t "dmg"): wt Warden's Aegis (tank, a shield), wd Twin Fangs (dps), wh Lifebloom Staff (heal). Base +dmg by tier (EQ_V.dmg) only for its class; WPERK[k][1..4] adds a perk per rarity (cumulative); wp(key) reads them (dr, dmg, hl, cd/cdN, dcd, ar, zl, hp, crit, emp); Legendary: Aegis +20% max HP, Fangs 15% crit x2, Staff Empower +40%. The old generic Fang ("dmg") stays valid. Shop stock: 3 random armor/charm + 1 weapon for your class.
 
 ## Not done / open
 

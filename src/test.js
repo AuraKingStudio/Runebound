@@ -143,11 +143,11 @@ V.eq={bag:[],on:{}};V.mat={};}
 /* ---------- class weapons ---------- */
 {const V=T.V(),P=T.P(),c0=P.cls;P.cls='dps';V.eq={bag:[{id:'w1',t:'dmg',k:'wd',r:0}],on:{dmg:'w1'}};const d0=T.dmF();
 ok(T.wp('dmg')==0&&d0>1,'weapon: a Common weapon only gives base damage');
-V.eq.bag[0].r=4;ok(T.wp('dmg')==0.05&&T.wp('cd')==0.1&&T.wp('dcd')==0.2&&T.wp('ult')==0.25,'weapon: each rarity adds its perk (Legendary has all 4)');
+V.eq.bag[0].r=4;ok(T.wp('dmg')==0.05&&T.wp('cd')==0.1&&T.wp('dcd')==0.2&&T.wp('crit')==0.15,'weapon: each rarity adds its perk (Legendary Fangs crit)');
 ok(T.dmF()>d0,'weapon: higher tier hits harder');
 P.cls='tank';ok(T.wp('dmg')==0&&T.dmF()<d0*1.0001,'weapon: another class gets nothing from it');
-V.eq.bag[0]={id:'w1',t:'dmg',k:'wt',r:2};ok(T.wp('dr')==0.04&&T.wp('cd1')==0.15,'weapon: the tank Maul gives less damage taken and faster Taunt');
-P.cls='heal';V.eq.bag[0]={id:'w1',t:'dmg',k:'wh',r:2};ok(T.wp('hl')==0.06&&T.wp('zl')==0.2,'weapon: the Staff gives more healing and a longer Circle');
+V.eq.bag[0]={id:'w1',t:'dmg',k:'wt',r:2};ok(T.wp('dr')==0.04&&T.wp('cd1')==0.15,'weapon: the tank Aegis gives less damage taken and faster Taunt');
+V.eq.bag[0].r=4;ok(T.wp('hp')==0.2,'weapon: the Legendary Aegis gives +20% max health');P.cls='heal';V.eq.bag[0]={id:'w1',t:'dmg',k:'wh',r:4};ok(T.wp('emp')==0.4,'weapon: the Legendary Staff makes Empower last longer');ok(T.wp('hl')==0.06&&T.wp('zl')==0.2,'weapon: the Staff gives more healing and a longer Circle');
 const st=T.eqRoll(3);ok(st.length==4&&st.filter(i=>i.t=='dmg').length==1&&st[3].k=='wh'&&st.slice(0,3).every(i=>i.t!='dmg'),'shop: 3 armor/charm pieces + 1 weapon for your class');
 P.cls=c0;V.eq={bag:[],on:{}};}
 /* ---------- chat and emotes ---------- */
