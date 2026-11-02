@@ -402,6 +402,28 @@
       .rcard .boss { font-weight: bold; color: #e6f1ef; }
       .rcard.locked { filter: grayscale(0.7); opacity: 0.85; min-height: 150px; }
       .rcard .chains { position: absolute; inset: 0; width: 100%; height: 100%; pointer-events: none; }
+      /* raid cards: boss banner on top, then name, difficulty, roles, team, rewards, enter */
+      .pn .rcard { padding: 0 !important; display: flex; flex-direction: column; gap: 0; }
+      .rban { position: relative; height: 112px; display: grid; place-items: center; overflow: hidden;
+        background: radial-gradient(ellipse at 50% 60%, color-mix(in srgb, var(--b0) 45%, transparent), transparent 70%), linear-gradient(180deg, color-mix(in srgb, var(--b1) 80%, #000), #0b0805);
+        border-bottom: 1px solid var(--gild, #c9a14a); }
+      .rban img { width: 132px; height: 132px; margin-top: 6px; filter: drop-shadow(0 4px 8px #000a); transition: transform .25s; }
+      .rcard:not(.locked):hover .rban img { transform: scale(1.06) translateY(-2px); }
+      .rban .rsize { position: absolute; top: 7px; right: 8px; font: bold 12px Georgia; color: #ffe08a; background: #000a; border: 1px solid #c9a14a88; border-radius: 12px; padding: 1px 8px; }
+      .rban .rsize::after { content: " players"; font-weight: normal; opacity: .75; }
+      .rban .rlock { font-size: 36px; opacity: .6; }
+      .rbody { display: grid; gap: 6px; padding: 10px 12px 12px; }
+      .rdiff { color: #ffb35a; font-size: 12px; letter-spacing: 1px; }
+      .rroles, .rteam, .rrew { display: flex; flex-wrap: wrap; gap: 4px; align-items: center; }
+      .rrole { font: bold 11px Georgia; padding: 2px 7px; border-radius: 10px; color: var(--rc); border: 1px solid color-mix(in srgb, var(--rc) 55%, transparent); background: color-mix(in srgb, var(--rc) 12%, transparent); }
+      .rmem { font: 12px Georgia; padding: 1px 7px; border-radius: 6px; color: #f3e6c8; border-left: 3px solid var(--rc); background: #0006; }
+      .rmem i { opacity: .6; font-size: 10px; }
+      .rrew .sm { margin-right: 2px; }
+      .rdrop { font-size: 12px; padding: 1px 6px; border-radius: 6px; background: #0006; color: #f3e6c8; }
+      .rdrop.rare { box-shadow: 0 0 0 1px #ff9f43aa; }
+      .rbody { flex: 1; }
+      .pn .rcard .claim { margin-top: auto; align-self: end; height: 42px; min-height: 0; font-size: 16px; padding: 0 14px; }
+      .rtip { opacity: .75; text-align: center; }
       #btns #bg { left: calc(50% - 64px); }
       .net-badge {
         position: absolute; left: 1.4%; bottom: 8px; max-width: min(200px, 40vw); padding: 3px 7px; font-size: 10px !important; opacity: 0.75; white-space: pre-line; display: none !important;
@@ -1667,6 +1689,7 @@
         $ = (i) => document.getElementById(i),
         cv = $("cv"),
         c = cv.getContext("2d");
+      const MAIN_C = c;
       /* low spec mode (Settings): SET.low. lowSpec() is safe before SET exists. In low spec: 1x resolution, no glow blur,
          static thinned grass, no light map / haze / motes / foreground leaves, fewer particles. */
       /* raids above 6 players drop the glow blur: it is the main fill cost left with 12 bodies + boss on screen */
@@ -4465,20 +4488,47 @@
         return `<svg class="chains" viewBox="0 0 220 160" preserveAspectRatio="none" aria-hidden="true">${links}
           <rect x="94" y="64" width="32" height="26" rx="4" fill="#3a3630" stroke="#c9c4b4" stroke-width="2.5"/><path d="M101 64v-8a9 9 0 0 1 18 0v8" fill="none" stroke="#c9c4b4" stroke-width="3"/><circle cx="110" cy="76" r="3" fill="#c9c4b4"/></svg>`;
       }
+      /* bossPortrait(key): the boss drawn by its own in-game sprite into a small canvas (cached data URL), for the raid cards */
+      const BOSS_PIC = {};
+      function bossPortrait(key) {
+        if (BOSS_PIC[key] != null) return BOSS_PIC[key];
+        BOSS_PIC[key] = "";
+        try {
+          const D = BOSSES[key], sz = 132, pc = document.createElement("canvas");
+          pc.width = pc.height = sz * 2;
+          const g = pc.getContext("2d");
+          if (!g || !pc.toDataURL) return "";
+          const b = { x: 0, y: 0, r: D.r, ph: 1, hf: 0, kind: key };
+          g.scale(2, 2); g.translate(sz / 2, sz / 2 + (D.horns ? 2 : 4)); const k = Math.min(1.25, (D.horns ? 38 : 46) / D.r); g.scale(k, k);
+          bossSprite(b, D, D.ring[0], D.eye[0], 0, g);
+          BOSS_PIC[key] = pc.toDataURL();
+        } catch (e) {}
+        return BOSS_PIC[key];
+      }
+      const RAID_DIFF = { small: [1, "Learn the dance"], large: [2, "Hits hard, splits the party"], epic: [3, "For seasoned guilds"] };
       function raidUI() {
         CUR_DLG = "raid";
         $("dlg").hidden = false;
         const lead = isLeader();
+        const roleChip = (cls, n) => `<span class="rrole" style="--rc:${SKC[cls]}">${{ tank: "🛡️", heal: "✚", dps: "⚔️" }[cls]} ${n} ${cls == "heal" ? "Healer" : cls == "tank" ? "Tank" : "DPS"}${n > 1 && cls != "dps" ? "s" : ""}</span>`;
         const card = (k) => {
-          const R = RAIDS[k], D = BOSSES[R.boss];
-          if (R.locked) return `<div class="rcard locked"><b>${R.n}</b><span class="sm">${R.size} players · ${R.comp.tank} Tanks · ${R.comp.heal} Healers · ${R.comp.dps} DPS</span><span class="sm">Sealed. Coming later.</span>${raidChains()}</div>`;
-          const t = raidTeam(k), who = t.err ? `<span class="sm need">${esc(t.err)}</span>` : `<span class="sm">${t.team.map((m) => `<i style="color:${SKC[m.cls]}">${m.me ? "You" : esc(m.name)}${m.filler ? " (bot)" : ""}</i>`).join(", ")}</span>`;
-          return `<div class="rcard"><b>${R.n}</b><span class="boss">${D.n}</span><span class="sm">${R.size} players · ${R.comp.tank} Tank${R.comp.tank > 1 ? "s" : ""} · ${R.comp.heal} Healer${R.comp.heal > 1 ? "s" : ""} · ${R.comp.dps} DPS</span>${who}
-            <button class="claim" onclick="enterRaid('${k}')" ${lead && !t.err ? "" : "disabled"}>${lead ? "ENTER" : "Leader starts"}</button></div>`;
+          const R = RAIDS[k], D = BOSSES[R.boss], [stars, blurb] = RAID_DIFF[k] || [1, ""];
+          const diff = `<span class="rdiff" title="Difficulty">${"◆".repeat(stars)}<span style="opacity:.25">${"◆".repeat(3 - stars)}</span> <span class="sm">${blurb}</span></span>`;
+          const roles = `<div class="rroles">${["tank", "heal", "dps"].map((c2) => roleChip(c2, R.comp[c2])).join("")}</div>`;
+          if (R.locked)
+            return `<div class="rcard locked"><div class="rban" style="--b0:#2a2a33;--b1:#111"></div><div class="rbody"><b>${R.n}</b><span class="boss">Sealed · coming later</span>${diff}${roles}</div>${raidChains()}</div>`;
+          const t = raidTeam(k);
+          const team = t.err ? `<span class="sm need">${esc(t.err)}</span>` : `<div class="rteam">${t.team.map((m) => `<span class="rmem" style="--rc:${SKC[m.cls]}" title="${m.filler ? "Bot fills this role" : ""}">${m.me ? "You" : esc(m.name)}${m.filler ? " <i>bot</i>" : ""}</span>`).join("")}</div>`;
+          const drops = (MAT_DROP[R.boss] || []).map(([mk, a, b]) => `<span title="${MATS[mk].n}${b == null ? " (rare)" : ""}" class="rdrop${b == null ? " rare" : ""}">${MATS[mk].e}${b == null ? "" : ` ${a}-${b}`}</span>`).join("");
+          const pic = bossPortrait(R.boss);
+          return `<div class="rcard"><div class="rban" style="--b0:${D.ring[0]};--b1:${D.body}">${pic ? `<img src="${pic}" alt="">` : ""}<span class="rsize">${R.size}</span></div>
+            <div class="rbody"><b>${R.n}</b><span class="boss" style="color:${D.ring[0]}">${D.n}</span>${diff}${roles}${team}
+            <div class="rrew"><span class="sm">Rewards</span><span class="rdrop">✨</span>${drops}<span class="rdrop"><span class="coin"></span>×${R.reward}</span></div>
+            <button class="claim" onclick="enterRaid('${k}')" ${lead && !t.err ? "" : "disabled"}>${lead ? "⚔ ENTER" : "Leader starts"}</button></div></div>`;
         };
         $("dp").innerHTML = `<h2>⚔ Choose a raid</h2><div class="raids">${["small", "large", "epic"].map(card).join("")}</div>
-          <p class="sm">Keep the party alive until your DPS outscales the boss. Tank: Taunt and Shield Bash its weak moments. Healer: heal, dodge, and clear the Doom.</p>
-          <button class="alt" onclick="closeDlg()">Not yet</button>`;
+          <p class="sm rtip">Keep the party alive until your DPS outscales the boss. Tank: Taunt and Shield Bash its weak moments. Healer: heal, dodge, and clear the Doom.</p>
+          <button class="alt x" onclick="closeDlg()" title="Close">Close</button>`;
       }
       function enterRaid(key) {
         if (!isLeader()) return toast("Only your party leader can start a raid.");
@@ -7258,7 +7308,7 @@
         }
         /* ultimate button: charge sweep; the healer's shows "used" after its one revive */
         {
-          const b = $("bu"), u = ULT[m.cls], cd = m.ucd > 1e8 ? 0 : m.ucd || 0, used = m.ucd > 1e8 || (m.cls == "heal" && m.rev);
+          const b = $("bu"), u = ULT[m.cls], cd = m.ucd > 1e8 ? 0 : m.ucd || 0, used = m.ucd > 1e8 || (m.cls == "heal" && !!m.rev); /* !!: toggle(k, undefined) flips every frame (healer ult blinked in the hub) */
           if (b.dataset.cls != m.cls) {
             b.dataset.cls = m.cls;
             b.style.setProperty("--sc", SKC[m.cls]);
@@ -11636,7 +11686,8 @@
          Seer: a hovering hooded wraith, tattered cloak, one great eye that follows its target, rune shards orbiting it.
          Thornmaw: a hulking bark-armoured beast seen from above, mossy back with thorn spines, curled horns, clawed arms that sway.
          Phase 2: the body cracks with its rage colour. f = flash (wind-up), b.hf = hit flash. */
-      function bossSprite(b, D, rc, ec, f) {
+      function bossSprite(b, D, rc, ec, f, cx) {
+        const c = cx || MAIN_C; /* cx: draw somewhere else (raid card portraits) */
         const R = b.r, t = S.tm, p2 = b.ph == 2, tg = actor(b.cur || b.tg), look = tg ? Math.atan2(tg.y - b.y, tg.x - b.x) : Math.PI / 2;
         const lx = Math.cos(look), ly = Math.sin(look);
         const crack = (pts, w) => { c.strokeStyle = rc; c.lineWidth = w; c.shadowColor = rc; c.shadowBlur = 10; c.beginPath(); pts.forEach((q, k) => (k ? c.lineTo : c.moveTo).call(c, q[0] * R, q[1] * R)); c.stroke(); c.shadowBlur = 0; };
