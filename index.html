@@ -421,7 +421,19 @@
       .rrew .sm { margin-right: 2px; }
       .rdrop { font-size: 12px; padding: 1px 6px; border-radius: 6px; background: #0006; color: #f3e6c8; }
       .rdrop.rare { box-shadow: 0 0 0 1px #ff9f43aa; }
-      .rbody { flex: 1; }
+      .rbody { flex: 1; display: flex !important; flex-direction: column; }
+      .pn .raids { gap: 12px; }
+      .pn .rcard { background: radial-gradient(ellipse at 50% 0%, color-mix(in srgb, var(--b0) 16%, transparent), transparent 60%), linear-gradient(180deg, #2a1d10, #140d07) !important;
+        border: 1px solid color-mix(in srgb, var(--b0) 45%, var(--gild, #c9a14a)) !important; border-radius: 12px; box-shadow: inset 0 1px 0 #ffffff14, 0 6px 16px #0008 !important; }
+      .pn .rcard:not(.locked):hover { box-shadow: inset 0 1px 0 #ffffff14, 0 8px 20px #000a, 0 0 18px color-mix(in srgb, var(--b0) 35%, transparent) !important; }
+      .rbody { padding: 12px 14px 14px !important; gap: 8px !important; }
+      .rbody b, .rbody .boss { margin: 0; line-height: 1.15; }
+      .rbody .boss { font-size: 16px; margin-top: -4px; }
+      .rbody .rteam, .rbody .rrew { padding-top: 6px; border-top: 1px solid #ffffff12; }
+      .pn .rcard.locked { grid-column: 1 / -1; min-height: 0; }
+      .pn .rcard.locked .rban { height: 64px; }
+      .pn .rcard.locked .rbody { padding: 10px 14px !important; }
+      .rtip { margin: 12px 6px 4px; padding: 8px 12px; border-radius: 8px; background: #0005; border: 1px solid #ffffff10; }
       .pn .rcard .claim { margin-top: auto; align-self: end; height: 42px; min-height: 0; font-size: 16px; padding: 0 14px; }
       .rtip { opacity: .75; text-align: center; }
       #btns #bg { left: calc(50% - 64px); }
@@ -4516,12 +4528,12 @@
           const diff = `<span class="rdiff" title="Difficulty">${"◆".repeat(stars)}<span style="opacity:.25">${"◆".repeat(3 - stars)}</span> <span class="sm">${blurb}</span></span>`;
           const roles = `<div class="rroles">${["tank", "heal", "dps"].map((c2) => roleChip(c2, R.comp[c2])).join("")}</div>`;
           if (R.locked)
-            return `<div class="rcard locked"><div class="rban" style="--b0:#2a2a33;--b1:#111"></div><div class="rbody"><b>${R.n}</b><span class="boss">Sealed · coming later</span>${diff}${roles}</div>${raidChains()}</div>`;
+            return `<div class="rcard locked" style="--b0:#777"><div class="rban" style="--b0:#2a2a33;--b1:#111"></div><div class="rbody"><b>${R.n}</b><span class="boss">Sealed · coming later</span>${diff}${roles}</div>${raidChains()}</div>`;
           const t = raidTeam(k);
           const team = t.err ? `<span class="sm need">${esc(t.err)}</span>` : `<div class="rteam">${t.team.map((m) => `<span class="rmem" style="--rc:${SKC[m.cls]}" title="${m.filler ? "Bot fills this role" : ""}">${m.me ? "You" : esc(m.name)}${m.filler ? " <i>bot</i>" : ""}</span>`).join("")}</div>`;
           const drops = (MAT_DROP[R.boss] || []).map(([mk, a, b]) => `<span title="${MATS[mk].n}${b == null ? " (rare)" : ""}" class="rdrop${b == null ? " rare" : ""}">${MATS[mk].e}${b == null ? "" : ` ${a}-${b}`}</span>`).join("");
           const pic = bossPortrait(R.boss);
-          return `<div class="rcard"><div class="rban" style="--b0:${D.ring[0]};--b1:${D.body}">${pic ? `<img src="${pic}" alt="">` : ""}<span class="rsize">${R.size}</span></div>
+          return `<div class="rcard" style="--b0:${D.ring[0]}"><div class="rban" style="--b0:${D.ring[0]};--b1:${D.body}">${pic ? `<img src="${pic}" alt="">` : ""}<span class="rsize">${R.size}</span></div>
             <div class="rbody"><b>${R.n}</b><span class="boss" style="color:${D.ring[0]}">${D.n}</span>${diff}${roles}${team}
             <div class="rrew"><span class="sm">Rewards</span><span class="rdrop">✨</span>${drops}<span class="rdrop"><span class="coin"></span>×${R.reward}</span></div>
             <button class="claim" onclick="enterRaid('${k}')" ${lead && !t.err ? "" : "disabled"}>${lead ? "⚔ ENTER" : "Leader starts"}</button></div></div>`;
