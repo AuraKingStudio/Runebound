@@ -402,18 +402,18 @@
       .rcard .boss { font-weight: bold; color: #e6f1ef; }
       .rcard.locked { filter: grayscale(0.7); opacity: 0.85; min-height: 150px; }
       .rcard .chains { position: absolute; inset: 0; width: 100%; height: 100%; pointer-events: none; }
-      /* raid window: an old war-table map - dark sepia parchment, paper grain, faded map lines, a compass rose, burnt edges */
-      .pn.raidpn {
+      /* every window (raid select first): an old war-table map - dark sepia parchment, paper grain, faded map lines, a compass rose, burnt edges */
+      .pn, .pn.raidpn {
         background:
           radial-gradient(ellipse at 50% 50%, transparent 60%, #120803b3 100%),
-          url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='-100 -100 200 200'%3E%3Cg fill='none' stroke='%23e8c88a' stroke-opacity='.3'%3E%3Ccircle r='92' stroke-width='1.5'/%3E%3Ccircle r='86' stroke-dasharray='2 5'/%3E%3Ccircle r='58'/%3E%3Cpath d='M0-96V96M-96 0H96M-68-68 68 68M-68 68 68-68' stroke-dasharray='3 6'/%3E%3C/g%3E%3Cg fill='%23e8c88a' fill-opacity='.22'%3E%3Cpath d='M0-80 10-10 0 0-10-10zM0 80 10 10 0 0-10 10zM-80 0-10-10 0 0-10 10zM80 0 10-10 0 0 10 10z'/%3E%3Cpath d='M0-40 5-5 0 0-5-5zM40 0 5 5 0 0 5-5z' fill-opacity='.8' transform='rotate(45)'/%3E%3C/g%3E%3Ctext y='-62' font-family='Georgia' font-size='12' text-anchor='middle' fill='%23e8c88a' fill-opacity='.45'%3EN%3C/text%3E%3C/svg%3E") center 46% / min(360px, 80%) no-repeat,
+          url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='-100 -100 200 200'%3E%3Cg fill='none' stroke='%23e8c88a' stroke-opacity='.16'%3E%3Ccircle r='92' stroke-width='1.5'/%3E%3Ccircle r='86' stroke-dasharray='2 5'/%3E%3Ccircle r='58'/%3E%3Cpath d='M0-96V96M-96 0H96M-68-68 68 68M-68 68 68-68' stroke-dasharray='3 6'/%3E%3C/g%3E%3Cg fill='%23e8c88a' fill-opacity='.09'%3E%3Cpath d='M0-80 10-10 0 0-10-10zM0 80 10 10 0 0-10 10zM-80 0-10-10 0 0-10 10zM80 0 10-10 0 0 10 10z'/%3E%3Cpath d='M0-40 5-5 0 0-5-5zM40 0 5 5 0 0 5-5z' fill-opacity='.8' transform='rotate(45)'/%3E%3C/g%3E%3Ctext y='-62' font-family='Georgia' font-size='12' text-anchor='middle' fill='%23e8c88a' fill-opacity='.25'%3EN%3C/text%3E%3C/svg%3E") center 46% / min(360px, 80%) no-repeat,
           url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='300' height='300'%3E%3Cg fill='none' stroke='%23d9b26a' stroke-opacity='.18' stroke-width='1.2'%3E%3Cpath d='M-10 60q60-30 110 0t120 10 90-20'/%3E%3Cpath d='M-10 150q50 20 100-10t110 5 110-15'/%3E%3Cpath d='M-10 240q70-25 130 5t180-20'/%3E%3Cpath d='M70-10q-20 80 10 160t-10 160' stroke-dasharray='4 6'/%3E%3Cpath d='M220-10q25 90-5 170t15 140' stroke-dasharray='4 6'/%3E%3C/g%3E%3C/svg%3E") 0 0 / 300px,
           url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='420' height='420'%3E%3Cfilter id='b'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='.012' numOctaves='4' seed='9'/%3E%3CfeColorMatrix values='0 0 0 0 .1 0 0 0 0 .06 0 0 0 0 .02 0 0 0 1.2 -.55'/%3E%3C/filter%3E%3Crect width='420' height='420' filter='url(%23b)'/%3E%3C/svg%3E") 0 0 / 420px,
           url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='160' height='160'%3E%3Cfilter id='n'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='.9' numOctaves='3' seed='4'/%3E%3CfeColorMatrix values='0 0 0 0 .25 0 0 0 0 .17 0 0 0 0 .08 0 0 0 .3 0'/%3E%3C/filter%3E%3Crect width='160' height='160' filter='url(%23n)'/%3E%3C/svg%3E") 0 0 / 160px,
           radial-gradient(ellipse at 50% 30%, #9a7442, #6a4c26 55%, #3a2814) !important;
         box-shadow: 0 0 0 3px #120a04, 0 0 0 5px #8a6d2c, 0 0 0 6px #120a04, inset 0 0 40px #0009, inset 0 0 14px #2a1405, 0 24px 60px #000d, 0 0 40px #f0c35a1a !important;
       }
-      .pn.raidpn h2 { text-shadow: 0 2px 0 #000, 0 0 18px #f0c35a55; }
+      .pn h2, .pn.raidpn h2 { text-shadow: 0 2px 0 #000, 0 0 18px #f0c35a55; }
       .pn.raidpn .rcard { background: radial-gradient(ellipse at 50% 0%, color-mix(in srgb, var(--b0) 18%, transparent), transparent 60%), linear-gradient(180deg, #1f150bd9, #110a05e0) !important; }
       /* raid cards: boss banner on top, then name, difficulty, roles, team, rewards, enter */
       .pn .rcard { padding: 0 !important; display: flex; flex-direction: column; gap: 0; }
