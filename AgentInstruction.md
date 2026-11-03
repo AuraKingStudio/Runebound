@@ -251,6 +251,11 @@ Built and tested (unit tests plus the `cheat`, `flood`, `econ`, `hphack`, `chat`
 - Crafting (Smith > Forge tab): CRAFT_R[tier] = [dust, boss mat, gold]; armor = Thornbark, weapon = Void Shard, charm = half each; Legendary +1 rare (heart/eye) and level EQ_LEG_LV. Temper = 60% of next tier's cost. Salvage (not worn) gives SALV[tier] dust. Bag max 40.
 - Class weapons (Weapon slot, t "dmg"): wt Warden's Aegis (tank, a shield), wd Twin Fangs (dps), wh Lifebloom Staff (heal). Base +dmg by tier (EQ_V.dmg) only for its class; WPERK[k][1..4] adds a perk per rarity (cumulative); wp(key) reads them (dr, dmg, hl, cd/cdN, dcd, ar, zl, hp, crit, emp); Legendary: Aegis +20% max HP, Fangs 15% crit x2, Staff Empower +40%. The old generic Fang ("dmg") stays valid. Shop stock: 3 random armor/charm + 1 weapon for your class.
 
+- Drops tuned to ~4 items per win (dust 2-3 x raid reward, boss mat 1-2, rare 12-15%); crafting costs scaled down (CRAFT_R, SALV). Refine: 5 dust + 25 gold -> 1 shard/bark.
+- New gear slots: helm (hp, +max health), glove (cdr, -cooldowns), boots (ms, +move speed); forged (helm = bark, gloves = shard, boots = both) and in the shop's random armor pool (ARMOR_T).
+- Rune Trials (TRIAL): per raid, Trial t = boss +20% HP / +12% dmg per level, rewards x(1 + 0.25 t) capped at t=10; win unlocks t+1 (V.trial[raid]); picker on the raid card (TRIAL_SEL); leader sends trial in the "pg" message; audit raid gold cap allows the Trial bonus.
+- Damage text: pop/arc/gradient/glow, own vs ally sizing, crit numbers; FT capped at 70. Healer Circle re-maps the last mouse screen point at cast.
+
 ## Not done / open
 
 - Host migration and reconnect: a hub dies when its host leaves.

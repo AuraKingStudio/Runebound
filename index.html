@@ -446,6 +446,11 @@
       .pn .rcard.locked { grid-column: 1 / -1; min-height: 0; }
       .pn .rcard.locked .rban { height: 64px; }
       .pn .rcard.locked .rbody { padding: 10px 14px !important; }
+      .rtrial { display: flex; flex-wrap: wrap; align-items: center; gap: 6px; padding: 6px 8px; border-radius: 8px; background: #0005; border: 1px solid #ff9f4344; }
+      .pn .rtrial button { width: 30px !important; flex: 0 0 30px; height: 26px !important; min-height: 0; padding: 0 !important; font-size: 12px !important; clip-path: none !important; border-radius: 6px !important; }
+      .rtrial > .sm:first-child { flex: 1 0 100%; }
+      .rtrial > .sm:last-child { flex: 1 0 100%; font-size: 11px; }
+      .rtrial b { color: #ffb35a; font: bold 13px Georgia; min-width: 58px; text-align: center; }
       .rtip { margin: 12px 6px 4px; padding: 8px 12px; border-radius: 8px; background: #0005; border: 1px solid #ffffff10; }
       .pn .rcard .claim { margin-top: auto; align-self: end; height: 42px; min-height: 0; font-size: 16px; padding: 0 14px; }
       .rtip { opacity: .75; text-align: center; }
@@ -1970,6 +1975,7 @@
           V.bo = s.bo && typeof s.bo.day == "string" && Array.isArray(s.bo.ids) ? { day: s.bo.day, ids: s.bo.ids, prog: s.bo.prog || {}, done: s.bo.done || {} } : null;
           V.ul = s.ul && typeof s.ul == "object" ? { class: !!s.ul.class, maiden: !!s.ul.maiden, smith: !!s.ul.smith, herald: !!s.ul.herald, barkeep: !!s.ul.barkeep } : {};
           for (const k of ["wins", "loss", "best"]) if (typeof s[k] == "number") V[k] = s[k];
+          if (s.trial && typeof s.trial == "object") { V.trial = {}; for (const k in s.trial) if (/^[a-z]{2,10}$/.test(k)) V.trial[k] = Math.max(0, Math.min(50, s.trial[k] | 0)); /* (RAIDS / TRIAL are defined later) */ }
           if (s.mat && typeof s.mat == "object") { V.mat = {}; for (const k in s.mat) if (/^[a-z]{2,12}$/.test(k) && s.mat[k] > 0) V.mat[k] = Math.min(99999, s.mat[k] | 0); }
           if (s.eq && Array.isArray(s.eq.bag)) V.eq = { bag: s.eq.bag.filter((i) => i && typeof i.id == "string" && i.id.length < 20).slice(0, 40), on: s.eq.on && typeof s.eq.on == "object" ? s.eq.on : {} };
         }
@@ -2117,14 +2123,20 @@
         bark: { n: "Thornbark", e: "🪵", col: "#9bd06a", d: "Ironhard bark peeled from Thornmaw." },
         heart: { n: "Colossus Heart", e: "💚", col: "#5dff8a", d: "Rare. It still beats, slowly." },
       };
-      const MAT_DROP = { seer: [["shard", 2, 4], ["eye", 0.12]], thornmaw: [["bark", 3, 5], ["heart", 0.15]] };
+      const MAT_DROP = { seer: [["shard", 1, 2], ["eye", 0.12]], thornmaw: [["bark", 1, 2], ["heart", 0.15]] }; /* about 4 items per win in all */
+      /* ---------- Rune Trials: repeatable harder raids (the grind ladder) ----------
+         Trial t: boss +20% health and +12% damage per level; drops, gold and XP +25% per level (reward bonus caps at Trial 10).
+         V.trial[raid] = highest Trial unlocked (winning Trial t unlocks t+1). TRIAL_SEL = what the raid card has picked. */
+      const TRIAL = { hp: 0.2, dmg: 0.12, rew: 0.25, rewCap: 10, max: 50 };
+      const TRIAL_SEL = {};
+      const trialRew = (t) => 1 + TRIAL.rew * Math.min(t || 0, TRIAL.rewCap);
       function matAdd(k, n) { V.mat = V.mat || {}; V.mat[k] = Math.min(99999, (V.mat[k] || 0) + n); }
       /* raidDrops(win): roll and store this raid's materials, returns [[key, n], ...] for the victory screen */
       function raidDrops(win) {
-        const out = [], rw = (RAIDS[S.raid] || RAIDS.small).reward, add = (k, n) => { if (n > 0) { matAdd(k, n); out.push([k, n]); } };
-        if (!win) { add("dust", 1 + Math.floor(Math.random() * 2)); return out; }
-        add("dust", Math.round((3 + Math.floor(Math.random() * 3)) * rw));
-        for (const [k, a, b] of MAT_DROP[(RAIDS[S.raid] || RAIDS.small).boss] || []) add(k, b == null ? (Math.random() < a ? 1 : 0) : a + Math.floor(Math.random() * (b - a + 1)));
+        const out = [], rw = (RAIDS[S.raid] || RAIDS.small).reward * trialRew(S.trial), add = (k, n) => { if (n > 0) { matAdd(k, n); out.push([k, n]); } };
+        if (!win) { add("dust", 1); return out; }
+        add("dust", Math.round((2 + Math.floor(Math.random() * 2)) * rw)); /* 2-3 dust (large raid 3-5) */
+        for (const [k, a, b] of MAT_DROP[(RAIDS[S.raid] || RAIDS.small).boss] || []) add(k, b == null ? (Math.random() < Math.min(0.6, a * trialRew(S.trial)) ? 1 : 0) : Math.round((a + Math.floor(Math.random() * (b - a + 1))) * trialRew(S.trial)));
         return out;
       }
       let DROPS = [];
@@ -2155,8 +2167,8 @@
       /* ---------- inventory (I key or the Bag button): what you wear, your gear bag, your materials ----------
          Slots: Armor (tank gear), Weapon (damage gear), Charm (utility gear). Click a bag item to wear it, a worn one to take it off. */
       /* paper doll: a human silhouette with square slots around it. Gear types fill Armor (tank), Weapon (dmg), Charm (util);
-         Helmet, Gloves and Boots are ready for future items. Click a filled slot to take the item off. */
-      const SLOT_N = { tank: ["Armor", "🛡️"], dmg: ["Weapon", "🗡️"], util: ["Charm", "📿"] };
+         Helmet, Gloves and Boots take forged or bought items. Click a filled slot to take the item off. */
+      const SLOT_N = { tank: ["Armor", "🛡️"], dmg: ["Weapon", "🗡️"], util: ["Charm", "📿"], helm: ["Helmet", "⛑️"], glove: ["Gloves", "🧤"], boots: ["Boots", "🥾"] };
       const DOLL = [ /* [slot key, label, ghost icon, left %, top %] around the 300x300 doll */
         ["helm", "Helmet", '<path d="M-10 4v-6a10 10 0 0 1 20 0v6h-4v-4h-12v4z"/>', 11, 18],
         ["tank", "Armor", '<path d="M-11-9 0-13 11-9v9c0 7-5 11-11 13-6-2-11-6-11-13z"/>', 11, 50],
@@ -2211,10 +2223,11 @@
          Types: tank (dr: less damage taken), dmg (more damage), util (dd: double dash, bd: longer buffs, hl: more healing done and received).
          V.eq = { bag: [{id, t, k, r (tier 0-4)}], on: {tank, dmg, util: id} }. Stock re-rolls every 2 raids (V.rc = raids played). */
       const TIERS = [["Common", "#e8e8e8", 45], ["Uncommon", "#5dff8a", 28], ["Rare", "#4da3ff", 16], ["Epic", "#b48cff", 8], ["Legendary", "#ff9f43", 3]];
-      const EQ_V = { dr: [0.04, 0.06, 0.08, 0.11, 0.15], dmg: [0.04, 0.06, 0.09, 0.12, 0.16], bd: [0.1, 0.15, 0.2, 0.3, 0.4], hl: [0.06, 0.09, 0.12, 0.16, 0.22], dd: [1, 1, 1, 1, 1] };
+      const EQ_V = { dr: [0.04, 0.06, 0.08, 0.11, 0.15], dmg: [0.04, 0.06, 0.09, 0.12, 0.16], bd: [0.1, 0.15, 0.2, 0.3, 0.4], hl: [0.06, 0.09, 0.12, 0.16, 0.22], dd: [1, 1, 1, 1, 1], hp: [0.04, 0.06, 0.09, 0.12, 0.16], cdr: [0.03, 0.04, 0.06, 0.08, 0.1], ms: [0.03, 0.04, 0.06, 0.08, 0.1] };
       const EQ_PRICE = [120, 220, 380, 600, 950], EQ_LEG_LV = 30;
-      const EQ_K = { tank: ["dr"], dmg: ["wt", "wd", "wh"], util: ["dd", "bd", "hl"] };
-      const EQ_N = { dr: "Bulwark", dmg: "Fang", dd: "Twin Feather", bd: "Everbloom Sash", hl: "Mender's Lantern", wt: "Warden's Aegis", wd: "Twin Fangs", wh: "Lifebloom Staff" };
+      const EQ_K = { tank: ["dr"], dmg: ["wt", "wd", "wh"], util: ["dd", "bd", "hl"], helm: ["hp"], glove: ["cdr"], boots: ["ms"] };
+      const ARMOR_T = ["tank", "util", "helm", "glove", "boots"]; /* everything that isn't the weapon (shop's random pool) */
+      const EQ_N = { dr: "Bulwark", dmg: "Fang", dd: "Twin Feather", bd: "Everbloom Sash", hl: "Mender's Lantern", wt: "Warden's Aegis", wd: "Twin Fangs", wh: "Lifebloom Staff", hp: "Runed Helm", cdr: "Swiftgrip Gloves", ms: "Windstride Boots" };
       /* ---------- class weapons (Weapon slot): one per class (tank: a shield), only works for that class ----------
          Every tier gives more damage (EQ_V.dmg); each rarity step adds one more perk (cumulative, WPERK[k][1..4]).
          Perk keys: dr less damage taken, dmg more damage, hl more healing done, cd [skill] cooldown cut, dcd dash cooldown cut,
@@ -2234,9 +2247,9 @@
         return v;
       }
       const wpCd = (p, a) => (p === P ? 1 - wp("cd") - wp("cd" + a) : 1);
-      const EQ_D = { dr: (v) => `-${Math.round(v * 100)}% damage taken`, dmg: (v) => `+${Math.round(v * 100)}% damage`, wt: (v, it) => wpDesc("wt", v, it), wd: (v, it) => wpDesc("wd", v, it), wh: (v, it) => wpDesc("wh", v, it), dd: () => "Dash twice in a row", bd: (v) => `Your buffs last ${Math.round(v * 100)}% longer`, hl: (v) => `+${Math.round(v * 100)}% healing done and received` };
+      const EQ_D = { dr: (v) => `-${Math.round(v * 100)}% damage taken`, dmg: (v) => `+${Math.round(v * 100)}% damage`, wt: (v, it) => wpDesc("wt", v, it), wd: (v, it) => wpDesc("wd", v, it), wh: (v, it) => wpDesc("wh", v, it), dd: () => "Dash twice in a row", bd: (v) => `Your buffs last ${Math.round(v * 100)}% longer`, hl: (v) => `+${Math.round(v * 100)}% healing done and received`, hp: (v) => `+${Math.round(v * 100)}% max health`, cdr: (v) => `-${Math.round(v * 100)}% cooldowns`, ms: (v) => `+${Math.round(v * 100)}% move speed` };
       const EQ_GK = { wt: '<path d="M0-14 12-9v7c0 8-5 13-12 16-7-3-12-8-12-16v-7z"/><path d="M0-9v18M-7-3h14"/>', wh: '<path d="M-8 13 6-5"/><circle cx="8" cy="-8" r="4.5"/><path d="M8-15v2M14-8h-2"/>' };
-      const EQ_G = { tank: '<path d="M0-14 12-9v7c0 8-5 13-12 16-7-3-12-8-12-16v-7z"/>', dmg: '<path d="M-10 12 10-12M4-12h6v6M-12 6l6 6"/>', util: '<circle r="9"/><path d="M0-5v5l4 3"/>' };
+      const EQ_G = { tank: '<path d="M0-14 12-9v7c0 8-5 13-12 16-7-3-12-8-12-16v-7z"/>', dmg: '<path d="M-10 12 10-12M4-12h6v6M-12 6l6 6"/>', util: '<circle r="9"/><path d="M0-5v5l4 3"/>', helm: '<path d="M-10 4v-6a10 10 0 0 1 20 0v6h-4v-4h-12v4z"/>', glove: '<path d="M-6 10v-10l-3-5 2-2 4 3v-8h2v7h2v-8h2v8h2v-6h2v12l-3 9z"/>', boots: '<path d="M-9-10h7v14h8l2 6h-17z"/>' };
       const wpDesc = (k, v, it) => `${CL[WCLS[k]].n} only. +${Math.round(v * 100)}% damage` + WPERK[k].slice(1, (it ? it.r : 0) + 1).map((q) => ", " + q[2]).join("") + (P && P.cls != WCLS[k] ? " (not your class)" : "");
       const eqOk = (it) => it && EQ_K[it.t] && (EQ_K[it.t].includes(it.k) || (it.t == "dmg" && it.k == "dmg")) && Number.isInteger(it.r) && it.r >= 0 && it.r <= 4 && (it.k != "dd" || it.r >= 2);
       const eqV = (it) => (EQ_V[it.k] || EQ_V.dmg)[it.r];
@@ -2247,7 +2260,7 @@
         let x = ((V.eqs || 1) * 9973 + n * 7919) >>> 0;
         const r = () => ((x = (Math.imul(x ^ (x >>> 15), 2246822507) + 0x6d2b79f5) >>> 0) / 4294967296);
         const top = lvlInfo().L >= EQ_LEG_LV ? 5 : 4, sum = TIERS.slice(0, top).reduce((a, t) => a + t[2], 0);
-        const types = [0, 1, 2].map(() => (r() < 0.5 ? "tank" : "util")).concat("dmg"); /* 3 random armor / charms + 1 weapon */
+        const types = [0, 1, 2].map(() => ARMOR_T[Math.floor(r() * ARMOR_T.length)]).concat("dmg"); /* 3 random armor pieces + 1 weapon */
         return types.map((t, i) => {
           let roll = r() * sum, tier = 0;
           while (tier < top - 1 && roll >= TIERS[tier][2]) roll -= TIERS[tier++][2];
@@ -2284,9 +2297,9 @@
       /* upCost(u, l): next upgrade level price; gentle ramp so early levels come fast and the last ones are a goal */
       const upCost = (u, l) => u.b * (l + 1) + 10 * l * l;
       const dm = () => (1 + 0.12 * V.up.dmg) * (1 + eqSt("dmg")) * (1 + wp("dmg")),
-        hpm = () => (1 + 0.15 * V.up.vit) * (bless("stone") ? 1.3 : 1) * (1 + wp("hp")),
-        spm = () => 1 + 0.06 * V.up.spd,
-        cdm = () => 1 - 0.08 * V.up.cdr;
+        hpm = () => (1 + 0.15 * V.up.vit) * (bless("stone") ? 1.3 : 1) * (1 + wp("hp")) * (1 + eqSt("hp")),
+        spm = () => (1 + 0.06 * V.up.spd) * (1 + eqSt("ms")),
+        cdm = () => (1 - 0.08 * V.up.cdr) * (1 - eqSt("cdr"));
       /* ---------- simulation (runs locally) ---------- */
       let S = { sc: "lobby", ps: [], b: null, pr: [], ao: [], zo: [], rq: [], end: 0, res: 0, tm: 0, at: 0 },
         P = null,
@@ -2686,7 +2699,7 @@
       function auditRules() {
         const bonus = (1 + GUILD_MAX * 0.03) * (1 + PASS.bonus);
         return {
-          raid: { g: Math.round(80 * 1.5 * 1.5 * bonus), x: Math.round(160 * 1.5 * bonus), gap: 15000 }, /* large raid pays 1.5x */
+          raid: { g: Math.round(80 * 1.5 * 1.5 * bonus * trialRew(TRIAL.rewCap)), x: Math.round(160 * 1.5 * bonus * trialRew(TRIAL.rewCap)), gap: 15000 }, /* large raid pays 1.5x, Rune Trials up to +250% */
           daily: { g: Math.max(...DAILY), x: 0, gap: 72e6 },
           lore: { g: Math.max(150, ...Object.values(TALE_MS).map((m) => m[0])), x: 150, gap: 700 },
           bounty: { g: Math.max(...BOUNTIES.map((b) => b.g)), x: Math.max(...BOUNTIES.map((b) => b.x)), gap: 1000 },
@@ -4341,6 +4354,8 @@
       function toArena(key = "small", team = raidTeam(key).team, net = null) {
         S.sc = "arena";
         S.raid = RAIDS[key] && !RAIDS[key].locked ? key : "small";
+        S.trial = Math.max(0, Math.min(TRIAL.max, RAID_TRIAL | 0)); /* set by enterRaid / the leader's message */
+        RAID_TRIAL = 0;
         S.end = 0;
         S.at = 0;
         S.why = "";
@@ -4361,7 +4376,7 @@
         S.net = net || (S.ps.some((a) => a.remote) ? { role: "lead", t: 0 } : null);
         S.ps.forEach((p, i) => { const n = S.ps.length, a = Math.PI * (0.25 + (0.5 * (i + 0.5)) / n); p.x = ARENA.x + Math.cos(a) * ARENA.r * 0.7; p.y = ARENA.y + Math.sin(a) * ARENA.r * 0.7; });
         const D = BOSSES[RAIDS[S.raid].boss];
-        S.b = { def: D, x: 450, y: 220, tx: 450, ty: 220, r: D.r, hp: D.hp, mh: D.hp, ph: 1, stun: 0, tt: 0, tg: -1, cur: -1, fl: 0, cd: 2.5, n: 0, hf: 0, atk: D.atkT, thr: {},
+        S.b = { def: D, x: 450, y: 220, tx: 450, ty: 220, r: D.r, hp: D.hp * (1 + TRIAL.hp * (S.trial || 0)), mh: D.hp * (1 + TRIAL.hp * (S.trial || 0)), ph: 1, stun: 0, tt: 0, tg: -1, cur: -1, fl: 0, cd: 2.5, n: 0, hf: 0, atk: D.atkT, thr: {},
           wk: 0, weak: 0, brk: 0, enr: 0, doom: null, doomed: false };
         popMsg(`⚔ ${RAIDS[S.raid].n}: ${D.n}`, 1.2, 2500);
       }
@@ -4478,7 +4493,7 @@
           const mine = netMyId(), team = message.team.filter((m) => m && CL[m.cls] && typeof m.name == "string").slice(0, RAIDS[message.raid].size)
             .map((m) => (m.key == mine ? { me: 1, cls: P.cls } : { cls: m.cls, name: String(m.name).slice(0, 16), lv: cl(m.lv | 0, 1, 60), ti: TITLES[m.ti | 0] || TITLES[0], filler: m.filler, key: m.key }));
           if (dlgOpen()) closeDlg();
-          if (team.some((m) => m.me)) startTeleport(message.raid, team, { role: "member", lead: from, heard: performance.now(), seq: 0, key: "", at: 0 });
+          if (team.some((m) => m.me)) RAID_TRIAL = Math.max(0, Math.min(TRIAL.max, message.trial | 0)), startTeleport(message.raid, team, { role: "member", lead: from, heard: performance.now(), seq: 0, key: "", at: 0 });
         }
       }
       function partyAnswer(from, ok) {
@@ -4556,23 +4571,27 @@
           const t = raidTeam(k);
           const team = t.err ? `<span class="sm need">${esc(t.err)}</span>` : `<div class="rteam">${t.team.map((m) => `<span class="rmem" style="--rc:${SKC[m.cls]}" title="${m.filler ? "Bot fills this role" : ""}">${m.me ? "You" : esc(m.name)}${m.filler ? " <i>bot</i>" : ""}</span>`).join("")}</div>`;
           const drops = (MAT_DROP[R.boss] || []).map(([mk, a, b]) => `<span title="${MATS[mk].n}${b == null ? " (rare)" : ""}" class="rdrop${b == null ? " rare" : ""}">${MATS[mk].e}${b == null ? "" : ` ${a}-${b}`}</span>`).join("");
-          const pic = bossPortrait(R.boss);
+          const pic = bossPortrait(R.boss), tmax = (V.trial || {})[k] || 0, tsel = (TRIAL_SEL[k] = Math.min(TRIAL_SEL[k] || 0, tmax));
+          const trialRow = `<div class="rtrial"><span class="sm">Rune Trial</span><button class="alt" ${tsel > 0 && lead ? "" : "disabled"} onclick="TRIAL_SEL['${k}']=${tsel - 1};raidUI()">◀</button><b>${tsel ? "Trial " + tsel : "Normal"}</b><button class="alt" ${tsel < tmax && lead ? "" : "disabled"} onclick="TRIAL_SEL['${k}']=${tsel + 1};raidUI()">▶</button>
+            <span class="sm">${tsel ? `boss +${Math.round(TRIAL.hp * tsel * 100)}% HP · rewards ×${trialRew(tsel).toFixed(2).replace(/\.?0+$/, "")}` : tmax ? `best: Trial ${tmax}` : "win to unlock Trial 1"}</span></div>`;
           return `<div class="rcard" style="--b0:${D.ring[0]}"><div class="rban" style="--b0:${D.ring[0]};--b1:${D.body}">${pic ? `<img src="${pic}" alt="">` : ""}<span class="rsize">${R.size}</span></div>
             <div class="rbody"><b>${R.n}</b><span class="boss" style="color:${D.ring[0]}">${D.n}</span>${diff}${roles}${team}
-            <div class="rrew"><span class="sm">Rewards</span><span class="rdrop">✨</span>${drops}<span class="rdrop"><span class="coin"></span>×${R.reward}</span></div>
+            <div class="rrew"><span class="sm">Rewards</span><span class="rdrop">✨</span>${drops}<span class="rdrop"><span class="coin"></span>×${+(R.reward * trialRew(tsel)).toFixed(2)}</span></div>${trialRow}
             <button class="claim" onclick="enterRaid('${k}')" ${lead && !t.err ? "" : "disabled"}>${lead ? "⚔ ENTER" : "Leader starts"}</button></div></div>`;
         };
         $("dp").innerHTML = `<h2>⚔ Choose a raid</h2><div class="raids">${["small", "large", "epic"].map(card).join("")}</div>
           <p class="sm rtip">Keep the party alive until your DPS outscales the boss. Tank: Taunt and Shield Bash its weak moments. Healer: heal, dodge, and clear the Doom.</p>
           <button class="alt x" onclick="closeDlg()" title="Close">Close</button>`;
       }
+      let RAID_TRIAL = 0;
       function enterRaid(key) {
         if (!isLeader()) return toast("Only your party leader can start a raid.");
+        RAID_TRIAL = Math.min(TRIAL_SEL[key] || 0, (V.trial || {})[key] || 0);
         const t = raidTeam(key);
         if (t.err) return toast(t.err);
         closeDlg();
         const wire = t.team.map((m) => ({ key: m.me ? netMyId() : m.key || "", cls: m.cls, name: m.me ? pname() : m.name, lv: m.lv, ti: Math.max(0, TITLES.indexOf(m.ti)), filler: m.filler ? 1 : 0, real: m.me || m.real ? 1 : 0 }));
-        for (const k of PARTY.m) { const v = partyFind(k); if (v && !v.bot) netParty(k, { type: "pg", raid: key, team: wire }); }
+        for (const k of PARTY.m) { const v = partyFind(k); if (v && !v.bot) netParty(k, { type: "pg", raid: key, trial: RAID_TRIAL, team: wire }); }
         startTeleport(key, t.team);
       }
       /* ---------- dash (all classes, different flavors) ----------
@@ -4694,7 +4713,9 @@
         V.best = V.best ? Math.min(V.best, S.at) : S.at;
         S.end = "win";
         S.res = 5;
-        const rw = (RAIDS[S.raid] || RAIDS.small).reward, g = Math.round((60 + (S.at < 150 ? 20 : 0)) * rw * (1 + gBonus()) * passMul() * (1 + Math.min(0.5, lvlInfo().L * 0.01))); /* +1% per level, up to +50% */ /* raid size, guild bonus, Rune Pass */
+        V.trial = V.trial || {};
+        if ((S.trial || 0) >= (V.trial[S.raid] || 0) && (S.trial || 0) < TRIAL.max) { V.trial[S.raid] = (S.trial || 0) + 1; setTimeout(() => toast(`Rune Trial ${V.trial[S.raid]} unlocked for the ${RAIDS[S.raid].n}!`), 1800); }
+        const rw = (RAIDS[S.raid] || RAIDS.small).reward * trialRew(S.trial), g = Math.round((60 + (S.at < 150 ? 20 : 0)) * rw * (1 + gBonus()) * passMul() * (1 + Math.min(0.5, lvlInfo().L * 0.01))); /* +1% per level, up to +50% */ /* raid size, guild bonus, Rune Pass */
         bountyAdd("raid");
         goldAdd(g, "raid");
         coin = g;
@@ -5387,7 +5408,7 @@
           }
         }
         S.zo = S.zo.filter((z) => z.l > 0);
-        const f = (b.ph == 2 ? 1.25 : 1) * (b.enr > 0 ? 1.3 : 1);
+        const f = (b.ph == 2 ? 1.25 : 1) * (b.enr > 0 ? 1.3 : 1) * (1 + TRIAL.dmg * (S.trial || 0));
         for (const p of S.ps) { /* measured velocity (px/s, smoothed) for predictive aims */
           if (p.lx != null && dt > 0) { const k = Math.min(1, dt * 8); p.vx = (p.vx || 0) * (1 - k) + ((p.x - p.lx) / dt) * k; p.vy = (p.vy || 0) * (1 - k) + ((p.y - p.ly) / dt) * k; }
           p.lx = p.x; p.ly = p.y;
@@ -6060,13 +6081,14 @@
          Armor uses Thornbark, weapons Void Shards, charms both; Legendary also needs a rare (Seer's Eye / Colossus Heart)
          and level EQ_LEG_LV, like the shop. Recipes: CRAFT_R[tier] = [dust, boss mat, gold]. */
       const SMITH_COST = 80;
-      const CRAFT_R = [[5, 0, 40], [10, 3, 80], [18, 6, 140], [30, 10, 220], [45, 14, 350]], SALV = [2, 4, 7, 12, 18];
+      const CRAFT_R = [[2, 0, 40], [4, 1, 80], [7, 2, 140], [12, 4, 220], [18, 6, 350]], SALV = [1, 1, 2, 4, 6], REFINE = { dust: 5, gold: 25 };
       let SMITH_TAB = "bless", FORGE = { t: "dmg", k: "dmg", r: 0 };
       /* craftCost(t, r, temper): the materials + gold for tier r of slot t ({mats: {key: n}, gold}); tempering costs 60% */
       function craftCost(t, r, temper) {
         const [d, m, g] = CRAFT_R[r], f = temper ? 0.6 : 1, c = { dust: Math.ceil(d * f) };
-        if (m) { const n = Math.ceil(m * f); if (t == "tank") c.bark = n; else if (t == "dmg") c.shard = n; else { c.shard = Math.ceil(n / 2); c.bark = Math.ceil(n / 2); } }
-        if (r == 4) c[t == "tank" ? "heart" : t == "dmg" ? "eye" : (V.mat || {}).eye ? "eye" : "heart"] = 1;
+        const BARK = ["tank", "helm"], SHARD = ["dmg", "glove"]; /* armor + helm: Thornbark, weapon + gloves: Void Shard, charm + boots: both */
+        if (m) { const n = Math.ceil(m * f); if (BARK.includes(t)) c.bark = n; else if (SHARD.includes(t)) c.shard = n; else { c.shard = Math.ceil(n / 2); c.bark = Math.ceil(n / 2); } }
+        if (r == 4) c[BARK.includes(t) ? "heart" : SHARD.includes(t) ? "eye" : (V.mat || {}).eye ? "eye" : "heart"] = 1;
         return { mats: c, gold: Math.ceil(g * f) };
       }
       const craftHave = (c) => V.gold >= c.gold && Object.entries(c.mats).every(([k, n]) => ((V.mat || {})[k] || 0) >= n);
@@ -6109,12 +6131,22 @@
         sfx("coin");
         smithUI();
       }
+      /* craftRefine(k): REFINE.dust Rune Dust + REFINE.gold gold -> 1 Void Shard / Thornbark (rares can't be refined) */
+      function craftRefine(k) {
+        if (!["shard", "bark"].includes(k) || ((V.mat || {}).dust || 0) < REFINE.dust || V.gold < REFINE.gold) return;
+        goldAdd(-REFINE.gold, "smith");
+        V.mat.dust -= REFINE.dust;
+        matAdd(k, 1);
+        save();
+        sfx("coin");
+        smithUI();
+      }
       function forgeUI() {
         if (!EQ_K[FORGE.t].includes(FORGE.k)) FORGE.k = FORGE.t == "dmg" ? { tank: "wt", dps: "wd", heal: "wh" }[(P && P.cls) || "dps"] : EQ_K[FORGE.t][0];
         const F = FORGE, r = F.k == "dd" ? Math.max(2, F.r) : F.r, c = craftCost(F.t, r), ok = craftHave(c) && craftLvOk(r);
         const pill = (on, js, lab, col) => `<span onclick="${js};smithUI()" style="cursor:pointer;padding:3px 9px;border-radius:6px;border:1px solid ${on ? col || "#ffe08a" : "var(--ln)"};color:${on ? col || "#ffe08a" : "#f3e6c8"};background:rgba(0,0,0,.25);font:bold 12px Georgia">${lab}</span>`;
         let h = `<div class="mast"><span class="sm">Forge new gear</span></div>
-          <div class="row" style="gap:4px;flex-wrap:wrap">${["tank", "dmg", "util"].map((t) => pill(F.t == t, `FORGE.t='${t}';FORGE.k=`, SLOT_N[t][1] + " " + SLOT_N[t][0])).join("")}</div>`;
+          <div class="row" style="gap:4px;flex-wrap:wrap">${["dmg", "tank", "helm", "glove", "boots", "util"].map((t) => pill(F.t == t, `FORGE.t='${t}';FORGE.k=`, SLOT_N[t][1] + " " + SLOT_N[t][0])).join("")}</div>`;
         if (EQ_K[F.t].length > 1) h += `<div class="row" style="gap:4px;flex-wrap:wrap">${EQ_K[F.t].map((k) => pill(F.k == k, `FORGE.k='${k}'`, EQ_N[k])).join("")}</div>`;
         h += `<div class="row" style="gap:4px;flex-wrap:wrap">${TIERS.map((T, i) => pill(r == i, `FORGE.r=${i}`, T[0], T[1])).join("")}</div>`;
         h += eqCard({ t: F.t, k: F.k, r }, `<button ${ok ? "" : "disabled"} onclick="craftMake()">Forge</button>`);
@@ -6126,6 +6158,8 @@
           return eqCard(it, `<span style="display:flex;flex-direction:column;gap:3px;align-items:flex-end">${tc ? `<button ${tok ? "" : "disabled"} title="To ${TIERS[it.r + 1][0]}" onclick="craftTemper('${it.id}')">Temper</button><span class="sm">${craftLvOk(it.r + 1) ? costHtml(tc) : `<span style="color:#ff7a6a">Legendary: level ${EQ_LEG_LV}</span>`}</span>` : `<span class="sm">Max tier</span>`}
             ${worn ? `<span class="sm" style="opacity:.7">worn</span>` : `<button class="alt" title="Break it down for ${SALV[it.r]} Rune Dust" onclick="craftSalvage('${it.id}')">Salvage ✨${SALV[it.r]}</button>`}</span>`);
         }).join("") : `<div class="sm" style="opacity:.7;padding:4px 2px">No gear yet. Forge some above, or buy from the Merchant.</div>`;
+        const rok = ((V.mat || {}).dust || 0) >= REFINE.dust && V.gold >= REFINE.gold;
+        h += `<div class="mast"><span class="sm">Refine · ${MATS.dust.e}${REFINE.dust} + <span class="coin"></span>${REFINE.gold} into one boss material</span></div><div class="row" style="gap:6px">${["shard", "bark"].map((k) => `<button class="${rok ? "" : "alt"}" ${rok ? "" : "disabled"} onclick="craftRefine('${k}')">${MATS[k].e} ${MATS[k].n}</button>`).join("")}</div>`;
         const mats = Object.keys(MATS).map((k) => `<span title="${MATS[k].n}">${MATS[k].e}${(V.mat || {})[k] || 0}</span>`).join(" &nbsp;");
         return `<div class="sm" style="margin:4px 0">Your materials: ${mats}</div>` + h;
       }

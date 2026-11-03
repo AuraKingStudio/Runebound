@@ -13,7 +13,7 @@ const ctx={document:doc,window:{},innerWidth:900,innerHeight:600,performance:{no
 ctx.RBNet=fakeNet;
 ctx.window=ctx;vm.createContext(ctx);
 vm.runInContext(SRC+`
-;globalThis.devMin=devMin;globalThis.devFs=devFs;globalThis.T={V:()=>V,raidDrops,invUI,wp,eqRoll,dmF:()=>dm(),craftCost,craftMake,craftTemper,craftSalvage,FORGE,smithUI,invWear,MATS,setRaid:(k)=>S.raid=k,CLASS_DMG:()=>CLASS_DMG,P:()=>P,S:()=>S,start,devAdd,devUp,devUI,devCls,devHeal,devWipe,devResetQ,devArena,devBoss,devHub,DEV,hurt,act,step,pauseGame,resumeGame,isPaused:()=>paused,QUESTS,UPG,toggleDev,buy,shopUI,qAct,togglePause,dailyCheck,saveName,lvlInfo,gainXP,lvlCol,loreReward,isUnl,tutNext,bjVal,bjDeal,bjHit,bjStand,bjDouble,bjSplit,BJ:()=>BJ,guildFound,guildRecruit,gBonus,bountyDay,bountyAdd,bountyClaim,guildJoin,guildTab,rankPool,rankRefresh,rankSort,dm,dash,dashStep,setIn,padPoll,inMode:()=>INMODE,KEYHINT,HUBV:()=>HUBV,BOT_STUCK:()=>BOT_STUCK,ENGINE,cdMul,discordUnlock,openDlg,TUT_DONE,ult,ultDmg,ULT,inter,hitB,DASH,ZONE_DMG,RAIDS,BOSSES,raidTeam,raidAI,partyMembers,partyAdd,partyRemove,raidUI,playerUI,partyMessage,bash,taunt,inTele,toArena,PARTY:()=>PARTY,netRelayFlush,raidNet,raidState,raidApply,raidNetStep,arena,toArena,HUB_NPCS,BOT_NPC_LV,BARKEEP,CLASSN,SKC,PEMB,hubJoin,hubLeave,hubCount,HUB_MAX,hubVisitStep,botName,botLook,chatSend,COS,cosOwn,cosV,cosBuyGold,cosEquip,shopPay,myEmote,streamPts,crossFrame,bridgeAt,riverNear,clampW,WF,STATUE,PORTAL,SET,keyLabel,EDGE,inIsle,netReceive,netPrepareHub,netStep,netPack,netUnpack,netAudit,auditRules,goldAdd,gainXP,netStats,LEDGER:()=>LEDGER,FX:()=>FX,FT:()=>FT,shk:()=>shk,els:null};`,ctx);
+;globalThis.devMin=devMin;globalThis.devFs=devFs;globalThis.T={V:()=>V,raidDrops,invUI,TRIAL_SEL,enterRaidT:(k)=>enterRaid(k),craftRefine,hpmF:()=>hpm(),cdmF:()=>cdm(),wp,eqRoll,dmF:()=>dm(),craftCost,craftMake,craftTemper,craftSalvage,FORGE,smithUI,invWear,MATS,setRaid:(k)=>S.raid=k,CLASS_DMG:()=>CLASS_DMG,P:()=>P,S:()=>S,start,devAdd,devUp,devUI,devCls,devHeal,devWipe,devResetQ,devArena,devBoss,devHub,DEV,hurt,act,step,pauseGame,resumeGame,isPaused:()=>paused,QUESTS,UPG,toggleDev,buy,shopUI,qAct,togglePause,dailyCheck,saveName,lvlInfo,gainXP,lvlCol,loreReward,isUnl,tutNext,bjVal,bjDeal,bjHit,bjStand,bjDouble,bjSplit,BJ:()=>BJ,guildFound,guildRecruit,gBonus,bountyDay,bountyAdd,bountyClaim,guildJoin,guildTab,rankPool,rankRefresh,rankSort,dm,dash,dashStep,setIn,padPoll,inMode:()=>INMODE,KEYHINT,HUBV:()=>HUBV,BOT_STUCK:()=>BOT_STUCK,ENGINE,cdMul,discordUnlock,openDlg,TUT_DONE,ult,ultDmg,ULT,inter,hitB,DASH,ZONE_DMG,RAIDS,BOSSES,raidTeam,raidAI,partyMembers,partyAdd,partyRemove,raidUI,playerUI,partyMessage,bash,taunt,inTele,toArena,PARTY:()=>PARTY,netRelayFlush,raidNet,raidState,raidApply,raidNetStep,arena,toArena,HUB_NPCS,BOT_NPC_LV,BARKEEP,CLASSN,SKC,PEMB,hubJoin,hubLeave,hubCount,HUB_MAX,hubVisitStep,botName,botLook,chatSend,COS,cosOwn,cosV,cosBuyGold,cosEquip,shopPay,myEmote,streamPts,crossFrame,bridgeAt,riverNear,clampW,WF,STATUE,PORTAL,SET,keyLabel,EDGE,inIsle,netReceive,netPrepareHub,netStep,netPack,netUnpack,netAudit,auditRules,goldAdd,gainXP,netStats,LEDGER:()=>LEDGER,FX:()=>FX,FT:()=>FT,shk:()=>shk,els:null};`,ctx);
 const T=ctx.T,BENCH_ONLY=process.argv.includes('--bench');let f=0;const ok=(c,m)=>{if(!c||!BENCH_ONLY)console.log((c?'PASS ':'FAIL ')+m);if(!c)f++};
 T.start();ok(T.S().sc=='hub','start -> hub');
 ctx.document.getElementById('dlg').hidden=true;const pausedAt=T.S().tm;T.pauseGame();T.step(.1);ok(T.isPaused()&&T.S().tm===pausedAt,'pause freezes the game');T.resumeGame();ok(!T.isPaused(),'resume re-enables play');
@@ -140,6 +140,21 @@ ok(V.eq.bag.length==1&&V.mat.dust>d0,'craft: salvaging a spare item gives Rune D
 T.craftSalvage(id);ok(V.eq.bag.length==1,'craft: worn gear cannot be salvaged');
 V.mat={};const g0=V.gold;Object.assign(T.FORGE,{t:'dmg',k:'wd',r:3});T.craftMake();ok(V.eq.bag.length==1&&V.gold==g0,'craft: no materials, no forging');
 V.eq={bag:[],on:{}};V.mat={};}
+/* ---------- crafting expansion ---------- */
+{const V=T.V();V.mat={dust:50,bark:20,shard:20};V.gold=3000;V.eq={bag:[],on:{}};const h0=T.hpmF(),c0=T.cdmF();
+for(const t of ['helm','glove','boots']){Object.assign(T.FORGE,{t,k:'',r:2});T.forgeUI&&0;}
+Object.assign(T.FORGE,{t:'helm',k:'hp',r:2});T.craftMake();Object.assign(T.FORGE,{t:'glove',k:'cdr',r:2});T.craftMake();Object.assign(T.FORGE,{t:'boots',k:'ms',r:2});T.craftMake();
+ok(V.eq.bag.length==3&&V.eq.on.helm&&V.eq.on.glove&&V.eq.on.boots,'craft: helmet, gloves and boots can be forged and worn');
+ok(T.hpmF()>h0&&T.cdmF()<c0,'gear: helmet adds health, gloves cut cooldowns');
+const d0=V.mat.dust,b0=V.mat.bark;T.craftRefine('bark');ok(V.mat.dust==d0-5&&V.mat.bark==b0+1,'craft: refining turns dust into a boss material');
+T.craftRefine('eye');ok(!V.mat.eye,'craft: rares cannot be refined');
+V.eq={bag:[],on:{}};V.mat={};}
+{let n=0,w=0;for(let i=0;i<300;i++){T.V().mat={};n+=T.raidDrops(true).reduce((a,[k,c])=>a+c,0);w++;}const avg=n/w;console.log('  avg items per win:',avg.toFixed(2));ok(avg>=3&&avg<=5.5,'drops: about 4 items per raid win');T.V().mat={};}
+/* ---------- Rune Trials ---------- */
+{const S=T.S(),V=T.V();T.setRaid('small');S.trial=0;let n0=0,n3=0;for(let i=0;i<200;i++){V.mat={};n0+=T.raidDrops(true).reduce((a,[k,c])=>a+c,0);}S.trial=3;for(let i=0;i<200;i++){V.mat={};n3+=T.raidDrops(true).reduce((a,[k,c])=>a+c,0);}
+ok(n3>n0*1.4,'trials: higher Trials drop more materials');S.trial=0;V.mat={};
+ok(SRC.includes('hp: D.hp * (1 + TRIAL.hp * (S.trial || 0))')&&SRC.includes('(1 + TRIAL.dmg * (S.trial || 0))'),'trials: the boss gets more health and damage per Trial');
+ok(SRC.includes('V.trial[S.raid] = (S.trial || 0) + 1'),'trials: winning unlocks the next Trial');}
 /* ---------- class weapons ---------- */
 {const V=T.V(),P=T.P(),c0=P.cls;P.cls='dps';V.eq={bag:[{id:'w1',t:'dmg',k:'wd',r:0}],on:{dmg:'w1'}};const d0=T.dmF();
 ok(T.wp('dmg')==0&&d0>1,'weapon: a Common weapon only gives base damage');
@@ -660,6 +675,6 @@ async function benchTests(){
    'per guest up KB/s':r.perGuestUpKBps,'state msg B':r.biggestState,'states/s':r.stateMsgsPerSec,corrected:`${r.honestCorrected}/${r.honestMoves}`+(r.cheatMoves?` cheat ${r.cheatCorrected}/${r.cheatMoves}`:''),kicked:r.cheaters||r.kickedHonest?`${r.kickedCheat}/${r.cheaters} cheaters, ${r.kickedHonest} honest`:'',audits:r.audits+(r.hostAuditFailures?` host✗${r.hostAuditFailures}`:'')})));
  }
 }
-{T.V().mat={};T.setRaid('large');const d=T.raidDrops(true);ok(T.V().mat.dust>=4&&T.V().mat.bark>=3&&d.some(x=>x[0]=='bark'),'materials: a large raid win drops Rune Dust and Thornbark');const l=T.raidDrops(false);ok(l.length==1&&l[0][0]=='dust','materials: a loss still gives a little dust');
+{T.V().mat={};T.setRaid('large');const d=T.raidDrops(true);ok(T.V().mat.dust>=3&&T.V().mat.bark>=1&&d.some(x=>x[0]=='bark'),'materials: a large raid win drops Rune Dust and Thornbark');const l=T.raidDrops(false);ok(l.length==1&&l[0][0]=='dust','materials: a loss still gives a little dust');
  T.V().eq={bag:[{id:'a1',t:'tank',k:'dr',r:1},{id:'a2',t:'tank',k:'dr',r:2}],on:{tank:'a1'}};T.invWear('a2');ok(T.V().eq.on.tank=='a2','inventory: wearing an item swaps it into its slot');T.invWear('a2');ok(!T.V().eq.on.tank,'inventory: clicking a worn item takes it off');T.invUI();ok(ctx.document.getElementById('dp').innerHTML.includes('Thornbark'),'inventory: shows materials');}
 (BENCH_ONLY?Promise.resolve():networkTests().then(signalingTests).then(reportTests).then(rateLimitTests)).then(benchTests).then(()=>{console.log(f?f+' FAILED':'ALL PASSED');process.exit(f?1:0);}).catch(e=>{console.error(e);process.exit(1);});
