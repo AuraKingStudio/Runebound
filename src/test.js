@@ -610,7 +610,7 @@ function runBench({scenario,players:N,seconds}){
  const k={t:0,
   every:(g,period,name)=>{if(netClock-(g.timers[name]??-1e9)<period)return false;g.timers[name]=netClock;return true;},
   move:(g,dx,dy,dash=false,raw=false)=>{const v=B.HUBV().find(o=>o.id==g.id);if(!v)return null;
-   const at={x:v.netX+dx,y:v.netY+dy,hp:1};if(!g.cheater)B.clampW(at);
+   const at={x:v.netX,y:v.netY,hp:1};if(g.cheater){at.x+=dx;at.y+=dy;}else for(let q=0;q<4;q++){at.x+=dx/4;at.y+=dy/4;B.clampW(at);} /* honest guests collide every frame like the game (small steps), not once per message */
    const m={type:'m',x:Math.round(at.x),y:Math.round(at.y),f:3,d:dash?1:0},key=[m.x,m.y,m.d].join();
    if(!raw&&(netClock-g.sentAt<66||(key==g.key&&netClock-g.sentAt<1000)))return null; /* the real client's send rules */
    g.key=key;g.sentAt=netClock;return m;},

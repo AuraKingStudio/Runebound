@@ -2438,6 +2438,11 @@
             p.y = HUB.y + (dy / l) * ry;
           }
           riverPush(p);
+          /* NPC pedestals are solid: an ellipse around each dais (npcDais), widened by the body radius */
+          for (const n of HUB_NPCS()) {
+            const ex = (p.x - n.x) / (30 + PR), ey = (p.y - n.y - 8) / (16 + PR * 0.8), ed = Math.hypot(ex, ey);
+            if (ed < 0.94 && ed > 0) { p.x = n.x + (ex / ed) * (30 + PR); p.y = n.y + 8 + (ey / ed) * (16 + PR * 0.8); } /* 0.94: positions rounded for the network may sit a hair inside the edge; the host must not "correct" them */
+          }
           /* the statue's plinth is solid */
           {
             const sx = (p.x - STATUE.x) / (16 * STATUE.k + PR),
@@ -4170,7 +4175,7 @@
         return null;
       }
       /* npcSpot(n): a free place to stand in front of an NPC, on the NPC's own bank */
-      const npcSpot = (n) => spotNear(n.x, n.y, Math.atan2(HUB.y - n.y, HUB.x - n.x), 36, 54, riverNear(n.x, n.y).side);
+      const npcSpot = (n) => spotNear(n.x, n.y, Math.atan2(HUB.y - n.y, HUB.x - n.x), 50, 66, riverNear(n.x, n.y).side); /* outside the solid pedestal */
       /* edgeSpot(): somewhere on the platform's outer ring, dry and not crowding an NPC */
       function edgeSpot() {
         for (let i = 0; i < 30; i++) {
@@ -7790,6 +7795,54 @@
       }
       /* npcHidden(n): true while an NPC is still locked (tutorial step or Archivist unlock; the Barkeep is never hidden after the tutorial). */
       const npcHidden = (n) => (n.lk && n.lk != "barkeep" && !isUnl(n.lk)) || (n.tu && tut() < n.tu); /* the Barkeep stands visible: talking to him offers the Discord unlock */
+      /* npcDais(n): two-step sandstone pedestal (like the hub's stonework), lit from the top-left, with a carved groove and an
+         inset ring glowing in the NPC colour. Baked once per NPC at 2x. Drawn into a box (rr+10)*2 wide. */
+      const DAIS = {};
+      function npcDais(n) {
+        const key = n.nm + n.col;
+        if (DAIS[key]) return DAIS[key];
+        const rr = (n.r || 20) + 14, w = (rr + 10) * 2, h = rr * 1.1 + 22, S2 = 2, cv8 = document.createElement("canvas");
+        cv8.width = w * S2; cv8.height = h * S2;
+        DAIS[key] = cv8;
+        const g = cv8.getContext("2d");
+        if (!g || !g.createLinearGradient) return cv8;
+        g.scale(S2, S2); g.translate(w / 2, rr * 0.55 + 8);
+        const ell = (y, rx, ry) => { g.beginPath(); g.ellipse(0, y, rx, ry, 0, 0, 6.3); };
+        g.fillStyle = "rgba(40,25,10,.28)"; ell(10, rr + 8, (rr + 8) * 0.55); g.fill(); /* ground shadow */
+        /* lower step: side face then top */
+        g.fillStyle = "#8f7a58"; ell(6, rr + 6, (rr + 6) * 0.55); g.fill();
+        const t1 = g.createLinearGradient(-rr, -rr * 0.5, rr, rr * 0.5); t1.addColorStop(0, "#efe2c6"); t1.addColorStop(1, "#b9a27a");
+        g.fillStyle = t1; ell(2, rr + 6, (rr + 6) * 0.55); g.fill();
+        /* upper step */
+        g.fillStyle = "#9c8662"; ell(2, rr, rr * 0.55); g.fill();
+        const t2 = g.createLinearGradient(-rr, -rr * 0.5, rr, rr * 0.5); t2.addColorStop(0, "#f6ecd6"); t2.addColorStop(1, "#c7b28a");
+        g.fillStyle = t2; ell(-2, rr, rr * 0.55); g.fill();
+        g.strokeStyle = "rgba(255,250,235,.7)"; g.lineWidth = 1; g.beginPath(); g.ellipse(0, -2, rr - 0.5, rr * 0.55 - 0.5, 0, Math.PI * 1.05, Math.PI * 1.75); g.stroke(); /* lit lip */
+        /* inset glow ring in the NPC colour */
+        g.strokeStyle = "rgba(60,40,20,.45)"; g.lineWidth = 2; ell(-2, rr - 5, (rr - 5) * 0.55); g.stroke();
+        g.shadowColor = n.col; g.shadowBlur = 8; g.strokeStyle = n.col; g.lineWidth = 1.6; ell(-2.6, rr - 5, (rr - 5) * 0.55); g.stroke();
+        g.shadowBlur = 0;
+        const inner = g.createRadialGradient(0, -2, 2, 0, -2, rr - 6); inner.addColorStop(0, mixHex(n.col, "#ffffff", 0.5) + "55"); inner.addColorStop(1, n.col + "10");
+        g.fillStyle = inner; g.beginPath(); g.ellipse(0, -2, rr - 6, (rr - 6) * 0.55, 0, 0, 6.3); g.fill();
+        return cv8;
+      }
+      /* npcRuneRing(n): a ring of small glyphs in the NPC colour (cached, drawn rotating in the dais plane) */
+      const RRING = {};
+      function npcRuneRing(n) {
+        if (RRING[n.col]) return RRING[n.col];
+        const S = 128, cv9 = document.createElement("canvas"); cv9.width = cv9.height = S;
+        RRING[n.col] = cv9;
+        const g = cv9.getContext("2d");
+        if (!g || !g.fillText) return cv9;
+        g.translate(S / 2, S / 2);
+        g.fillStyle = n.col; g.shadowColor = n.col; g.shadowBlur = 6; /* the NPC's own colour */
+        g.font = "bold 13px " + RUNE_FONT; g.textAlign = "center"; g.textBaseline = "middle";
+        const G0 = "ᚠᚢᚦᚨᚱᚲᚷᚹᚺᚾᛁᛃ";
+        for (let q = 0; q < 12; q++) { g.save(); g.rotate((q / 12) * 6.283); g.fillText(G0[q], 0, -S / 2 + 11); g.restore(); }
+        g.shadowBlur = 0; g.strokeStyle = n.col; g.globalAlpha = 0.55; g.lineWidth = 1.2; g.setLineDash([3, 5]);
+        g.beginPath(); g.arc(0, 0, S / 2 - 22, 0, 6.3); g.stroke();
+        return cv9;
+      }
       /* npcFlair(n): the emblem standing behind an NPC's disc (like the Seraph's wings), baked once into a cached canvas
          (2x, origin at its centre), then drawn each frame with a slow float and glow pulse. Keys: n.fx. */
       const FLAIR = {};
@@ -8026,41 +8079,33 @@
         }
         c.save();
         c.translate(n.x, n.y + bob);
-        /* the NPC's own glowing rug (drawn in code so it always follows the NPC) */
+        /* the NPC's dais: a baked two-step stone pedestal with an inset glow ring in the NPC colour (npcDais), then live: a rune
+           circle turning slowly on its top, a ripple of light every few seconds, and the soft colour pillar */
         const rr = (n.r || 20) + 14, ga = c.globalAlpha;
-        c.fillStyle = mixHex(n.col, "#0b1218", 0.72);
-        c.strokeStyle = n.col;
-        c.lineWidth = 2;
-        c.globalAlpha = ga * 0.85;
-        c.beginPath();
-        c.ellipse(0, 12, rr, rr * 0.55, 0, 0, 6.3);
-        c.fill();
-        c.globalAlpha = ga * 0.5;
-        c.stroke();
-        /* stand-out: a soft light pillar in the NPC's colour, a slow dashed ring on the rug and three orbiting sparks,
-           so NPCs read clearly over the busy, animated hub */
+        c.drawImage(npcDais(n), -rr - 10, 12 - rr * 0.55 - 8, (rr + 10) * 2, rr * 1.1 + 22);
         if (!ghost) {
           const [cr, cg, cb] = [1, 3, 5].map((k) => parseInt(n.col.slice(k, k + 2), 16)), pu = 0.75 + 0.25 * Math.sin(t * 2 + n.x);
+          /* rune circle: a cached ring of glyphs, turned in the dais' flattened plane */
+          c.save(); c.translate(0, 12); c.scale(1, 0.55); c.rotate(t * 0.25 + n.x);
+          c.globalAlpha = ga * (0.75 + 0.25 * pu);
+          c.drawImage(npcRuneRing(n), -rr + 3, -rr + 3, (rr - 3) * 2, (rr - 3) * 2);
+          c.restore();
+          /* ripple: every 3.5 s a ring of light spreads out from the dais and fades */
+          const rp = ((t + n.x * 0.013) % 3.5) / 1.2;
+          if (rp < 1) {
+            c.strokeStyle = n.col; c.lineWidth = 2.6 * (1 - rp); c.globalAlpha = ga * 0.9 * (1 - rp); c.shadowColor = n.col; c.shadowBlur = 6;
+            c.beginPath(); c.ellipse(0, 12, rr * (0.7 + 0.6 * rp), rr * 0.55 * (0.7 + 0.6 * rp), 0, 0, 6.3); c.stroke();
+            c.shadowBlur = 0;
+          }
           c.globalCompositeOperation = "lighter";
-          c.globalAlpha = ga * 0.5 * pu;
+          c.globalAlpha = ga * 0.45 * pu;
           c.drawImage(softBlob(`${cr},${cg},${cb}`, 0.55), -rr * 1.3, 12 - rr * 0.9, rr * 2.6, rr * 1.8);
           const bm = c.createLinearGradient(0, 12, 0, -90);
-          bm.addColorStop(0, `rgba(${cr},${cg},${cb},${0.32 * pu})`); bm.addColorStop(1, `rgba(${cr},${cg},${cb},0)`);
+          bm.addColorStop(0, `rgba(${cr},${cg},${cb},${0.28 * pu})`); bm.addColorStop(1, `rgba(${cr},${cg},${cb},0)`);
           c.globalAlpha = ga;
           c.fillStyle = bm;
-          c.beginPath(); c.moveTo(-rr * 0.55, 12); c.lineTo(-rr * 0.3, -90); c.lineTo(rr * 0.3, -90); c.lineTo(rr * 0.55, 12); c.closePath(); c.fill();
+          c.beginPath(); c.moveTo(-rr * 0.5, 12); c.lineTo(-rr * 0.28, -90); c.lineTo(rr * 0.28, -90); c.lineTo(rr * 0.5, 12); c.closePath(); c.fill();
           c.globalCompositeOperation = "source-over";
-          c.save();
-          c.strokeStyle = n.col; c.globalAlpha = ga * 0.8; c.lineWidth = 1.5;
-          c.setLineDash([6, 7]); c.lineDashOffset = -t * 12;
-          c.beginPath(); c.ellipse(0, 12, rr - 5, (rr - 5) * 0.55, 0, 0, 6.3); c.stroke();
-          c.restore();
-          for (let k = 0; k < 3; k++) {
-            const a = t * 1.3 + k * 2.09 + n.x, sx = Math.cos(a) * (rr - 2), sy = 12 + Math.sin(a) * (rr - 2) * 0.55 - 10 - Math.sin(t * 2 + k) * 6;
-            c.globalAlpha = ga * (Math.sin(a) > 0 ? 1 : 0.45);
-            c.fillStyle = "#fff"; c.beginPath(); c.arc(sx, sy, 1.6, 0, 6.3); c.fill();
-            c.fillStyle = n.col; c.globalAlpha *= 0.5; c.beginPath(); c.arc(sx, sy, 3.4, 0, 6.3); c.fill();
-          }
           c.globalAlpha = ga;
         }
         c.globalAlpha = ga;
