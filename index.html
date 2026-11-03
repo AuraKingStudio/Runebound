@@ -2489,8 +2489,9 @@
         }
       }
       for (const u of UPG) V.up[u.k] = cl(+V.up[u.k] | 0, 0, MAXL);
-      let SAVE_WRITE_FAILED = false;
+      let SAVE_WRITE_FAILED = false, SAVE_LOCK = false; /* SAVE_LOCK: an import or reset is reloading the page */
       const save = () => {
+        if (SAVE_LOCK) return;
         const q = QUESTS[V.q]; /* quests with a goal check (ok) become ready as soon as it is met */
         if (q && q.ok && V.qs == 1 && q.ok()) V.qs = 2;
         try {
@@ -2504,6 +2505,56 @@
           }
         }
       };
+      /* ---------- save code (Settings > Save): export, import, reset ----------
+         Code = "RB1." + base64(UTF-8 JSON of V) + "." + checksum (catches a bad paste, not a lock: online the server bank owns gold and XP).
+         Import writes the save and reloads, so the normal load sanitizer checks every field; the bank token (rb_btok) is never in the code,
+         and the first sync after the load replaces gold and XP with the server's balance. Reset needs the word RESET typed. */
+      const saveSum = (t) => { let h = 5381; for (let i = 0; i < t.length; i++) h = ((h * 33) ^ t.charCodeAt(i)) >>> 0; return h.toString(36); };
+      function saveCode() {
+        const b = new TextEncoder().encode(JSON.stringify(V)), t = btoa(Array.from(b, (x) => String.fromCharCode(x)).join(""));
+        return "RB1." + t + "." + saveSum(t);
+      }
+      /* saveRead(code): the save object, or a reason string */
+      function saveRead(code) {
+        const m = /^RB1\.([A-Za-z0-9+/=]{8,90000})\.([a-z0-9]{1,8})$/.exec(String(code || "").replace(/\s+/g, ""));
+        if (!m) return "That isn't a Runebound save code.";
+        if (saveSum(m[1]) != m[2]) return "The code is damaged (copy all of it).";
+        try {
+          const o = JSON.parse(new TextDecoder().decode(Uint8Array.from(atob(m[1]), (ch) => ch.charCodeAt(0))));
+          return o && typeof o == "object" && !Array.isArray(o) ? o : "The code holds no save.";
+        } catch (e) { return "The code is damaged (copy all of it)."; }
+      }
+      const saveReload = () => { if (typeof location != "undefined" && location.reload) location.reload(); };
+      function saveImport(code) {
+        const o = saveRead(code);
+        if (typeof o == "string") { toast(o); return false; }
+        try { localStorage.setItem(SAVE_KEY, JSON.stringify(o)); } catch (e) { toast("Couldn't write the save."); return false; }
+        SAVE_LOCK = true; /* no autosave may overwrite the imported save before the reload */
+        toast("Save loaded");
+        saveReload();
+        return true;
+      }
+      function saveReset(word) {
+        if (String(word || "").trim().toUpperCase() != "RESET") { toast("Type RESET to confirm"); return false; }
+        try { localStorage.removeItem(SAVE_KEY); } catch (e) {}
+        SAVE_LOCK = true;
+        saveReload();
+        return true;
+      }
+      function saveUI() {
+        $("dp").className = "pn";
+        $("dp").innerHTML = `<h2>💾 Save</h2>
+          <div class="mast"><span class="sm">Export: keep this code to move your progress to another browser</span></div>
+          <textarea id="svx" readonly rows="3" style="width:100%;box-sizing:border-box;font:11px monospace;word-break:break-all" onclick="this.select()">${saveCode()}</textarea>
+          <div class="row"><button onclick="const t=$('svx');t.select();(navigator.clipboard?.writeText(t.value)||Promise.reject()).then(()=>toast('Save code copied'),()=>toast('Select the code and copy it'))">📋 Copy code</button></div>
+          <div class="mast"><span class="sm">Import: replaces this browser's progress</span></div>
+          <textarea id="svi" rows="3" placeholder="Paste a save code (RB1.…)" style="width:100%;box-sizing:border-box;font:11px monospace"></textarea>
+          <div class="row"><button onclick="saveImport($('svi').value)">📥 Load code</button></div>
+          <p class="sm">Online, your gold and XP live on the server: they come back from it, never from a code.</p>
+          <div class="mast"><span class="sm">Reset progress (can't be undone)</span></div>
+          <div class="row" style="gap:6px;flex-wrap:wrap"><input id="svr" maxlength="5" placeholder="Type RESET" autocomplete="off" style="width:110px"><button class="alt" style="color:#ff7a6b" onclick="saveReset($('svr').value)">Reset</button></div>
+          <button class="alt x" onclick="settingsUI()" title="Back">Back</button>`;
+      }
       /* LEDGER: every gold / XP / upgrade change since the last hub audit, as [kind, gold, xp, upgradeKey?].
          An online hub master replays it against the game's own reward tables (netAudit), so an edit of V
          (Cheat Engine, devtools, save editing) no longer adds up. goldAdd is the only way gold changes in play. */
@@ -2521,6 +2572,7 @@
       const bankUrl = () => { const u = typeof NET_CONFIG != "undefined" && NET_CONFIG.signalingUrl; return u && u.startsWith("https://") ? u : ""; };
       const bankTok = () => { let t = ""; try { t = localStorage.getItem("rb_btok") || ""; } catch (e) {} if (!/^[a-f0-9]{32}$/.test(t)) { t = [...crypto.getRandomValues(new Uint8Array(16))].map((b) => b.toString(16).padStart(2, "0")).join(""); try { localStorage.setItem("rb_btok", t); } catch (e) {} } return t; };
       function bankSoon() { if (!BANK_T && bankUrl()) BANK_T = setTimeout(bankSync, 1100); }
+      setTimeout(bankSoon, 0); /* once at load (after the script, when NET_CONFIG exists): an imported or edited save shows the server's gold and XP right away */
       async function bankSync() {
         BANK_T = 0;
         const url = bankUrl();
@@ -8626,6 +8678,7 @@
           <div class="mast"><span class="sm">More</span></div><div class="row" style="flex-wrap:wrap;gap:6px">
             <button onclick="closeDlg();$('dlg').hidden=false;titleUI()">🎖️ Titles</button>
             <button onclick="setInvite()" title="Copy the invite link">🔗 Invite</button>
+            <button onclick="saveUI()">💾 Save</button>
             <button onclick="closeDlg();fbOpen()">💬 Feedback</button>
             ${DEV_OK ? `<button onclick="closeDlg();toggleDev()">🛠 Dev tools</button>` : ""}</div>
           <button class="alt x" onclick="REBIND=null;closeDlg()" title="Close">Close</button>`;
