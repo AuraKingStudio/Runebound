@@ -1,5 +1,11 @@
 # Runebound — AI agent settings
 
+> ## ⚠️ <u>TOP PRIORITY: SECURITY (bank-grade)</u>
+> - <u>**Treat every client, save and player host as hostile.** Anything valuable (gold, XP, items, rewards, trades) is decided by the VPS server, never the browser.</u>
+> - <u>**Use Cloudflare's full protection in online mode:** Tunnel (no open ports), Proxy/DDoS L3–L7, WAF managed rules, rate-limiting rules on `/api/`, Bot Fight Mode, Turnstile on join, SSL Full (strict), Always HTTPS, HSTS, Access for admin routes.</u>
+> - <u>**Assume the code will be reverse-engineered.** Client code is public: keep no secrets in it, ship a minified release build, and rely on server checks.</u>
+> - <u>Every change must keep or raise security; never weaken it to save time.</u>
+
 ## How to work
 
 - **First action on every new task:** read the project code and map its structure, responsibilities, and important flows before editing or proposing changes. Inventory all source, tests, configuration, and assets; read large files in bounded sections. Keep the map concise and internal unless asked to share it.
