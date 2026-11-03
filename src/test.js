@@ -119,6 +119,7 @@ ok(T.bjSide(),'blackjack: strategy chart defaults open');
 ok(T.bjVal([1,13])==21&&T.bjVal([1,1,9])==21&&T.bjVal([10,10,5])==25,'blackjack: hand values (aces 11 or 1)');
 T.V().gold=100;T.V().bj1=1;T.bjDeal(50);ok([50,100,200].includes(T.V().gold),'blackjack: betting takes the stake (or settles a natural 21)');
 T.V().gold=100;T.V().bj1=0;T.bjDeal(10);ok(T.V().bj1==1&&T.V().gold==90&&ctx.document.getElementById('dp').innerHTML.includes('<b class="bjv">11</b><small>5 | 6</small>'),'blackjack: your very first hand starts at 11');
+{const h=ctx.document.getElementById('dp').innerHTML;ok(h.includes('bjDouble()')&&!h.includes('bjHit()'),'blackjack: first hand offers only DOUBLE');T.V().gold=0;T.bjDouble();ok(T.BJ().end&&T.BJ().hs[0].res=='win'&&T.bjVal(T.BJ().hs[0].c)==21,'blackjack: tutorial double lands 21 and wins, even short on gold');T.V().bj1=0;T.V().gold=100;T.bjDeal(10);}
 ok(ctx.document.getElementById('dp').innerHTML.includes('class="bjmini"')&&ctx.document.getElementById('dp').innerHTML.includes('aria-expanded="true"'),'blackjack: active table shows the strategy chart by default');
 T.bjHit();ok(T.V().gold==110&&ctx.document.getElementById('dp').innerHTML.includes('You win! +20'),'blackjack: the first hand\'s hit guarantees 21 and a win');
 {const originalMath=ctx.Math;let rolls=[.1,.1,.7,.62];ctx.Math=Object.create(Math);ctx.Math.random=()=>rolls.shift()??.1;T.V().gold=100;T.V().tut=6;T.bjDeal(10);T.bjStand();ctx.Math=originalMath;ok(T.V().gold==90&&ctx.document.getElementById('dp').innerHTML.includes('house wins'),'blackjack: normal hands remain random');}
@@ -654,8 +655,8 @@ async function hostLossTests(){
  T.devHub();
  T.toArena('small',[{me:1,cls:T.P().cls,name:'Tester'}],{role:'member',lead:'host-peer',heard:netClock-8000,at:0,seq:0,key:''});
  T.raidPuppet(1/60);
- ok(T.S().sc=='hub'&&T.S().net==null,'multiplayer recovery: a silent raid leader returns the player to the hub');
- ok(V.gold==gold&&(V.loss||0)==losses,'multiplayer recovery: a disconnected raid grants neither win nor loss rewards');
+ ok(T.S().sc=='arena'&&T.S().net?.role=='lead','host migration: a silent raid leader hands the raid to a member (arena stays alive)');
+ ok(V.gold==gold&&(V.loss||0)==losses,'host migration: the handover grants neither win nor loss rewards');
 
  T.devHub();
  T.toArena('small',[{me:1,cls:T.P().cls,name:'Tester'}],{role:'member',lead:'host-peer',heard:netClock,at:0,seq:0,key:''});
@@ -663,10 +664,32 @@ async function hostLossTests(){
  fakePeers=['host-peer'];
  fakeHandlers.onClose('host-peer');
  await new Promise(resolve=>setImmediate(resolve));
- ok(T.S().sc=='hub'&&T.S().net==null,'multiplayer recovery: hub-host loss exits an active raid cleanly');
+ ok(T.S().sc=='arena','host migration: hub-host loss keeps the raid running');
  ok(!T.netTestState().session&&!T.netTestState().connected,'multiplayer recovery: clears the dead hub session before retrying');
  ok(V.gold==gold&&(V.loss||0)==losses,'multiplayer recovery: hub-host loss does not grant raid rewards');
- fakePeers=[];
+ fakePeers=[];T.toHub();
+
+ /* ranking: the host pings, guests answer with time here / frame / bench / phone, the longest stayer leads the list */
+ T.devHub();T.netPrepareHub('host');fakePeers=['pa','pb'];
+ for(const [id,pid] of [['pa','player-mig-aaaa'],['pb','player-mig-bbbb']])T.netReceive(id,{type:'join',profile:{id:pid,name:id,cls:'tank',lv:3,ti:0,spd:1},x:500,y:500});
+ const now=performance.now();
+ T.netReceive('pa',{type:'hr',t:now-40,up:60,fm:16,b:3,mob:0});
+ T.netReceive('pb',{type:'hr',t:now-40,up:1500,fm:20,b:6,mob:1});
+ fakeBroadcast=[];T.netStep();
+ const hq=fakeBroadcast.find(x=>x.msg.type=='hq');
+ ok(hq&&hq.msg.l[0]=='player-mig-bbbb'&&hq.msg.l[1]=='player-mig-aaaa','host migration: host ranks successors (time in hub weighs most) and shares the list');
+ fakePeers=[];await T.netDisconnect?.();
+
+ /* takeover: a guest whose name tops the list becomes host; the others stay on screen, renamed to the new host */
+ T.devHub();T.setNetTestSession('guest',{peerId:'host-peer',hubId:1,reason:'test hub'});T.netPrepareHub('guest');fakePeers=['host-peer'];
+ T.netReceive('host-peer',{type:'r',p:[[0,'host-player','Old','tank',9,0,1],[1,'player-mig-cccc','Next','heal',4,0,1]]});
+ T.netReceive('host-peer',{type:'hq',t:1,l:['player-mig-cccc']});
+ const hr=fakeBroadcast.reverse().find(x=>x.msg.type=='hr');
+ ok(hr&&Number.isFinite(hr.msg.b)&&Number.isFinite(hr.msg.fm),'host migration: guest answers with frame time and benchmark');
+ fakePeers=[];fakeHandlers.onClose('host-peer');
+ await new Promise(resolve=>setImmediate(resolve));
+ ok(T.HUBV().some(v=>v.id=='host-player'&&v.name=='Next')&&!T.HUBV().some(v=>v.name=='Old'),'host migration: the successor stays on screen as the new host, the old host leaves');
+ await T.netDisconnect?.();
 }
 async function reportTests(){
  const {server}=createDirectoryServer({allowedOrigins:[]});await new Promise(r=>server.listen(0,'127.0.0.1',r));

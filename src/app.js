@@ -271,7 +271,7 @@ if (require.main === module) {
   const allowedOrigins = (process.env.ALLOWED_ORIGINS || "https://aurakingstudio.github.io,http://localhost:8080,http://127.0.0.1:8080")
     .split(",").map((origin) => origin.trim()).filter(Boolean);
   const port = Number(process.env.PORT || 8787);
-  const { server } = createDirectoryServer({ allowedOrigins, trustCloudflare: process.env.TRUST_CLOUDFLARE === "1" });
+  const { server } = createDirectoryServer({ allowedOrigins, trustCloudflare: process.env.TRUST_CLOUDFLARE === "1" || process.argv.includes("--cf") }); /* --cf: behind a Cloudflare tunnel (npm run online) */
   server.listen(port, "0.0.0.0", () => console.log(`Runebound signaling directory listening on ${port}`));
 }
 

@@ -1573,9 +1573,9 @@
           else if (room.role == "guest" && msg.k == "answer" && msg.peerId == room.peerId) room.events.push({ type: "answer", peerId: msg.peerId, description });
           if (room.events.length > 40) room.events.shift();
         }
-        function roomJoin(profile) {
+        function roomJoin(profile, asHost) {
           const linked = roomFromLink(), mine = sessionStorage.getItem("rbRoom");
-          const role = linked && linked != mine ? "guest" : "host"; /* a host reloading its own room link stays host */
+          const role = asHost || !(linked && linked != mine) ? "host" : "guest"; /* a host reloading its own room link stays host; asHost: taking over after host loss */
           const code = linked || roomToken().slice(0, 12);
           if (role == "host") {
             sessionStorage.setItem("rbRoom", code);
@@ -1623,9 +1623,9 @@
           return result;
         }
 
-        async function directoryJoin(profile) {
+        async function directoryJoin(profile, opts) {
           if (!profile || typeof profile !== "object") throw new Error("Player display profile is invalid.");
-          if (directoryUrl === "room") return { ...(directorySession = await roomJoin(profile)) };
+          if (directoryUrl === "room") return { ...(directorySession = await roomJoin(profile, !!opts?.host)) };
           const result = await directoryRequest("/api/join", { profile });
           if (!["host", "guest"].includes(result.role) || !Number.isInteger(result.hubId) ||
               typeof result.token !== "string" || result.token.length !== 48 ||
@@ -2771,6 +2771,51 @@
         if (Number.isInteger(seq)) NET.send(id, ok ? { type: "ack", seq, ok: true } : { type: "ack", seq, ok: false, reason });
       }
       const NET_CLIENTS = new Map();
+      /* host migration: every 2 s the host pings each guest ("hq"); the guest answers with how long it has played here, its frame
+         time, a one-off CPU benchmark and whether it is a phone ("hr"). The host ranks them (time here counts most: long stayers
+         tend to stay) and sends the top 3 with the next ping. When the host goes, every guest walks the same list: the first one
+         alive reopens the same room as host, the rest rejoin it; other players stay on screen, the hub and raid never stop. */
+      let NET_SUCC = [], NET_HQ_AT = 0, NET_JOINED_AT = 0, NET_FRAME = 16.7, NET_BENCH = 0, NET_TAKEOVER = 0, NET_HQ_SENT = -1e9, NET_RECOVERING = false;
+      function netBench() {
+        if (NET_BENCH) return NET_BENCH;
+        const t = performance.now();
+        let x = 0;
+        for (let i = 1; i < 2e5; i++) x += Math.sqrt(i) * Math.sin(i);
+        return (NET_BENCH = Math.max(0.1, performance.now() - t + (x > 1e12 ? 1 : 0)));
+      }
+      const netIsMobile = () => !!(window.matchMedia?.("(pointer: coarse)")?.matches || /Mobi|Android|iPad|iPhone/.test(navigator.userAgent || ""));
+      /* netScore(v): up to 100 for 30 min here, 20 smooth frames, 15 fast CPU, 15 low ping, -15 on a phone */
+      const netScore = (v) => Math.min(v.netUp || 0, 1800) / 18 + (50 - Math.min(v.netFm ?? 50, 50)) * 0.4 + (50 - Math.min(v.netB ?? 50, 50)) * 0.3 +
+        (400 - Math.min(v.netRtt ?? 400, 400)) * 0.0375 - (v.netMob ? 15 : 0);
+      function netRank() {
+        return HUBV.filter((v) => !v.bot && !v.out && NET_CLIENTS.has(v.id) && v.netUp != null).sort((a, b) => netScore(b) - netScore(a)).slice(0, 3).map((v) => v.netClientId);
+      }
+      /* netRekey(from, to): a player's key changed (the successor becomes "host-player") or the player is gone (to = null) */
+      function netRekey(from, to) {
+        const v = HUBV.find((o) => !o.bot && o.id == from);
+        if (v && to) { HUBV = HUBV.filter((o) => o.id != to); v.id = v.netClientId = to; }
+        else if (v) HUBV = HUBV.filter((o) => o !== v);
+        if (PARTY.lead == from) PARTY.lead = to || "me";
+        PARTY.m = PARTY.m.filter((k) => k != from || to).map((k) => (k == from ? to : k));
+        if (S.sc == "arena" && S.net) {
+          for (const a of S.ps) if (a.rkey == from) { a.rkey = to; a.remote = a.remote && to; }
+          if (S.net.role == "member" && S.net.lead == from) to ? (S.net.lead = to) : raidFailover();
+        }
+      }
+      async function netMigrate() {
+        if (NET_RECOVERING) return;
+        const order = NET_SUCC.filter((k) => k == NET_LOCAL_ID || HUBV.some((v) => !v.bot && v.id == k));
+        if (!order.length || !NET_SESSION) return netRecoverHostLoss(false);
+        NET_RECOVERING = true;
+        const me = order[0] == NET_LOCAL_ID;
+        netRekey("host-player", null);
+        if (!me) netRekey(order[0], "host-player");
+        NET_SUCC = order.slice(1);
+        chatSys(me ? "The host left: you host the hub now" : "The host left: switching hosts…", "out");
+        try { await netDisconnect(); } finally { NET_RECOVERING = false; }
+        NET_TAKEOVER = me ? 1 : 2;
+        if (me) networkAutoJoin(); else NET_RETRY_TIMER = setTimeout(() => { NET_RETRY_TIMER = 0; networkAutoJoin(); }, 1200); /* the new host needs a moment to reopen the room */
+      }
       function netBadgeUpdate() {
         const badge = $("netBadge");
         if (!badge) return;
@@ -2817,7 +2862,8 @@
           NET.setIceServers(NET_CONFIG.iceServers || []);
           NET.configureDirectory(NET_CONFIG.signalingUrl);
           netStatus("Finding the first hub with an open seat…");
-          NET_SESSION = await NET.directoryJoin(netProfile());
+          NET_SESSION = await NET.directoryJoin(netProfile(), { host: NET_TAKEOVER == 1 });
+          if (NET_TAKEOVER == 1) { NET_TAKEOVER = 0; setTimeout(netDropGhosts, 15000); }
           NET_ROLE = NET_SESSION.role;
           NET_DIRECTORY_STATE = "assigned";
           netPrepareHub(NET_ROLE);
@@ -2830,10 +2876,12 @@
             /* host never answered or the link never opened: give the seat back and retry instead of hanging at CONNECTING */
             NET_CONNECT_TIMER = setTimeout(async () => {
               if (NET_CONNECTED || !NET_SESSION) return;
+              if (NET_TAKEOVER == 2 && NET_SUCC.length) return netMigrate(); /* the chosen successor never opened: the next one takes over */
+              NET_TAKEOVER = 0;
               await netDisconnect();
               netStatus("Could not reach the hub host within 30 s; retrying…");
               netScheduleRetry();
-            }, 30000);
+            }, NET_TAKEOVER == 2 ? 6000 : 30000);
           }
           NET_POLL_TIMER = setInterval(netPollDirectory, NET_ROLE == "host" ? 800 : 700);
           NET_HEARTBEAT_TIMER = setInterval(netHeartbeat, 10000);
@@ -2874,7 +2922,6 @@
         try { await NET.directoryHeartbeat(); }
         catch (error) { netStatus("Lobby session expired or disconnected: " + error.message); }
       }
-      let NET_RECOVERING = false;
       async function netRecoverHostLoss(raidLost) {
         if (NET_RECOVERING) return;
         NET_RECOVERING = true;
@@ -2912,6 +2959,11 @@
         HUB_MIN = 3;
         HUB_AIM = 5;
         netStatus("Offline.");
+      }
+      /* netDropGhosts(): after a takeover, players who never reconnected to the new host leave */
+      function netDropGhosts() {
+        if (NET_ROLE != "host") return;
+        for (const v of HUBV.filter((o) => !o.bot && o.netClientId && !NET_CLIENTS.has(o.id))) hubLeave(v.id);
       }
       function netPrepareHub(role) {
         NET_ROLE = role; /* local bots stay: each screen keeps its own (they are not sent to others) */
@@ -3087,7 +3139,7 @@
       /* netRoster(to): the whole list, to one newcomer */
       function netRoster(to) {
         const p = [netHostEntry()];
-        for (const v of HUBV) if (!v.bot && !v.out && v.netClientId && v.id != to) p.push(netEntry(v));
+        for (const v of HUBV) if (!v.bot && !v.out && NET_CLIENTS.has(v.id) && v.id != to) p.push(netEntry(v));
         p.push(...HUBV.filter((v) => v.id == to).map(netEntry)); /* the newcomer's own entry last */
         NET.send(to, { type: "r", p });
         const v = HUBV.find((o) => o.id == to);
@@ -3131,10 +3183,10 @@
       const netStateMs = () => cl(100 + (NET_CLIENTS.size + 1 - 20) * 2, 100, 250);
       function netSnapshot(full) {
         const now = performance.now(), cur = [[0, P.x, P.y, P.f || "d"]];
-        for (const v of HUBV) if (!v.bot && !v.out && v.netClientId) cur.push([v.netSlot, v.netX ?? v.x, v.netY ?? v.y, v.f || "d"]);
+        for (const v of HUBV) if (!v.bot && !v.out && NET_CLIENTS.has(v.id)) cur.push([v.netSlot, v.netX ?? v.x, v.netY ?? v.y, v.f || "d"]);
         const list = cur.map(([slot, x, y, f]) => { const e = [slot, Math.round(x), Math.round(y), Math.max(0, NET_F.indexOf(f))]; return { e, k: e.join() }; });
         for (const r of HUBV) {
-          if (r.bot || r.out || !r.netClientId || r.netKicked) continue;
+          if (r.bot || r.out || !NET_CLIENTS.has(r.id) || r.netKicked) continue;
           const seen = r.netSeen || (r.netSeen = new Map()), rx = r.netX ?? r.x, ry = r.netY ?? r.y, out = [];
           for (const { e, k } of list) {
             if (e[0] == r.netSlot) continue;
@@ -3167,12 +3219,14 @@
             const profile = netSafeProfile(message.profile);
             const existing = HUBV.find((v) => v.id == id && !v.bot);
             if (existing && profile?.id == existing.netClientId) return netRoster(id);
+            const ghost = profile && HUBV.find((v) => !v.bot && v.netClientId == profile.id && !NET_CLIENTS.has(v.id)); /* back after a host switch: no join message */
+            if (ghost) HUBV = HUBV.filter((v) => v !== ghost);
             if (!profile || NET_CLIENTS.size >= HUB_MAX - 1 || hubCount() >= HUB_MAX ||
                 HUBV.some((v) => !v.bot && v.netClientId == profile.id)) {
               NET.send(id, { type: "reject", reason: "This hub is full or the profile is invalid." });
               return NET.disconnect(id);
             }
-            const v = hubJoin(id, profile, 0);
+            const v = hubJoin(id, ghost ? { ...profile, quiet: 1, x: ghost.x, y: ghost.y } : profile, 0);
             if (!v) return NET.disconnect(id);
             v.netClientId = profile.id;
             v.netSpd = profile.spd;
@@ -3219,6 +3273,10 @@
             if (performance.now() - (HUBV.find((o) => o.id == id)?.netAnsweredAt || 0) < 1000) return; /* one answer per second */
             const v = HUBV.find((o) => o.id == id && !o.bot);
             if (v) { v.netAnsweredAt = performance.now(); NET.send(id, netStats(id, message.n)); }
+          } else if (message.type == "hr" && [message.t, message.up, message.fm, message.b].every(Number.isFinite)) {
+            const v = HUBV.find((o) => o.id == id && !o.bot), now = performance.now();
+            if (!v) return;
+            v.netRtt = cl(now - message.t, 0, 2000); v.netUp = cl(message.up, 0, 86400); v.netFm = cl(message.fm, 1, 1000); v.netB = cl(message.b, 0.1, 1000); v.netMob = message.mob ? 1 : 0;
           } else if (message.type == "rz" && (message.on === 0 || message.on === 1)) {
             const v = HUBV.find((o) => o.id == id && !o.bot && !o.out);
             if (v && !!v.rz != !!message.on) { v.rz = message.on; netTell({ type: "rz", e: [v.netSlot, message.on] }, id); }
@@ -3280,6 +3338,11 @@
             const pid = NET_SLOT_IDS.get(message.s);
             NET_SLOT_IDS.delete(message.s); NET_SLOT_INFO.delete(message.s); NET_SLOT_LAST.delete(message.s); NET_SLOT_POS.delete(message.s);
             if (pid && pid != NET_LOCAL_ID) hubLeave(pid);
+          } else if (message.type == "hq" && Number.isFinite(message.t) && Array.isArray(message.l) && message.l.length <= 3 && message.l.every((k) => typeof k == "string" && k.length <= 56)) {
+            const now = performance.now();
+            NET_HQ_AT = now;
+            NET_SUCC = message.l;
+            NET.send(id, { type: "hr", t: message.t, up: Math.round((now - (NET_JOINED_AT || now)) / 1000), fm: Math.round(NET_FRAME * 10) / 10, b: Math.round(netBench() * 10) / 10, mob: netIsMobile() ? 1 : 0 });
           } else if (message.type == "rz" && Array.isArray(message.e) && message.e.length == 2) {
             const v = HUBV.find((o) => o.id == NET_SLOT_IDS.get(message.e[0]));
             if (v && (message.e[1] === 0 || message.e[1] === 1)) v.rz = message.e[1];
@@ -3362,7 +3425,8 @@
         onOpen: (id) => {
           if (NET_ROLE == "guest") NET.send(id, { type: "join", profile: netProfile(), x: Math.round(P.x), y: Math.round(P.y) });
           NET_CONNECTED = true;
-          NET_RETRY_COUNT = 0; NET_RECOVERY_NOTIFIED = false;
+          NET_RETRY_COUNT = 0; NET_RECOVERY_NOTIFIED = false; NET_HQ_AT = performance.now();
+          if (NET_ROLE == "guest") { if (NET_TAKEOVER == 2) chatSys("Host switch complete", "in"); NET_TAKEOVER = 0; NET_JOINED_AT ||= performance.now(); }
           netStatus(`Connected to hub ${NET_SESSION?.hubId || ""}.`);
         },
         onMessage: netReceive,
@@ -3373,19 +3437,14 @@
             NET_CLIENTS.delete(id);
             if (slot != null) netTell({ type: "l", s: slot });
           } else if (NET_ROLE == "guest" && id == NET_SESSION?.peerId) {
-            HUBV = HUBV.filter((v) => v.id != "host-player");
-            const raidLost = S.sc == "arena" && S.net?.role == "member";
-            if (raidLost) toHub();
-            netRecoverHostLoss(raidLost);
+            netMigrate();
             return;
           }
           if (!NET.peerIds().length) {
             NET_CONNECTED = false;
             if (NET_ROLE == "guest" && NET_SESSION) {
               NET_GUEST_POLLING = false;
-              const raidLost = S.sc == "arena" && S.net?.role == "member";
-              if (raidLost) toHub();
-              netRecoverHostLoss(raidLost);
+              netMigrate();
               return;
             }
           }
@@ -3408,6 +3467,8 @@
           if (NET_ROLE == "host") netTell({ type: "cls", e: [0, P.cls] }); else NET.send(NET_SESSION?.peerId, { type: "cls", c: P.cls });
         }
         if (NET && NET_ROLE != "host" && NET_CONNECTED && P) { const lv = lvlInfo().L; if (NET_MY_LV && lv != NET_MY_LV) NET.send(NET_SESSION?.peerId, { type: "ql" }); NET_MY_LV = lv; } /* level-up: ask for an early check */
+        if (NET && NET.peerIds().length && NET_ROLE == "host" && now - NET_HQ_SENT >= 2000) { NET_HQ_SENT = now; NET_SUCC = netRank(); netTell({ type: "hq", t: now, l: NET_SUCC }); }
+        if (NET && NET_ROLE == "guest" && NET_CONNECTED && NET_HQ_AT && now - NET_HQ_AT > 6000) { NET_HQ_AT = 0; NET.disconnect(NET_SESSION?.peerId); } /* host silent (frozen tab, crash): treat as gone */
         if (!NET || !NET.peerIds().length || !P || S.sc != "hub") return;
         if (NET_ROLE == "host") for (const v of HUBV) { if (!v.bot && v.netAud && !v.netKicked) netAuditTick(v.id, v.netAud, now, (n, why) => netStrike(v, n, why)); }
         else if (NET_CONNECTED) netAuditTick(NET_SESSION?.peerId, NET_HOST_AUD || (NET_HOST_AUD = newAudit(now)), now, hostStrike);
@@ -4660,6 +4721,7 @@
           if (m.me) { P.id = i; return P; }
           const a = mkAlly(m, i);
           if (m.real && m.key) { a.remote = m.key; a.heard = performance.now(); } /* a real player: moved by their messages */
+          if (m.key && !m.filler) a.rkey = m.key; /* its network key: lets a member take over the raid */
           return a;
         });
         if (!S.ps.includes(P)) { P.id = S.ps.length; S.ps.push(P); }
@@ -5569,10 +5631,19 @@
         S.zo = S.zo.filter((z) => z.l > 0);
         for (const a of S.ao) { a.t -= dt; if (a.t <= 0) { burst(a.x, a.y, "#ff5560", 10, (a.r || 40) * 2); shake(0.12); } }
         S.ao = S.ao.filter((a) => a.t > 0);
-        if (performance.now() - S.net.heard > RAID_SILENT_MS * 1.5) {
-          toHub();
-          chatSys("Raid ended: lost contact with the raid leader. No raid rewards were granted.", "bye");
-        }
+        if (performance.now() - S.net.heard > RAID_SILENT_MS * 1.5 && !NET_RECOVERING && NET_TAKEOVER != 2) raidFailover();
+      }
+      /* raidFailover(): the raid leader is gone. Every member picks the same new leader (lowest key, old leader excluded); that
+         screen runs the fight on from its last snapshot and the old leader's hero fights on as an ally bot. The arena never closes. */
+      function raidFailover() {
+        const N = S.net, dead = N.lead, now = performance.now(), mine = netMyId();
+        for (const a of S.ps) if (a.rkey == dead) { a.rkey = null; a.remote = null; }
+        const next = [mine, ...S.ps.filter((a) => a !== P && a.rkey).map((a) => a.rkey)].sort()[0];
+        if (next != mine) { N.lead = next; N.heard = now; return; }
+        S.net = { role: "lead", t: 0 };
+        for (const a of S.ps) if (a !== P && a.rkey) { a.remote = a.rkey; a.heard = now; a.tx ??= a.x; a.ty ??= a.y; }
+        if (S.b) { S.b.x = S.b.tx ?? S.b.x; S.b.y = S.b.ty ?? S.b.y; }
+        popMsg("Raid leader left: you lead the raid now", 1.1, 2500);
       }
       /* raidNetStep(): the raid side of the 50 ms network timer: the leader sends snapshots, a member sends its moves */
       function raidNetStep(now) {
@@ -6996,7 +7067,7 @@
          BJ.p is the hand being played (kept for older code). Double: one card, bet doubled, hand ends. Split: a first pair of equal value
          becomes two hands, each with the bet. The Barkeep draws to 17 once every hand is done; each hand is settled on its own. */
       const bjCur = () => BJ.hs[BJ.i];
-      const bjCanDouble = () => BJ && !BJ.end && bjCur().c.length == 2 && V.gold >= bjCur().bet && !BJ.tutorial;
+      const bjCanDouble = () => BJ && !BJ.end && bjCur().c.length == 2 && (BJ.tutorial || V.gold >= bjCur().bet); /* tutorial: 11 vs dealer 10, the textbook double (free if short on gold) */
       const bjCanSplit = () => BJ && !BJ.end && BJ.hs.length < 4 && bjCur().c.length == 2 && Math.min(10, bjCur().c[0]) == Math.min(10, bjCur().c[1]) && V.gold >= bjCur().bet && !BJ.tutorial;
       /* bjFx(): plays the animation the last action asked for (BJ.fx), on the freshly drawn table */
       function bjFx() {
@@ -7062,7 +7133,7 @@
           <div class="bjtip"><div class="purse"><span class="coin"></span><b>${V.gold}</b></div>${bjChartOn()
             ? `🔮 Best play: <b class="${BJ_ACT[bjAdvice(bjCur().c, BJ.d[0], bjCanDouble(), bjCanSplit())][1]}">${BJ_ACT[bjAdvice(bjCur().c, BJ.d[0], bjCanDouble(), bjCanSplit())][0]}</b><span class="bjleft">${bjChartLeft()}</span>`
             : ""}<button class="bjchb ${BJ_SIDE ? "on" : ""}" aria-expanded="${BJ_SIDE}" title="${BJ_SIDE ? "Hide strategy chart" : "Show strategy chart"}" onclick="BJ_SIDE=!BJ_SIDE;bjUI()">📖 ${BJ_SIDE ? "Hide" : "Show"} chart</button></div>
-          <div class="row"><button onclick="bjHit()">HIT</button><button class="bjst" onclick="bjStand()">STAND</button>${bjCanDouble() ? `<button class="bjdb" onclick="bjDouble()">DOUBLE</button>` : ""}${bjCanSplit() ? `<button class="bjsp" onclick="bjSplit()">SPLIT</button>` : ""}</div></div>${BJ_SIDE ? bjMini() : ""}</div>`;
+          <div class="row">${BJ.tutorial ? `<p class="sm">You hold 11: always double here!</p>` : `<button onclick="bjHit()">HIT</button><button class="bjst" onclick="bjStand()">STAND</button>`}${bjCanDouble() ? `<button class="bjdb" onclick="bjDouble()">DOUBLE</button>` : ""}${bjCanSplit() ? `<button class="bjsp" onclick="bjSplit()">SPLIT</button>` : ""}</div></div>${BJ_SIDE ? bjMini() : ""}</div>`;
       }
       function bjDeal(bet) {
         if (V.gold < bet) return;
@@ -7101,9 +7172,9 @@
       /* bjDouble(): double the bet, take exactly one card, the hand ends */
       function bjDouble() {
         if (!bjCanDouble()) return;
-        goldAdd(-bjCur().bet, "bj");
+        goldAdd(-Math.min(bjCur().bet, V.gold), "bj");
         bjCur().bet *= 2;
-        bjCur().c.push(bjCard());
+        bjCur().c.push(BJ.tutorial ? 10 : bjCard()); /* tutorial double lands 21 */
         BJ.fx = { k: "double", hand: BJ.i };
         if (P) burst(P.x, P.y, "#ffd84a", 18, 140);
         sfx("coin", 0.8);
@@ -13416,6 +13487,7 @@
         const cap = +SET.fps || 0;
         if (cap && now - last < 1000 / cap - 2) return requestAnimationFrame(loop);
         const dt = Math.min(0.05, (now - last) / 1000);
+        NET_FRAME += (Math.min(200, now - last) - NET_FRAME) * 0.02;
         last = now;
         if (SET.showFps) { FPSN++; if (now - FPST >= 500) { FPSV = Math.round((FPSN * 1000) / (now - FPST)); FPSN = 0; FPST = now; } }
         padPoll();

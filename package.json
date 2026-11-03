@@ -5,6 +5,8 @@
   "scripts": {
     "dev": "live-server --port=8080 --no-browser --ignore=node_modules",
     "signaling": "node src/app.js",
+    "online": "node src/app.js --cf",
+    "tunnel": "cloudflared tunnel --url http://localhost:8787",
     "test": "node src/test.js",
     "bench": "node src/test.js --bench",
     "playtest": "node src/playtest.js"

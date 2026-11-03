@@ -9,7 +9,7 @@
 - Implement the requested scope; do not turn old TODOs into authorization. Ask only when a consequential choice is unclear.
 - Follow existing patterns. No new packages, generated art files, secrets, or unrelated cleanup. Browser code stays in `index.html`; service code stays in `src/`.
 - Add/update tests for behavior changes. Run `npm test`; run `npm run bench` for gameplay/network/performance changes; finish with `git diff --check`.
-- Do not commit or push unless explicitly asked. Never say a test passed unless it ran and passed.
+- Work autonomously: decide and act without asking the owner; commit locally when work is tested. Push only when asked. Never say a test passed unless it ran and passed.
 
 ## Project
 
@@ -27,7 +27,8 @@ Runebound is a browser co-op action game: floating hub, quests/NPCs, parties, an
 ## Game settings and constraints
 
 - **Modes/group sizes:** small raid 3, large raid 6, Epic raid/hub max 12 (`HUB_MAX` in `index.html`; server capacity in `src/app.js`). Directory supports 10 hubs.
-- **Network:** localhost uses the directory on port 8787; public build defaults to peer-hosted `?room=` using ntfy for WebRTC setup. STUN is configured; TURN is not. No host/raid migration. Host loss ends the raid without rewards; directory guests retry with backoff.
+- **Network:** localhost uses the directory on port 8787; public build defaults to peer-hosted `?room=` using ntfy for WebRTC setup; `?hub=https://….trycloudflare.com` uses the owner's PC via `npm run online` + `npm run tunnel` (see `CLOUDFLARE.md`). STUN is configured; TURN is not.
+- **Host migration:** hub and arena must never close on host loss. The host ranks successors (`hq`/`hr`, `netScore`); guests run `netMigrate` and the top successor reopens the room. Raids hand over via `raidFailover`. Keep the switch seamless: no join/leave spam, no rewards granted or lost.
 - **Economy:** market is closed in the UI and disabled by default on the server. Keep disabled until item ownership and wallets are authoritative server-side. Market Day must not block quest progression while closed.
 - **Player options:** Settings include volume, shake, effects, Low spec, damage numbers, FPS display/cap (30/60/144/Max), dash aim, and key bindings. Preserve keyboard, controller, touch, portrait/landscape behavior.
 - **Targets:** 60 FPS on low-end hardware; validate UI/performance on desktop, tablet, and phone. Avoid per-frame allocations/heavy effects; honor Low spec and reduced motion.
