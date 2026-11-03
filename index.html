@@ -3650,6 +3650,7 @@
             netAck(id, message.seq, true);
           }
         } else if (NET_ROLE == "guest") {
+          if (NET_SESSION && id != NET_SESSION.peerId) return; /* a guest takes hub news from its host only: another peer cannot fake rosters, colours or classes */
           if (message.type == "r" && Array.isArray(message.p) && message.p.length <= HUB_MAX) {
             const roster = message.p.filter(netGoodEntry);
             const ids = new Set(roster.map((e) => e[1]));

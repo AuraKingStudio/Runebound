@@ -769,6 +769,7 @@ async function hostLossTests(){
  T.devHub();T.setNetTestSession('guest',{peerId:'host-peer',hubId:1,reason:'test hub'});T.netPrepareHub('guest');fakePeers=['host-peer'];
  T.netReceive('host-peer',{type:'r',p:[[0,'host-player','Old','tank',9,0,1],[1,'player-mig-cccc','Next','heal',4,0,1]]});
  T.netReceive('host-peer',{type:'hq',t:1,l:['player-mig-cccc']});
+ {const nx=T.HUBV().find(v=>v.netClientId=='player-mig-cccc'||v.id=='player-mig-cccc'),c0=nx&&nx.cls;T.netReceive('evil-peer',{type:'cls',e:[1,'dps']});T.netReceive('evil-peer',{type:'r',p:[[0,'host-player','Fake','tank',9,0,1]]});ok(nx&&nx.cls==c0&&!T.HUBV().some(v=>v.name=='Fake'),'network hub: a guest ignores hub news from anyone but its host');}
  const hr=fakeBroadcast.reverse().find(x=>x.msg.type=='hr');
  ok(hr&&Number.isFinite(hr.msg.b)&&Number.isFinite(hr.msg.fm),'host migration: guest answers with frame time and benchmark');
  fakePeers=[];fakeHandlers.onClose('host-peer');
