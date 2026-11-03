@@ -27,7 +27,7 @@ Runebound is a browser co-op action game: floating hub, quests/NPCs, parties, an
 ## Game settings and constraints
 
 - **Modes/group sizes:** small raid 3, large raid 6, Epic raid/hub max 12 (`HUB_MAX` in `index.html`; server capacity in `src/app.js`). Directory supports 10 hubs.
-- **Network:** localhost uses the directory on port 8787; public build defaults to peer-hosted `?room=` using ntfy for WebRTC setup; `?hub=https://….trycloudflare.com` uses the owner's PC via `npm run online` + `npm run tunnel` (see `CLOUDFLARE.md`). STUN is configured; TURN is not.
+- **Network:** localhost uses the directory on port 8787; public build defaults to peer-hosted `?room=` using ntfy for WebRTC setup; `?hub=https://….trycloudflare.com` uses the owner's PC via `npm run online` + `npm run tunnel` (see `HOSTING.md`). STUN is configured; TURN is not.
 - **Host migration:** hub and arena must never close on host loss. The host ranks successors (`hq`/`hr`, `netScore`); guests run `netMigrate` and the top successor reopens the room. Raids hand over via `raidFailover`. Keep the switch seamless: no join/leave spam, no rewards granted or lost.
 - **Economy:** market is closed in the UI and disabled by default on the server. Keep disabled until item ownership and wallets are authoritative server-side. Market Day must not block quest progression while closed.
 - **Player options:** Settings include volume, shake, effects, Low spec, damage numbers, FPS display/cap (30/60/144/Max), dash aim, and key bindings. Preserve keyboard, controller, touch, portrait/landscape behavior.

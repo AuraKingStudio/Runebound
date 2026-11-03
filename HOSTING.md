@@ -1,4 +1,4 @@
-# Runebound: 3 ways to play (super simple)
+# Hosting Runebound: local, LAN, online
 
 | Mode | Who can join | Start it |
 |---|---|---|
