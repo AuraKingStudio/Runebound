@@ -1995,6 +1995,7 @@
           V.xp = Math.max(0, +s.xp | 0);
           /* Archivist state: pool (lp, lpt), last tale time (lta), bonus window (lbx, lbn), blessing (bl), title flag (af) */
           for (const k of ["lp", "lpt", "lta", "lbx", "lbn", "cr", "bj1", "rc", "eqs", "bjc"]) if (typeof s[k] == "number") V[k] = s[k];
+          if (s.mtr && typeof s.mtr.d == "string" && typeof s.mtr.n == "number") V.mtr = { d: s.mtr.d.slice(0, 10), n: Math.max(0, s.mtr.n | 0) }; /* Maiden trades today */
           V.bl = ["stone", "swift"].includes(s.bl) ? s.bl : null;
           V.af = s.af ? 1 : 0;
           if (s.sk) for (const k of Object.keys(V.sk)) if (Array.isArray(s.sk[k])) V.sk[k] = s.sk[k].slice(0, 3).map((x) => cl(+x | 0, 0, 5)); /* skill levels 0-5 */
@@ -2768,7 +2769,7 @@
          that fade over time; the master kicks a slave that keeps failing, a slave reports a master that keeps failing.
          Detection, not prevention: the browser still owns the save, so only a real server could make cheats impossible. */
       const AUDIT_ALLOW_DEV = true; /* owner keeps the F2 dev tools for now: their edits are flagged, not punished */
-      const AUDIT_SPENDS = ["cosmetic", "smith", "seraph", "guild", "skill", "upgrade", "equip", "bjchart"], STRIKE_KICK = 12;
+      const AUDIT_SPENDS = ["cosmetic", "smith", "seraph", "maiden", "guild", "skill", "upgrade", "equip", "bjchart"], STRIKE_KICK = 12;
       /* auditRules(): biggest single reward (g gold, x XP) per kind and the shortest gap between two (ms), from the game's tables */
       function auditRules() {
         const bonus = (1 + GUILD_MAX * 0.03) * (1 + PASS.bonus);
@@ -6154,11 +6155,45 @@
         ["dawn", "🌅 Dawn", "Start the raid with your ultimate ready", "#ffb35a", 120],
         ["fortune", "💰 Fortune", "+50% gold if you win the raid", "#ffd84a", 80],
       ];
-      /* maidenUI(): pick a free blessing once per day; otherwise she tells you to return tomorrow. */
+      /* ---------- The Maiden: rare trader (plus her small free daily blessing) ----------
+         MTRADE: [id, give {mat: n, gold}, get (mat key or "rare" = random Eye/Heart), n got, label]. MAID_DAY trades per day (V.mtr). */
+      const MAID_DAY = 3;
+      const MTRADE = [
+        ["e2h", { eye: 1 }, "heart", 1, "Swap a Seer's Eye for a Colossus Heart"],
+        ["h2e", { heart: 1 }, "eye", 1, "Swap a Colossus Heart for a Seer's Eye"],
+        ["s2e", { shard: 12 }, "eye", 1, "Bind 12 Void Shards into a Seer's Eye"],
+        ["b2h", { bark: 12 }, "heart", 1, "Bind 12 Thornbark into a Colossus Heart"],
+        ["s2b", { shard: 5 }, "bark", 4, "5 Void Shards for 4 Thornbark"],
+        ["b2s", { bark: 5 }, "shard", 4, "5 Thornbark for 4 Void Shards"],
+        ["gamble", { dust: 30, gold: 200 }, "rare", 1, "A sealed rose: one random rare"],
+      ];
+      const maidLeft = () => MAID_DAY - (V.mtr && V.mtr.d == dayKey(new Date()) ? V.mtr.n : 0);
+      const tradeOk = (g) => maidLeft() > 0 && Object.entries(g).every(([k, n]) => (k == "gold" ? V.gold : (V.mat || {})[k] || 0) >= n);
+      function maidTrade(id) {
+        const tr = MTRADE.find((x) => x[0] == id);
+        if (!tr || !tradeOk(tr[1])) return;
+        for (const [k, n] of Object.entries(tr[1])) k == "gold" ? goldAdd(-n, "maiden") : (V.mat[k] -= n);
+        const got = tr[2] == "rare" ? (Math.random() < 0.5 ? "eye" : "heart") : tr[2];
+        matAdd(got, tr[3]);
+        const d = dayKey(new Date());
+        V.mtr = V.mtr && V.mtr.d == d ? { d, n: V.mtr.n + 1 } : { d, n: 1 };
+        save();
+        if (P) burst(P.x, P.y, MATS[got].col, 26, 160);
+        sfx("coin");
+        toast(`${MATS[got].e} +${tr[3]} ${MATS[got].n}`);
+        maidenUI();
+      }
       function maidenUI() {
-        const ready = V.mb != dayKey(new Date());
-        const opts = BLESS.slice(0, 2).map((b) => `<div class="up ${ready ? "can" : ""}" style="--uc:${b[3]}"><div style="min-width:0"><span class="nm">${b[1]}</span><div class="sm">${b[2]}</div></div><button ${ready ? "" : "disabled"} onclick="maidenPick('${b[0]}')">BLESS</button></div>`).join("");
-        $("dp").innerHTML = `<h2>🌹 The Maiden</h2><p>${ready ? '"Kneel, raider. Choose the grace you will carry into the raid."' : '"I have given all I can today. Return with the dawn."'}</p>${opts}<button class="alt x" onclick="closeDlg()" title="Farewell">Farewell</button>`;
+        const ready = V.mb != dayKey(new Date()), left = maidLeft();
+        const cost = (g) => Object.entries(g).map(([k, n]) => k == "gold" ? `<span class="coin"></span>${n}` : `${MATS[k].e}${n}`).join(" ");
+        const trades = MTRADE.map((tr, q) => { const ok = tradeOk(tr[1]), gm = tr[2] == "rare" ? "🌹" : MATS[tr[2]].e;
+          return `<div class="up ${ok ? "can" : ""}" style="--uc:${tr[2] == "rare" ? "#ff8fc8" : MATS[tr[2]].col};animation:iIn .3s ease-out ${q * 35}ms both"><div style="min-width:0;flex:1"><span class="nm">${cost(tr[1])} → ${gm}${tr[3] > 1 ? "×" + tr[3] : ""}</span><div class="sm">${tr[4]}</div></div><button ${ok ? "" : "disabled"} onclick="maidTrade('${tr[0]}')">Trade</button></div>`; }).join("");
+        const mats = Object.keys(MATS).map((k) => `<span title="${MATS[k].n}">${MATS[k].e}${(V.mat || {})[k] || 0}</span>`).join(" &nbsp;");
+        const opts = BLESS.slice(0, 2).map((b) => `<button class="${ready ? "" : "alt"}" ${ready ? "" : "disabled"} onclick="maidenPick('${b[0]}')">${b[1]}</button>`).join("");
+        $("dp").innerHTML = `<h2>🌹 The Maiden</h2><p>"Rare things bloom where others see only thorns. Bring me what you have, raider."</p>
+          <div class="sm" style="margin:2px 0 6px">Your materials: ${mats} · trades left today: <b>${left}/${MAID_DAY}</b></div>${trades}
+          <div class="mast"><span class="sm">Her daily grace (free, one raid)</span></div><div class="row" style="gap:6px">${ready ? opts : '<span class="sm">"Return with the dawn."</span>'}</div>
+          <button class="alt x" onclick="closeDlg()" title="Farewell">Farewell</button>`;
       }
       function maidenPick(k) {
         if (V.mb == dayKey(new Date())) return;

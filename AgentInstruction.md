@@ -9,6 +9,7 @@
 5. Always generate assets with code (canvas/SVG drawn in `index.html`): code-drawn art is what sells the game. The only image file allowed is `assets/icon.png` (arenas are code-drawn now).
 6. Compatibility is key: every change must work in all major browsers (Chrome, Firefox, Safari, Edge) and on tablets/phones (touch, portrait and landscape). Guard newer APIs (e.g. `roundRect`, canvas `filter` is missing on Safari), add `-webkit-` prefixes where Safari needs them, and audit UI at desktop, phone and tablet sizes.
 7. Performance is key: it's a browser game and must hold 60 fps on a potato PC. Bake static art into cached canvases, keep per-frame work small (no per-frame gradients/blur for static things), respect Low spec mode, and check frame cost after visual changes.
+8. Hosting: the game will run on a VPS later. Anything players can trade, sell or compare (auctions, gold, rare items) must be stored and validated server-side (authoritative), never trusted from the browser save (localStorage is client-editable). Design new shared-economy features for a server store from the start.
 
 
 ## Project
@@ -277,6 +278,9 @@ Built and tested (unit tests plus the `cheat`, `flood`, `econ`, `hphack`, `chat`
 - Live emblem animations (npcAnim): Barkeep cards shuffle (every 6 s on the NPC clock), Elder crystal flashes, Class Master emblems orbit upright (small), Archivist page turns, Merchant coin flips, Smith blade gleam, Maiden petals. npcNear(): 0..1 eased within 160 px; the NPC clock n._ck runs up to 3x faster near you (cards ~2 s, more flashes, faster spin, wider Seraph wing beat).
 - Smith emblem: broad sword, shield 85%. Elder staff crosses the icon, 75%.
 - Pending (owner held it): Archivist replies + secret chats + Maiden unlocked by a riddle answer (scratchpad lore2.py ready).
+
+- The Maiden is now a rare trader (MTRADE, 3 trades/day V.mtr): Eye<->Heart, 12 shards -> Eye, 12 bark -> Heart, 5 shards <-> 4 bark, 30 dust + 200 gold -> random rare; her free daily grace (stone/swift) stays.
+- Planned: player auction house. Needs server-authoritative wallets/escrow on the VPS (see rule 8) before it can be safe.
 
 ## Not done / open
 
