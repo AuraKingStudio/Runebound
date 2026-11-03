@@ -43,18 +43,18 @@ Before handing work to another agent, update this section with enough detail for
 
 ### Current handoff
 
-- **Updated:** 2026-11-03 (PM Bob, with Agent 2)
-- **Task and goal:** Assist/jackpot juice, a gender name colour and aura, and a guided first blackjack hand.
-- **Status:** Implemented. `npm test` and `npm run bench` pass. Browser QA by Agent 2 is pending. Not tested on real phones or tablets.
+- **Updated:** 2026-11-03 (PM Bob, with Happy/Agent 2, Joy/Agent 3 and Zulu/security review)
+- **Task and goal:** Update, test, bench and review everything; ship new features with a recap each.
+- **Status:** F1 (live name-colour sync) and the Blackjack Stats tab are committed. F2 (save export/import + reset) and F3 (What's new card) are owned by Happy and not committed in this push. On a clean `git archive HEAD`, `npm test` passes ALL (549) and `npm run bench` passes ALL (33 scenarios).
 - **Changes (`index.html`):**
-  - Assist: marquee bulbs on the Assist box chase at a tempo from `bjTempo` (0.5 s down to 0.07 s as time runs out). The clock bounces every second, jolts harder under 10 s, and dings once, twice or three times per second as it ends. It reads `2:30 min` from a minute up.
-  - Jackpot: `bjJackpot()` plays a `BJ_SFX.jackpot` ding run that speeds up into a chord, with sparks, a bounce and a shake. It runs on an Assist rent, and with lights chasing the table edge (`.bjmarq`) on a natural blackjack or a 3+ win streak. New sounds: `BJ_SFX.ding(i)` and `jackpot(n)`.
-  - First hand: every move is offered and the best play glows (`.bjbest`, shown whenever the Assist is on). It comes with a free 2:30 Assist (no gold, the price is untouched) and a jackpot entrance.
-  - Gender: the name dialog and Settings offer He, She or They (`V.gd` 1-3, optional). Names get a pale-to-tint gradient (blue, pink or violet) with a soft breathing glow. A soft aura pool and drifting motes show at the feet (`gdAura`, no particles or allocations). Peers send `gd` in the profile and in the optional 8th roster field; 7-field peers still fit.
-- **Decisions:** The aura is cosmetic only. Low spec: no motes, glow or chase. Reduced motion: still, with one ding. Shake 0: no jolts. Every jackpot step goes through `BJ_VFX.later`, so closing the window cancels it.
-- **Validation:** `npm test` ALL PASSED, and `npm run bench` ALL PASSED on old and new code. One run showed a 54.7 phone-CPU row that didn't repeat on the old code or on reruns: machine noise.
-- **Known issues and risks:** A gender change made in Settings reaches peers only on the next hub join. The Assist price is server-enforced inside the sync window (`src/bank.js`).
-- **Next step:** Real-device check of the aura and jackpot frame time on a low-end phone.
+  - F1: an `nc` message updates a name colour for peers at once. The host relays only the sender's own slot, values 0-3, at most every 0.5 s; the roster stays 7 fields.
+  - Stats: the blackjack chart menu has a 📈 Stats tab with hands, win/push/loss %, blackjacks, best streak and net gold (`V.bjs`, `bjStatAdd`, `bjStatsHTML`). It is display only: it never pays and never feeds the bank or ledger. The free tutorial hand is not counted, and the save loader clamps every field.
+  - Own aura: your own player gets a bigger pulse and a thin ring.
+  - Bank (`src/bank.js`, from Zulu's review): each Assist rent is anchored at the previous sync, so several rents in one sync keep their own price window.
+  - Deps: live-server dropped (10 audit vulnerabilities); `npm run dev` uses `src/playtest.js`.
+- **Validation:** clean-HEAD `npm test` ALL PASSED (549), `npm run bench` ALL PASSED, `git diff --check` clean. 12-player phone host: CPU 24.7 of 50 ms/s (49%), upload 0.132 of 0.5 Mbit/s (26%).
+- **Known issues and risks:** Concurrent agents sharing one tree caused a broken intermediate commit (c78becc, fixed in a68766d); verify each commit on a clean checkout. The Stats tab and F1 were not checked in a real browser or on a tablet.
+- **Next step:** Happy lands F2 and F3; browser and tablet QA of the Stats tab and live colour sync.
 
 ## Player market (paused for release)
 
