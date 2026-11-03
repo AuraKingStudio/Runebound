@@ -271,6 +271,9 @@ Built and tested (unit tests plus the `cheat`, `flood`, `econ`, `hphack`, `chat`
 - NPC emblems (n.fx, npcFlair): baked per NPC, tinted to the NPC colour with the "color" blend (masked back to the shape), faded outward, dark halo; drawn behind the disc with a slow float. coins (Merchant), book (Archivist), elder staff, banners (Class Master), roses (Maiden), arms (Smith: shield + diagonal sword), cards (Barkeep: outline A/K). Seraph keeps live wings.
 - Statue: round shoulders, moss/ivy removed, carved glowing rune panel on the plinth.
 
+- NPC emblems now centred behind the disc, 1.7x (OFF per design). Class Master = triangle of the 3 class emblems; Archivist = upright open book; Elder staff tilted 45°; Barkeep cards tight, red A/K; Merchant coins close.
+- Archivist rewards: a random blessing from all 8 BLESS (gold if one is carried), and materials (dust or a shard/bark).
+
 ## Not done / open
 
 - Host migration and reconnect: a hub dies when its host leaves.

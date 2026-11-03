@@ -5953,8 +5953,16 @@
       const LORE_REW = [
         { w: 30, big: 15, give: (b) => { const g = Math.round(rnd(50, b ? 150 : 100)); goldAdd(g, "lore"); return `💰 +${g} gold`; } },
         { w: 25, big: 15, give: (b) => { const x = Math.round(rnd(60, b ? 150 : 100)); gainXP(x, "lore"); return `✨ +${x} XP`; } },
-        { w: 12, big: 18, give: () => { V.bl = "stone"; return "🛡 Blessing of Stone: +30% max HP next raid"; } },
-        { w: 12, big: 18, give: () => { V.bl = "swift"; return "💨 Swift Blessing: dash cooldown halved next raid"; } },
+        { w: 24, big: 36, give: () => { /* any of the Seraph's 8 blessings, free (one at a time: a carried one is kept, gold instead) */
+            if (V.bl) { goldAdd(80, "lore"); return "💰 +80 gold (you already carry a blessing)"; }
+            const b = BLESS[Math.floor(Math.random() * BLESS.length)];
+            V.bl = b[0];
+            return `<span style="color:${b[3]}">${b[1]} blessing</span>: ${b[2]}`;
+          } },
+        { w: 14, big: 14, give: (b) => { /* crafting materials from the archive's vaults */
+            if (Math.random() < 0.5) { const n = (b ? 4 : 2) + Math.floor(Math.random() * 2); matAdd("dust", n); return `${MATS.dust.e} +${n} ${MATS.dust.n}`; }
+            const k = Math.random() < 0.5 ? "shard" : "bark"; matAdd(k, b ? 2 : 1); return `${MATS[k].e} +${b ? 2 : 1} ${MATS[k].n}`;
+          } },
         { w: 6, big: 12, give: () => {
             const open = UPG.filter((u) => V.up[u.k] < MAXL);
             if (!open.length) { goldAdd(150, "lore"); return "💰 +150 gold (all runes maxed)"; }
@@ -7632,12 +7640,14 @@
       const FLAIR = {};
       function npcFlair(n) {
         if (FLAIR[n.fx]) return FLAIR[n.fx];
-        const S2 = 2, w = 150, h = 120, cv7 = document.createElement("canvas");
+        const S2 = 2, w = 170, h = 170, cv7 = document.createElement("canvas"); /* centred on the disc, big, behind it (like the Seraph's wings) */
         cv7.width = w * S2; cv7.height = h * S2;
         const g = cv7.getContext("2d");
         FLAIR[n.fx] = cv7;
         if (!g || !g.setTransform) return cv7;
-        g.scale(S2, S2); g.translate(w / 2, h * 0.62);
+        g.scale(S2, S2); g.translate(w / 2, h / 2);
+        const OFF = { cards: [0, 24], coins: [0, 24], arms: [0, 48], book: [0, 32], elder: [-26, 14], banners: [0, 28], roses: [0, 18] }[n.fx] || [0, 0];
+        g.scale(1.7, 1.7); g.translate(OFF[0], OFF[1]); /* each design was drawn above the disc: move its centre onto the disc and enlarge */
         g.lineCap = g.lineJoin = "round";
         const glow = (col, b) => { g.shadowColor = col; g.shadowBlur = b; };
         const card = (x, y, a, face, suit, red) => {
@@ -7647,7 +7657,7 @@
           g.beginPath(); g.roundRect ? g.roundRect(-11, -16, 22, 32, 3) : g.rect(-11, -16, 22, 32); g.fill(); g.stroke();
           g.shadowBlur = 0;
           g.strokeStyle = "rgba(255,90,120,.45)"; g.lineWidth = 0.8; g.strokeRect(-8.5, -13.5, 17, 27);
-          g.fillStyle = "#ffb347"; /* A and K in orange, against the ruby card */
+          g.fillStyle = "#ff3355"; /* A and K in full red */
           g.font = "bold 9px Georgia"; g.textAlign = "center"; g.textBaseline = "middle";
           g.fillText(face, -5, -9); g.font = "14px Georgia"; g.fillText(suit, 0, 3);
           g.restore();
@@ -7661,8 +7671,8 @@
           g.fillStyle = "#8a5c08"; g.font = `bold ${r}px Georgia`; g.textAlign = "center"; g.textBaseline = "middle"; g.fillText("ᚱ", x, y + 0.5);
         };
         switch (n.fx) {
-          case "cards": card(-14, -26, -0.32, "A", "♠", 0); card(14, -26, 0.32, "K", "♥", 1); break;
-          case "coins": coin(-20, -22, 9); coin(20, -22, 9); coin(0, -34, 11); break;
+          case "cards": card(-8, -26, -0.2, "A", "♠", 0); card(8, -26, 0.2, "K", "♥", 1); break; /* tight fan */
+          case "coins": coin(-13, -24, 9); coin(13, -24, 9); coin(0, -32, 11); break; /* close stack */
           case "arms": { /* one heater shield, one sword laid diagonally across it */
             g.translate(0, -16);
             glow("#ff9f43", 8);
@@ -7678,35 +7688,42 @@
             g.fillStyle = "#c9a14a"; g.fillRect(-9, 6, 18, 3.4); g.fillStyle = "#5a3a1a"; g.fillRect(-1.8, 9.4, 3.6, 11); g.fillStyle = "#c9a14a"; g.beginPath(); g.arc(0, 22, 2.8, 0, 6.3); g.fill();
             g.restore();
             break; }
-          case "book": { /* open tome, glowing pages, a quill */
+          case "book": { /* an open tome standing upright, facing you: cover behind, two pages fanned from the spine */
             glow("#5ad7ff", 12);
-            g.fillStyle = "#1e4a66"; g.beginPath(); g.moveTo(-30, -20); g.quadraticCurveTo(-15, -28, 0, -22); g.quadraticCurveTo(15, -28, 30, -20); g.lineTo(30, -16); g.lineTo(-30, -16); g.closePath(); g.fill();
-            const pg = g.createLinearGradient(0, -44, 0, -20); pg.addColorStop(0, "#f2fbff"); pg.addColorStop(1, "#bfe6f5");
+            g.fillStyle = "#1e4a66";
+            g.beginPath(); g.moveTo(0, -60); g.lineTo(-31, -54); g.lineTo(-31, -12); g.lineTo(0, -16); g.lineTo(31, -12); g.lineTo(31, -54); g.closePath(); g.fill();
+            const pg = g.createLinearGradient(-28, 0, 28, 0); pg.addColorStop(0, "#bfe6f5"); pg.addColorStop(0.5, "#f2fbff"); pg.addColorStop(1, "#bfe6f5");
             g.fillStyle = pg;
-            g.beginPath(); g.moveTo(-28, -22); g.quadraticCurveTo(-14, -48, 0, -38); g.lineTo(0, -22); g.quadraticCurveTo(-14, -30, -28, -22); g.fill();
-            g.beginPath(); g.moveTo(28, -22); g.quadraticCurveTo(14, -48, 0, -38); g.lineTo(0, -22); g.quadraticCurveTo(14, -30, 28, -22); g.fill();
-            g.shadowBlur = 0; g.strokeStyle = "rgba(30,74,102,.5)"; g.lineWidth = 0.8;
-            for (let q = 0; q < 4; q++) { g.beginPath(); g.moveTo(-22 + q, -27 - q * 3.4); g.lineTo(-6, -31 - q * 3); g.stroke(); g.beginPath(); g.moveTo(6, -31 - q * 3); g.lineTo(22 - q, -27 - q * 3.4); g.stroke(); }
-            g.strokeStyle = "#fff"; g.lineWidth = 1.4; g.beginPath(); g.moveTo(14, -56); g.quadraticCurveTo(20, -50, 18, -40); g.stroke();
-            g.fillStyle = "#e6f6ff"; g.beginPath(); g.ellipse(17, -52, 3, 7, 0.4, 0, 6.3); g.fill();
+            g.beginPath(); g.moveTo(0, -57); g.quadraticCurveTo(-14, -60, -27, -51); g.lineTo(-27, -16); g.quadraticCurveTo(-14, -22, 0, -19); g.closePath(); g.fill();
+            g.beginPath(); g.moveTo(0, -57); g.quadraticCurveTo(14, -60, 27, -51); g.lineTo(27, -16); g.quadraticCurveTo(14, -22, 0, -19); g.closePath(); g.fill();
+            g.shadowBlur = 0;
+            g.strokeStyle = "rgba(30,74,102,.55)"; g.lineWidth = 1; g.beginPath(); g.moveTo(0, -57); g.lineTo(0, -19); g.stroke(); /* spine */
+            g.strokeStyle = "rgba(30,74,102,.4)"; g.lineWidth = 0.8;
+            for (let q = 0; q < 6; q++) { const y = -50 + q * 5; g.beginPath(); g.moveTo(-23, y + 1); g.quadraticCurveTo(-12, y - 2, -4, y - 0.5); g.stroke(); g.beginPath(); g.moveTo(4, y - 0.5); g.quadraticCurveTo(12, y - 2, 23, y + 1); g.stroke(); }
+            g.fillStyle = "rgba(90,215,255,.9)"; g.font = "8px " + RUNE_FONT; g.textAlign = "center"; g.textBaseline = "middle"; g.fillText("ᛟ", -13, -25); g.fillText("ᚨ", 13, -25);
             break; }
-          case "elder": { /* tall staff with a glowing crystal, floating runes */
+          case "elder": { /* tall staff with a glowing crystal (tilted 45° right), floating runes */
+            g.save(); g.translate(26, -32); g.rotate(0.785); g.translate(-26, 32);
             g.strokeStyle = "#6a4a2a"; g.lineWidth = 3.4; g.beginPath(); g.moveTo(24, 6); g.quadraticCurveTo(28, -24, 26, -52); g.stroke();
             g.strokeStyle = "#a07a4a"; g.lineWidth = 1; g.beginPath(); g.moveTo(23, 4); g.quadraticCurveTo(27, -24, 25, -50); g.stroke();
             glow("#b48cff", 14);
             const cg = g.createLinearGradient(20, -66, 32, -54); cg.addColorStop(0, "#f2e8ff"); cg.addColorStop(1, "#8a5cff");
             g.fillStyle = cg; g.beginPath(); g.moveTo(26, -70); g.lineTo(31, -58); g.lineTo(26, -50); g.lineTo(21, -58); g.closePath(); g.fill();
+            g.restore();
             g.fillStyle = "rgba(200,170,255,.85)"; g.font = "9px " + RUNE_FONT; g.textAlign = "center"; g.textBaseline = "middle";
             [["ᚨ", -26, -30], ["ᛗ", -18, -44], ["ᛟ", -4, -52]].forEach(([r2, x, y]) => g.fillText(r2, x, y));
             break; }
-          case "banners": { /* three pennants: tank, dps, healer */
-            [[-24, -0.3, "#4da3ff"], [0, 0, "#ff6a5a"], [24, 0.3, "#5dff8a"]].forEach(([x, a, col]) => {
-              g.save(); g.translate(x, -14); g.rotate(a);
-              g.strokeStyle = "#8a6a3a"; g.lineWidth = 2; g.beginPath(); g.moveTo(0, 0); g.lineTo(0, -40); g.stroke();
-              g.fillStyle = "#e8c88a"; g.beginPath(); g.arc(0, -41, 2, 0, 6.3); g.fill();
-              glow(col, 8); g.fillStyle = col; g.beginPath(); g.moveTo(0, -38); g.lineTo(14, -34); g.lineTo(9, -29); g.lineTo(14, -24); g.lineTo(0, -22); g.closePath(); g.fill(); g.shadowBlur = 0;
+          case "banners": { /* the three class emblems in a glowing triangle (tank top, dps left, healer right), joined by a rune line */
+            const pts = [[0, -50, "tank", "#4da3ff"], [-25, -18, "dps", "#ff6a5a"], [25, -18, "heal", "#5dff8a"]];
+            g.strokeStyle = "rgba(255,240,200,.55)"; g.lineWidth = 1.4; g.setLineDash([3, 3]);
+            g.beginPath(); pts.forEach(([x, y], k) => (k ? g.lineTo(x, y) : g.moveTo(x, y))); g.closePath(); g.stroke(); g.setLineDash([]);
+            for (const [x, y, k, col] of pts) {
+              g.save(); g.translate(x, y);
+              glow(col, 10); g.fillStyle = "#0b1218"; g.beginPath(); g.arc(0, 0, 11, 0, 6.3); g.fill();
+              g.strokeStyle = col; g.lineWidth = 1.6; g.stroke();
+              g.scale(0.85, 0.85); g.fillStyle = col; if (typeof PEMB != "undefined" && PEMB[k]) g.fill(PEMB[k]);
               g.restore();
-            });
+            }
             break; }
           case "roses": { /* an arch of rose vines */
             g.strokeStyle = "#4f8a36"; g.lineWidth = 2.4;
@@ -7718,13 +7735,13 @@
         /* make it a shallow, glowing version in the NPC's own colour (like the Seraph's wings): tint everything, bright near the
            disc and fading toward the tips */
         g.setTransform(1, 0, 0, 1, 0, 0); g.shadowBlur = 0;
-        const cx = (w / 2) * S2, cy = h * 0.62 * S2, tg = g.createRadialGradient(cx, cy, 10, cx, cy, 80 * S2);
+        const cx = (w / 2) * S2, cy = (h / 2) * S2, tg = g.createRadialGradient(cx, cy, 10, cx, cy, 85 * S2);
         tg.addColorStop(0, mixHex(n.col, "#ffffff", 0.45)); tg.addColorStop(0.5, n.col); tg.addColorStop(1, mixHex(n.col, "#000000", 0.25));
         const mk = document.createElement("canvas"); mk.width = cv7.width; mk.height = cv7.height; /* the shape, kept before tinting */
         const mg = mk.getContext("2d"); if (mg) mg.drawImage(cv7, 0, 0);
         g.globalCompositeOperation = "color"; g.fillStyle = tg; g.fillRect(0, 0, cv7.width, cv7.height); /* hue of the NPC, keeps light/dark detail */
         g.globalCompositeOperation = "destination-in"; g.drawImage(mk, 0, 0); /* "color" also paints empty areas: clip back to the shape */
-        const fd = g.createRadialGradient(cx, cy, 20, cx, cy, 80 * S2);
+        const fd = g.createRadialGradient(cx, cy, 30, cx, cy, 85 * S2);
         fd.addColorStop(0, "rgba(0,0,0,1)"); fd.addColorStop(1, "rgba(0,0,0,.45)");
         g.globalCompositeOperation = "destination-in"; g.fillStyle = fd; g.fillRect(0, 0, cv7.width, cv7.height);
         /* a soft dark halo under it so it reads on the light hub floor */
@@ -7732,14 +7749,6 @@
         const cg2 = cp.getContext("2d");
         if (cg2) { cg2.drawImage(cv7, 0, 0); g.globalCompositeOperation = "destination-over"; g.shadowColor = "rgba(40,22,8,.6)"; g.shadowBlur = 10 * S2; g.drawImage(cp, 0, 0); g.shadowBlur = 0; }
         g.globalCompositeOperation = "source-over";
-        if (n.fx == "cards") { /* A and K stay orange over the ruby tint: drawn after it */
-          g.setTransform(S2, 0, 0, S2, (w / 2) * S2, h * 0.62 * S2);
-          for (const [x, y, a, face, suit] of [[-14, -26, -0.32, "A", "♠"], [14, -26, 0.32, "K", "♥"]]) {
-            g.save(); g.translate(x, y); g.rotate(a); g.shadowColor = "#ffb347"; g.shadowBlur = 6; g.fillStyle = "#ffb347";
-            g.font = "bold 9px Georgia"; g.textAlign = "center"; g.textBaseline = "middle"; g.fillText(face, -5, -9); g.font = "14px Georgia"; g.fillText(suit, 0, 3);
-            g.restore();
-          }
-        }
         return cv7;
       }
       function npc(n, mark) {
@@ -7823,7 +7832,7 @@
         if (n.fx && !ghost && c.drawImage) { /* the NPC's emblem behind the disc: slow float + glow pulse */
           const sp = npcFlair(n), fy = Math.sin(t * 1.2 + n.x * 0.03) * 2, ga3 = c.globalAlpha;
           c.globalAlpha = ga3 * (n.fa ?? 0.88) * (0.9 + 0.1 * Math.sin(t * 2 + n.x)); /* fa: how solid the emblem is */
-          c.drawImage(sp, -75, -74 + fy, 150, 120);
+          c.drawImage(sp, -85, -85 + fy, 170, 170);
           c.globalAlpha = ga3;
         }
         if (n.wings && !ghost) { /* the Seraph: two radiant wings (slow beat) and a halo, drawn behind the disc */
