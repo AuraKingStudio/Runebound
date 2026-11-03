@@ -3,7 +3,7 @@
   "version": "1.0.0",
   "description": "Runebound browser game",
   "scripts": {
-    "dev": "live-server --port=8080 --no-browser --ignore=node_modules",
+    "dev": "node src/playtest.js",
     "signaling": "node src/app.js --lan",
     "local": "node src/app.js",
     "lan": "node src/app.js --lan",
@@ -12,8 +12,5 @@
     "test": "node src/test.js",
     "bench": "node src/test.js --bench",
     "playtest": "node src/playtest.js"
-  },
-  "devDependencies": {
-    "live-server": "^1.2.2"
   }
 }
