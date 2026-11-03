@@ -633,6 +633,8 @@ async function networkTests(){
  ok(linkHub('?hub=https://evil.example.com')=='room'&&linkHub('?hub=http://abc.trycloudflare.com')=='room'&&linkHub('?hub=javascript:alert(1)','localhost')=='http://localhost:8787','network: ?hub= rejects other hosts, http and scripts (public site falls back to room mode, localhost to the local hub)');
  ok(linkHub('?room=abcdef123456','localhost')=='room'&&linkHub('?room=BAD','localhost')=='http://localhost:8787','network: ?room= links use serverless room mode');
  ok(linkHub('','localhost')=='http://localhost:8787','network: localhost uses the local hub directory');
+{const {gamePath}=require('./playtest.js');ok(gamePath('/')&&gamePath('/assets/icon.png')&&['/bank.json','/market.json','/feedback.log','/package.json','/AgentInstruction.md','/deploy/setup-vps.sh','/src/bank.js','/assets/.env.png','/assets%5C.x.png','/..%2Fbank.json','/assets/../bank.json'].every((u)=>gamePath(u)===0),'dev server: serves only the game (index.html, assets), never data files, source, docs or dotfiles');
+ ok(gamePath('/%')===-1&&gamePath('/a%00.png')===-1,'dev server: a malformed URL is a 400, not a crash');}
  const host=createContext(),h=host.RBNet;let received=0,errors=0;
  h.setHandlers({onMessage:(_id,m)=>{if(m.type=='test')received++;},onError:()=>errors++});
  h.setIceServers([{urls:'stun:example.invalid:3478'}]);

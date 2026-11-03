@@ -3,7 +3,7 @@
   "version": "1.0.0",
   "description": "Runebound browser game",
   "scripts": {
-    "dev": "node src/playtest.js",
+    "dev": "node src/playtest.js --local",
     "signaling": "node src/app.js --lan",
     "local": "node src/app.js",
     "lan": "node src/app.js --lan",
