@@ -41,7 +41,7 @@ function createDirectoryServer(options = {}) {
     "http://127.0.0.1:8080",
   ]);
   const feedbackFile = options.feedbackFile || require("path").join(__dirname, "..", "feedback.log");
-  const market = options.market === false ? null : createMarket({ file: options.marketFile });
+  const market = options.market === true ? createMarket({ file: options.marketFile }) : null;
   const brain = options.brain === false ? null : createBrain({ file: options.brainFile });
   /* local playtests: any page served from this network (192.168.x.x, 10.x.x.x, 172.16-31.x.x) may use the service */
   const lanOrigin = (o) => options.allowLan !== false && /^http:\/\/(192\.168\.\d+\.\d+|10\.\d+\.\d+\.\d+|172\.(1[6-9]|2\d|3[01])\.\d+\.\d+)(:\d+)?$/.test(o);

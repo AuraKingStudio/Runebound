@@ -1146,11 +1146,15 @@
         text-shadow: 0 2px 0 #000, 0 0 3px #000, 0 0 12px #f0c35a88; }
       #gp .coin { width: 24px; height: 24px; }
       #topc { position: absolute; top: 1.5%; left: 50%; transform: translateX(-50%); display: flex; gap: 12px; pointer-events: none; }
+      #netBadge { position: absolute; top: 1.5%; right: 1.4%; max-width: 220px; padding: 5px 8px; border: 1px solid #c9a14a88; border-radius: 7px;
+        background: #100d0acc; color: #f3e6c8; font: 10px/1.35 Georgia, serif; text-align: right; white-space: pre-line; pointer-events: none; }
+      #netBadge:empty { display: none; }
       #btns #topc button { position: static; pointer-events: auto; height: 50px; padding: 0 18px 0 28px; font-size: 15px; }
       #btns #topc .hb::before { left: 11px; width: 8px; height: 8px; }
       #mlbar { position: absolute; left: 1.4%; top: 50%; transform: translateY(-50%); display: flex; flex-direction: column; gap: 10px; pointer-events: none; }
       #btns #mlbar button { position: static; pointer-events: auto; height: 32px; padding: 0 10px; width: auto; font-size: 12px; }
       body.ph #topc { left: auto; right: 8px; transform: none; gap: 8px; top: 8px; }
+      body.ph #netBadge { top: 64px; right: 8px; max-width: 154px; font-size: 9px; }
       /* in a raid only Settings is left up there: a small gear in the top-right corner, clear of the boss bar and raid title */
       body:not(.hub) #topc { left: auto; right: 10px; transform: none; top: 10px; }
       body:not(.hub) #btns #topc button { width: 40px !important; height: 40px !important; padding: 0 !important; font-size: 0 !important; }
@@ -1380,7 +1384,7 @@
     <div id="chat" hidden><div id="chlog"></div><div id="chrow"><input id="chin" maxlength="80" autocomplete="off" placeholder="Press Enter to chat" /><div id="emo"></div></div></div>
     <div id="btns">
       <button id="bd" class="sk"></button><button id="bu" class="sk"></button><button id="b0"></button><button id="b1"></button><button id="b2"></button
-      ><button id="bi" hidden>Enter arena</button><button id="bil" class="bic" hidden onclick="invCycle(-1)">◀</button><button id="bir" class="bic" hidden onclick="invCycle(1)">▶</button><div id="tlbar"><span id="gp"><i class="coin"></i><b id="gn">0</b></span></div><div id="mlbar"><button id="bt" data-ic="🎖️">🎖️ Titles</button><button id="bfb" data-ic="💬" onclick="fbOpen()" title="Tell us what you think, or report a bug">💬 Feedback</button><button id="blk" data-ic="🔗" class="hb" title="Copy the lobby link: friends who open it join you" hidden>🔗 Copy ID</button></div><div id="topc"><button id="bq" data-ic="📜" class="hb">📜 Quests</button><button id="bg" class="hb">🛡 Guild</button><button id="bs" data-ic="✨" class="hb">✨ Shop</button><button id="bp" data-ic="👥" class="hb">👥 Party</button><button id="bcls" data-ic="⚔️" class="hb" onclick="classOpen()">⚔️ Class</button><button id="binv" data-ic="🎒" class="hb" onclick="invOpen()">🎒 Inventory</button><button id="bset" data-ic="⚙️" class="hb" onclick="setOpen()" title="Settings">⚙️ Settings</button></div><div id="ptl" hidden></div>
+      ><button id="bi" hidden>Enter arena</button><button id="bil" class="bic" hidden onclick="invCycle(-1)">◀</button><button id="bir" class="bic" hidden onclick="invCycle(1)">▶</button><div id="tlbar"><span id="gp"><i class="coin"></i><b id="gn">0</b></span></div><div id="mlbar"><button id="bt" data-ic="🎖️">🎖️ Titles</button><button id="bfb" data-ic="💬" onclick="fbOpen()" title="Tell us what you think, or report a bug">💬 Feedback</button><button id="blk" data-ic="🔗" class="hb" title="Copy the lobby link: friends who open it join you" hidden>🔗 Copy ID</button></div><div id="topc"><button id="bq" data-ic="📜" class="hb">📜 Quests</button><button id="bg" class="hb">🛡 Guild</button><button id="bs" data-ic="✨" class="hb">✨ Shop</button><button id="bp" data-ic="👥" class="hb">👥 Party</button><button id="bcls" data-ic="⚔️" class="hb" onclick="classOpen()">⚔️ Class</button><button id="binv" data-ic="🎒" class="hb" onclick="invOpen()">🎒 Inventory</button><button id="bset" data-ic="⚙️" class="hb" onclick="setOpen()" title="Settings">⚙️ Settings</button></div><div id="netBadge" role="status" aria-live="polite"></div><div id="ptl" hidden></div>
     </div>
     <script>
       /* Browser networking block: inputs are hub leases, SDP and game messages; outputs are peer events.
@@ -1960,6 +1964,7 @@
       const shake = (v) => {
         shk = Math.max(shk, v * SET.shake);
       };
+      const MARKET_RELEASE_DISABLED = true;
       const QUESTS = [
         {
           n: "Arm Yourself",
@@ -2005,10 +2010,10 @@
         },
         {
           n: "Market Day",
-          t: "Other raiders trade what they cannot use. Sell or buy one item at the Merchant's Market.",
-          o: "Sell or buy an item on the Market",
+          t: "The player market is paused until trades can use server-verified wallets. The Elder marks this lesson complete for now.",
+          o: "Market unavailable in this release",
           r: 300,
-          ok: () => (V.mk || 0) >= 1,
+          ok: () => MARKET_RELEASE_DISABLED || (V.mk || 0) >= 1,
         },
       ];
       let V = { gold: 200, up: { dmg: 0, vit: 0, spd: 0, cdr: 0 }, q: 0, qs: 0, sk: { tank: [0, 0, 0], dps: [0, 0, 0], heal: [0, 0, 0] } };
@@ -2125,12 +2130,20 @@
         }
       }
       for (const u of UPG) V.up[u.k] = cl(+V.up[u.k] | 0, 0, MAXL);
+      let SAVE_WRITE_FAILED = false;
       const save = () => {
         const q = QUESTS[V.q]; /* quests with a goal check (ok) become ready as soon as it is met */
         if (q && q.ok && V.qs == 1 && q.ok()) V.qs = 2;
         try {
           localStorage.setItem(SAVE_KEY, JSON.stringify(V));
-        } catch (e) {}
+          SAVE_WRITE_FAILED = false;
+        } catch (error) {
+          if (!SAVE_WRITE_FAILED) {
+            SAVE_WRITE_FAILED = true;
+            console.error("Could not save player progress:", error);
+            popMsg("Progress could not be saved. Check browser storage.", 0.9, 6000);
+          }
+        }
       };
       /* LEDGER: every gold / XP / upgrade change since the last hub audit, as [kind, gold, xp, upgradeKey?].
          An online hub master replays it against the game's own reward tables (netAudit), so an edit of V
@@ -2617,7 +2630,7 @@
       const NET = window.RBNet || null, NET_CONFIG = NET?.defaultConfig?.() || { signalingUrl: "", iceServers: [] };
       const NET_LOCAL_ID = "player-" + (window.crypto?.randomUUID ? window.crypto.randomUUID() : Math.random().toString(36).slice(2));
       let NET_ROLE = "", NET_LAST_SEND = 0, NET_STATUS = "Offline", NET_SESSION = null, NET_AUTO_STARTED = false, NET_CONNECTED = false, NET_DIRECTORY_STATE = "idle";
-      let NET_MY_LV = 0, NET_CLS = "", NET_RZ = 0, NET_POLL_TIMER = 0, NET_HEARTBEAT_TIMER = 0, NET_GUEST_POLLING = false, NET_LAST_STATE = 0, NET_CONNECT_TIMER = 0, NET_BADGE_AT = 0, NET_SEQ = 0;
+      let NET_MY_LV = 0, NET_CLS = "", NET_RZ = 0, NET_POLL_TIMER = 0, NET_HEARTBEAT_TIMER = 0, NET_GUEST_POLLING = false, NET_LAST_STATE = 0, NET_CONNECT_TIMER = 0, NET_RETRY_TIMER = 0, NET_RETRY_COUNT = 0, NET_RECOVERY_NOTIFIED = false, NET_BADGE_AT = 0, NET_SEQ = 0;
       /* optimistic networking: the guest shows its own action at once, then the host confirms it (ack) or undoes it (reject/correct) */
       const NET_PENDING = new Map(), NET_MOVES = [];
       /* wire format is kept small for many players: facing is 0-3, positions are whole pixels, players are slot numbers
@@ -2661,6 +2674,14 @@
         NET_STATUS = text;
         netBadgeUpdate();
       }
+      function netScheduleRetry() {
+        if (NET_RETRY_TIMER || !NET_CONFIG.signalingUrl) return;
+        const delay = Math.min(30000, 1000 * (2 ** Math.min(NET_RETRY_COUNT++, 5)));
+        NET_RETRY_TIMER = setTimeout(() => {
+          NET_RETRY_TIMER = 0;
+          networkAutoJoin();
+        }, delay);
+      }
       function netProfile() {
         return { id: NET_LOCAL_ID, name: String(pname()).replace(/[^A-Za-z0-9 _-]/g, "").slice(0, 16) || "Wanderer",
           cls: CL[P.cls] ? P.cls : "tank", lv: cl(lvlInfo().L | 0, 1, 60), ti: cl(V.title | 0, 0, TITLES.length - 1), spd: cl(spm(), 1, 1.3) };
@@ -2692,7 +2713,7 @@
               if (NET_CONNECTED || !NET_SESSION) return;
               await netDisconnect();
               netStatus("Could not reach the hub host within 30 s; retrying…");
-              setTimeout(networkAutoJoin, 2000);
+              netScheduleRetry();
             }, 30000);
           }
           NET_POLL_TIMER = setInterval(netPollDirectory, NET_ROLE == "host" ? 800 : 700);
@@ -2701,6 +2722,7 @@
           NET_AUTO_STARTED = false;
           NET_DIRECTORY_STATE = "unavailable";
           netStatus("Automatic hub connection failed: " + error.message);
+          netScheduleRetry();
         }
       }
       async function netPollDirectory() {
@@ -2733,11 +2755,26 @@
         try { await NET.directoryHeartbeat(); }
         catch (error) { netStatus("Lobby session expired or disconnected: " + error.message); }
       }
+      let NET_RECOVERING = false;
+      async function netRecoverHostLoss(raidLost) {
+        if (NET_RECOVERING) return;
+        NET_RECOVERING = true;
+        if (!NET_RECOVERY_NOTIFIED) chatSys(raidLost
+          ? "Raid ended because its leader disconnected. No raid rewards were granted; reconnecting to the hub."
+          : "Hub host disconnected. Reconnecting to a hub; this pilot does not migrate hosts.", "bye");
+        NET_RECOVERY_NOTIFIED = true;
+        try { await netDisconnect(); }
+        finally { NET_RECOVERING = false; }
+        netStatus("Reconnecting to a hub…");
+        netScheduleRetry();
+      }
       async function netDisconnect() {
         clearInterval(NET_POLL_TIMER);
         clearInterval(NET_HEARTBEAT_TIMER);
         clearTimeout(NET_CONNECT_TIMER);
+        clearTimeout(NET_RETRY_TIMER);
         NET_POLL_TIMER = NET_HEARTBEAT_TIMER = NET_CONNECT_TIMER = NET_LAST_STATE = 0;
+        NET_RETRY_TIMER = 0;
         NET_PENDING.clear();
         NET_MOVES.length = 0;
         NET_SLOT_IDS.clear();
@@ -3206,6 +3243,7 @@
         onOpen: (id) => {
           if (NET_ROLE == "guest") NET.send(id, { type: "join", profile: netProfile(), x: Math.round(P.x), y: Math.round(P.y) });
           NET_CONNECTED = true;
+          NET_RETRY_COUNT = 0; NET_RECOVERY_NOTIFIED = false;
           netStatus(`Connected to hub ${NET_SESSION?.hubId || ""}.`);
         },
         onMessage: netReceive,
@@ -3217,12 +3255,19 @@
             if (slot != null) netTell({ type: "l", s: slot });
           } else if (NET_ROLE == "guest" && id == NET_SESSION?.peerId) {
             HUBV = HUBV.filter((v) => v.id != "host-player");
+            const raidLost = S.sc == "arena" && S.net?.role == "member";
+            if (raidLost) toHub();
+            netRecoverHostLoss(raidLost);
+            return;
           }
           if (!NET.peerIds().length) {
             NET_CONNECTED = false;
             if (NET_ROLE == "guest" && NET_SESSION) {
               NET_GUEST_POLLING = false;
-              netStatus("Host connection lost. This pilot does not reconnect automatically.");
+              const raidLost = S.sc == "arena" && S.net?.role == "member";
+              if (raidLost) toHub();
+              netRecoverHostLoss(raidLost);
+              return;
             }
           }
           else netStatus("Peer disconnected.");
@@ -5351,7 +5396,10 @@
         S.zo = S.zo.filter((z) => z.l > 0);
         for (const a of S.ao) { a.t -= dt; if (a.t <= 0) { burst(a.x, a.y, "#ff5560", 10, (a.r || 40) * 2); shake(0.12); } }
         S.ao = S.ao.filter((a) => a.t > 0);
-        if (performance.now() - S.net.heard > RAID_SILENT_MS * 1.5) raidEnd("Lost contact with the raid leader.");
+        if (performance.now() - S.net.heard > RAID_SILENT_MS * 1.5) {
+          toHub();
+          chatSys("Raid ended: lost contact with the raid leader. No raid rewards were granted.", "bye");
+        }
       }
       /* raidNetStep(): the raid side of the 50 ms network timer: the leader sends snapshots, a member sends its moves */
       function raidNetStep(now) {
@@ -7030,6 +7078,11 @@
       }
       function marketUI(noFetch) {
         SHOP_TAB = "mk";
+        if (MARKET_RELEASE_DISABLED) {
+          $("dp").className = "pn wide";
+          $("dp").innerHTML = `<h2>💰 The Merchant</h2><div class="row"><button class="alt" onclick="shopUI('up')">Upgrades</button><button class="claim" onclick="shopUI('mk')">Market</button><button class="alt" onclick="shopUI('eq')">Equipment</button></div><p>The player market is temporarily closed. Items and gold remain in your save until trades can be validated server-side.</p><button class="alt x" onclick="closeDlg()" title="Close">Close</button>`;
+          return;
+        }
         if (!noFetch) mktRefresh();
         const tabs = `<div class="row"><button class="alt" onclick="shopUI('up')">Upgrades</button><button class="claim" onclick="shopUI('mk')">Market</button><button class="alt" onclick="shopUI('eq')">Equipment</button></div>`;
         const F = MKT.filter, list = MKT.list.filter((L) => F == "all" || (F == "mat" ? L.item.k == "mat" : L.item.k == "gear"));
@@ -7360,7 +7413,6 @@
         try { /* a snapshot from older code can break the start: then drop it and start clean (else every reload re-saves it) */
           selK = snap.S.ps[0].cls;
           start(); S = snap.S; P = S.ps[0];
-          draw(0);
         } catch (e) {
           console.warn("hot restore failed, starting fresh", e);
           HOT_OFF = 1;

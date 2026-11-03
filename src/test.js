@@ -13,14 +13,14 @@ let fakeBrainCalls=[];
 fakeNet.brain=(action,body)=>{fakeBrainCalls.push({action,body});return Promise.resolve({ok:true,status:200,data:action=='get'?{gen:0,cap:1,spells:{}}:{gen:1,kept:true}});};
 const els={};const doc={addEventListener(){},createTextNode:t=>t,getElementById:id=>els[id]||(els[id]={style:{},dataset:{},children:[{style:{}}],value:'',addEventListener(){},append(){},setPointerCapture(){},getContext:()=>new Proxy({},{get:()=>()=>({addColorStop(){}}),set:()=>true}),set innerHTML(v){this._h=v},get innerHTML(){return this._h||''},hidden:false,textContent:''}),querySelectorAll:()=>[],body:{className:'',appendChild(){}},createElement:()=>({style:{},remove(){},append(){},classList:{add(){},remove(){}}}),documentElement:{cls:new Set(),classList:{add(c){doc.documentElement.cls.add(c)},remove(c){doc.documentElement.cls.delete(c)}},style:{setProperty(){}}}};
 const store={};
-const ctx={document:doc,window:{},innerWidth:900,innerHeight:600,performance:{now:()=>netClock},requestAnimationFrame(){},addEventListener(){},localStorage:{getItem:k=>store[k]||null,setItem:(k,v)=>store[k]=v,removeItem:k=>delete store[k]},Image:function(){this.complete=false},location:{search:''},console,setTimeout:f=>0,clearTimeout(){},Math,JSON,Object,Array,Date,Number,parseInt,isNaN,btoa,atob,escape,unescape,encodeURIComponent,decodeURIComponent};
+const ctx={document:doc,window:{},innerWidth:900,innerHeight:600,performance:{now:()=>netClock},requestAnimationFrame(){},addEventListener(){},localStorage:{getItem:k=>store[k]||null,setItem:(k,v)=>store[k]=v,removeItem:k=>delete store[k]},Image:function(){this.complete=false},location:{search:''},console,setTimeout:f=>0,clearTimeout(){},clearInterval(){},Math,JSON,Object,Array,Date,Number,parseInt,isNaN,btoa,atob,escape,unescape,encodeURIComponent,decodeURIComponent};
 const testMath=Object.create(Math);let randomState=0x5eed1234;
 testMath.random=()=>{randomState=(1664525*randomState+1013904223)>>>0;return randomState/0x100000000;};
 ctx.Math=testMath;
 ctx.RBNet=fakeNet;
 ctx.window=ctx;vm.createContext(ctx);
 vm.runInContext(SRC+`
-;globalThis.devMin=devMin;globalThis.devFs=devFs;globalThis.T={V:()=>V,raidDrops,invUI,SMITH,setRaidTrial:(n)=>RAID_TRIAL=n,hpmF3:()=>hpm(),dashF:(p)=>dash(p),heal:(p,n,src)=>heal(p,n,src),PETS,npcHidden:(n)=>npcHidden(n),loreRewardT:(b)=>loreReward(b),clampWT:(p)=>clampW(p),maidTrade:(i)=>maidTrade(i),maidenUI:()=>maidenUI(),seraphBuy,BLESS,qAct:(a)=>qAct(a),bless,dmF2:()=>dm(),cdmF2:()=>cdm(),TRIAL_SEL,enterRaidT:(k)=>enterRaid(k),craftRefine,hpmF:()=>hpm(),cdmF:()=>cdm(),wp,eqRoll,dmF:()=>dm(),craftCost,craftMake,craftTemper,craftSalvage,FORGE,smithUI,invWear,MATS,setRaid:(k)=>S.raid=k,CLASS_DMG:()=>CLASS_DMG,P:()=>P,S:()=>S,start,devAdd,devUp,devUI,devCls,devHeal,devWipe,devResetQ,devArena,devBoss,devHub,DEV,hurt,act,step,pauseGame,resumeGame,isPaused:()=>paused,QUESTS,UPG,toggleDev,buy,shopUI,qAct,togglePause,dailyCheck,saveName,lvlInfo,gainXP,lvlCol,loreReward,isUnl,tutNext,bjVal,bjDeal,bjHit,bjStand,bjDouble,bjSplit,BJ:()=>BJ,guildFound,guildRecruit,gBonus,bountyDay,bountyAdd,bountyClaim,guildJoin,guildTab,rankPool,rankRefresh,rankSort,dm,dash,dashStep,setIn,padPoll,inMode:()=>INMODE,KEYHINT,HUBV:()=>HUBV,BOT_STUCK:()=>BOT_STUCK,ENGINE,cdMul,discordUnlock,openDlg,TUT_DONE,ult,ultDmg,ULT,inter,hitB,DASH,ZONE_DMG,RAIDS,BOSSES,raidTeam,raidAI,partyMembers,partyAdd,partyRemove,raidUI,playerUI,partyMessage,bash,taunt,inTele,toArena,PARTY:()=>PARTY,netRelayFlush,raidNet,raidState,raidApply,raidNetStep,arena,toArena,HUB_NPCS,BOT_NPC_LV,BARKEEP,CLASSN,SKC,PEMB,hubJoin,hubLeave,hubCount,HUB_MAX,hubVisitStep,botName,botLook,chatSend,COS,cosOwn,cosV,cosBuyGold,cosEquip,shopPay,myEmote,streamPts,crossFrame,bridgeAt,riverNear,clampW,WF,STATUE,PORTAL,SET,keyLabel,EDGE,inIsle,netReceive,netPrepareHub,netStep,netPack,netUnpack,netAudit,auditRules,goldAdd,gainXP,netStats,LEDGER:()=>LEDGER,FX:()=>FX,FT:()=>FT,shk:()=>shk,els:null};`,ctx);
+;globalThis.devMin=devMin;globalThis.devFs=devFs;globalThis.T={V:()=>V,raidDrops,invUI,SMITH,setRaidTrial:(n)=>RAID_TRIAL=n,hpmF3:()=>hpm(),dashF:(p)=>dash(p),heal:(p,n,src)=>heal(p,n,src),PETS,npcHidden:(n)=>npcHidden(n),loreRewardT:(b)=>loreReward(b),clampWT:(p)=>clampW(p),maidTrade:(i)=>maidTrade(i),maidenUI:()=>maidenUI(),seraphBuy,BLESS,qAct:(a)=>qAct(a),bless,dmF2:()=>dm(),cdmF2:()=>cdm(),TRIAL_SEL,enterRaidT:(k)=>enterRaid(k),craftRefine,hpmF:()=>hpm(),cdmF:()=>cdm(),wp,eqRoll,dmF:()=>dm(),craftCost,craftMake,craftTemper,craftSalvage,FORGE,smithUI,invWear,MATS,setRaid:(k)=>S.raid=k,CLASS_DMG:()=>CLASS_DMG,P:()=>P,S:()=>S,start,devAdd,devUp,devUI,devCls,devHeal,devWipe,devResetQ,devArena,devBoss,devHub,DEV,hurt,act,step,pauseGame,resumeGame,isPaused:()=>paused,QUESTS,UPG,toggleDev,buy,shopUI,qAct,togglePause,dailyCheck,saveName,lvlInfo,gainXP,lvlCol,loreReward,isUnl,tutNext,bjVal,bjDeal,bjHit,bjStand,bjDouble,bjSplit,BJ:()=>BJ,guildFound,guildRecruit,gBonus,bountyDay,bountyAdd,bountyClaim,guildJoin,guildTab,rankPool,rankRefresh,rankSort,dm,dash,dashStep,setIn,padPoll,inMode:()=>INMODE,KEYHINT,HUBV:()=>HUBV,BOT_STUCK:()=>BOT_STUCK,ENGINE,cdMul,discordUnlock,openDlg,TUT_DONE,ult,ultDmg,ULT,inter,hitB,DASH,ZONE_DMG,RAIDS,BOSSES,raidTeam,raidAI,partyMembers,partyAdd,partyRemove,raidUI,playerUI,partyMessage,bash,taunt,inTele,toArena,toHub,raidPuppet,PARTY:()=>PARTY,netRelayFlush,raidNet,raidState,raidApply,raidNetStep,arena,HUB_NPCS,BOT_NPC_LV,BARKEEP,CLASSN,SKC,PEMB,hubJoin,hubLeave,hubCount,HUB_MAX,hubVisitStep,botName,botLook,chatSend,COS,cosOwn,cosV,cosBuyGold,cosEquip,shopPay,myEmote,streamPts,crossFrame,bridgeAt,riverNear,clampW,WF,STATUE,PORTAL,SET,keyLabel,EDGE,inIsle,netReceive,netPrepareHub,netStep,netPack,netUnpack,netAudit,auditRules,goldAdd,gainXP,netStats,LEDGER:()=>LEDGER,FX:()=>FX,FT:()=>FT,shk:()=>shk,marketUI,setNetTestSession:(role,session)=>{NET_ROLE=role;NET_SESSION=session;NET_CONNECTED=!!session;NET_AUTO_STARTED=!!session;},netTestState:()=>({role:NET_ROLE,session:NET_SESSION,connected:NET_CONNECTED}),els:null};`,ctx);
 const T=ctx.T,BENCH_ONLY=process.argv.includes('--bench');let f=0;const ok=(c,m)=>{if(!c||!BENCH_ONLY)console.log((c?'PASS ':'FAIL ')+m);if(!c)f++};
 Object.assign(T,{brainLoad:ctx.brainLoad,brainStep:ctx.brainStep,brainSend:ctx.brainSend,brainLog:()=>vm.runInContext('BRAIN_LOG',ctx)});
 function brainUnitTests(){
@@ -54,6 +54,19 @@ ok(!T.V().name&&T.V().ds===undefined,'first start asks for a name before the dai
 T.saveName('<b>x</b>');ok(T.V().name=='bxb','name: strips markup characters');
 ok(ctx.document.getElementById('netBadge').textContent.includes('ONLINE · HUB UNAVAILABLE')&&ctx.document.getElementById('netBadge').textContent.includes('index.html'),'network: reports the hub service as unavailable instead of implying a connection');
 T.saveName('Tester1');ok(T.V().name=='Tester1','name: saved');
+{
+ const oldStorage=ctx.localStorage.setItem,oldConsole=ctx.console;let errors=0;
+ ctx.console={error:()=>errors++};
+ try{
+  ctx.localStorage.setItem=()=>{throw new Error('test storage failure');};
+  vm.runInContext('save()',ctx);vm.runInContext('save()',ctx);
+  ok(errors==1,'save: surfaces a storage failure once instead of silently losing progress');
+  ctx.localStorage.setItem=oldStorage;vm.runInContext('save()',ctx);
+  ctx.localStorage.setItem=()=>{throw new Error('test storage failure');};
+  vm.runInContext('save()',ctx);
+  ok(errors==2,'save: reports a new failure after storage recovers');
+ }finally{ctx.localStorage.setItem=oldStorage;ctx.console=oldConsole;}
+}
 ok(T.V().ds==1&&T.V().dl.length==10&&T.V().gold==225,'daily bonus: day 1 pays 25 on first start');
 const gd=T.V().gold;T.dailyCheck();ok(T.V().gold==gd,'daily bonus: only once per day');
 T.devAdd(1000);ok(T.V().gold==gd+1000,'gold +1000');
@@ -225,7 +238,7 @@ M.flush();const raw=fs2.readFileSync(f,'utf8');ok(!raw.includes(A)&&!raw.include
 const M2=createMarket({file:f,now:()=>clock});ok(M2.browse({})[1].listings.length==6,'market: listings survive a server restart');fs2.rmSync(f,{force:true});}
 /* ---------- late quests: Smith and Market ---------- */
 {const V=T.V(),q0=V.q,qs0=V.qs;const qi=T.QUESTS.findIndex(q=>q.n=='Hammer and Anvil'),mi=T.QUESTS.findIndex(q=>q.n=='Market Day');ok(qi>2&&mi>qi,'quests: Smith and Market quests come late in the chain');
-V.q=qi;V.qs=1;V.fg=0;T.save&&T.save();V.fg=1;T.QUESTS[qi].ok()&&ok(true,'quests: forging an item completes Hammer and Anvil');V.mk=1;ok(T.QUESTS[mi].ok(),'quests: a market trade completes Market Day');V.q=q0;V.qs=qs0;}
+V.q=qi;V.qs=1;V.fg=0;T.save&&T.save();V.fg=1;T.QUESTS[qi].ok()&&ok(true,'quests: forging an item completes Hammer and Anvil');V.mk=0;ok(T.QUESTS[mi].ok(),'quests: disabled Market Day cannot block progression');V.mk=1;ok(T.QUESTS[mi].ok(),'quests: a market trade completes Market Day');T.marketUI();ok(ctx.document.getElementById('dp').innerHTML.includes('temporarily closed')&&!ctx.document.getElementById('dp').innerHTML.includes('List it'),'market UI: explains the release pause without trading controls');V.q=q0;V.qs=qs0;}
 /* ---------- every Seraph blessing does what it says ---------- */
 {const V=T.V(),P=T.P(),c0=P.cls;V.up={dmg:0,vit:0,spd:0,cdr:0};V.eq={bag:[],on:{}};
  const was=(k,f)=>{V.bl=null;const a=f();V.bl=k;const b=f();V.bl=null;return [a,b];};
@@ -242,12 +255,14 @@ V.q=qi;V.qs=1;V.fg=0;T.save&&T.save();V.fg=1;T.QUESTS[qi].ok()&&ok(true,'quests:
  ok(errs==0,'archivist: 300 rewards in a row, every one valid');}
 /* ---------- the market over real HTTP (hub service + escrow) ---------- */
 globalThis.marketHttpTests=(async()=>{const {createDirectoryServer}=require('./app.js'),os3=require('os'),path3=require('path'),fs3=require('fs');const f=path3.join(os3.tmpdir(),'rb_mkt_http_'+Date.now()+'.json');
- const {server}=createDirectoryServer({marketFile:f});await new Promise(r=>server.listen(0,'127.0.0.1',r));const base='http://127.0.0.1:'+server.address().port;
- const post=(a,b)=>fetch(base+'/api/market/'+a,{method:'POST',headers:{'content-type':'application/json'},body:JSON.stringify(b)}).then(async r=>({s:r.status,d:await r.json()}));
- const A='c'.repeat(32),B='d'.repeat(32);let r=await post('sell',{tok:A,name:'Ann',item:{k:'gear',t:'dmg',g:'wd',r:2},price:300});
- ok(r.s==200,'market http: list gear');r=await post('browse',{tok:B});ok(r.s==200&&r.d.listings.length==1&&!r.d.listings[0].mine,'market http: others see it');
- r=await post('buy',{tok:B,id:r.d.listings[0].id});ok(r.s==200&&r.d.item.g=='wd','market http: buy delivers the item');r=await post('collect',{tok:A});ok(r.d.payouts[0].n==285,'market http: seller collects 285 of 300 gold');
- r=await post('nope',{});ok(r.s>=400&&r.s<500,'market http: unknown routes are refused ('+r.s+')');server.close();await new Promise(r=>setTimeout(r,600));fs3.rmSync(f,{force:true});fs3.rmSync(f+'.tmp',{force:true});});
+ const post=(base,a,b)=>fetch(base+'/api/market/'+a,{method:'POST',headers:{'content-type':'application/json'},body:JSON.stringify(b)}).then(async r=>({s:r.status,d:await r.json()}));
+ const closed=createDirectoryServer({marketFile:f});await new Promise(r=>closed.server.listen(0,'127.0.0.1',r));let base='http://127.0.0.1:'+closed.server.address().port;
+ let r=await post(base,'browse',{});ok(r.s==503,'market http: disabled by default until wallets are server-authoritative');await new Promise(resolve=>closed.server.close(resolve));
+ const {server}=createDirectoryServer({market:true,marketFile:f});await new Promise(r=>server.listen(0,'127.0.0.1',r));base='http://127.0.0.1:'+server.address().port;
+ const A='c'.repeat(32),B='d'.repeat(32);r=await post(base,'sell',{tok:A,name:'Ann',item:{k:'gear',t:'dmg',g:'wd',r:2},price:300});
+ ok(r.s==200,'market http: explicit opt-in enables gear listings');r=await post(base,'browse',{tok:B});ok(r.s==200&&r.d.listings.length==1&&!r.d.listings[0].mine,'market http: others see it');
+ r=await post(base,'buy',{tok:B,id:r.d.listings[0].id});ok(r.s==200&&r.d.item.g=='wd','market http: buy delivers the item');r=await post(base,'collect',{tok:A});ok(r.d.payouts[0].n==285,'market http: seller collects 285 of 300 gold');
+ r=await post(base,'nope',{});ok(r.s>=400&&r.s<500,'market http: unknown routes are refused ('+r.s+')');await new Promise(resolve=>server.close(resolve));await new Promise(r=>setTimeout(r,600));fs3.rmSync(f,{force:true});fs3.rmSync(f+'.tmp',{force:true});});
 /* ---------- class weapons ---------- */
 {const V=T.V(),P=T.P(),c0=P.cls;P.cls='dps';V.eq={bag:[{id:'w1',t:'dmg',k:'wd',r:0}],on:{dmg:'w1'}};const d0=T.dmF();
 ok(T.wp('dmg')==0&&d0>1,'weapon: a Common weapon only gives base damage');
@@ -612,6 +627,25 @@ async function brainHttpTests(){
   fs.rmSync(dir,{recursive:true,force:true});
  }
 }
+async function hostLossTests(){
+ const V=T.V(),gold=V.gold,losses=V.loss||0;
+ T.devHub();
+ T.toArena('small',[{me:1,cls:T.P().cls,name:'Tester'}],{role:'member',lead:'host-peer',heard:netClock-8000,at:0,seq:0,key:''});
+ T.raidPuppet(1/60);
+ ok(T.S().sc=='hub'&&T.S().net==null,'multiplayer recovery: a silent raid leader returns the player to the hub');
+ ok(V.gold==gold&&(V.loss||0)==losses,'multiplayer recovery: a disconnected raid grants neither win nor loss rewards');
+
+ T.devHub();
+ T.toArena('small',[{me:1,cls:T.P().cls,name:'Tester'}],{role:'member',lead:'host-peer',heard:netClock,at:0,seq:0,key:''});
+ T.setNetTestSession('guest',{peerId:'host-peer',hubId:1,reason:'test hub'});
+ fakePeers=['host-peer'];
+ fakeHandlers.onClose('host-peer');
+ await new Promise(resolve=>setImmediate(resolve));
+ ok(T.S().sc=='hub'&&T.S().net==null,'multiplayer recovery: hub-host loss exits an active raid cleanly');
+ ok(!T.netTestState().session&&!T.netTestState().connected,'multiplayer recovery: clears the dead hub session before retrying');
+ ok(V.gold==gold&&(V.loss||0)==losses,'multiplayer recovery: hub-host loss does not grant raid rewards');
+ fakePeers=[];
+}
 async function reportTests(){
  const {server}=createDirectoryServer({allowedOrigins:[]});await new Promise(r=>server.listen(0,'127.0.0.1',r));
  const base=`http://127.0.0.1:${server.address().port}`,post=(path,body)=>fetch(base+path,{method:'POST',headers:{'content-type':'application/json'},body:JSON.stringify(body)}).then(async r=>({status:r.status,body:await r.json()}));
@@ -807,4 +841,4 @@ async function benchTests(){
 }
 {T.V().mat={};T.setRaid('large');const d=T.raidDrops(true);ok(T.V().mat.dust>=3&&T.V().mat.bark>=1&&d.some(x=>x[0]=='bark'),'materials: a large raid win drops Rune Dust and Thornbark');const l=T.raidDrops(false);ok(l.length==1&&l[0][0]=='dust','materials: a loss still gives a little dust');
  T.V().eq={bag:[{id:'a1',t:'tank',k:'dr',r:1},{id:'a2',t:'tank',k:'dr',r:2}],on:{tank:'a1'}};T.invWear('a2');ok(T.V().eq.on.tank=='a2','inventory: wearing an item swaps it into its slot');T.invWear('a2');ok(!T.V().eq.on.tank,'inventory: clicking a worn item takes it off');T.invUI();ok(ctx.document.getElementById('dp').innerHTML.includes('Thornbark'),'inventory: shows materials');}
-(BENCH_ONLY?Promise.resolve():networkTests().then(signalingTests).then(brainHttpTests).then(reportTests).then(rateLimitTests).then(()=>marketHttpTests())).then(benchTests).then(()=>{console.log(f?f+' FAILED':'ALL PASSED');process.exit(f?1:0);}).catch(e=>{console.error(e);process.exit(1);});
+(BENCH_ONLY?Promise.resolve():networkTests().then(signalingTests).then(hostLossTests).then(brainHttpTests).then(reportTests).then(rateLimitTests).then(()=>marketHttpTests())).then(benchTests).then(()=>{console.log(f?f+' FAILED':'ALL PASSED');process.exit(f?1:0);}).catch(e=>{console.error(e);process.exit(1);});

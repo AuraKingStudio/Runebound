@@ -5,7 +5,7 @@
 A co-op raid game that runs in the browser: a floating hub island, NPCs, and boss raids for 3 or 6 players (you plus bots or friends). All art is drawn in code (canvas and SVG); the only image file is `assets/icon.png`.
 
 - Play at the link above, or open `index.html` locally (single player works offline).
-- Your progress (gold, gear, materials, quests) is saved in the browser. Market listings are held by the hub service (see below).
+- Your progress (gold, gear, materials, quests) is saved in the browser. The player market is paused until wallets can be verified server-side (see below).
 - **Esc** or **P** pauses. **Settings** (top bar) has sound, keys, frame cap (30/60/144/Max), Show FPS, Low spec mode and dash aim.
 
 ## What is in the game
@@ -15,7 +15,7 @@ A co-op raid game that runs in the browser: a floating hub island, NPCs, and bos
   | NPC | What they do |
   |---|---|
   | Elder | Quest chain; some quests unlock NPCs |
-  | Merchant | Upgrades, rotating equipment stock, and the player **Market** |
+  | Merchant | Upgrades and rotating equipment stock; the player **Market** is paused |
   | Archivist | Tales with gifts and secret pages |
   | Smith | Forge gear from raid materials, temper, salvage, refine |
   | Seraph | One-raid blessings for gold |
@@ -30,7 +30,7 @@ A co-op raid game that runs in the browser: a floating hub island, NPCs, and bos
 ## Files
 
 - `index.html`: the whole browser game, including its networking.
-- `src/app.js`: the hub service: hub directory (WebRTC setup) and the market routes (`npm run signaling`).
+- `src/app.js`: the hub service: hub directory (WebRTC setup) and opt-in market routes (`npm run signaling`; market disabled by default).
 - `src/market.js`: the player market (server escrow) and its JSON store.
 - `src/playtest.js`: LAN playtest: serves the game and the hub service together (`npm run playtest`).
 - `src/test.js`: game, network, market and directory tests (`npm test`); `npm run bench` runs the raid and network benchmarks.
@@ -44,43 +44,39 @@ Before handing work to another agent, update this section with enough detail for
 ### Current handoff
 
 - **Updated:** 2026-11-03
-- **Task and goal:** Resolve the test and validation blockers identified before publishing the pending game changes.
-- **Status:** Fixed the validation blockers; the complete test suite and benchmark pass.
-- **Changes:** `src/test.js` now checks brain initialization, training, persistence, throttling, admin controls, HTTP routes, the Epic Raid client sample/send flow, and uses a fixed RNG for repeatable gameplay simulations. `src/brain.js` now safely rejects admin keys whose UTF-8 byte lengths differ and cancels pending save timers on synchronous flush. `AgentInstruction.md` records the Echo Archon and remaining real-browser validation gap.
-- **Decisions:** Preserve gameplay assertions; make simulation inputs reproducible instead of weakening expected outcomes. Keep admin failures shaped as 403 rather than allowing `timingSafeEqual` to throw.
-- **Validation:** `npm test` and `npm run bench` both pass with stable lobby/raid results and headless Epic Raid brain flow. `git diff --check` passes.
-- **Known issues and risks:** No real-browser or hosted-hub end-to-end validation has been run for the Echo Archon.
-- **Next step:** Verify the Echo Archon against a real browser and hub service before relying on its learned behavior in a hosted game. Changes are ready to commit and push.
-- **Worktree notes:** The Epic raid UI, shared brain service/routes, tests, and handoff documentation form one coherent change set; do not partially publish the UI without its service or vice versa.
+- **Task and goal:** Close release blockers around client-trusted market wallets, multiplayer recovery, and validation/documentation.
+- **Status:** Implemented and locally verified; public hosting and physical-device validation remain outstanding.
+- **Changes:** Market is closed in the UI and disabled by default in `src/app.js`; the Market Day quest no longer blocks progression. Added the visible network status badge, capped reconnect backoff, no-reward return to hub on lost raid host, and removed the premature draw that caused hot-restore to fail before `HUBC` initialized.
+- **Decisions:** Keep trading unavailable until wallet and item ownership are authoritative on the server. Host loss ends the active raid without rewards; neither raid state nor host state migrates.
+- **Validation:** `npm test` and `npm run bench` pass. Local two-page browser smoke test verified hub sync, guest chat relay, and guest recovery after reloading the host. Phone-sized portrait/landscape viewport checks passed for the rotate prompt and network badge placement. `git diff --check` passes.
+- **Known issues and risks:** Public room mode, hosted cross-network play, the Echo Archon against a hosted hub, physical phones/tablets, and Chrome/Firefox/Safari/Edge coverage remain untested. The game has no player-facing save export or progress-reset control.
+- **Next step:** Before release, validate the public room flow and hosted directory on separate networks and test on physical devices and the supported browser matrix.
+- **Worktree notes:** Release-readiness changes are one coherent set. Published only after automated tests pass; cross-network validation remains an explicit follow-up.
 
-## Player market (server escrow)
+## Player market (paused for release)
 
-Merchant › **Market** lets players sell materials and spare gear to each other for gold.
+Merchant › **Market** is closed in the browser build. The Market Day quest is automatically treated as complete so this release gate does not block the Elder quest chain.
 
-**How a trade works**
+The directory server also disables market routes by default. `createDirectoryServer({market:true})` is an explicit test/development opt-in, not a production setting.
 
-- **Listing:** listing an item moves it from the player's save to the server. The server is then the only copy.
-- **Buying:** buying delivers the item from the server at once.
-- **Payouts:** the seller collects the gold, minus a 5% tax (a gold sink), with **Collect**.
-- **Expiry:** unsold items return to the seller after 48 h.
-- **Limits:** at most 6 open listings per player, and prices from 1 to 1,000,000.
+The escrow implementation remains for tests and future use. It supports listings, purchases, seller payouts (5% tax), 48-hour expiry, and six open listings per player.
 
 **How the data is stored**
 
 - **Identity:** each player has a private random key in `localStorage` (`rb_mtok`). The server stores only its SHA-256 hash.
 - **File:** listings and payouts live in `market.json`, which is git-ignored. The server writes it atomically (a temp file, then a rename) and at most every 500 ms.
 
-**Known gap:** wallets (gold, items) still live in the browser save, so an edited save can list items it never earned. The planned fix is server-side wallets once the game runs on a VPS.
+**Release gate:** gold and inventory still live in the editable browser save, and purchases are not debited against server-authoritative wallets. Keep the market disabled until wallet balances and item ownership are enforced server-side.
 
-## Player-hosted hubs (pilot)
+## Multiplayer (pilot)
 
-After the player name is set, the game asks the hub directory for a seat. The directory assigns the first hub with an open seat, in numeric order: up to 10 hubs of 10 players. The first player in an empty hub hosts it. The corner badge shows the hub number, why it was chosen, and whether you are connecting, connected or synced.
+On localhost, after the player name is set, the game asks the hub directory for a seat. The directory assigns the first hub with an open seat, in numeric order: up to 10 hubs of 12 players. The first player in an empty hub hosts it. The network badge shows the hub, assignment reason, and connection state. The public build uses serverless `?room=` links and an external ntfy relay for WebRTC setup; it has no hosted game directory by default.
 
 **How the traffic is split.** Each player shows its own actions at once: movement, chat and emotes. The host then checks only what could be cheated. It clamps steps that are too fast for the class, speed bonus and dash cooldown, and rate-limits chat and emotes. It confirms each chat or emote, or rejects it so the sender's screen undoes it. A movement correction shifts the player by the host's error without throwing away the steps walked since.
 
 **How it stays light.** Names, classes and levels are sent only in a roster message when someone joins or leaves. Positions travel as `[slot, x, y, facing]` whole numbers. The host sends only players who moved (10 times a second), plus a full refresh once a second. Guests send at most 15 updates a second while moving and one keep-alive a second while still. Remote players are drawn about 150 ms behind and smoothed, so uneven updates still look like walking.
 
-**Not implemented:** raid sync, host migration, reconnect, accounts, and PC/console/phone host ranking. A player-controlled host can still cheat; these checks are not robust anti-cheat. There is no 100-player benchmark.
+When a hub host disappears, guests leave the dead session and retry with capped backoff. If they were in a raid, they return to the hub without win/loss rewards. This does not migrate hub or raid state; a guest in a public room cannot take over the old host's room. Accounts, host ranking, and TURN relay are also not implemented. A player-controlled host can still cheat; these checks are not robust anti-cheat. There is no 100-player benchmark.
 
 ### Run it locally
 
@@ -90,6 +86,16 @@ After the player name is set, the game asks the hub directory for a seat. The di
 
 ### Hosting for other people
 
-GitHub Pages only serves files; it cannot run `src/app.js`. Run the directory on a reachable machine behind HTTPS. Set `ALLOWED_ORIGINS` to the game's exact origin (e.g. `https://aurakingstudio.github.io`). Then set `signalingUrl` in `NETWORK_CONFIG` in `index.html`. It is blank in the public build, so nothing is publicly hosted right now. Cloudflare Quick Tunnel URLs change on every restart; use a named tunnel and a stable domain. Players on strict networks may need a TURN relay in `iceServers`. Never commit private TURN credentials.
+GitHub Pages only serves files; it cannot run `src/app.js`. The public build currently uses `?room=` peer-hosted rooms and the external ntfy relay; no directory service is configured by default. To use directory-managed hubs, run the directory on a reachable machine behind HTTPS, set `ALLOWED_ORIGINS` to the game's exact origin (e.g. `https://aurakingstudio.github.io`), and configure `signalingUrl` in `NETWORK_CONFIG` in `index.html` or pass an approved `?hub=` URL. Cloudflare Quick Tunnel URLs change on every restart; use a named tunnel and a stable domain. Players on strict networks may need a TURN relay in `iceServers`. Never commit private TURN credentials.
 
 The directory keeps hub seats and WebRTC offer/answer data in memory only; a restart clears it. It never receives save data or runs the game. Shared display profiles are player-supplied, not verified.
+
+## Release validation
+
+| Area | Verified here | Still unverified |
+|---|---|---|
+| Automated | `npm test`, `npm run bench`, and `git diff --check` pass. | Hosted deployment behavior. |
+| Local multiplayer | Two local browser pages synced; guest chat reached the host; reloading the host produced one disconnect notice and the guest reconnected to a synced hub. | Public `?room=` flow and cross-network WebRTC/TURN behavior. |
+| Responsive UI | Integrated-browser checks at phone portrait and landscape sizes; portrait shows the rotate prompt and the network badge clears the top controls in landscape. | Physical phone/tablet testing and sustained low-end performance. |
+| Persistence/support | Browser save survived reload; save-storage write failures now produce a visible warning; settings and feedback forms opened without submitting feedback. | Save export/reset is not player-facing; feedback delivery to a hosted endpoint was not tested. |
+| Browsers | Integrated browser only. | Separate Chrome, Firefox, Safari, and Edge installations. |
