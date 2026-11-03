@@ -2359,7 +2359,7 @@
           V.ds = cl(+s.ds | 0, 0, 999); /* daily streak */
           V.title = Math.max(0, +s.title | 0); /* equipped title index */
           V.name = typeof s.name == "string" ? s.name.slice(0, 16) : "";
-          V.gd = [1, 2, 3].includes(s.gd) ? s.gd : 0; /* name colour: 0 none, 1 he, 2 she, 3 they (GDS) */
+          V.nc = [1, 2, 3].includes(s.nc) ? s.nc : 0; /* name colour: 0 none, 1 he, 2 she, 3 they (GDS) */
           V.xp = Math.max(0, +s.xp | 0);
           /* Archivist state: pool (lp, lpt), last tale time (lta), bonus window (lbx, lbn), blessing (bl), title flag (af) */
           for (const k of ["lp", "lpt", "lta", "lbx", "lbn", "cr", "bj1", "rc", "eqs", "bjc", "fg", "mk"]) if (typeof s[k] == "number") V[k] = s[k];
@@ -2417,16 +2417,16 @@
       }
       /* gdSet(g): change it later (Settings) */
       function gdSet(g) {
-        V.gd = V.gd == g ? 0 : g;
+        V.nc = V.nc == g ? 0 : g;
         save();
-        if (V.gd && typeof BJ_SFX != "undefined") BJ_SFX.ding(V.gd * 3);
-        if (V.gd && P) burst(P.x, P.y, GDS[V.gd].glow, 24, 150);
+        if (V.nc && typeof BJ_SFX != "undefined") BJ_SFX.ding(V.nc * 3);
+        if (V.nc && P) burst(P.x, P.y, GDS[V.nc].glow, 24, 150);
         settingsUI(); /* other players see the new colour from your next hub join */
       }
       function nameUI() {
         $("dlg").hidden = false;
         const def = V.name || "Tester" + Math.floor(1000 + Math.random() * 9000);
-        NAME_GD = V.gd || 0;
+        NAME_GD = V.nc || 0;
         $("dp").innerHTML = `<h2>⚔ Who goes there?</h2><p>The runes ask your name, traveller. It shall be carved in the Archivist's ledger.</p>
           <input id="pn" class="nm${NAME_GD ? " g" + NAME_GD : ""}" maxlength="16" value="${def}" autocomplete="off">
           <p class="sm" style="margin:8px 0 2px">Your name's colour <span style="opacity:.7">(optional)</span></p>${gdPills(NAME_GD, "gdPick")}
@@ -2441,11 +2441,11 @@
         const v = String(raw).replace(/[^\p{L}\p{N} _-]/gu, "").trim().slice(0, 16);
         if (v.length < 2) { toast("Your name needs at least 2 letters"); return; }
         V.name = v;
-        V.gd = GDS[NAME_GD] ? NAME_GD : 0;
+        V.nc = GDS[NAME_GD] ? NAME_GD : 0;
         save();
         closeDlg();
         sfx("win");
-        if (P) burst(P.x, P.y, V.gd ? GDS[V.gd].glow : "#ffd84a", 30, 180);
+        if (P) burst(P.x, P.y, V.nc ? GDS[V.nc].glow : "#ffd84a", 30, 180);
         popMsg("Welcome, " + v + "!");
         dailyCheck();
         networkAutoJoin();
@@ -2985,7 +2985,7 @@
         }
         const [sx, sy] = spawnSpot(),
           v = { id, name: o.name || "Wanderer", cls: CL[o.cls] ? o.cls : "tank", x: o.x ?? sx, y: o.y ?? sy, dx: 0, dy: 0, f: "d", hp: 1, mh: 1, bot: bot ? 1 : 0,
-            lv: o.lv || 1, ti: TITLES[o.ti] || TITLES[0], gd: [1, 2, 3].includes(o.gd) ? o.gd : 0, via: [] };
+            lv: o.lv || 1, ti: TITLES[o.ti] || TITLES[0], nc: [1, 2, 3].includes(o.nc) ? o.nc : 0, via: [] };
         v.tx = v.x;
         v.ty = v.y;
         v.born = HUB_T;
@@ -3113,7 +3113,7 @@
       }
       function netProfile() {
         return { id: NET_LOCAL_ID, name: String(pname()).replace(/[^A-Za-z0-9 _-]/g, "").slice(0, 16) || "Wanderer",
-          cls: CL[P.cls] ? P.cls : "tank", lv: cl(lvlInfo().L | 0, 1, 60), ti: cl(V.title | 0, 0, TITLES.length - 1), spd: cl(spm(), 1, 1.3), gd: [1, 2, 3].includes(V.gd) ? V.gd : 0 };
+          cls: CL[P.cls] ? P.cls : "tank", lv: cl(lvlInfo().L | 0, 1, 60), ti: cl(V.title | 0, 0, TITLES.length - 1), spd: cl(spm(), 1, 1.3), nc: [1, 2, 3].includes(V.nc) ? V.nc : 0 };
       }
       async function networkAutoJoin() {
         if (NET_AUTO_STARTED || !NET || !P || !V.name) return;
@@ -3271,7 +3271,7 @@
             !Number.isInteger(value.ti) || value.ti < 0 || value.ti >= TITLES.length ||
             !Number.isFinite(value.spd) || value.spd < 1 || value.spd > 1.3) return null;
         return { id: value.id, name: value.name.replace(/[^A-Za-z0-9 _-]/g, "").slice(0, 16) || "Wanderer",
-          cls: value.cls, lv: value.lv, ti: value.ti, spd: value.spd, gd: [1, 2, 3].includes(value.gd) ? value.gd : 0 }; /* gd: cosmetic name colour, optional */
+          cls: value.cls, lv: value.lv, ti: value.ti, spd: value.spd, nc: [1, 2, 3].includes(value.nc) ? value.nc : 0 }; /* nc: cosmetic name colour, optional */
       }
       /* ---------- fair play: the master audits every slave and every slave audits the master ----------
          Each side keeps its own progress (gold, XP, upgrades, HP) and a LEDGER of why it changed. At random moments the
@@ -3395,19 +3395,20 @@
       const newAudit = (now) => ({ prev: null, n: 0, askedAt: 0, nextAt: now + 1500 + Math.random() * 3000, lastAt: now });
       /* Player details travel once per receiver. A newcomer gets the whole list ("r") once; everyone else gets only the
          newcomer's entry ("j"). Leaving is a slot number ("l"); a level or speed change is slot + level + speed ("u").
-         Entry: [slot, id, name, class, level, title, speed, gender colour (optional, 0-3)]. Slot 0 is the master. */
+         Entry: [slot, id, name, class, level, title, speed]; the name colour (0-3) is sent beside it as c. Slot 0 is the master. */
       let NET_HOST_INFO = "";
-      const netEntry = (v) => [v.netSlot, v.netClientId, v.name, v.cls, v.lv, Math.max(0, TITLES.indexOf(v.ti)), v.netSpd || 1, v.gd || 0];
+      const netEntry = (v) => [v.netSlot, v.netClientId, v.name, v.cls, v.lv, Math.max(0, TITLES.indexOf(v.ti)), v.netSpd || 1];
+      const netNc = (e) => (e[0] == 0 ? V.nc : (HUBV.find((v) => v.netSlot == e[0] && v.netClientId == e[1]) || {}).nc) || 0; /* name colour rides beside the 7-field entry (c), so older builds still read the roster */
       function netHostEntry() {
         const host = netProfile();
-        return [0, "host-player", host.name, P.cls, host.lv, host.ti, host.spd, host.gd];
+        return [0, "host-player", host.name, P.cls, host.lv, host.ti, host.spd];
       }
       /* netRoster(to): the whole list, to one newcomer */
       function netRoster(to) {
         const p = [netHostEntry()];
         for (const v of HUBV) if (!v.bot && !v.out && NET_CLIENTS.has(v.id) && v.id != to) p.push(netEntry(v));
         p.push(...HUBV.filter((v) => v.id == to).map(netEntry)); /* the newcomer's own entry last */
-        NET.send(to, { type: "r", p });
+        NET.send(to, { type: "r", p, c: p.map(netNc) });
         const v = HUBV.find((o) => o.id == to);
         if (v) v.netSeen = null; /* it gets everyone's full position next */
       }
@@ -3467,17 +3468,18 @@
         }
       }
       /* netGoodEntry(e) / netAddEntry(e): check one roster entry from the master, then show that player */
-      const netGoodEntry = (e) => Array.isArray(e) && (e.length == 7 || (e.length == 8 && [0, 1, 2, 3].includes(e[7]))) && Number.isInteger(e[0]) && e[0] >= 0 && e[0] < HUB_MAX &&
+      const netGoodEntry = (e) => Array.isArray(e) && e.length == 7 && Number.isInteger(e[0]) && e[0] >= 0 && e[0] < HUB_MAX &&
         typeof e[1] == "string" && e[1].length <= 56 && typeof e[2] == "string" && e[2].length <= 16 && CL[e[3]] &&
         Number.isInteger(e[4]) && e[4] >= 1 && e[4] <= 60 && Number.isInteger(e[5]) && e[5] >= 0 && e[5] < TITLES.length &&
         Number.isFinite(e[6]) && e[6] >= 1 && e[6] <= 1.3;
-      function netAddEntry([slot, pid, name, cls, lv, ti, spd, gd]) {
+      function netAddEntry([slot, pid, name, cls, lv, ti, spd], nc) {
+        nc = [1, 2, 3].includes(nc) ? nc : 0;
         if (NET_SLOT_IDS.get(slot) != pid) { NET_SLOT_LAST.delete(slot); NET_SLOT_POS.delete(slot); } /* slot now holds someone else */
         NET_SLOT_IDS.set(slot, pid);
         NET_SLOT_INFO.set(slot, { cls, spd });
         if (pid == NET_LOCAL_ID) return;
-        const v = HUBV.find((other) => other.id == pid) || hubJoin(pid, { name: name.replace(/[^A-Za-z0-9 _-]/g, "") || "Wanderer", cls, lv, ti, gd }, 0);
-        if (v) { v.netClientId = pid; v.lv = lv; v.ti = TITLES[ti]; v.netSpd = spd; v.gd = gd || 0; }
+        const v = HUBV.find((other) => other.id == pid) || hubJoin(pid, { name: name.replace(/[^A-Za-z0-9 _-]/g, "") || "Wanderer", cls, lv, ti, nc }, 0);
+        if (v) { v.netClientId = pid; v.lv = lv; v.ti = TITLES[ti]; v.netSpd = spd; v.nc = nc || 0; }
       }
       function netReceive(id, message) {
         if (NET_ROLE == "host") {
@@ -3508,7 +3510,7 @@
             NET_CLIENTS.set(id, profile.id);
             netStatus("Connected players: " + (NET_CLIENTS.size + 1));
             netRoster(id);
-            netTell({ type: "j", e: netEntry(v) }, id);
+            netTell({ type: "j", e: netEntry(v), c: v.nc || 0 }, id);
             for (const o of HUBV) if (o.rz && !o.bot && o.netSlot != null) NET.send(id, { type: "rz", e: [o.netSlot, 1] });
             if (S.sc == "arena") NET.send(id, { type: "rz", e: [0, 1] });
           } else if (message.type == "m") {
@@ -3597,9 +3599,9 @@
             const ids = new Set(roster.map((e) => e[1]));
             for (const v of HUBV.filter((v) => !v.bot && v.netClientId && !ids.has(v.id))) hubLeave(v.id);
             NET_SLOT_IDS.clear(); NET_SLOT_INFO.clear(); NET_SLOT_LAST.clear(); NET_SLOT_POS.clear();
-            roster.forEach(netAddEntry);
+            message.p.forEach((e, k) => { if (netGoodEntry(e)) netAddEntry(e, Array.isArray(message.c) ? message.c[k] : 0); });
           } else if (message.type == "j" && netGoodEntry(message.e)) {
-            netAddEntry(message.e);
+            netAddEntry(message.e, message.c);
           } else if (message.type == "l" && Number.isInteger(message.s)) {
             const pid = NET_SLOT_IDS.get(message.s);
             NET_SLOT_IDS.delete(message.s); NET_SLOT_INFO.delete(message.s); NET_SLOT_LAST.delete(message.s); NET_SLOT_POS.delete(message.s);
@@ -8585,7 +8587,7 @@
         const tg = (k, lab) => `<label class="row" style="justify-content:space-between"><span>${lab}</span><input type="checkbox" style="accent-color:#d9a94a" ${SET[k] ? "checked" : ""} onchange="SET.${k}=this.checked?1:0;saveSet()"></label>`;
         const binds = `<div style="display:grid;grid-template-columns:1fr 1fr;gap:4px 14px">` + Object.keys(BIND_N).map((k) => `<div style="display:flex;align-items:center;justify-content:space-between;gap:6px"><span class="sm">${BIND_N[k]}</span><span ${k == "s0" ? "title='Mouse button'" : `onclick="REBIND='${k}';settingsUI()"`} style="cursor:${k == "s0" ? "default" : "pointer"};min-width:54px;text-align:center;padding:3px 8px;border:1px solid ${REBIND == k ? "#ffe08a" : "var(--ln)"};border-bottom-width:2px;border-radius:6px;font:bold 12px Georgia;color:${REBIND == k ? "#ffe08a" : "#f3e6c8"};background:rgba(0,0,0,.25)">${REBIND == k ? "…" : keyLabel(SET.bind[k])}</span></div>`).join("") + `</div>`;
         $("dp").innerHTML = `<h2>⚙️ Settings</h2>
-          <div class="row" style="justify-content:space-between;flex-wrap:wrap;gap:6px"><span>Name colour</span>${gdPills(V.gd, "gdSet")}</div><div class="mast"><span class="sm">Sound &amp; screen</span></div>${sl("vol", "Volume", 1, 0.05)}${sl("shake", "Screen shake", 1.5, 0.1)}${tg("fx", "Full particle effects")}<label class="row" style="justify-content:space-between"><span>Low spec mode <span class="sm">(older PCs / phones)</span></span><input type="checkbox" style="accent-color:#d9a94a" ${SET.low ? "checked" : ""} onchange="SET.low=this.checked?1:0;saveSet();rs()"></label>${tg("dmg", "Damage numbers")}${tg("showFps", "Show FPS")}<div class="row" style="justify-content:space-between"><span>Frame rate</span><span style="display:flex;gap:4px">${[30, 60, 144, 0].map((f) => `<span onclick="SET.fps=${f};saveSet();settingsUI()" style="cursor:pointer;padding:3px 9px;border-radius:6px;border:1px solid ${(+SET.fps || 0) == f ? "#ffe08a" : "var(--ln)"};color:${(+SET.fps || 0) == f ? "#ffe08a" : "#f3e6c8"};background:rgba(0,0,0,.25);font:bold 12px Georgia">${f || "Max"}</span>`).join("")}</span></div><div class="row" style="justify-content:space-between"><span>Dash aim <span class="sm">(keyboard)</span></span><span style="display:flex;gap:4px">${[[0, "🖱 Cursor"], [1, "⌨ Movement"]].map(([v, lab]) => `<span onclick="SET.dashMove=${v};saveSet();settingsUI()" style="cursor:pointer;padding:3px 9px;border-radius:6px;border:1px solid ${(+SET.dashMove || 0) == v ? "#ffe08a" : "var(--ln)"};color:${(+SET.dashMove || 0) == v ? "#ffe08a" : "#f3e6c8"};background:rgba(0,0,0,.25);font:bold 12px Georgia">${lab}</span>`).join("")}</span></div>
+          <div class="row" style="justify-content:space-between;flex-wrap:wrap;gap:6px"><span>Name colour</span>${gdPills(V.nc, "gdSet")}</div><div class="mast"><span class="sm">Sound &amp; screen</span></div>${sl("vol", "Volume", 1, 0.05)}${sl("shake", "Screen shake", 1.5, 0.1)}${tg("fx", "Full particle effects")}<label class="row" style="justify-content:space-between"><span>Low spec mode <span class="sm">(older PCs / phones)</span></span><input type="checkbox" style="accent-color:#d9a94a" ${SET.low ? "checked" : ""} onchange="SET.low=this.checked?1:0;saveSet();rs()"></label>${tg("dmg", "Damage numbers")}${tg("showFps", "Show FPS")}<div class="row" style="justify-content:space-between"><span>Frame rate</span><span style="display:flex;gap:4px">${[30, 60, 144, 0].map((f) => `<span onclick="SET.fps=${f};saveSet();settingsUI()" style="cursor:pointer;padding:3px 9px;border-radius:6px;border:1px solid ${(+SET.fps || 0) == f ? "#ffe08a" : "var(--ln)"};color:${(+SET.fps || 0) == f ? "#ffe08a" : "#f3e6c8"};background:rgba(0,0,0,.25);font:bold 12px Georgia">${f || "Max"}</span>`).join("")}</span></div><div class="row" style="justify-content:space-between"><span>Dash aim <span class="sm">(keyboard)</span></span><span style="display:flex;gap:4px">${[[0, "🖱 Cursor"], [1, "⌨ Movement"]].map(([v, lab]) => `<span onclick="SET.dashMove=${v};saveSet();settingsUI()" style="cursor:pointer;padding:3px 9px;border-radius:6px;border:1px solid ${(+SET.dashMove || 0) == v ? "#ffe08a" : "var(--ln)"};color:${(+SET.dashMove || 0) == v ? "#ffe08a" : "#f3e6c8"};background:rgba(0,0,0,.25);font:bold 12px Georgia">${lab}</span>`).join("")}</span></div>
           <div class="mast"><span class="sm">Keys (keyboard)</span></div>${binds}<div class="row"><button class="alt" onclick="SET.bind={...BIND_DEF};saveSet();refreshHints();settingsUI()">Reset keys</button></div>
           <div class="mast"><span class="sm">More</span></div><div class="row" style="flex-wrap:wrap;gap:6px">
             <button onclick="closeDlg();$('dlg').hidden=false;titleUI()">🎖️ Titles</button>
@@ -9375,7 +9377,7 @@
         c.beginPath();
         c.ellipse(0, PR + 2, PR * 0.6, 2.6, 0, 0, 6.3);
         c.fill();
-        gdAura(p === P ? V.gd : p.gd, p);
+        gdAura(p === P ? V.nc : p.nc, p);
         c.save();
         c.translate(0, bob);
         if (da) {
@@ -9474,7 +9476,7 @@
         if (p.name && p !== P && !p.ally) {
           /* hub visitor: just a name tag, no health bar (a party member gets a gold marker) */
           if (inParty(p)) { c.fillStyle = "#ffd84a"; c.beginPath(); c.moveTo(0, -PR - 30); c.lineTo(4, -PR - 25); c.lineTo(0, -PR - 20); c.lineTo(-4, -PR - 25); c.fill(); }
-          nameplate(p.lv, p.name, p.ti, 1 + (p.lvp || 0) * 1.2, p.bot ? "#63a8ff" : "#dfe8f0", p.badge, p.gd);
+          nameplate(p.lv, p.name, p.ti, 1 + (p.lvp || 0) * 1.2, p.bot ? "#63a8ff" : "#dfe8f0", p.badge, p.nc);
           drawEmote(p, -PR - 22);
           if (!sayBubble(p, -PR - 6) && (p.talk || p.typing)) {
             /* chat bubble with three bouncing dots */
@@ -9505,9 +9507,9 @@
           c.fillRect(-14, -PR - 15, 28 * cl(p.ar / DASH.tank.ar, 0, 1), 2);
           c.shadowBlur = 0;
         }
-        if (p.ally) nameplate(p.lv, p.name, p.ti, 1, p.filler ? "#63a8ff" : "#dfe8f0", p.badge, p.gd); /* raid ally */
+        if (p.ally) nameplate(p.lv, p.name, p.ti, 1, p.filler ? "#63a8ff" : "#dfe8f0", p.badge, p.nc); /* raid ally */
         if (p === P) {
-          nameplate(lvlInfo().L, pname(), myTitle(), 1 + p.lvp * 1.2, "#ffd84a", cosV().badge, V.gd);
+          nameplate(lvlInfo().L, pname(), myTitle(), 1 + p.lvp * 1.2, "#ffd84a", cosV().badge, V.nc);
           sayBubble(p, -PR - 17);
           drawEmote(p, -PR - 32);
         }
@@ -9520,7 +9522,7 @@
       let GD_POOL = null;
       function gdAura(g, p) {
         const G = GDS[g];
-        if (!G || p.hp <= 0 || !c.createRadialGradient) return;
+        if (!G || p.hp <= 0 || SET.low || !c.createRadialGradient) return; /* Low spec: no aura (additive blending is slow on weak GPUs); the tinted name stays */
         const t = S.tm, still = BJ_VFX.reduced(), a0 = c.globalAlpha;
         if (!GD_POOL || GD_POOL.c !== c) GD_POOL = { c, g: [] };
         let rg = GD_POOL.g[g];

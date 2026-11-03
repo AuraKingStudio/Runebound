@@ -125,11 +125,11 @@ ok(ctx.document.getElementById('dp').innerHTML.includes('class="bjmini"')&&ctx.d
  ok(T.bjClockTxt(150)=='2:30'&&T.bjClockTxt(61)=='1:01'&&T.bjClockTxt(45)=='45','assist: the clock reads 2:30 from a minute up, whole seconds below');
  ok(T.BJ_SFX.jackpot(9)>0.6&&T.BJ_SFX.jackpot(9)<1.2,'assist: the jackpot ding run speeds up and lands its chord in about a second');
  let threw=false;try{T.bjJackpot(9,true);T.bjJackpot(6);}catch(e){threw=true;}ok(!threw,'assist: the jackpot runs without a table (and BJ_VFX.stop cancels it)');T.BJ_VFX&&T.BJ_VFX.stop&&T.BJ_VFX.stop();}
-{const V=T.V(),g0=V.gd,n0=V.name;T.nameUI();ok(ctx.document.getElementById('dp').innerHTML.includes('gdPick(1)')&&ctx.document.getElementById('dp').innerHTML.includes('gdPick(2)'),'gender: the name dialog offers He / She / They');
- T.gdPick(2);T.saveName('Lumi');ok(V.gd==2&&V.name=='Lumi','gender: the pick is saved with the name');
- const pr={id:'player-abcd1234',name:'Ann',cls:'tank',lv:3,ti:0,spd:1};ok(T.netSafeProfile({...pr,gd:1}).gd==1&&T.netSafeProfile({...pr,gd:9}).gd==0&&T.netSafeProfile(pr).gd==0,'gender: peers send a 0-3 colour; anything else reads as none');
- ok(T.netGoodEntry([1,'player-abcd1234','Ann','tank',3,0,1])&&T.netGoodEntry([1,'player-abcd1234','Ann','tank',3,0,1,2])&&!T.netGoodEntry([1,'player-abcd1234','Ann','tank',3,0,1,7]),'gender: roster entries accept the optional colour (old 7-field peers still fit)');
- V.gd=g0;V.name=n0;}
+{const V=T.V(),g0=V.nc,n0=V.name,gu=V.gd;T.nameUI();ok(ctx.document.getElementById('dp').innerHTML.includes('gdPick(1)')&&ctx.document.getElementById('dp').innerHTML.includes('gdPick(2)'),'gender: the name dialog offers He / She / They');
+ T.gdPick(2);T.saveName('Lumi');ok(V.nc==2&&V.name=='Lumi','gender: the pick is saved with the name');
+ const pr={id:'player-abcd1234',name:'Ann',cls:'tank',lv:3,ti:0,spd:1};ok(T.netSafeProfile({...pr,nc:1}).nc==1&&T.netSafeProfile({...pr,nc:9}).nc==0&&T.netSafeProfile(pr).nc==0,'gender: peers send a 0-3 colour; anything else reads as none');
+ ok(T.netGoodEntry([1,'player-abcd1234','Ann','tank',3,0,1])&&!T.netGoodEntry([1,'player-abcd1234','Ann','tank',3,0,1,2]),'gender: roster entries stay 7 fields (the colour rides beside them, so older builds still read the roster)');
+ V.nc=g0;V.name=n0;ok(V.gd===gu,'gender: picking a colour never touches the guild (V.gd)');}
 T.bjHit();ok(T.V().gold==110&&ctx.document.getElementById('dp').innerHTML.includes('You win! +20'),'blackjack: the first hand\'s hit guarantees 21 and a win');
 {const originalMath=ctx.Math;let rolls=[.1,.1,.7,.62];ctx.Math=Object.create(Math);ctx.Math.random=()=>rolls.shift()??.1;T.V().gold=100;T.V().tut=6;T.bjDeal(10);T.bjStand();ctx.Math=originalMath;ok(T.V().gold==90&&ctx.document.getElementById('dp').innerHTML.includes('house wins'),'blackjack: normal hands remain random');}
 {const M=ctx.Math;const seq=(a)=>{ctx.Math=Object.create(Math);ctx.Math.random=()=>a.length?a.shift():.1;};
