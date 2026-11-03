@@ -17,7 +17,12 @@ const RULES = {
   bounty: { g: 80, x: 60, gap: 1000 },
   quest: { g: 350, x: 100, gap: 2000 },
 };
-const SPENDS = ["cosmetic", "smith", "seraph", "maiden", "guild", "skill", "upgrade", "equip", "bjchart"];
+const SPENDS = ["cosmetic", "smith", "seraph", "maiden", "guild", "skill", "upgrade", "equip"];
+/* blackjack Assist rent: the server keeps each player's price multiplier (same rule as BJ_PRICE in index.html): x1.5 per rent,
+   capped at x20, the extra halving every 10 minutes since the last rent. A rent is accepted only at that price (+-1 rounding). */
+const ASSIST = { cost: 50, mul: 1.5, max: 20, half: 10 };
+const assistMul = (a, t) => 1 + (Math.min(ASSIST.max, Math.max(1, a.bjm || 1)) - 1) * Math.pow(0.5, Math.max(0, t - (a.bjmAt || 0)) / 60000 / ASSIST.half);
+const assistPrice = (a, t) => Math.max(ASSIST.cost, Math.round(ASSIST.cost * assistMul(a, t)));
 const SEED_GOLD = 500, SEED_XP = 2000; /* a new online account keeps at most this much of its old offline save */
 const MAX_ENTRIES = 150, SYNC_GAP_MS = 1000;
 
@@ -68,16 +73,21 @@ function createBank(options = {}) {
         if (x) { dropped++; continue; }
         if (g < 0) { if (a.gold + g < 0) { dropped++; continue; } a.gold += g; a.bet += -g; }
         else if (g > 0) { if (g > a.bet * 3) { dropped++; a.bet = 0; continue; } a.gold += g; a.bet = 0; }
+      } else if (kind == "bjchart") {
+        const price = assistPrice(a, t);
+        if (x || Math.abs(-g - price) > 1 || a.gold + g < 0) { dropped++; continue; }
+        a.gold += g;
+        a.bjm = Math.min(ASSIST.max, assistMul(a, t) * ASSIST.mul); a.bjmAt = t;
       } else if (SPENDS.includes(kind)) {
         if (g > 0 || x || a.gold + g < 0) { dropped++; continue; }
         a.gold += g;
       } else dropped++; /* dev tools, market (escrow pays itself) and unknown kinds never move the bank */
     }
     persist();
-    return [200, { gold: a.gold, xp: a.xp, dropped }];
+    return [200, { gold: a.gold, xp: a.xp, dropped, bjm: a.bjm || 1, bjmAge: a.bjmAt ? t - a.bjmAt : 1e12 }]; /* bjmAge: ms since the last rent (no clock skew) */
   }
 
-  return { sync, RULES, size: () => Object.keys(accts).length };
+  return { sync, RULES, ASSIST, assistPrice, size: () => Object.keys(accts).length };
 }
 
-module.exports = { createBank, RULES };
+module.exports = { createBank, RULES, ASSIST };

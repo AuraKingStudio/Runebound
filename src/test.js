@@ -760,6 +760,15 @@ async function bankTests(){
  ok(sync([['smith',-1e6,0]])[1].dropped==1,'bank: no spending below zero');
  ok(b.sync({tok,led:[]})[0]==429,'bank: syncs are rate-limited');
  ok(b.sync({tok:'x',led:[]})[0]==400,'bank: bad tokens are refused');
+ /* Assist rent: only at the server's own price, which multiplies per rent, cools down and caps */
+ const {ASSIST}=require('./bank.js'),rent=(g)=>sync([['bjchart',g,0]])[1];
+ ok(ASSIST.mul==1.5&&ASSIST.max==20&&ASSIST.half==10&&ASSIST.cost==50,'bank assist: same price rule as the game (x1.5, cap x20, 10 min half-life, 50)');
+ let r1=rent(-50);ok(r1.dropped==0&&r1.bjm==1.5,'bank assist: the correct price is accepted and raises the multiplier');
+ const g0=rent(0).gold;
+ for(const bad of [-10,-200,30,0])ok(rent(bad).dropped==1&&rent(0).gold==g0,'bank assist: rent of '+bad+' is refused, balance unchanged');
+ ok(rent(-75).dropped==0,'bank assist: the next rent costs x1.5 (75)');
+ t+=10*60000;ok(rent(-Math.round(50*(1+(2.25-1)*0.5))).dropped==0,'bank assist: the extra halves after 10 minutes');
+ ok(b.assistPrice({bjm:999,bjmAt:t},t)==1000&&b.assistPrice({bjm:-5},t)==50,'bank assist: the multiplier is capped at x20 and never below x1');
  try{require('fs').unlinkSync(file)}catch{}
 }
 async function takeoverTests(){
