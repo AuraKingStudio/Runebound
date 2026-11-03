@@ -1833,7 +1833,7 @@
           g: "M-8-12v24h2.5v-10h12l-3-5 3-5h-12v-4z" },
         /* The Seraph (radiant gold): halo over a pair of wings. Sells one-raid blessings; unlocked by the quest "First Raid"; stands on the Herald's old spot. wings: drawn behind */
         SERAPH = { lk: "seraph", x: 150, y: 350, ic: "👼", nm: "The Seraph", col: "#d8eeff", gs: 1, wings: 1, /* holy silver-white, pale blue glow */
-          g: "M-4.5-11.5a4.5 1.6 0 1 0 9 0a4.5 1.6 0 1 0-9 0M0-8.6a2.6 2.6 0 1 0 0.01 0M-2.6-3.4L-5.6 10H5.6L2.6-3.4ZM-2.6-2.6Q-9-9-12.6-4.6Q-11-0.6-6.4 0.8M2.6-2.6Q9-9 12.6-4.6Q11-0.6 6.4 0.8M-10-3.4l3 1.6M10-3.4l-3 1.6" }; /* halo, head, robe, raised wings with feather lines */ /* centred: spans y -11..10 */
+          g: "M-4-12.5a4 1.4 0 1 0 8 0a4 1.4 0 1 0-8 0M2.2-8a2.2 2.2 0 1 0-4.4 0a2.2 2.2 0 1 0 4.4 0M-2.2-5Q-3.6 2-5.6 10.5H5.6Q3.6 2 2.2-5M0-3v4.5M-1.4-1.4L0 1.5L1.4-1.4M-2.8-4C-7-6.5-10-11.5-12.5-12.5C-12.2-8.5-11.2-5.5-9-3.4C-11.2-3.2-12.2-1.2-12.6 1.2C-9.6 0.2-6.6-0.8-3.4-0.4M2.8-4C7-6.5 10-11.5 12.5-12.5C12.2-8.5 11.2-5.5 9-3.4C11.2-3.2 12.2-1.2 12.6 1.2C9.6 0.2 6.6-0.8 3.4-0.4M-9-3.4L-5.4-2.8M9-3.4L5.4-2.8M-10.6-8.4L-6.6-5.2M10.6-8.4L6.6-5.2" }; /* praying angel: halo, head, bell robe, joined hands, raised wings with feather lines */ /* centred: spans y -11..10 */
       /* ---------- progress (saved) ---------- */
       /* upgrades. k = save key, b = base cost (cost = b * next level), pl = % per level, ic = SVG icon, col = card color */
       const UPG = [
@@ -10183,7 +10183,7 @@
         g.fillRect(-12, -20, 6, 12);
         g.fillStyle = HL;
         g.fillRect(-14, -23, 28, 3.5);
-        /* carved panel on the die: recessed frame (dark groove + lit lip), a ring of small runes around a glowing sigil */
+        /* carved panel on the die: recessed frame (dark groove + lit lip) around one glowing sigil in a ring */
         g.fillStyle = "rgba(60,45,28,.45)"; g.fillRect(-9.5, -18.5, 19, 9.5);
         g.strokeStyle = "rgba(255,240,205,.5)"; g.lineWidth = 0.5; g.strokeRect(-9.2, -18.2, 18.4, 8.9);
         g.strokeStyle = "rgba(60,45,28,.7)"; g.strokeRect(-8.4, -17.4, 16.8, 7.3);
@@ -10194,12 +10194,7 @@
         g.fillStyle = "rgba(150,255,235,.95)";
         g.font = "5px " + RUNE_FONT; g.textAlign = "center"; g.textBaseline = "middle";
         g.fillText("ᛟ", 0, -13.6);
-        g.font = "2.6px " + RUNE_FONT; g.fillStyle = "rgba(110,240,220,.7)";
-        ["ᚠ", "ᚱ", "ᛉ", "ᛊ", "ᛏ", "ᚨ"].forEach((r2, q) => g.fillText(r2, -7 + q * 2.8 + (q > 2 ? 3 : 0) - (q > 2 ? 0 : 0.6), -13.6));
         g.restore();
-        /* cornice: a thin band of runes catching the light */
-        g.fillStyle = "rgba(120,95,60,.55)"; g.font = "2.4px " + RUNE_FONT; g.textAlign = "center"; g.textBaseline = "middle";
-        for (let q = -5; q <= 5; q++) g.fillText("ᛜ", q * 2.4, -21.3);
         const by = -23;
         /* she turns toward the cistern: the figure (not the plinth) is drawn three-quarter on, leaning into the reach */
         g.transform(0.88, 0, -0.14, 1, 0, 0);
@@ -11754,40 +11749,44 @@
       /* the grass is drawn into 4 horizontal band layers; each band is redrawn about 30 times a second and reused in
          between. Bands refresh in turn (oldest first, at most 2 per frame), so the cost is spread evenly over frames
          instead of one 4 ms spike every other frame (that spike read as lag). */
-      const GB_N = 4, GB_PAD = 34;
+      const GB_N = 4, GB_PAD = 34, GB_HZ = 20;
       let GB = [], GB_M = "", GB_SRC = null, GB_LEN = -1;
       function grassLive(t) {
         if (!GRASS_T.length) return;
-        const M0 = c.getTransform(), key = [cv.width, cv.height, M0.a, M0.d, M0.e, M0.f].join(",");
+        /* rounded: the camera eases forever by sub-pixel amounts; an exact key rebuilt (and reallocated) every band each frame */
+        const M0 = c.getTransform(), key = [cv.width, cv.height, M0.a.toFixed(4), M0.d.toFixed(4), Math.round(M0.e), Math.round(M0.f)].join(",");
         if (typeof document == "undefined" || !document.createElement("canvas").getContext("2d")?.setTransform) return grassPaint(t, c);
+        /* perf: bands are painted at 1x (q = 1 / devicePixelRatio, blades are soft anyway: 2.25x fewer pixels at 1.5x) and
+           shown scaled up; each band is redrawn ~20 times a second (GB_HZ) */
+        const q = Math.min(1, (cv.clientWidth || cv.width) / cv.width);
         if (GB_SRC !== GRASS_T || GB_LEN != GRASS_T.length || key != GB_M) { /* (re)build the bands */
           GB_SRC = GRASS_T; GB_LEN = GRASS_T.length; GB_M = key;
           let y0 = 1e9, y1 = -1e9;
           for (const q of GRASS_T) { if (q.y < y0) y0 = q.y; if (q.y > y1) y1 = q.y; }
-          const hb = (y1 - y0) / GB_N + 0.01;
+          const hb = (y1 - y0) / GB_N + 0.01, old = GB; /* reuse the band canvases */
           GB = [];
           for (let b = 0; b < GB_N; b++) {
             const lo = y0 + hb * b, hi = lo + hb, list = GRASS_T.filter((q) => q.y >= lo && (q.y < hi || b == GB_N - 1));
             const top = Math.floor(M0.d * (lo - GB_PAD) + M0.f), bot = Math.ceil(M0.d * (hi + 6) + M0.f);
-            const cvb = GB[b]?.cv || document.createElement("canvas");
-            cvb.width = cv.width; cvb.height = Math.max(1, bot - top);
-            GB.push({ cv: cvb, list, top, at: -1 });
+            const cvb = old[b]?.cv || document.createElement("canvas"), bh = Math.max(1, bot - top), bw2 = Math.ceil(cv.width * q), bh2 = Math.ceil(bh * q);
+            if (cvb.width != bw2 || cvb.height != bh2) { cvb.width = bw2; cvb.height = bh2; }
+            GB.push({ cv: cvb, list, top, h: bh, at: -1 });
           }
         }
         let n = 0;
         for (const b of [...GB].sort((p, q) => p.at - q.at)) {
-          if (b.at >= 0 && (Math.abs(t - b.at) < 1 / 30 || n >= 2)) continue;
+          if (b.at >= 0 && (Math.abs(t - b.at) < 1 / GB_HZ || n >= 2)) continue;
           const g = b.cv.getContext("2d");
           g.setTransform(1, 0, 0, 1, 0, 0);
           g.clearRect(0, 0, b.cv.width, b.cv.height);
-          g.setTransform(M0.a, M0.b, M0.c, M0.d, M0.e, M0.f - b.top);
+          g.setTransform(M0.a * q, M0.b * q, M0.c * q, M0.d * q, M0.e * q, (M0.f - b.top) * q);
           grassPaint(t, g, b.list);
           b.at = t;
           n++;
         }
         c.save();
         c.setTransform(1, 0, 0, 1, 0, 0);
-        for (const b of GB) c.drawImage(b.cv, 0, b.top);
+        for (const b of GB) c.drawImage(b.cv, 0, b.top, cv.width, b.h);
         c.restore();
       }
       function grassPaint(t, c, list = GRASS_T) {
@@ -11797,7 +11796,7 @@
         const wind = (x, y) => {
           const gx = Math.round(x / 45), gy = Math.round(y / 30), ph = Math.sin(gx * 12.9898 + gy * 78.233) * 43758.5453 % 1;
           const front = Math.pow(Math.max(0, Math.sin(t * 0.55 - x * 0.007 - y * 0.004)), 4); /* rolling gust */
-          return 0.1 + Math.sin(t * 1.25 + ph * 6) * 0.14 + front * 0.6 + Math.sin(t * 2.2 + gx * 0.7) * 0.05 * (1 + front * 2);
+          return 0.06 + Math.sin(t * 1.25 + ph * 6) * 0.08 + front * 0.3 + Math.sin(t * 2.2 + gx * 0.7) * 0.03 * (1 + front * 2); /* softer sway: less stretch */
         };
         const lite = INMODE == "touch", half = (GRASS_F = (GRASS_F + 1) & 1); /* phones: the wind is worked out every other frame */
         const low = SET.low;

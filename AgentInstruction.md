@@ -286,6 +286,9 @@ Built and tested (unit tests plus the `cheat`, `flood`, `econ`, `hphack`, `chat`
 
 - Late Elder quests after Colossus Slayer: "Hammer and Anvil" (forge any gear, V.fg) and "Market Day" (sell or buy on the Market, V.mk), 300 gold each. Tutorial unchanged.
 
+- Hub perf (1600x900 @1.5x, headless CPU): frame 29 ms -> ~10 ms. Grass was 91% of it: the camera's endless sub-pixel easing changed the band cache key every frame (full rebuild + reallocation, 26.7 ms). Fixes: key rounds camera e/f and zoom, band canvases reused, bands painted at 1x (q = 1/DPR) and scaled up, redrawn at GB_HZ 20. Grass now ~1.2 ms. Grass sway halved.
+- Seraph icon: praying angel (halo, head, bell robe, joined hands, raised wings). Plinth: one sigil in a ring (the small runes overlapped).
+
 ## Not done / open
 
 - Host migration and reconnect: a hub dies when its host leaves.
