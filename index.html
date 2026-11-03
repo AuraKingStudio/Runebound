@@ -1823,7 +1823,10 @@
           g: "M-12-6h20q4 0 4 4h-6v4l4 6h-18l4-6v-4h-6q-2 0-2-4z" },
         /* The Herald (silver): a banner */
         HERALD = { lk: "herald", x: 150, y: 350, ic: "📯", nm: "The Herald", col: "#cfe6ff",
-          g: "M-8-12v24h2.5v-10h12l-3-5 3-5h-12v-4z" };
+          g: "M-8-12v24h2.5v-10h12l-3-5 3-5h-12v-4z" },
+        /* The Seraph (radiant gold): halo over a pair of wings. Sells one-raid blessings; unlocked by the quest "First Raid"; stands on the Herald's old spot. wings: drawn behind */
+        SERAPH = { lk: "seraph", x: 150, y: 350, ic: "👼", nm: "The Seraph", col: "#ffe9a0", gs: 1, wings: 1,
+          g: "M-5-13a5 2 0 1 0 10 0a5 2 0 1 0-10 0M0-7v13M-2-5q-9-7-14 1q6 0 8 5q3-1 6-4M2-5q9-7 14 1q-6 0-8 5q-3-1-6-4" };
       /* ---------- progress (saved) ---------- */
       /* upgrades. k = save key, b = base cost (cost = b * next level), pl = % per level, ic = SVG icon, col = card color */
       const UPG = [
@@ -1951,12 +1954,14 @@
           t: "Step onto the Rune Crossing, pick a raid and bring its boss down with your party.",
           o: "Win any raid",
           r: 200,
+          unlock: "seraph", /* turning it in brings the Seraph (one-raid blessings) */
         },
         {
           n: "Raid Veteran",
           t: "One win is luck. Keep raiding with your party until the Seer learns your name.",
           o: "Win 5 raids",
           r: 250,
+          unlock: "smith", /* turning it in brings the Smith (crafting from raid drops) */
           ok: () => (V.wins || 0) >= 5,
         },
         {
@@ -2001,7 +2006,7 @@
           /* guild + daily bounties */
           V.gd = s.gd && typeof s.gd.name == "string" ? { name: s.gd.name.slice(0, 20), m: Array.isArray(s.gd.m) ? s.gd.m.filter((r) => r && CL[r.c]).slice(0, 10) : [] } : null;
           V.bo = s.bo && typeof s.bo.day == "string" && Array.isArray(s.bo.ids) ? { day: s.bo.day, ids: s.bo.ids, prog: s.bo.prog || {}, done: s.bo.done || {} } : null;
-          V.ul = s.ul && typeof s.ul == "object" ? { class: !!s.ul.class, maiden: !!s.ul.maiden, smith: !!s.ul.smith, herald: !!s.ul.herald, barkeep: !!s.ul.barkeep } : {};
+          V.ul = s.ul && typeof s.ul == "object" ? { class: !!s.ul.class, maiden: !!s.ul.maiden, smith: !!s.ul.smith, herald: !!s.ul.herald, barkeep: !!s.ul.barkeep, seraph: !!s.ul.seraph } : {};
           for (const k of ["wins", "loss", "best"]) if (typeof s[k] == "number") V[k] = s[k];
           if (s.trial && typeof s.trial == "object") { V.trial = {}; for (const k in s.trial) if (/^[a-z]{2,10}$/.test(k)) V.trial[k] = Math.max(0, Math.min(50, s.trial[k] | 0)); /* (RAIDS / TRIAL are defined later) */ }
           if (s.mat && typeof s.mat == "object") { V.mat = {}; for (const k in s.mat) if (/^[a-z]{2,12}$/.test(k) && s.mat[k] > 0) V.mat[k] = Math.min(99999, s.mat[k] | 0); }
@@ -2069,7 +2074,7 @@
         save();
         if (P) ftxt(P.x, P.y - 44, "+" + n + " XP", "#9fe8ff");
         const after = lvlInfo().L;
-        if (after >= SMITH_LV && !isUnl("smith")) setTimeout(() => unlockNpc("smith"), 1200); /* the Smith arrives at level SMITH_LV */
+
         if (after > before) {
           const rankUp = Math.floor(after / 10) > Math.floor(before / 10);
           popMsg("⬆ Level " + after + "!" + (rankUp ? " New rank color!" : ""), rankUp ? 1.6 : 1.2);
@@ -2365,10 +2370,10 @@
       const clb = (p) => (p === P && CLB[p.cls] ? CLB[p.cls].v * (V.up[CLB[p.cls].k] || 0) : 0);
       /* upCost(u, l): next upgrade level price; gentle ramp so early levels come fast and the last ones are a goal */
       const upCost = (u, l) => u.b * (l + 1) + 10 * l * l;
-      const dm = () => (1 + 0.12 * V.up.dmg) * (1 + eqSt("dmg")) * (1 + wp("dmg")),
+      const dm = () => (1 + 0.12 * V.up.dmg) * (1 + eqSt("dmg")) * (1 + wp("dmg")) * (bless("wrath") ? 1.2 : 1),
         hpm = () => (1 + 0.15 * V.up.vit) * (bless("stone") ? 1.3 : 1) * (1 + wp("hp")) * (1 + eqSt("hp")),
         spm = () => (1 + 0.06 * V.up.spd) * (1 + eqSt("ms")),
-        cdm = () => (1 - 0.08 * V.up.cdr) * (1 - eqSt("cdr"));
+        cdm = () => (1 - 0.08 * V.up.cdr) * (1 - eqSt("cdr")) * (bless("haste") ? 0.8 : 1);
       /* ---------- simulation (runs locally) ---------- */
       let S = { sc: "lobby", ps: [], b: null, pr: [], ao: [], zo: [], rq: [], end: 0, res: 0, tm: 0, at: 0 },
         P = null,
@@ -2763,7 +2768,7 @@
          that fade over time; the master kicks a slave that keeps failing, a slave reports a master that keeps failing.
          Detection, not prevention: the browser still owns the save, so only a real server could make cheats impossible. */
       const AUDIT_ALLOW_DEV = true; /* owner keeps the F2 dev tools for now: their edits are flagged, not punished */
-      const AUDIT_SPENDS = ["cosmetic", "smith", "guild", "skill", "upgrade", "equip", "bjchart"], STRIKE_KICK = 12;
+      const AUDIT_SPENDS = ["cosmetic", "smith", "seraph", "guild", "skill", "upgrade", "equip", "bjchart"], STRIKE_KICK = 12;
       /* auditRules(): biggest single reward (g gold, x XP) per kind and the shortest gap between two (ms), from the game's tables */
       function auditRules() {
         const bonus = (1 + GUILD_MAX * 0.03) * (1 + PASS.bonus);
@@ -3408,7 +3413,7 @@
         [/circle|heal/i, ["stand in the healer circle, +25% dmg", "healer circle on the most hurt guy"]],
         [/engine|dps|build/i, ["dps: engine stacks the longer u live, dont die", "dash then volley, overdrive at x4"]],
         [/gold|money|rich/i, ["raids pay best", "quests from the elder pay well", "barkeep blackjack if u feel lucky", "daily blessing from the maiden"]],
-        [/smith|gear|equip|craft|forge/i, ["smith unlocks at lvl 5", "smith forges gear from raid mats", "merchant stock rerolls every 2 raids", "temper ur gear at the smith, cheaper than a new one"]],
+        [/smith|gear|equip|craft|forge/i, ["smith unlocks from the elder quests", "smith forges gear from raid mats", "merchant stock rerolls every 2 raids", "temper ur gear at the smith, cheaper than a new one"]],
         [/level|xp/i, ["raids give the most xp", "levels give +1% raid gold each"]],
         [/blackjack|barkeep|bj/i, ["natural pays 3x", "the chart next to the table is free", "never hit on 17 lol"]],
         [/quest|elder/i, ["elder has the quests, the ! over his head", "do the elder quests first, free gold"]],
@@ -4119,8 +4124,8 @@
          Near a bank the bot slides along it instead of walking into the water. */
       /* bots have their own progress: the starter NPCs are open to everyone, the others unlock at a level (BOT_NPC_LV).
          HUB_NPCS(v): the NPCs bot v can visit; without v, every NPC (for keeping clear of them). */
-      const BOT_NPC_LV = { class: 3, maiden: 8, smith: 14, herald: 20, barkeep: 1 };
-      const HUB_NPCS = (v) => [ELDER, SHOP, LORE, CLASSN, MAIDEN, SMITH, HERALD, BARKEEP].filter((n) => n && (!v || !n.lk || v.lv >= BOT_NPC_LV[n.lk]));
+      const BOT_NPC_LV = { class: 3, maiden: 8, smith: 8, herald: 20, barkeep: 1, seraph: 4 };
+      const HUB_NPCS = (v) => [ELDER, SHOP, LORE, CLASSN, MAIDEN, SMITH, BARKEEP, SERAPH].filter((n) => n && (!v || !n.lk || v.lv >= BOT_NPC_LV[n.lk]));
       /* dry(x, y, m): true when (x, y) is on the stones and at least m px clear of the water */
       function dry(x, y, m = 12) {
         const rv = riverNear(x, y);
@@ -4433,7 +4438,7 @@
         S.zo = [];
         S.rq = [];
         place(1);
-        P.eng = 1; P.life = 0; P.ucd = ULT.start; P.rev = 0; P.sh = P.sht = 0;
+        P.eng = 1; P.life = 0; P.ucd = bless("dawn") ? 0 : ULT.start; P.rev = 0; P.sh = P.sht = 0; /* Dawn: ultimate ready at once */
         /* ids follow the team order, so every screen in a networked raid agrees on who is who */
         S.ps = (team || raidTeam(S.raid).team || [{ me: 1 }]).map((m, i) => {
           if (m.me) { P.id = i; return P; }
@@ -4748,7 +4753,7 @@
         if (p.hp <= 0) return;
         if (p.inv > 0) { ftxt(p.x, p.y - 24, "DODGE", "#ff9f43"); return; }
         if (p.ar > 0) d *= 0.5;
-        if (p === P) d *= 1 - eqSt("dr") - wp("dr") - (p.cls == "tank" ? clb(p) : 0);
+        if (p === P) d *= (1 - eqSt("dr") - wp("dr") - (p.cls == "tank" ? clb(p) : 0)) * (bless("aegis") ? 0.8 : 1);
         if (p.sh > 0) {
           const s = Math.min(p.sh, d);
           p.sh -= s; d -= s;
@@ -4765,7 +4770,7 @@
       }
       function heal(p, n, src = P) {
         if (p.hp > 0 && p.hp < p.mh) {
-          n *= (src === P ? 1 + eqSt("hl") + wp("hl") + (P.cls == "heal" ? clb(P) : 0) : 1) * (p === P ? 1 + eqSt("hl") : 1);
+          n *= (src === P ? 1 + eqSt("hl") + wp("hl") + (P.cls == "heal" ? clb(P) : 0) + (bless("grace") ? 0.25 : 0) : 1) * (p === P ? 1 + eqSt("hl") + (bless("grace") ? 0.25 : 0) : 1);
           const v = Math.min(p.mh - p.hp, n * aDm(src));
           if (S.b && S.sc == "arena") S.b.thr[src.id] = (S.b.thr[src.id] || 0) + v * 0.6; /* healing draws the boss's eye */
           p.hp += v;
@@ -4784,7 +4789,7 @@
         S.res = 5;
         V.trial = V.trial || {};
         if ((S.trial || 0) >= (V.trial[S.raid] || 0) && (S.trial || 0) < TRIAL.max) { V.trial[S.raid] = (S.trial || 0) + 1; setTimeout(() => toast(`Rune Trial ${V.trial[S.raid]} unlocked for the ${RAIDS[S.raid].n}!`), 1800); }
-        const rw = (RAIDS[S.raid] || RAIDS.small).reward * trialRew(S.trial), g = Math.round((60 + (S.at < 150 ? 20 : 0)) * rw * (1 + gBonus()) * passMul() * (1 + Math.min(0.5, lvlInfo().L * 0.01)) * (1 + fresh())); /* +1% per level, up to +50%; newcomer boost */ /* raid size, guild bonus, Rune Pass */
+        const rw = (RAIDS[S.raid] || RAIDS.small).reward * trialRew(S.trial), g = Math.round((60 + (S.at < 150 ? 20 : 0)) * rw * (1 + gBonus()) * passMul() * (1 + Math.min(0.5, lvlInfo().L * 0.01)) * (1 + fresh()) * (bless("fortune") ? 1.5 : 1)); /* +1% per level, up to +50%; newcomer boost; Fortune */ /* raid size, guild bonus, Rune Pass */
         bountyAdd("raid");
         goldAdd(g, "raid");
         coin = g;
@@ -5704,7 +5709,7 @@
           ["class", CLASSN],
           ["maiden", MAIDEN],
           ["smith", SMITH],
-          ["herald", HERALD],
+          ["seraph", SERAPH], /* the Herald is retired from the hub (8 spots); heraldUI is kept */
           ["barkeep", BARKEEP],
         ])
           if (!npcHidden(n[1])) {
@@ -5734,7 +5739,8 @@
         S.ps = [P];
         if (document.body.classList) document.body.classList.add("g"); /* add, don't reset: a reset dropped "ph" and phones got the desktop layout */
         toHub();
-        if (lvlInfo().L >= SMITH_LV && !isUnl("smith")) setTimeout(() => unlockNpc("smith"), 1500); /* already past the level */
+        /* saves already past a quest that unlocks an NPC get it (quiet, no fanfare) */
+        QUESTS.forEach((q, i) => { if (q.unlock && V.q > i && !isUnl(q.unlock)) { V.ul = V.ul || {}; V.ul[q.unlock] = true; } });
         if (!V.name) nameUI(); /* first login: ask the name, daily bonus follows */
         else { dailyCheck(); networkAutoJoin(); }
       }
@@ -5752,9 +5758,9 @@
         $("dlg").hidden = false;
         const tn = { elder: ELDER, shop: SHOP, lore: LORE }[w];
         if (tn && tut() < tn.tu) return lockedUI("tut");
-        const ln = { class: CLASSN, maiden: MAIDEN, smith: SMITH, herald: HERALD, barkeep: BARKEEP }[w];
+        const ln = { class: CLASSN, maiden: MAIDEN, smith: SMITH, herald: HERALD, barkeep: BARKEEP, seraph: SERAPH }[w];
         if (ln && !isUnl(ln.lk)) return lockedUI(ln.lk);
-        ({ elder: elderUI, lore: loreUI, shop: shopUI, class: classUI, maiden: maidenUI, smith: smithUI, herald: heraldUI, barkeep: bjUI, qboard: questBoardUI, gboard: guildUI }[w] || shopUI)();
+        ({ elder: elderUI, lore: loreUI, shop: shopUI, class: classUI, maiden: maidenUI, smith: smithUI, seraph: seraphUI, herald: heraldUI, barkeep: bjUI, qboard: questBoardUI, gboard: guildUI }[w] || shopUI)();
       }
       /* ---------- daily login bonus ----------
          7-day cycle; missing a day resets the streak. In: V.dl, V.ds, today's date. Out: gold + dialog. */
@@ -6025,19 +6031,19 @@
           <button class="alt x" onclick="closeDlg()" title="Farewell">Farewell</button>`;
       }
       /* ---------- NPC unlocks (revealed by the Archivist) ---------- */
-      const UNLOCK_ORDER = ["class", "maiden", "smith", "herald"];
+      const UNLOCK_ORDER = ["class", "maiden"]; /* the Archivist reveals these; Seraph and Smith come from quests */
       /* tales heard before each NPC can be revealed (Class Master: first secret page; the rest are a long grind) */
-      /* how each hidden NPC is found: class and maiden through the Archivist's tales, smith by reaching SMITH_LV,
+      /* how each hidden NPC is found: class and maiden through the Archivist's tales, seraph and smith through the Elder's quests,
          herald is a mystery for later (never unlocks yet) */
       const UNLOCK_AT = { class: 0, maiden: 100, smith: Infinity, herald: Infinity }; /* class: luck-based in loreUI, not here */
-      const SMITH_LV = 5; /* crafting early: the Forge is the main gear path */
+      /* the Seraph and the Smith come from the Elder's quests (QUESTS[].unlock); the Maiden and the Herald from the Archivist's tales */
       const isUnl = (k) => !!(V.ul && V.ul[k]);
       /* unlockNpc(k): reveals NPC k with a burst. Out: text for the Archivist dialog. */
       function unlockNpc(k) {
         V.ul = V.ul || {};
         V.ul[k] = true;
         save();
-        const n = { class: CLASSN, maiden: MAIDEN, smith: SMITH, herald: HERALD, barkeep: BARKEEP }[k];
+        const n = { class: CLASSN, maiden: MAIDEN, smith: SMITH, herald: HERALD, barkeep: BARKEEP, seraph: SERAPH }[k];
         n._rv = S.tm; /* slow fade-in */
         burst(n.x, n.y, n.col, 50, 260);
         RINGS.push({ x: n.x, y: n.y, col: n.col, t: 0 });
@@ -6081,7 +6087,9 @@
         const need = UNLOCK_AT[k] || 0,
           hint =
             k == "smith"
-              ? `Hint: a smith only works for the seasoned. Reach level ${SMITH_LV}. (now ${lvlInfo().L})`
+              ? `Hint: a smith only works for veterans. Complete the Elder's quest "Raid Veteran".`
+              : k == "seraph"
+              ? `Hint: light gathers for those who have bled in a raid. Complete the Elder's quest "First Raid".`
               : k == "herald"
                 ? "Hint: nobody knows who this is. Not even the Archivist… yet."
                 : `Hint: the Archivist knows who this is. Listen to his tales.${need ? ` (${Math.min(V.lt || 0, need)}/${need} tales)` : ""}`;
@@ -6126,14 +6134,22 @@
         classUI();
       }
       /* ---------- The Maiden: one free blessing per day ---------- */
+      /* one-raid blessings [key, name, effect, colour, Seraph price]. V.bl holds one; it is spent when the raid ends.
+         The Maiden gives one of the first two free each day; the Seraph sells them all. */
       const BLESS = [
-        ["stone", "🛡 Stone", "+30% max HP next raid", "#4da3ff"],
-        ["swift", "💨 Swift", "Dash cooldown halved next raid", "#5ad7ff"],
+        ["stone", "🛡 Stone", "+30% max HP next raid", "#4da3ff", 70],
+        ["swift", "💨 Swift", "Dash cooldown halved next raid", "#5ad7ff", 60],
+        ["wrath", "🔥 Wrath", "+20% damage next raid", "#ff7a5c", 110],
+        ["haste", "⏳ Haste", "Skill cooldowns -20% next raid", "#b48cff", 100],
+        ["aegis", "✨ Aegis", "-20% damage taken next raid", "#ffe08a", 100],
+        ["grace", "💚 Grace", "+25% healing done and received next raid", "#7dff9a", 90],
+        ["dawn", "🌅 Dawn", "Start the raid with your ultimate ready", "#ffb35a", 120],
+        ["fortune", "💰 Fortune", "+50% gold if you win the raid", "#ffd84a", 80],
       ];
       /* maidenUI(): pick a free blessing once per day; otherwise she tells you to return tomorrow. */
       function maidenUI() {
         const ready = V.mb != dayKey(new Date());
-        const opts = BLESS.map((b) => `<div class="up ${ready ? "can" : ""}" style="--uc:${b[3]}"><div style="min-width:0"><span class="nm">${b[1]}</span><div class="sm">${b[2]}</div></div><button ${ready ? "" : "disabled"} onclick="maidenPick('${b[0]}')">BLESS</button></div>`).join("");
+        const opts = BLESS.slice(0, 2).map((b) => `<div class="up ${ready ? "can" : ""}" style="--uc:${b[3]}"><div style="min-width:0"><span class="nm">${b[1]}</span><div class="sm">${b[2]}</div></div><button ${ready ? "" : "disabled"} onclick="maidenPick('${b[0]}')">BLESS</button></div>`).join("");
         $("dp").innerHTML = `<h2>🌹 The Maiden</h2><p>${ready ? '"Kneel, raider. Choose the grace you will carry into the raid."' : '"I have given all I can today. Return with the dawn."'}</p>${opts}<button class="alt x" onclick="closeDlg()" title="Farewell">Farewell</button>`;
       }
       function maidenPick(k) {
@@ -6151,7 +6167,7 @@
          and level EQ_LEG_LV, like the shop. Recipes: CRAFT_R[tier] = [dust, boss mat, gold]. */
       const SMITH_COST = 80;
       const CRAFT_R = [[2, 0, 40], [4, 1, 80], [7, 2, 140], [12, 4, 220], [18, 6, 350]], SALV = [1, 1, 2, 4, 6], REFINE = { dust: 5, gold: 25 };
-      let SMITH_TAB = "bless", FORGE = { t: "dmg", k: "dmg", r: 0 };
+      let SMITH_TAB = "forge", FORGE = { t: "dmg", k: "dmg", r: 0 };
       /* craftCost(t, r, temper): the materials + gold for tier r of slot t ({mats: {key: n}, gold}); tempering costs 60% */
       function craftCost(t, r, temper) {
         const [d, m, g] = CRAFT_R[r], f = temper ? 0.6 : 1, c = { dust: Math.ceil(d * f) };
@@ -6234,26 +6250,25 @@
         const mats = Object.keys(MATS).map((k) => `<span title="${MATS[k].n}">${MATS[k].e}${(V.mat || {})[k] || 0}</span>`).join(" &nbsp;");
         return `<div class="sm" style="margin:4px 0">Your materials: ${mats}</div>` + h;
       }
-      /* smithUI(): two tabs: Blessing (one per raid, gold) and Forge */
+      /* smithUI(): the Forge (crafting gear from raid drops). Blessings moved to the Seraph. */
       function smithUI() {
-        const busy = !!V.bl;
-        const tabs = `<div class="row" style="gap:6px;margin:4px 0">${[["bless", "✨ Blessing"], ["forge", "⚒️ Forge"]].map(([k, lab]) => `<button class="${SMITH_TAB == k ? "" : "alt"}" onclick="SMITH_TAB='${k}';smithUI()">${lab}</button>`).join("")}</div>`;
-        if (SMITH_TAB == "forge") {
-          $("dp").innerHTML = `<h2>🔨 The Smith</h2><div class="purse"><span class="coin"></span><b>${V.gold}</b></div>${tabs}<p class="sm">"Bring me what the bosses leave behind. I'll make it worth carrying."</p>${forgeUI()}<button class="alt x" onclick="closeDlg()" title="Close">Close</button>`;
-          return;
-        }
-        const opts = BLESS.map((b) => `<div class="up ${!busy && V.gold >= SMITH_COST ? "can" : ""}" style="--uc:${b[3]}"><div style="min-width:0"><span class="nm">${b[1]} edge</span><div class="sm">${b[2]}</div></div><button ${!busy && V.gold >= SMITH_COST ? "" : "disabled"} onclick="smithBuy('${b[0]}')"><span class="coin"></span>${SMITH_COST}</button></div>`).join("");
-        $("dp").innerHTML = `<h2>🔨 The Smith</h2><div class="purse"><span class="coin"></span><b>${V.gold}</b></div>${tabs}<p class="sm">${busy ? '"You already carry a blessing. Spend it in the arena first."' : '"Steel remembers the hammer. One raid\'s worth, no more."'}</p>${opts}<button class="alt x" onclick="closeDlg()" title="Close">Close</button>`;
+        $("dp").innerHTML = `<h2>🔨 The Smith</h2><div class="purse"><span class="coin"></span><b>${V.gold}</b></div><p class="sm">"Bring me what the bosses leave behind. I'll make it worth carrying."</p>${forgeUI()}<button class="alt x" onclick="closeDlg()" title="Close">Close</button>`;
       }
-      function smithBuy(k) {
-        if (V.bl || V.gold < SMITH_COST) return;
-        goldAdd(-SMITH_COST, "smith");
+      /* ---------- The Seraph: one-raid blessings for gold (one at a time, spent when the raid ends) ---------- */
+      function seraphUI() {
+        const busy = !!V.bl, cur = BLESS.find((b) => b[0] == V.bl);
+        const opts = BLESS.map((b, q) => `<div class="up ${!busy && V.gold >= b[4] ? "can" : ""}" style="--uc:${b[3]};animation:iIn .3s ease-out ${q * 40}ms both"><div style="min-width:0;flex:1"><span class="nm">${b[1]}</span><div class="sm">${b[2]}</div></div><button ${!busy && V.gold >= b[4] ? "" : "disabled"} onclick="seraphBuy('${b[0]}')"><span class="coin"></span>${b[4]}</button></div>`).join("");
+        $("dp").innerHTML = `<h2>👼 The Seraph</h2><div class="purse"><span class="coin"></span><b>${V.gold}</b></div><p>${busy ? `"The light of <b style="color:${cur[3]}">${cur[1]}</b> already rests on you. Carry it into battle first."` : '"Kneel, child of the raid. Choose the light that will walk beside you, for one battle."'}</p>${opts}<button class="alt x" onclick="closeDlg()" title="Farewell">Farewell</button>`;
+      }
+      function seraphBuy(k) {
+        const b = BLESS.find((q) => q[0] == k);
+        if (!b || V.bl || V.gold < b[4]) return;
+        goldAdd(-b[4], "seraph");
         V.bl = k;
         save();
-        if (P) burst(P.x, P.y, "#ff9f43", 26, 160);
-        sfx("slam", 1.8);
-        setTimeout(() => sfx("coin"), 120);
-        smithUI();
+        if (P) { burst(P.x, P.y, b[3], 34, 180); RINGS.push({ x: P.x, y: P.y, col: "#fff6c8", t: 0 }); }
+        sfx("win", 1.6);
+        seraphUI();
       }
       /* ---------- The Herald: your raid records ---------- */
       /* heraldUI(): shows wins, losses, best time, level, streak and tales heard. */
@@ -6777,6 +6792,7 @@
           goldAdd(q.r, "quest");
           gainXP(100, "quest");
           toast("Quest complete! +" + q.r + " gold");
+          if (q.unlock && !isUnl(q.unlock)) setTimeout(() => unlockNpc(q.unlock), 700);
           V.q++;
           V.qs = 0;
         }
@@ -7024,7 +7040,7 @@
       }
       function devMats() { for (const k in MATS) matAdd(k, 10); devS(); }
       function devClearInv() { V.eq = { bag: [], on: {} }; V.mat = {}; devS(); }
-      function devUnlock() { V.ul = { class: true, maiden: true, smith: true, herald: true, barkeep: true }; devS(); }
+      function devUnlock() { V.ul = { class: true, maiden: true, smith: true, herald: true, barkeep: true, seraph: true }; devS(); }
       function devBoss(f) {
         const b = S.b;
         if (!b || S.end) return;
@@ -7689,6 +7705,23 @@
         c.translate(0, Math.sin(t * 1.8 + n.x * 0.05) * 3); /* gentle float; rug and shadow stay on the ground */
         c.scale(br, br);
         const R = n.r || 20; /* body radius */
+        if (n.wings && !ghost) { /* the Seraph: two radiant wings (slow beat) and a halo, drawn behind the disc */
+          const fl = Math.sin(t * 1.6) * 0.08, ga2 = c.globalAlpha;
+          for (const sd of [-1, 1]) {
+            c.save(); c.scale(sd, 1); c.rotate(-0.25 + fl);
+            for (let q = 0; q < 6; q++) { /* feathers, longest on top */
+              const L = 64 - q * 7, a0 = -0.75 + q * 0.24, fg = c.createLinearGradient(R * 0.6, 0, R * 0.6 + L, 0);
+              fg.addColorStop(0, "rgba(255,250,225,1)"); fg.addColorStop(0.6, "rgba(255,226,150,.8)"); fg.addColorStop(1, "rgba(255,200,90,.15)");
+              c.fillStyle = fg; c.globalAlpha = ga2 * (0.95 - q * 0.08);
+              c.save(); c.rotate(a0); c.beginPath(); c.moveTo(R * 0.6, -4); c.quadraticCurveTo(R * 0.6 + L * 0.6, -10, R * 0.6 + L, 0); c.quadraticCurveTo(R * 0.6 + L * 0.6, 6, R * 0.6, 4); c.closePath(); c.fill(); c.restore();
+            }
+            c.restore();
+          }
+          c.globalAlpha = ga2;
+          c.strokeStyle = "#fff3b0"; c.lineWidth = 2.5; c.shadowColor = "#ffe08a"; c.shadowBlur = 10;
+          c.beginPath(); c.ellipse(0, -R - 9 + Math.sin(t * 2) * 1.5, 11, 3.5, 0, 0, 6.3); c.stroke();
+          c.shadowBlur = 0;
+        }
         const bg = c.createRadialGradient(0, -6, 2, 0, 0, R + 1);
         bg.addColorStop(0, "#1c2a36");
         bg.addColorStop(1, "#0b1218");
@@ -9825,37 +9858,49 @@
         g.restore();
         /* back leg (weight-bearing), under the gown */
         P([1, by - 36, 4, by - 24, 5, by - 10, 4, by - 1, 7, by, 9, by - 1, 9, by - 12, 8, by - 26, 7, by - 38], D);
-        /* solid base under the whole gown (waist to hem) so no gap between its panels shows the background */
-        P([-5.2, by - 50, -9.6, by - 45, -11.5, by - 38, -11, by - 30, -11, by - 20, -12.5, by - 8, -13, by, 0, by + 1.5, 12, by, 12, by - 8, 10.5, by - 20, 10.2, by - 30, 10.6, by - 38, 9.2, by - 45, 5.2, by - 50], D);
-        P([-2, by - 48, -1, by - 30, 0, by - 12, 1, by, 6, by, 7, by - 14, 6.6, by - 30, 5, by - 48], DD); /* the deep fold between the panels */
-        /* gown: clinging over the hips, deep folds falling to the hem, open at the front where the leg steps forward */
-        P([-5, by - 48, -10, by - 44, -11.5, by - 38, -11, by - 32, -10.5, by - 22, -12.5, by - 8, -13, by, -4, by + 1.5, 2, by + 1, 4, by, 2, by - 12, 1.5, by - 22, 2, by - 30, 3, by - 38, 4, by - 46, 5, by - 48], M);
-        P([5, by - 48, 9, by - 44, 10.5, by - 38, 10, by - 30, 10.5, by - 20, 12, by - 8, 12, by, 9, by + 1, 7, by, 8, by - 12, 7, by - 24, 6, by - 36, 5, by - 48], D);
-        /* lit flank and hip, the light catching the curve */
-        P([-5, by - 48, -10, by - 44, -11.5, by - 38, -11, by - 32, -10.5, by - 26, -9, by - 30, -8, by - 36, -6, by - 42, -5, by - 48], L);
-        g.fillStyle = "rgba(255,248,225,.45)";
+        /* gown skirt: an A-line flare from the hips, flowing like the bodice. Lit from the left in one soft gradient, curved
+           S-folds (dark crease + lit ridge), a wavy hem pooling on the plinth. The forward leg steps through a front opening. */
+        const sk = g.createLinearGradient(-17, 0, 17, 0);
+        sk.addColorStop(0, L); sk.addColorStop(0.35, L); sk.addColorStop(0.6, M); sk.addColorStop(0.9, D); sk.addColorStop(1, D);
+        /* outline as quadratic pairs: narrow waist, soft round hips (widest at by-36), then a gentle flare to a wavy hem */
+        const skirt = [-4.8, by - 48, -8.6, by - 46.5, -10, by - 41, -11.2, by - 35, -11, by - 28, -11.6, by - 18, -13.4, by - 8, -15, by - 1, -15.6, by + 1.2,
+          -12.5, by + 2.2, -10, by + 0.8, -7, by + 2, -4, by + 0.8, -1, by + 1.8, 2, by + 0.6, 5, by + 1.8, 8, by + 0.6, 11, by + 1.8, 14.2, by + 1,
+          13.8, by - 6, 12.2, by - 16, 10.6, by - 26, 10.4, by - 31, 10.6, by - 38, 9.2, by - 42, 8.2, by - 46.5, 4.8, by - 48];
+        g.fillStyle = sk;
         g.beginPath();
-        g.ellipse(-8.6, by - 37, 1.6, 4.2, 0.12, 0, 6.3);
+        g.moveTo(skirt[0], skirt[1]);
+        for (let k = 2; k + 3 < skirt.length; k += 4) g.quadraticCurveTo(skirt[k], skirt[k + 1], skirt[k + 2], skirt[k + 3]);
+        g.closePath();
         g.fill();
+        /* the front opening behind the stepping leg: a soft shade, not a hard band */
+        { /* fades in from nothing at the waist, so there is no edge across the hips */
+          const og = g.createLinearGradient(0, by - 46, 0, by - 20);
+          og.addColorStop(0, "rgba(90,70,45,0)"); og.addColorStop(1, "rgba(90,70,45,.55)");
+          P([0.4, by - 46, -1.6, by - 30, -4.6, by - 9, -6, by + 1, -0.4, by + 1.4, 0.8, by - 10, 1.2, by - 30, 0.6, by - 46], og);
+        }
+        /* three soft folds sweeping from the hip toward the hem, following her stance */
+        for (const [x0, x1, x2, sgn] of [[-7.5, -9.6, -12.6, -1], [5.5, 7.6, 10.2, 1], [8.2, 10.4, 12.8, 1]]) {
+          const crease = [sgn * 2.5, by - 46, x0, by - 32, x1, by - 15, x1 + (x2 - x1) * 0.5, by - 6, x2, by + 0.8]; /* from the waist, no start line */
+          line(crease, "rgba(90,70,45,.35)", 0.6);
+          line(crease.map((v, k) => (k % 2 ? v : v - sgn * 0.8)), "rgba(255,246,220,.28)", 0.45);
+        }
+        /* a broad lit fold on the sunlit side */
+        P([-6, by - 44, -10.2, by - 30, -12.4, by - 6, -13.4, by + 1, -10.8, by + 0.8, -9.6, by - 10, -7.6, by - 30], "rgba(255,248,225,.22)");
         /* the forward leg through the opening: thigh, knee, calf, bare foot */
-        P([-1, by - 34, -3.5, by - 26, -4.5, by - 19, -3.6, by - 15, -4, by - 9, -5, by - 2, -6, by, -1.5, by + 1, 0, by, 0.5, by - 5, 0.6, by - 12, 1, by - 18, 2, by - 26, 2.5, by - 34], L);
+        P([0.6, by - 40, -2.6, by - 27, -4.5, by - 19, -3.6, by - 15, -4, by - 9, -5, by - 2, -6, by, -1.5, by + 1, 0, by, 0.5, by - 5, 0.6, by - 12, 1, by - 18, 1.6, by - 27, 1, by - 40], L); /* tapers up into the folds: no flat top */
         line([-3.2, by - 24, -3.9, by - 19, -3.2, by - 15], "rgba(120,95,60,.45)", 0.5);
         g.fillStyle = HL;
         g.beginPath();
         g.ellipse(-2.4, by - 22, 0.9, 3.4, 0.1, 0, 6.3);
         g.fill();
-        /* folds: long sweeps from the hip, a few catching light */
-        for (const [x0, cx, x1, col] of [[-6, -9, -11, DD], [-4, -6.5, -8, DD], [3, 4.5, 4.5, DD], [6, 8, 10, DD], [8, 10, 11.5, DD], [-5, -7.5, -9.5, HL], [5, 6.8, 8.5, HL]]) {
-          line([x0, by - 34, cx, by - 18, x1, by - 1], col == HL ? "rgba(255,248,225,.55)" : "rgba(95,75,50,.5)", 0.6);
-        }
-        /* extra facets: narrow lit and shaded planes between the folds */
-        P([-9.5, by - 30, -10.6, by - 18, -11.8, by - 6, -12.2, by - 1, -10.6, by - 1, -10, by - 12, -9, by - 24], "rgba(255,246,220,.28)");
-        P([-6, by - 32, -7.4, by - 20, -8.4, by - 6, -8.6, by, -7.2, by + 0.6, -6.6, by - 10, -5.6, by - 24], "rgba(95,75,50,.22)");
-        P([7, by - 34, 8.6, by - 20, 10, by - 6, 10.6, by, 9.4, by + 0.6, 8.6, by - 10, 7.6, by - 24], "rgba(70,55,35,.3)");
-        P([4, by - 30, 5.2, by - 18, 6, by - 4, 6.2, by, 5.2, by, 4.8, by - 12, 4.2, by - 22], "rgba(255,246,220,.22)");
-        /* hem with a light edge */
-        line([-13, by, -6, by + 2, 1, by + 0.5], HL, 0.9);
-        line([7, by + 0.5, 10, by + 1.2, 12, by], L, 0.9);
+        /* hips: the gown clings, lit on the near curve */
+        g.fillStyle = "rgba(255,248,225,.45)";
+        g.beginPath();
+        g.ellipse(-8.6, by - 38, 1.6, 4.2, 0.12, 0, 6.3);
+        g.fill();
+        /* wavy hem edge, lit along the front */
+        line([-15.6, by + 1.2, -12.5, by + 2.2, -10, by + 0.8, -7, by + 2, -4, by + 0.8], HL, 0.8);
+        line([2, by + 0.6, 5, by + 1.8, 8, by + 0.6, 11, by + 1.8, 14.2, by + 1], "rgba(255,246,220,.45)", 0.6);
         /* waist: narrow, the gown gathered by a corded belt with a rune clasp */
         P([-5, by - 48, -4.6, by - 51, -4.4, by - 53, 0, by - 54, 4.4, by - 53, 4.6, by - 51, 5, by - 48, 0, by - 47, -5, by - 48], M);
         line([-5, by - 49.5, 0, by - 48.5, 5, by - 49.5], DD, 1.2);
@@ -12243,8 +12288,8 @@
           npc(CLASSN, "");
           npc(MAIDEN, V.mb != dayKey(new Date()) ? "bonus" : ""); /* pink marker = free daily blessing ready */
           npc(SMITH, "");
-          npc(HERALD, "");
           npc(BARKEEP, "");
+          npc(SERAPH, V.bl ? "" : "bonus"); /* marker while no blessing is carried */
           npc(LORE, V.lbx > Date.now() ? "bonus" : V.lt ? "" : "new");
         }
         /* healer Circles: soft green light, a turning rune ring, a pulse every second and rising motes */

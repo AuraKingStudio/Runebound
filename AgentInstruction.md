@@ -264,6 +264,10 @@ Built and tested (unit tests plus the `cheat`, `flood`, `econ`, `hphack`, `chat`
 
 - Polish pass (headless playthrough desktop + phone, every menu, full raid, no errors): start() no longer resets body.className (it dropped "ph": phones got the desktop layout until a resize); compass rose star removed from the window background (looked like a "<" glitch); arena ambient life (thorn leaves/petals, void wisps).
 
+- The Seraph (SERAPH, Herald's old spot 150,350; the Herald is retired from the hub: 8 NPC spots): sells one-raid blessings (BLESS: stone, swift, wrath, haste, aegis, grace, dawn, fortune; [key, name, text, colour, price]); radiant wings + halo drawn behind the disc (n.wings). The Maiden still gives one of the first two free daily. The Smith is crafting only.
+- NPC unlocks: Seraph = quest "First Raid" turn-in, Smith = "Raid Veteran" (QUESTS[].unlock, old saves past the quest get them silently in start()); Archivist reveals Class Master + Maiden.
+- Statue skirt redrawn (A-line, folds and front opening grow from the waist: no mid-hip cut).
+
 ## Not done / open
 
 - Host migration and reconnect: a hub dies when its host leaves.
