@@ -280,7 +280,9 @@ Built and tested (unit tests plus the `cheat`, `flood`, `econ`, `hphack`, `chat`
 - Pending (owner held it): Archivist replies + secret chats + Maiden unlocked by a riddle answer (scratchpad lore2.py ready).
 
 - The Maiden is now a rare trader (MTRADE, 3 trades/day V.mtr): Eye<->Heart, 12 shards -> Eye, 12 bark -> Heart, 5 shards <-> 4 bark, 30 dust + 200 gold -> random rare; her free daily grace (stone/swift) stays.
-- Planned: player auction house. Needs server-authoritative wallets/escrow on the VPS (see rule 8) before it can be safe.
+- Player market (Merchant > Market tab), server escrow (owner's choice): src/market.js on the hub service, routes /api/market/{browse,sell,buy,cancel,collect}. Listing moves the item from the save to the server; buy delivers it (client pays gold); sales pay out minus 5% tax via Collect; 48 h expiry returns items; max 6 open per player; max price 1M. Identity = private token localStorage rb_mtok, server stores only its sha256. Data: market.json (gitignored), atomic temp+rename writes, debounced 500 ms. Known gap: wallets are still client-side (an edited save can list items or skip paying); fix = server wallets on the VPS (rule 8).
+- Class Master removed from the hub: class change is the top-bar "Class" button (classOpen), tutorial step 1 points there. The Maiden (trader) stands on the Class Master's old spot (662,476); 450,528 is free for the planned Pet NPC.
+- Audit: blessing check accepts all BLESS keys; "market" income rule added.
 
 ## Not done / open
 

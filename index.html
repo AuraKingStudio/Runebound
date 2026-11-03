@@ -1380,7 +1380,7 @@
     <div id="chat" hidden><div id="chlog"></div><div id="chrow"><input id="chin" maxlength="80" autocomplete="off" placeholder="Press Enter to chat" /><div id="emo"></div></div></div>
     <div id="btns">
       <button id="bd" class="sk"></button><button id="bu" class="sk"></button><button id="b0"></button><button id="b1"></button><button id="b2"></button
-      ><button id="bi" hidden>Enter arena</button><button id="bil" class="bic" hidden onclick="invCycle(-1)">◀</button><button id="bir" class="bic" hidden onclick="invCycle(1)">▶</button><div id="tlbar"><span id="gp"><i class="coin"></i><b id="gn">0</b></span></div><div id="mlbar"><button id="bt" data-ic="🎖️">🎖️ Titles</button><button id="bfb" data-ic="💬" onclick="fbOpen()" title="Tell us what you think, or report a bug">💬 Feedback</button><button id="blk" data-ic="🔗" class="hb" title="Copy the lobby link: friends who open it join you" hidden>🔗 Copy ID</button></div><div id="topc"><button id="bq" data-ic="📜" class="hb">📜 Quests</button><button id="bg" class="hb">🛡 Guild</button><button id="bs" data-ic="✨" class="hb">✨ Shop</button><button id="bp" data-ic="👥" class="hb">👥 Party</button><button id="binv" data-ic="🎒" class="hb" onclick="invOpen()">🎒 Inventory</button><button id="bset" data-ic="⚙️" class="hb" onclick="setOpen()" title="Settings">⚙️ Settings</button></div><div id="ptl" hidden></div>
+      ><button id="bi" hidden>Enter arena</button><button id="bil" class="bic" hidden onclick="invCycle(-1)">◀</button><button id="bir" class="bic" hidden onclick="invCycle(1)">▶</button><div id="tlbar"><span id="gp"><i class="coin"></i><b id="gn">0</b></span></div><div id="mlbar"><button id="bt" data-ic="🎖️">🎖️ Titles</button><button id="bfb" data-ic="💬" onclick="fbOpen()" title="Tell us what you think, or report a bug">💬 Feedback</button><button id="blk" data-ic="🔗" class="hb" title="Copy the lobby link: friends who open it join you" hidden>🔗 Copy ID</button></div><div id="topc"><button id="bq" data-ic="📜" class="hb">📜 Quests</button><button id="bg" class="hb">🛡 Guild</button><button id="bs" data-ic="✨" class="hb">✨ Shop</button><button id="bp" data-ic="👥" class="hb">👥 Party</button><button id="bcls" data-ic="⚔️" class="hb" onclick="classOpen()">⚔️ Class</button><button id="binv" data-ic="🎒" class="hb" onclick="invOpen()">🎒 Inventory</button><button id="bset" data-ic="⚙️" class="hb" onclick="setOpen()" title="Settings">⚙️ Settings</button></div><div id="ptl" hidden></div>
     </div>
     <script>
       /* Browser networking block: inputs are hub leases, SDP and game messages; outputs are peer events.
@@ -1720,8 +1720,15 @@
           const url = directoryUrl && directoryUrl != "room" ? directoryUrl : "http://localhost:8787";
           return fetch(url + "/api/feedback", { method: "POST", headers: { "content-type": "application/json" }, body: JSON.stringify(data), cache: "no-store" }).then((r) => r.ok);
         }
+        /* market(action, body): player market calls on the hub service (server escrow). Resolves {ok, status, data}. */
+        function market(action, body) {
+          const url = directoryUrl && directoryUrl != "room" ? directoryUrl : "http://localhost:8787";
+          return fetch(url + "/api/market/" + action, { method: "POST", headers: { "content-type": "application/json" }, body: JSON.stringify(body || {}), cache: "no-store" })
+            .then((r) => r.json().then((data) => ({ ok: r.ok, status: r.status, data })), () => ({ ok: false, status: 0, data: { error: "The market is offline." } }));
+        }
         window.RBNet = Object.freeze({
           sendFeedback,
+          market,
           setHandlers,
           setIceServers,
           configureDirectory,
@@ -1816,7 +1823,7 @@
         CLASSN = { lk: "class", fx: "banners", tu: 1, x: 662, y: 476, ic: "⚔", nm: "The Class Master", col: "#5dff8a", icons: ["tank", "dps", "heal"],
           orbit: { r: 9, a: 0.55, gap: 0.95 } },
         /* The Maiden (rose): a rose bloom */
-        MAIDEN = { lk: "maiden", fx: "roses", x: 450, y: 528, ic: "🌹", nm: "The Maiden", col: "#ff8fc8",
+        MAIDEN = { lk: "maiden", fx: "roses", x: 662, y: 476, /* the trader took the Class Master's spot; 450,528 is free for the pet NPC */ ic: "🌹", nm: "The Maiden", col: "#ff8fc8",
           g: "M0-11c5 0 8 4 6 8 4 0 5 5 1 7-1 4-6 5-7 2-1 3-6 2-7-2-4-2-3-7 1-7-2-4 1-8 6-8z" },
         /* The Smith (orange): an anvil */
         SMITH = { lk: "smith", fx: "arms", fa: 1, x: 238, y: 476, ic: "🔨", nm: "The Smith", col: "#ff9f43",
@@ -2769,7 +2776,7 @@
          that fade over time; the master kicks a slave that keeps failing, a slave reports a master that keeps failing.
          Detection, not prevention: the browser still owns the save, so only a real server could make cheats impossible. */
       const AUDIT_ALLOW_DEV = true; /* owner keeps the F2 dev tools for now: their edits are flagged, not punished */
-      const AUDIT_SPENDS = ["cosmetic", "smith", "seraph", "maiden", "guild", "skill", "upgrade", "equip", "bjchart"], STRIKE_KICK = 12;
+      const AUDIT_SPENDS = ["cosmetic", "smith", "seraph", "maiden", "market", "guild", "skill", "upgrade", "equip", "bjchart"], STRIKE_KICK = 12;
       /* auditRules(): biggest single reward (g gold, x XP) per kind and the shortest gap between two (ms), from the game's tables */
       function auditRules() {
         const bonus = (1 + GUILD_MAX * 0.03) * (1 + PASS.bonus);
@@ -2779,6 +2786,7 @@
           lore: { g: Math.max(150, ...Object.values(TALE_MS).map((m) => m[0])), x: 150, gap: 700 },
           bounty: { g: Math.max(...BOUNTIES.map((b) => b.g)), x: Math.max(...BOUNTIES.map((b) => b.x)), gap: 1000 },
           quest: { g: Math.max(...QUESTS.map((q) => q.r)), x: 100, gap: 2000 },
+          market: { g: 950000, x: 0, gap: 0 }, /* sale payouts (server escrow, capped by the market's max price minus tax) */
         };
       }
       /* netAudit(prev, snap, windowMs): In: last accepted stats (null on the first audit), a snapshot with its ledger slice,
@@ -2786,7 +2794,7 @@
       function netAudit(prev, snap, windowMs) {
         const reasons = [], R = auditRules(), keys = UPG.map((u) => u.k), int = (n, lo, hi) => Number.isInteger(n) && n >= lo && n <= hi;
         if (!snap || !int(snap.g, 0, 1e9) || !int(snap.xp, 0, 1e9) || !Array.isArray(snap.up) || snap.up.length != keys.length ||
-            !snap.up.every((l) => int(l, 0, MAXL)) || !["", "stone", "swift"].includes(snap.bl) || !CL[snap.cls] ||
+            !snap.up.every((l) => int(l, 0, MAXL)) || !["", ...BLESS.map((b) => b[0])].includes(snap.bl) || !CL[snap.cls] ||
             !Number.isFinite(snap.hp) || !int(snap.mh, 1, 1e5) || !Array.isArray(snap.led) || snap.led.length > 150 ||
             !snap.led.every((e) => Array.isArray(e) && (e.length == 3 || (e.length == 4 && keys.includes(e[3]))) &&
               typeof e[0] == "string" && e[0].length <= 12 && int(e[1], -1e6, 1e6) && int(e[2], 0, 1e5)))
@@ -4126,7 +4134,7 @@
       /* bots have their own progress: the starter NPCs are open to everyone, the others unlock at a level (BOT_NPC_LV).
          HUB_NPCS(v): the NPCs bot v can visit; without v, every NPC (for keeping clear of them). */
       const BOT_NPC_LV = { class: 3, maiden: 8, smith: 8, herald: 20, barkeep: 1, seraph: 4 };
-      const HUB_NPCS = (v) => [ELDER, SHOP, LORE, CLASSN, MAIDEN, SMITH, BARKEEP, SERAPH].filter((n) => n && (!v || !n.lk || v.lv >= BOT_NPC_LV[n.lk]));
+      const HUB_NPCS = (v) => [ELDER, SHOP, LORE, MAIDEN, SMITH, BARKEEP, SERAPH].filter((n) => n && (!v || !n.lk || v.lv >= BOT_NPC_LV[n.lk]));
       /* dry(x, y, m): true when (x, y) is on the stones and at least m px clear of the water */
       function dry(x, y, m = 12) {
         const rv = riverNear(x, y);
@@ -5621,7 +5629,7 @@
          0 move -> Elder, 1 talk to Elder -> Merchant, 2 open shop -> Archivist, 3 listen -> portal, 4 done */
       const tut = () => (V.tut == null ? 0 : V.tut);
       const TUT_DONE = 5;
-      const TUT_TXT = ["Move with WASD, the joystick or the stick", "Choose your class at the Class Master", "Talk to the Elder", "Visit the Merchant", "Listen to the Archivist", ""];
+      const TUT_TXT = ["Move with WASD, the joystick or the stick", "Choose your class (⚔️ Class at the top)", "Talk to the Elder", "Visit the Merchant", "Listen to the Archivist", ""];
       /* tutMigrate(): saves from the old 4-step tutorial (move, Elder, Merchant, Archivist) map onto the new steps */
       function tutMigrate() {
         if (V.tv == 3) return;
@@ -5637,8 +5645,8 @@
         V.tut = from + 1;
         save();
         if (from == 0) (V.ul = V.ul || {}), (V.ul.class = true); /* the Class Master is there from the start of the tutorial */
-        const n = [CLASSN, ELDER, SHOP, LORE, PORTAL][from];
-        n._rv = S.tm; /* slow fade-in */
+        const n = [P, ELDER, SHOP, LORE, PORTAL][from] || P; /* step 1 is the Class button now: the flourish plays on you */
+        if (n !== P) n._rv = S.tm; /* slow fade-in */
         burst(n.x, n.y, n.col || "#5af0dc", 40, 220);
         RINGS.push({ x: n.x, y: n.y, col: n.col || "#5af0dc", t: 0 });
         sfx("win", 1.1);
@@ -5707,7 +5715,6 @@
           ["elder", ELDER],
           ["shop", SHOP],
           ["lore", LORE],
-          ["class", CLASSN],
           ["maiden", MAIDEN],
           ["smith", SMITH],
           ["seraph", SERAPH], /* the Herald is retired from the hub (8 spots); heraldUI is kept */
@@ -6111,6 +6118,8 @@
         heal: "Keeps the party alive: heal the lowest ally, drop a healing circle (allies inside also hit 25% harder), dodge the boss's spells. The boss's Doom lands on you: touch its 3 runes.",
       };
       /* classUI(): three class cards with stats and a CHOOSE button. */
+      /* classOpen(): the class window from the top bar (it used to be the Class Master NPC) */
+      function classOpen() { if (P && !dlgOpen() && S.sc == "hub") { CUR_DLG = "class"; $("dlg").hidden = false; classUI(); sfx("ui"); } }
       function classUI() {
         const ms = classWait(),
           locked = tut() >= TUT_DONE && ms > 0,
@@ -6842,13 +6851,100 @@
         save();
         elderUI();
       }
+      /* ---------- player market (Merchant > Market): trade materials and gear for gold, server escrow ----------
+         Selling hands the item to the server (removed from your save once the server accepts it). Buying pays gold and the item
+         arrives at once. Sales pay out (minus a 5% tax) through Collect, as do expired listings (48 h) coming back.
+         Identity: a private random token (localStorage rb_mtok, never shown); the server only keeps its hash. */
+      let MKT = { list: [], pending: 0, tax: 0.05, err: "", filter: "all", sell: null, busy: false };
+      const mktTok = () => { let t = ""; try { t = localStorage.getItem("rb_mtok") || ""; } catch (e) {} if (!/^[a-f0-9]{32}$/.test(t)) { t = [...crypto.getRandomValues(new Uint8Array(16))].map((b) => b.toString(16).padStart(2, "0")).join(""); try { localStorage.setItem("rb_mtok", t); } catch (e) {} } return t; };
+      const mktName = (it) => (it.k == "mat" ? `${MATS[it.m].e} ${it.n}× ${MATS[it.m].n}` : `${TIERS[it.r][0]} ${EQ_N[it.g]}`);
+      const mktCol = (it) => (it.k == "mat" ? MATS[it.m].col : TIERS[it.r][1]);
+      async function mktCall(action, body) {
+        if (!window.RBNet || !RBNet.market) return { ok: false, data: { error: "The market is offline." } };
+        return RBNet.market(action, Object.assign({ tok: mktTok() }, body));
+      }
+      async function mktRefresh() {
+        const r = await mktCall("browse", {});
+        if (r.ok) { MKT.list = r.data.listings || []; MKT.pending = r.data.pending || 0; MKT.tax = r.data.tax ?? 0.05; MKT.err = ""; } else MKT.err = r.data.error || "The market is offline.";
+        if (CUR_DLG == "shop" && SHOP_TAB == "mk") marketUI(true);
+      }
+      async function mktBuy(id) {
+        const L = MKT.list.find((x) => x.id == id);
+        if (!L || MKT.busy || V.gold < L.price) return;
+        MKT.busy = true;
+        const r = await mktCall("buy", { id });
+        MKT.busy = false;
+        if (!r.ok) { toast(r.data.error || "Could not buy."); return mktRefresh(); }
+        goldAdd(-r.data.price, "market");
+        mktGive(r.data.item);
+        save(); sfx("coin"); toast("Bought: " + mktName(r.data.item));
+        mktRefresh();
+      }
+      /* mktGive(item): put a market item into your save */
+      function mktGive(it) {
+        if (it.k == "mat") matAdd(it.m, it.n);
+        else { V.eq = V.eq || { bag: [], on: {} }; let id; do id = "k" + Date.now().toString(36).slice(-6) + ((Math.random() * 1296) | 0).toString(36); while (V.eq.bag.some((b) => b.id == id)); V.eq.bag.push({ id, t: it.t, k: it.g, r: it.r }); V.eq.bag = V.eq.bag.slice(-40); }
+      }
+      async function mktSell() {
+        const S0 = MKT.sell, price = Math.floor(+($("mkp") || {}).value || 0), qty = Math.floor(+($("mkq") || {}).value || 1);
+        if (!S0 || MKT.busy || price < 1) return toast("Set a price first.");
+        let item;
+        if (S0.k == "mat") { if (qty < 1 || qty > ((V.mat || {})[S0.m] || 0)) return toast("You don't have that many."); item = { k: "mat", m: S0.m, n: qty }; }
+        else { const g = (V.eq?.bag || []).find((b) => b.id == S0.id); if (!g || Object.values(V.eq.on || {}).includes(g.id)) return toast("Take it off first."); item = { k: "gear", t: g.t, g: g.k, r: g.r }; }
+        MKT.busy = true;
+        const r = await mktCall("sell", { item, price, name: pname() });
+        MKT.busy = false;
+        if (!r.ok) return toast(r.data.error || "Could not list it.");
+        if (item.k == "mat") V.mat[item.m] -= item.n; else V.eq.bag = V.eq.bag.filter((b) => b.id != S0.id); /* the server holds it now */
+        MKT.sell = null;
+        save(); sfx("ui"); toast("Listed: " + mktName(item));
+        mktRefresh();
+      }
+      async function mktCancel(id) {
+        const r = await mktCall("cancel", { id });
+        if (r.ok) { mktGive(r.data.item); save(); toast("Back in your bag: " + mktName(r.data.item)); } else toast(r.data.error || "Could not cancel.");
+        mktRefresh();
+      }
+      async function mktCollect() {
+        const r = await mktCall("collect", {});
+        if (!r.ok) return toast(r.data.error || "The market is offline.");
+        let g = 0, n = 0;
+        for (const p of r.data.payouts || []) { if (p.type == "gold" && p.n > 0) { goldAdd(Math.floor(p.n), "market"); g += Math.floor(p.n); } else if (p.type == "item" && p.item) { mktGive(p.item); n++; } }
+        save(); if (g || n) { sfx("coin"); toast(`Collected ${g ? "+" + g + " gold" : ""}${g && n ? " · " : ""}${n ? n + " item(s) returned" : ""}`); }
+        mktRefresh();
+      }
+      function marketUI(noFetch) {
+        SHOP_TAB = "mk";
+        if (!noFetch) mktRefresh();
+        const tabs = `<div class="row"><button class="alt" onclick="shopUI('up')">Upgrades</button><button class="claim" onclick="shopUI('mk')">Market</button><button class="alt" onclick="shopUI('eq')">Equipment</button></div>`;
+        const F = MKT.filter, list = MKT.list.filter((L) => F == "all" || (F == "mat" ? L.item.k == "mat" : L.item.k == "gear"));
+        const pill = (k, lab) => `<span onclick="MKT.filter='${k}';marketUI(true)" style="cursor:pointer;padding:3px 9px;border-radius:6px;border:1px solid ${F == k ? "#ffe08a" : "var(--ln)"};color:${F == k ? "#ffe08a" : "#f3e6c8"};background:rgba(0,0,0,.25);font:bold 12px Georgia">${lab}</span>`;
+        let h = `<h2>💰 The Merchant</h2><div class="purse"><span class="coin"></span><b>${V.gold}</b></div>${tabs}`;
+        if (MKT.err) h += `<p class="sm" style="color:#ff9a8a">${esc(MKT.err)} (the market runs on the hub service)</p>`;
+        h += `<div class="row" style="justify-content:space-between"><span class="sm">Trade with other players · ${Math.round(MKT.tax * 100)}% market tax on sales</span><button class="${MKT.pending ? "" : "alt"}" onclick="mktCollect()">Collect${MKT.pending ? " (" + MKT.pending + ")" : ""}</button></div>`;
+        h += `<div class="row" style="gap:4px">${pill("all", "All")}${pill("mat", "Materials")}${pill("gear", "Gear")}</div>`;
+        h += list.length ? list.slice().reverse().map((L) => `<div class="up" style="--uc:${mktCol(L.item)}"><div style="min-width:0;flex:1"><span class="nm">${mktName(L.item)}</span><div class="sm">by ${esc(L.name)} · ${Math.max(1, Math.round((L.exp - Date.now()) / 3600e3))} h left</div></div>${L.mine ? `<button class="alt" onclick="mktCancel('${L.id}')">Cancel</button>` : `<button ${V.gold >= L.price ? "" : "disabled"} onclick="mktBuy('${L.id}')"><span class="coin"></span>${L.price}</button>`}</div>`).join("") : `<p class="sm" style="opacity:.7">${MKT.err ? "" : "Nothing for sale right now. Be the first!"}</p>`;
+        /* sell */
+        const mats = Object.keys(MATS).filter((k) => (V.mat || {})[k] > 0), gear = (V.eq?.bag || []).filter((b) => eqOk(b) && !Object.values(V.eq.on || {}).includes(b.id));
+        h += `<div class="mast"><span class="sm">Sell (the item leaves your bag while it is listed)</span></div><div class="row" style="gap:4px;flex-wrap:wrap">`;
+        h += mats.map((k) => `<span onclick="MKT.sell={k:'mat',m:'${k}'};marketUI(true)" style="cursor:pointer;padding:3px 8px;border-radius:6px;border:1px solid ${MKT.sell?.m == k ? "#ffe08a" : "var(--ln)"};background:rgba(0,0,0,.25);font:12px Georgia">${MATS[k].e} ${V.mat[k]}</span>`).join("");
+        h += gear.map((b) => `<span onclick="MKT.sell={k:'gear',id:'${b.id}'};marketUI(true)" style="cursor:pointer;padding:3px 8px;border-radius:6px;border:1px solid ${MKT.sell?.id == b.id ? "#ffe08a" : TIERS[b.r][1]};color:${TIERS[b.r][1]};background:rgba(0,0,0,.25);font:12px Georgia">${EQ_N[b.k]}</span>`).join("");
+        h += mats.length || gear.length ? "</div>" : `<span class="sm">Nothing to sell yet: win raids for materials, or spare gear.</span></div>`;
+        if (MKT.sell) {
+          const S0 = MKT.sell, max = S0.k == "mat" ? V.mat[S0.m] || 0 : 1;
+          h += `<div class="row" style="gap:8px;align-items:center;flex-wrap:wrap">${S0.k == "mat" ? `<label class="sm">Qty <input id="mkq" type="number" min="1" max="${max}" value="${max}" style="width:64px"></label>` : ""}<label class="sm">Price <input id="mkp" type="number" min="1" max="1000000" value="" placeholder="gold" style="width:90px"></label><button onclick="mktSell()">List it</button></div>`;
+        }
+        $("dp").className = "pn wide";
+        $("dp").innerHTML = h + `<button class="alt x" onclick="closeDlg()" title="Close">Close</button>`;
+      }
       /* shop screen. In: V.gold, V.up. justBought = key of the card to flash after a purchase. */
       let justBought = "";
       let SHOP_TAB = "up";
       function shopUI(tab = SHOP_TAB) {
         tutNext(3);
         SHOP_TAB = tab;
-        const tabs = `<div class="row"><button class="${tab == "up" ? "claim" : "alt"}" onclick="shopUI('up')">Upgrades</button><button class="${tab == "eq" ? "claim" : "alt"}" onclick="shopUI('eq')">Equipment</button></div>`;
+        if (tab == "mk") return marketUI();
+        const tabs = `<div class="row"><button class="${tab == "up" ? "claim" : "alt"}" onclick="shopUI('up')">Upgrades</button><button class="alt" onclick="shopUI('mk')">Market</button><button class="${tab == "eq" ? "claim" : "alt"}" onclick="shopUI('eq')">Equipment</button></div>`;
         if (tab == "eq") {
           const n = Math.floor((V.rc || 0) / 2), own = V.eq?.bag || [];
           V.eqs = V.eqs || 1 + Math.floor(Math.random() * 1e6);
@@ -7478,6 +7574,7 @@
         $("chat").hidden = S.sc != "hub" || !P;
         $("bt").hidden = true; /* Titles, Feedback and Copy ID moved into Settings (cleaner HUD) */
         $("binv").hidden = tut() < TUT_DONE || S.sc != "hub";
+        $("bcls").hidden = tut() < 1 || S.sc != "hub"; /* class change (the Class Master left the hub): from tutorial step 2 on */
         $("bset").hidden = !P;
         $("bfb").hidden = true;
         $("blk").hidden = true;
@@ -7795,7 +7892,7 @@
           const ph = (t % 6) / 1.1, sw = Math.floor(t / 6) % 2, s = ph < 1 ? ph : 1;
           const e = s < 1 ? 0.5 - Math.cos(s * Math.PI) / 2 : 1;
           const cards = [["A", "♠"], ["K", "♥"]].map((cd, k) => {
-            const from = (k ^ sw) ? 13.6 : -13.6, to = s < 1 ? -from : from, x = from + (to - from) * (s < 1 ? e : 0);
+            const from = (k ^ sw) ? 13.6 : -13.6, x = s < 1 ? from - 2 * from * e : -from; /* ends on the other side and stays there: the next shuffle starts from it */
             return { cd, x, lift: s < 1 ? Math.sin(s * Math.PI) * (k ? -10 : 6) : 0, a: (x / 13.6) * 0.2, front: s < 1 ? (k ? s > 0.5 : s <= 0.5) : k == 1 };
           }).sort((p, q) => p.front - q.front);
           for (const q of cards) {
@@ -12538,7 +12635,6 @@
         if (S.sc == "hub") {
           npc(ELDER, V.q >= QUESTS.length ? "" : ["new", "active", "ready"][V.qs]);
           npc(SHOP, "");
-          npc(CLASSN, "");
           npc(MAIDEN, V.mb != dayKey(new Date()) ? "bonus" : ""); /* pink marker = free daily blessing ready */
           npc(SMITH, "");
           npc(BARKEEP, "");
@@ -12798,7 +12894,7 @@
             const tx = "TUTORIAL " + (tut() + 1) + "/" + TUT_DONE + " · " + TUT_TXT[tut()];
             c.strokeText(tx, 450, 24);
             c.fillText(tx, 450, 24);
-            const tg = [null, CLASSN, ELDER, SHOP, LORE][tut()];
+            const tg = [null, null, ELDER, SHOP, LORE][tut()]; /* step 1: the Class button (no arrow on the map) */
             if (tg) {
               /* arrow position converted from world to screen-fixed units (HUD transform is active here) */
               const ax = (tg.x - CAM.x),

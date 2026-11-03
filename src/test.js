@@ -126,7 +126,7 @@ ok(T.HUBV().filter(v=>!v.bot).length>=1&&T.HUBV().some(v=>v.out||!v.bot),'hub: r
 ok(T.hubJoin('real0',{})===null,'hub: the same player cannot join twice');
 for(let i=0;i<12;i++)T.hubLeave('real'+i);ok(!T.HUBV().some(v=>!v.bot),'hub: leaving removes the player');
 {const s0=T.BOT_STUCK(),n0=T.HUBV().length;for(let i=0;i<60*240;i++)T.step(1/60);const g=T.BOT_STUCK()-s0;console.log('  bot give-ups in 240s:',g,'bots',n0);ok(g<=2,'hub: bots path around the river (rarely give up stuck)');}
-{const lo=T.HUB_NPCS({lv:1}),hi=T.HUB_NPCS({lv:60});ok(lo.every(n=>!n.lk||n.lk=='barkeep')&&hi.length==8,'hub: bots only visit NPCs their level has unlocked');}
+{const lo=T.HUB_NPCS({lv:1}),hi=T.HUB_NPCS({lv:60});ok(lo.every(n=>!n.lk||n.lk=='barkeep')&&hi.length==7,'hub: bots only visit NPCs their level has unlocked');}
 /* ---------- crafting at the Smith ---------- */
 {const V=T.V();V.mat={dust:100,shard:30,bark:30};V.gold=2000;V.eq={bag:[],on:{}};
 Object.assign(T.FORGE,{t:'dmg',k:'wd',r:2});const c=T.craftCost('dmg',2);T.craftMake();
@@ -166,6 +166,20 @@ ok(T.BLESS.length>=8,'seraph: 8 blessings');}
 T.maidTrade('e2h');ok(V.mat.eye==1&&V.mat.heart==1,'maiden: swaps an Eye for a Heart');
 T.maidTrade('gamble');ok(V.mat.dust==0&&V.gold==300&&(V.mat.eye+V.mat.heart)==3,'maiden: the sealed rose gives a random rare');
 V.mat={eye:5};T.maidTrade('e2h');ok(V.mat.eye==5,'maiden: 3 trades per day');T.maidenUI();ok(true,'maiden: window renders');V.mat={};V.mtr=null;}
+/* ---------- player market (server escrow, src/market.js) ---------- */
+{const {createMarket,TTL_MS}=require('./market.js'),fs2=require('fs'),os2=require('os'),path2=require('path');const f=path2.join(os2.tmpdir(),'rb_market_test_'+Date.now()+'.json');let clock=1e12;
+const M=createMarket({file:f,now:()=>clock}),A='a'.repeat(32),B='b'.repeat(32);
+let [st,v]=M.sell({tok:A,name:'Alice',item:{k:'mat',m:'shard',n:5},price:100});ok(st==200&&v.listing.mine,'market: a player lists materials');const id=v.listing.id;
+ok(M.sell({tok:A,item:{k:'mat',m:'gold',n:5},price:10})[0]==400&&M.sell({tok:A,item:{k:'mat',m:'shard',n:5},price:0})[0]==400&&M.sell({tok:'x',item:{k:'mat',m:'shard',n:1},price:5})[0]==400,'market: invalid items, prices and keys are refused');
+ok(M.buy({tok:A,id})[0]==409,'market: you cannot buy your own listing');
+[st,v]=M.buy({tok:B,id});ok(st==200&&v.item.m=='shard'&&v.item.n==5&&v.price==100,'market: a buyer gets the item from escrow');
+ok(M.buy({tok:B,id})[0]==404,'market: a listing sells only once (no duplicates)');
+[st,v]=M.collect({tok:A});ok(v.payouts.length==1&&v.payouts[0].n==95,'market: the seller collects the gold minus 5% tax');ok(M.collect({tok:A})[1].payouts.length==0,'market: payouts are collected only once');
+[st,v]=M.sell({tok:A,item:{k:'gear',t:'dmg',g:'wd',r:3},price:500});clock+=TTL_MS+1;ok(M.browse({})[1].listings.length==0&&M.collect({tok:A})[1].payouts[0].item.g=='wd','market: unsold listings return to the seller after 48 h');
+[st,v]=M.sell({tok:A,item:{k:'mat',m:'dust',n:3},price:9});ok(M.cancel({tok:B,id:v.listing.id})[0]==404&&M.cancel({tok:A,id:v.listing.id})[0]==200,'market: only the seller can cancel');
+for(let i=0;i<6;i++)M.sell({tok:B,item:{k:'mat',m:'dust',n:1},price:1});ok(M.sell({tok:B,item:{k:'mat',m:'dust',n:1},price:1})[0]==409,'market: at most 6 open listings per player');
+M.flush();const raw=fs2.readFileSync(f,'utf8');ok(!raw.includes(A)&&!raw.includes(B),'market: the data file stores only hashed keys');
+const M2=createMarket({file:f,now:()=>clock});ok(M2.browse({})[1].listings.length==6,'market: listings survive a server restart');fs2.rmSync(f,{force:true});}
 /* ---------- class weapons ---------- */
 {const V=T.V(),P=T.P(),c0=P.cls;P.cls='dps';V.eq={bag:[{id:'w1',t:'dmg',k:'wd',r:0}],on:{dmg:'w1'}};const d0=T.dmF();
 ok(T.wp('dmg')==0&&d0>1,'weapon: a Common weapon only gives base damage');

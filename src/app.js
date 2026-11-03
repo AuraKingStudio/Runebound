@@ -1,10 +1,11 @@
-/* Runebound hub directory (the only Node file): ten in-memory hub assignments and WebRTC setup messages.
+/* Runebound hub directory: ten in-memory hub assignments and WebRTC setup messages, plus the player market (src/market.js).
    It never simulates gameplay. Inputs: browser join/heartbeat/poll/offer/answer/leave requests.
    Run with `npm run signaling`; the tests require it for createDirectoryServer. */
 "use strict";
 
 const http = require("node:http");
 const { randomBytes } = require("node:crypto");
+const { createMarket } = require("./market.js");
 
 const MAX_BODY_BYTES = 16 * 1024;
 const MAX_HUBS = 10;
@@ -39,6 +40,7 @@ function createDirectoryServer(options = {}) {
     "http://127.0.0.1:8080",
   ]);
   const feedbackFile = options.feedbackFile || require("path").join(__dirname, "..", "feedback.log");
+  const market = options.market === false ? null : createMarket({ file: options.marketFile });
   /* local playtests: any page served from this network (192.168.x.x, 10.x.x.x, 172.16-31.x.x) may use the service */
   const lanOrigin = (o) => options.allowLan !== false && /^http:\/\/(192\.168\.\d+\.\d+|10\.\d+\.\d+\.\d+|172\.(1[6-9]|2\d|3[01])\.\d+\.\d+)(:\d+)?$/.test(o);
   const hubs = new Map();
@@ -143,6 +145,13 @@ function createDirectoryServer(options = {}) {
     try { body = await readJson(req); }
     catch (error) { return send(res, error.status || 400, { error: error.message }); }
 
+    /* player market (server escrow): /api/market/browse | sell | buy | cancel | collect */
+    const mk = /^\/api\/market\/(browse|sell|buy|cancel|collect)$/.exec(url.pathname);
+    if (mk) {
+      if (!market) return send(res, 503, { error: "The market is closed on this server." });
+      const [status, value] = market[mk[1]](body || {});
+      return send(res, status, value);
+    }
     if (url.pathname === "/api/feedback") {
       /* playtest notes: one JSON line per note in feedback.log (no session needed; size-capped, rate-limited above) */
       if (typeof body.text !== "string" || !body.text.trim() || body.text.length > 1500) return send(res, 400, { error: "Feedback is invalid." });
@@ -246,7 +255,7 @@ function createDirectoryServer(options = {}) {
       else res.destroy(error);
     });
   });
-  return { server, hubs, sessions, cleanup };
+  return { server, hubs, sessions, cleanup, market };
 }
 
 if (require.main === module) {
