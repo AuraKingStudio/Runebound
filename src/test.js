@@ -691,6 +691,18 @@ async function hostLossTests(){
  ok(T.HUBV().some(v=>v.id=='host-player'&&v.name=='Next')&&!T.HUBV().some(v=>v.name=='Old'),'host migration: the successor stays on screen as the new host, the old host leaves');
  await T.netDisconnect?.();
 }
+async function takeoverTests(){
+ const {server}=createDirectoryServer({allowedOrigins:[],hostStaleMs:50});await new Promise(r=>server.listen(0,'127.0.0.1',r));
+ const base=`http://127.0.0.1:${server.address().port}`,post=(path,body)=>fetch(base+path,{method:'POST',headers:{'content-type':'application/json'},body:JSON.stringify(body)}).then(async r=>({status:r.status,body:await r.json()}));
+ const prof=(n)=>({id:'player-tko'+n+'xxxx',name:'K'+n,cls:'tank',lv:1,ti:0,spd:1});
+ const h=(await post('/api/join',{profile:prof(1)})).body,g=(await post('/api/join',{profile:prof(2)})).body;
+ ok((await post('/api/join',{profile:prof(3),host:true,hubId:h.hubId})).body.role=='guest','directory takeover: a live host cannot be replaced');
+ await new Promise(r=>setTimeout(r,80));
+ const t=(await post('/api/join',{profile:prof(2),host:true,hubId:h.hubId})).body;
+ ok(t.role=='host'&&t.hubId==h.hubId,'directory takeover: the successor takes over a silent host hub under the same id');
+ ok((await post('/api/poll',{token:h.token})).status==401,'directory takeover: the old host session is gone');
+ server.close();
+}
 async function reportTests(){
  const {server}=createDirectoryServer({allowedOrigins:[]});await new Promise(r=>server.listen(0,'127.0.0.1',r));
  const base=`http://127.0.0.1:${server.address().port}`,post=(path,body)=>fetch(base+path,{method:'POST',headers:{'content-type':'application/json'},body:JSON.stringify(body)}).then(async r=>({status:r.status,body:await r.json()}));
@@ -886,4 +898,4 @@ async function benchTests(){
 }
 {T.V().mat={};T.setRaid('large');const d=T.raidDrops(true);ok(T.V().mat.dust>=3&&T.V().mat.bark>=1&&d.some(x=>x[0]=='bark'),'materials: a large raid win drops Rune Dust and Thornbark');const l=T.raidDrops(false);ok(l.length==1&&l[0][0]=='dust','materials: a loss still gives a little dust');
  T.V().eq={bag:[{id:'a1',t:'tank',k:'dr',r:1},{id:'a2',t:'tank',k:'dr',r:2}],on:{tank:'a1'}};T.invWear('a2');ok(T.V().eq.on.tank=='a2','inventory: wearing an item swaps it into its slot');T.invWear('a2');ok(!T.V().eq.on.tank,'inventory: clicking a worn item takes it off');T.invUI();ok(ctx.document.getElementById('dp').innerHTML.includes('Thornbark'),'inventory: shows materials');}
-(BENCH_ONLY?Promise.resolve():networkTests().then(signalingTests).then(hostLossTests).then(brainHttpTests).then(reportTests).then(rateLimitTests).then(()=>marketHttpTests())).then(benchTests).then(()=>{console.log(f?f+' FAILED':'ALL PASSED');process.exit(f?1:0);}).catch(e=>{console.error(e);process.exit(1);});
+(BENCH_ONLY?Promise.resolve():networkTests().then(signalingTests).then(hostLossTests).then(brainHttpTests).then(reportTests).then(takeoverTests).then(rateLimitTests).then(()=>marketHttpTests())).then(benchTests).then(()=>{console.log(f?f+' FAILED':'ALL PASSED');process.exit(f?1:0);}).catch(e=>{console.error(e);process.exit(1);});

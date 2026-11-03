@@ -4,7 +4,9 @@
   "description": "Runebound browser game",
   "scripts": {
     "dev": "live-server --port=8080 --no-browser --ignore=node_modules",
-    "signaling": "node src/app.js",
+    "signaling": "node src/app.js --lan",
+    "local": "node src/app.js",
+    "lan": "node src/app.js --lan",
     "online": "node src/app.js --cf",
     "tunnel": "cloudflared tunnel --url http://localhost:8787",
     "test": "node src/test.js",

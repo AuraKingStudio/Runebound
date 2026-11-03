@@ -52,6 +52,11 @@ function createDirectoryServer(options = {}) {
   const maxPlayersPerHub = options.maxPlayersPerHub ?? MAX_PLAYERS_PER_HUB;
   const sessionTtlMs = options.sessionTtlMs ?? SESSION_TTL_MS;
   const requestsPerMinute = options.requestsPerMinute ?? 3000;
+  /* flood guard: a whole-server cap per second and a cap on live sessions, on top of the per-address limit */
+  const globalPerSecond = options.globalPerSecond ?? 2000;
+  const maxSessions = options.maxSessions ?? maxHubs * maxPlayersPerHub * 2;
+  let globalSecond = 0, globalCount = 0;
+  const hostStaleMs = options.hostStaleMs ?? 4000; /* the host polls every 0.8 s: silent this long = gone, a successor may take over */
   /* behind a Cloudflare Tunnel every request comes from the local connector, so the player's real address is in
      cf-connecting-ip; it is trusted only when enabled AND the request arrives from this machine (the tunnel) */
   const trustCloudflare = !!options.trustCloudflare;
@@ -129,6 +134,8 @@ function createDirectoryServer(options = {}) {
       requestCounts.set(ip, rate);
     }
     if (++rate.count > requestsPerMinute) return send(res, 429, { error: "Too many signaling requests; retry shortly." });
+    if (now - globalSecond >= 1000) { globalSecond = now; globalCount = 0; }
+    if (++globalCount > globalPerSecond) return send(res, 503, { error: "Server busy; retry shortly." });
 
     const url = new URL(req.url, "http://localhost");
     if (req.method === "GET" && url.pathname === "/health") {
@@ -174,8 +181,22 @@ function createDirectoryServer(options = {}) {
     if (url.pathname === "/api/join") {
       cleanup();
       if (!validProfile(body.profile)) return send(res, 400, { error: "Player profile is invalid." });
-      const active = [...hubs.values()].sort((a, b) => a.id - b.id)
-        .find((hub) => !hub.flagged && hub.members.size < maxPlayersPerHub); /* never send new players to a reported host */
+      if (sessions.size >= maxSessions) return send(res, 503, { error: "All hubs are full." });
+      const want = Number.isInteger(body.hubId) && body.hubId >= 1 && body.hubId <= maxHubs ? body.hubId : 0;
+      /* host migration: the old host of hub `want` went silent, so the chosen successor takes the hub over under the same id */
+      const old = want && hubs.get(want), oldHost = old && old.members.get("host");
+      if (body.host === true && old && (!oldHost || Date.now() - (oldHost.expiresAt - sessionTtlMs) > hostStaleMs)) {
+        if (oldHost) sessions.delete(oldHost.secret);
+        for (const member of old.members.values()) sessions.delete(member.secret);
+        hubs.delete(want);
+        const session = { secret: token(), role: "host", hubId: want, profile: body.profile, expiresAt: Date.now() + sessionTtlMs, events: [] };
+        hubs.set(want, { id: want, members: new Map([["host", session]]), events: [] });
+        sessions.set(session.secret, session);
+        return send(res, 200, { role: "host", hubId: want, token: session.secret, reason: `The host left; you now host hub ${want}.` });
+      }
+      const open = (hub) => !hub.flagged && hub.members.size < maxPlayersPerHub; /* never send new players to a reported host */
+      const active = (want && hubs.get(want) && open(hubs.get(want)) ? hubs.get(want) : null) || /* after a host switch: back to the same hub */
+        [...hubs.values()].sort((a, b) => a.id - b.id).find(open);
       if (active) {
         if ([...active.members.values()].some((member) => member.profile.id === body.profile.id)) {
           return send(res, 409, { error: "This profile already has a seat in the selected hub." });
@@ -258,12 +279,14 @@ function createDirectoryServer(options = {}) {
     return send(res, 404, { error: "Not found." });
   }
 
-  const server = http.createServer((req, res) => {
+  const server = http.createServer({ requestTimeout: 10000, headersTimeout: 8000 }, (req, res) => {
     handle(req, res).catch((error) => {
       if (!res.headersSent) send(res, 500, { error: "Internal signaling error." });
       else res.destroy(error);
     });
   });
+  server.keepAliveTimeout = 5000; /* slow or idle connections are dropped (slowloris) */
+  server.maxConnections = options.maxConnections ?? 4000;
   return { server, hubs, sessions, cleanup, market, brain };
 }
 
@@ -271,8 +294,13 @@ if (require.main === module) {
   const allowedOrigins = (process.env.ALLOWED_ORIGINS || "https://aurakingstudio.github.io,http://localhost:8080,http://127.0.0.1:8080")
     .split(",").map((origin) => origin.trim()).filter(Boolean);
   const port = Number(process.env.PORT || 8787);
-  const { server } = createDirectoryServer({ allowedOrigins, trustCloudflare: process.env.TRUST_CLOUDFLARE === "1" || process.argv.includes("--cf") }); /* --cf: behind a Cloudflare tunnel (npm run online) */
-  server.listen(port, "0.0.0.0", () => console.log(`Runebound signaling directory listening on ${port}`));
+  /* modes: local (this PC), --lan (players on your Wi-Fi), --cf (behind a Cloudflare tunnel: home PC or VPS).
+     Behind the tunnel only this machine may connect (127.0.0.1); Cloudflare filters floods before they arrive. */
+  const cf = process.env.TRUST_CLOUDFLARE === "1" || process.argv.includes("--cf"), lan = process.argv.includes("--lan");
+  const { server } = createDirectoryServer({ allowedOrigins, trustCloudflare: cf, allowLan: !cf,
+    requestsPerMinute: Number(process.env.RATE_PER_MIN) || (cf ? 600 : 3000) });
+  const bind = cf ? "127.0.0.1" : lan ? "0.0.0.0" : "127.0.0.1";
+  server.listen(port, bind, () => console.log(`Runebound signaling directory (${cf ? "online" : lan ? "LAN" : "local"}) listening on ${bind}:${port}`));
 }
 
 module.exports = { createDirectoryServer };

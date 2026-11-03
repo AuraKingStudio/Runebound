@@ -33,7 +33,8 @@ Runebound is a browser co-op action game: floating hub, quests/NPCs, parties, an
 - **Player options:** Settings include volume, shake, effects, Low spec, damage numbers, FPS display/cap (30/60/144/Max), dash aim, and key bindings. Preserve keyboard, controller, touch, portrait/landscape behavior.
 - **Targets:** 60 FPS on low-end hardware; validate UI/performance on desktop, tablet, and phone. Avoid per-frame allocations/heavy effects; honor Low spec and reduced motion.
 - **Art:** code-drawn canvas/SVG only; `assets/icon.png` is the only permitted image asset.
-- **Trust:** localStorage saves are player-editable. Never use client state as authority for shared valuables or anti-cheat. The hub host is player-controlled; do not claim robust anti-cheat.
+- **Security target: bank-grade.** Assume every client, save and player host is hostile. Cloudflare (tunnel, WAF, rate limits) stops floods, not cheating. Anything valuable must be decided by a server, not a browser.
+- **Anti-cheat by mode:** *Local:* single player, saves are the player's own; never share them online. *LAN:* the host audits guests and guests audit the host (`netAudit`, strikes, reports). *Online (VPS):* the server is the authority. Move wallets, items, XP, raid rewards and market trades onto the VPS with signed sessions, and validate every claim there. Until that ships, online progress is not trusted and the market stays closed.
 
 ## Notes, logs, handoff
 

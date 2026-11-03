@@ -1,0 +1,23 @@
+[Unit]
+Description=Runebound hub directory (online mode, behind Cloudflare Tunnel)
+After=network-online.target
+Wants=network-online.target
+
+[Service]
+User=runebound
+WorkingDirectory=__DIR__
+ExecStart=/usr/bin/node src/app.js --cf
+Restart=always
+RestartSec=2
+Environment=NODE_ENV=production
+# hardening
+NoNewPrivileges=true
+ProtectSystem=strict
+ReadWritePaths=__DIR__
+ProtectHome=true
+PrivateTmp=true
+MemoryMax=512M
+LimitNOFILE=8192
+
+[Install]
+WantedBy=multi-user.target

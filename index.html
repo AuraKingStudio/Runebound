@@ -1515,6 +1515,8 @@
         const MAX_MESSAGES_PER_SECOND = 40;
         const NETWORK_CONFIG = Object.freeze({
           signalingUrl: "",
+          /* ONLINE mode: your VPS hub address behind Cloudflare, e.g. "https://hub.example.com". Empty = public page uses ?room= links. */
+          onlineHubUrl: "",
           /* STUN only tells this browser its public address so peers on different networks can reach each other; no game data goes through it. */
           iceServers: [{ urls: "stun:stun.cloudflare.com:3478" }],
         });
@@ -1626,7 +1628,7 @@
         async function directoryJoin(profile, opts) {
           if (!profile || typeof profile !== "object") throw new Error("Player display profile is invalid.");
           if (directoryUrl === "room") return { ...(directorySession = await roomJoin(profile, !!opts?.host)) };
-          const result = await directoryRequest("/api/join", { profile });
+          const result = await directoryRequest("/api/join", { profile, host: !!opts?.host, hubId: opts?.hubId || undefined });
           if (!["host", "guest"].includes(result.role) || !Number.isInteger(result.hubId) ||
               typeof result.token !== "string" || result.token.length !== 48 ||
               typeof result.reason !== "string" || result.reason.length > 200 ||
@@ -1831,7 +1833,8 @@
           if (!m) return "";
           try {
             const url = new URL(decodeURIComponent(m[1]));
-            return url.protocol === "https:" && /^[a-z0-9-]+\.trycloudflare\.com$/.test(url.hostname) ? url.origin : "";
+            const own = NETWORK_CONFIG.onlineHubUrl && new URL(NETWORK_CONFIG.onlineHubUrl).hostname;
+            return url.protocol === "https:" && (/^[a-z0-9-]+\.trycloudflare\.com$/.test(url.hostname) || url.hostname === own) ? url.origin : "";
           } catch { return ""; }
         }
         function directoryConfig() {
@@ -1871,6 +1874,7 @@
           roomInviteLink,
           /* public site (or any ?room= link) uses room mode; localhost keeps the hub service (npm run signaling) for tests */
           defaultConfig: () => ({ signalingUrl: NETWORK_CONFIG.signalingUrl || hubFromLink() ||
+            (!roomFromLink() && NETWORK_CONFIG.onlineHubUrl && !["localhost", "127.0.0.1"].includes(location.hostname) && !/^(192\.168|10|172\.(1[6-9]|2\d|3[01]))\./.test(location.hostname) ? NETWORK_CONFIG.onlineHubUrl : "") ||
             (!roomFromLink() && /^(192\.168|10|172\.(1[6-9]|2\d|3[01]))\./.test(location.hostname) ? `http://${location.hostname}:8787` : /* LAN playtest: the host PC's service */
             roomFromLink() || !["localhost", "127.0.0.1"].includes(location.hostname) ? "room" : "http://localhost:8787"), iceServers: NETWORK_CONFIG.iceServers.map((server) => ({ ...server })) }),
           createPeerOffer,
@@ -2775,7 +2779,7 @@
          time, a one-off CPU benchmark and whether it is a phone ("hr"). The host ranks them (time here counts most: long stayers
          tend to stay) and sends the top 3 with the next ping. When the host goes, every guest walks the same list: the first one
          alive reopens the same room as host, the rest rejoin it; other players stay on screen, the hub and raid never stop. */
-      let NET_SUCC = [], NET_HQ_AT = 0, NET_JOINED_AT = 0, NET_FRAME = 16.7, NET_BENCH = 0, NET_TAKEOVER = 0, NET_HQ_SENT = -1e9, NET_RECOVERING = false;
+      let NET_SUCC = [], NET_HQ_AT = 0, NET_JOINED_AT = 0, NET_FRAME = 16.7, NET_BENCH = 0, NET_TAKEOVER = 0, NET_HQ_SENT = -1e9, NET_LAST_HUB = 0, NET_RECOVERING = false;
       function netBench() {
         if (NET_BENCH) return NET_BENCH;
         const t = performance.now();
@@ -2862,7 +2866,8 @@
           NET.setIceServers(NET_CONFIG.iceServers || []);
           NET.configureDirectory(NET_CONFIG.signalingUrl);
           netStatus("Finding the first hub with an open seat…");
-          NET_SESSION = await NET.directoryJoin(netProfile(), { host: NET_TAKEOVER == 1 });
+          NET_SESSION = await NET.directoryJoin(netProfile(), { host: NET_TAKEOVER == 1, hubId: NET_TAKEOVER ? NET_LAST_HUB : 0 });
+          NET_LAST_HUB = NET_SESSION.hubId;
           if (NET_TAKEOVER == 1) { NET_TAKEOVER = 0; setTimeout(netDropGhosts, 15000); }
           NET_ROLE = NET_SESSION.role;
           NET_DIRECTORY_STATE = "assigned";

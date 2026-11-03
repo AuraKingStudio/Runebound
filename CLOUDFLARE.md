@@ -1,55 +1,50 @@
-# Play Runebound online with Cloudflare (super simple)
+# Runebound: 3 ways to play (super simple)
 
-Your PC runs the "hub phone book" (it tells players who to connect to).
-Cloudflare gives it a public web address so friends anywhere can reach it.
-The game itself still runs from the public page.
+| Mode | Who can join | Start it |
+|---|---|---|
+| **Local** | only this PC | `npm run local` + `npm run dev`, open `http://localhost:8080` |
+| **LAN** | same Wi-Fi | `npm run playtest`: it prints the link for other PCs |
+| **Online** | anyone, anywhere | your VPS behind Cloudflare (below) |
 
-## One-time setup
+## Online on your VPS (one-time, about 10 minutes)
 
-1. Open **PowerShell**.
-2. Check that Cloudflare's tool works:
+You need: the VPS (Ubuntu), a domain on Cloudflare (orange cloud), SSH access.
+
+1. **Log in to the VPS:**
    ```
-   cloudflared --version
+   ssh root@YOUR-VPS-IP
    ```
-   If it says "not recognized", install it:
+2. **Get the game code:**
    ```
-   winget install --id Cloudflare.cloudflared
+   git clone https://github.com/aurakingstudio/Runebound.git /opt/runebound
+   cd /opt/runebound
    ```
-   Then **close and reopen** PowerShell.
+3. **Run the setup.** Pick a hub address on your domain:
+   ```
+   bash deploy/setup-vps.sh hub.yourdomain.com
+   ```
+   - A Cloudflare link appears: open it, log in, click your domain.
+   - When it prints **DONE**, it works. The VPS restarts it by itself after crashes or reboots.
+4. **Point the game at it.** In `index.html`, find `onlineHubUrl: ""` and set:
+   ```
+   onlineHubUrl: "https://hub.yourdomain.com",
+   ```
+   Commit and push. The public page now uses your VPS.
 
-## Every time you want to play online
+## The shield (DDoS)
 
-You need **2 PowerShell windows**. Both start in the game folder:
+- **Hidden VPS:** the game port is never opened on the VPS. Everything passes through Cloudflare's tunnel, so attackers can't reach the server directly.
+- **Firewall:** it allows SSH only.
+- **Server limits:** 600 requests per minute per player, a server-wide cap per second, a cap on sessions, and slow connections are dropped.
+- **Extra (Cloudflare dashboard):** Security → WAF → Rate limiting rule: path starts with `/api/`, 300 requests per minute per IP → Block. Also turn on **Bot Fight Mode**.
+
+## Update the VPS later
+
 ```
-cd C:\Users\Kiels\Documents\Runebound
+ssh root@YOUR-VPS-IP
+cd /opt/runebound && git pull && systemctl restart runebound-hub
 ```
 
-**Window 1: start the hub phone book**
-```
-npm run online
-```
-Wait for: `Runebound signaling directory listening on 8787`. Leave it open.
+## Is it working?
 
-**Window 2: open the Cloudflare tunnel**
-```
-npm run tunnel
-```
-Wait a few seconds. Find a line with an address like:
-```
-https://some-random-words.trycloudflare.com
-```
-Copy that address. Leave this window open too.
-
-**Make the game link.** Put your address after `?hub=`:
-```
-https://aurakingstudio.github.io/Runebound/?hub=https://some-random-words.trycloudflare.com
-```
-Open it yourself, then send the same link to your friends. Everyone who opens it joins the same hubs.
-
-## Good to know
-
-- **Closing either window** stops online play: new players can't join until you start both again.
-- **The address changes** each time you run `npm run tunnel`, so send the new link each session.
-- **Your PC must stay on and awake** while people play.
-- **Some strict networks** (school or work Wi-Fi) may still fail to connect. That needs a TURN server, which isn't set up yet.
-- **Stop:** click each window and press `Ctrl + C`.
+Open `https://hub.yourdomain.com/health`. It should say `"ok":true`.
