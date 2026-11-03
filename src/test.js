@@ -150,6 +150,9 @@ T.bjHit();ok(T.V().gold==110&&ctx.document.getElementById('dp').innerHTML.includ
  S.shake=0;ok(X.quake(null,3)==0,'BJ_VFX: Screen shake 0 -> no table shake');S.shake=1;ok(X.quake(null,3)>0,'BJ_VFX: shake on when allowed');
  mq.matches=true;ok(X.emit(0,0,0,0,50,100)==0&&X.fly(1,0,0,0,9,9,5)==0&&X.quake(null,3)==0&&X.n()==0,'BJ_VFX: reduced motion -> no particles, flights or shake');mq.matches=false;
  ok(X.result(10)==X.streak()&&X.result(5)>=2&&X.result(0)>=2&&X.result(-5)==0,'BJ_VFX: win streak counts wins, keeps on a push, resets on a loss');
+ {const st=ctx.setTimeout,ct=ctx.clearTimeout,q=new Map();let id=0,fired=0;ctx.setTimeout=(fn)=>{q.set(++id,fn);return id;};ctx.clearTimeout=(i)=>q.delete(i);
+  X.emit(0,0,50,50,40,100);X.later(()=>fired++,0.5);T.closeDlg();for(const fn of q.values())fn();
+  ok(X.n()==0&&fired==0,'BJ_VFX: closing the window drops live particles and pending beats');ctx.setTimeout=st;ctx.clearTimeout=ct;}
  /* a fake table: what the natural-blackjack beat inserts, with and without reduced motion */
  const M=ctx.Math,seq=(a)=>{ctx.Math=Object.create(Math);ctx.Math.random=()=>a.length?a.shift():.5;},ins=[];
  const el=()=>({classList:{add(){},remove(){}},style:{setProperty(){}},insertAdjacentHTML(p,h){ins.push(h)},querySelectorAll:()=>[],querySelector:()=>null,getBoundingClientRect:()=>({left:0,top:0,width:0,height:0}),lastElementChild:null});

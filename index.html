@@ -6332,6 +6332,7 @@
       const dlgOpen = () => !$("dlg").hidden;
       function closeDlg() {
         bjClockStop(); /* the blackjack Assist clock */
+        if (typeof BJ_VFX != "undefined") BJ_VFX.stop(); /* no blackjack sounds, coins or stamps after the window closes */
         CUR_DLG = "";
         $("dlg").hidden = true;
         $("dp").className = "pn"; /* the shop widens the panel */
@@ -7122,6 +7123,8 @@
           const c = document.createElement("canvas"), c2 = c && c.getContext && c.getContext("2d");
           if (!c2) return false;
           c.className = "bjfx";
+          const refit = () => { if (raf) fit(); }; /* rotate / resize mid-burst: resize the overlay (only while it is running) */
+          if (typeof addEventListener == "function") { addEventListener("resize", refit); addEventListener("orientationchange", refit); }
           document.body.appendChild(c);
           cv = c; g = c2;
           return true;
@@ -7226,6 +7229,14 @@
         /* later(fn, s): run fn after s seconds; cancel() drops every pending beat (a new deal) */
         function later(fn, t) { timers.push(setTimeout(fn, t * 1000)); }
         function cancel() { for (const t of timers) clearTimeout(t); timers.length = 0; }
+        /* stop(): the dialog closed: drop pending beats and every live particle, hide the overlay */
+        function stop() {
+          cancel();
+          n = 0;
+          if (raf && typeof cancelAnimationFrame == "function") cancelAnimationFrame(raf);
+          raf = 0;
+          if (g) { g.setTransform(1, 0, 0, 1, 0, 0); g.clearRect(0, 0, cv.width, cv.height); cv.style.display = "none"; }
+        }
         /* quake(tb, k): shake the table (CSS) and the world behind it, scaled by Screen shake; none with reduced motion */
         function quake(tb, k, del = 0.25) {
           const v = k * (+SET.shake || 0);
@@ -7251,7 +7262,7 @@
         }
         /* ---- the beats ---- */
         return {
-          C, emit, fly, ring, quake, flash, stamp, tag, later, cancel, reduced, level,
+          C, emit, fly, ring, quake, flash, stamp, tag, later, cancel, stop, reduced, level,
           n: () => n,
           cap,
           tick,
@@ -7577,7 +7588,7 @@
         const hands = tb ? tb.querySelectorAll(".bjhand") : [], k = fx ? fx.k : "", hi = fx && fx.hand != null ? fx.hand : BJ.i, cur = hands[1 + hi], hc = BJ.hs[hi] ? BJ.hs[hi].c : [];
         if (k == "deal") { BJ_VFX.deal(tb, hands); bjSnd("chip"); bjSnd("deal", 0.2); bjSnd("deal", 0.32); }
         if (k == "hit" || k == "21") {
-          /* only risky hits shake: a mini shake at 17, a bit more at 18, then clearly bigger at 19 and 20 (bust: 5); +0.5 per earlier hit on this hand */
+          /* every hit gives a light tap (0.35); risky hits shake harder: 0.5 at 17, 0.9 at 18, 2.6 at 19, 3.6 at 20, 5 on a bust; +0.5 per earlier hit on this hand */
           const tot = bjVal(hc), heavy = k == "hit" && tot >= 17 ? ({ 17: 0.5, 18: 0.9, 19: 2.6, 20: 3.6 }[tot] ?? 5) + Math.max(0, (fx.n || 1) - 1) * 0.5 : 0;
           if (cur) { const c = cur.querySelectorAll(".bjc.new"); if (c.length) c[c.length - 1].classList.add(heavy > 0 ? "heavy" : "slam"); if (!BJ.end) cur.classList.add("bjhit"); }
           BJ_VFX.hit(tb, cur, hc.length - 1, heavy);
