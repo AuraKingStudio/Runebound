@@ -1832,8 +1832,8 @@
         HERALD = { lk: "herald", x: 150, y: 350, ic: "📯", nm: "The Herald", col: "#cfe6ff",
           g: "M-8-12v24h2.5v-10h12l-3-5 3-5h-12v-4z" },
         /* The Seraph (radiant gold): halo over a pair of wings. Sells one-raid blessings; unlocked by the quest "First Raid"; stands on the Herald's old spot. wings: drawn behind */
-        SERAPH = { lk: "seraph", x: 150, y: 350, ic: "👼", nm: "The Seraph", col: "#ffe9a0", gs: 1, wings: 1,
-          g: "M-5-9a5 2 0 1 0 10 0a5 2 0 1 0-10 0M0-3v13M-2-1q-9-7-14 1q6 0 8 5q3-1 6-4M2-1q9-7 14 1q-6 0-8 5q-3-1-6-4" }; /* centred: spans y -11..10 */
+        SERAPH = { lk: "seraph", x: 150, y: 350, ic: "👼", nm: "The Seraph", col: "#d8eeff", gs: 1, wings: 1, /* holy silver-white, pale blue glow */
+          g: "M-4.5-11.5a4.5 1.6 0 1 0 9 0a4.5 1.6 0 1 0-9 0M0-8.6a2.6 2.6 0 1 0 0.01 0M-2.6-3.4L-5.6 10H5.6L2.6-3.4ZM-2.6-2.6Q-9-9-12.6-4.6Q-11-0.6-6.4 0.8M2.6-2.6Q9-9 12.6-4.6Q11-0.6 6.4 0.8M-10-3.4l3 1.6M10-3.4l-3 1.6" }; /* halo, head, robe, raised wings with feather lines */ /* centred: spans y -11..10 */
       /* ---------- progress (saved) ---------- */
       /* upgrades. k = save key, b = base cost (cost = b * next level), pl = % per level, ic = SVG icon, col = card color */
       const UPG = [
@@ -8079,14 +8079,14 @@
             c.save(); c.scale(sd, 1); c.rotate(-0.25 + fl);
             for (let q = 0; q < 6; q++) { /* feathers, longest on top */
               const L = 64 - q * 7, a0 = -0.75 + q * 0.24, fg = c.createLinearGradient(R * 0.6, 0, R * 0.6 + L, 0);
-              fg.addColorStop(0, "rgba(255,250,225,1)"); fg.addColorStop(0.6, "rgba(255,226,150,.8)"); fg.addColorStop(1, "rgba(255,200,90,.15)");
+              fg.addColorStop(0, "rgba(255,255,255,1)"); fg.addColorStop(0.55, "rgba(200,230,255,.8)"); fg.addColorStop(1, "rgba(150,200,255,.12)"); /* silver-white to pale blue */
               c.fillStyle = fg; c.globalAlpha = ga2 * (0.95 - q * 0.08);
               c.save(); c.rotate(a0); c.beginPath(); c.moveTo(R * 0.6, -4); c.quadraticCurveTo(R * 0.6 + L * 0.6, -10, R * 0.6 + L, 0); c.quadraticCurveTo(R * 0.6 + L * 0.6, 6, R * 0.6, 4); c.closePath(); c.fill(); c.restore();
             }
             c.restore();
           }
           c.globalAlpha = ga2;
-          c.strokeStyle = "#fff3b0"; c.lineWidth = 2.5; c.shadowColor = "#ffe08a"; c.shadowBlur = 10;
+          c.strokeStyle = "#fff6c8"; c.lineWidth = 2.5; c.shadowColor = "#bfe4ff"; c.shadowBlur = 10; /* gold halo, blue light */
           c.beginPath(); c.ellipse(0, -R - 9 + Math.sin(t * 2) * 1.5, 11, 3.5, 0, 0, 6.3); c.stroke();
           c.shadowBlur = 0;
         }
