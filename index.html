@@ -250,6 +250,12 @@
         font-weight: bold;
         color: var(--uc);
       }
+      /* party rows: name + "Lv 1 DPS · bot" keep the room, Remove stays compact on the right (stacks below on very narrow screens) */
+      .prow { flex-wrap: wrap; }
+      .prow .pinfo { flex: 1 1 140px; min-width: 0; }
+      .prow .pinfo .sm { white-space: nowrap; overflow: hidden; text-overflow: ellipsis; font-size: 14px; color: #e8dcc0; }
+      .prow button.prm { width: auto; flex: none; margin: 0; min-height: 40px; padding: 8px 18px; letter-spacing: 1.5px; font-size: 13px; }
+      @media (max-width: 380px) { .prow button.prm { flex: 1 1 100%; } }
       .pips {
         display: inline-flex;
         gap: 4px;
@@ -1297,8 +1303,6 @@
       @keyframes bjBig { 0% { opacity: 0; transform: scale(3) rotate(-8deg); } 20% { opacity: 1; transform: scale(1) rotate(0); } 80% { opacity: 1; transform: scale(1.04); } 100% { opacity: 0; transform: scale(1.1) translateY(-20px); } }
       .bjc.bjglow { animation: bjGlow 1s ease-in-out 3 !important; }
       @keyframes bjGlow { 50% { filter: drop-shadow(0 0 12px #ffd84a) brightness(1.2); transform: translateY(-6px) rotate(-3deg); } }
-      .bjcoin { position: absolute; top: -20px; z-index: 2; width: 16px; height: 16px; pointer-events: none; animation: bjRain 1.5s ease-in both; }
-      @keyframes bjRain { 0% { opacity: 0; transform: translate(0, 0) rotate(0); } 10% { opacity: 1; } 100% { opacity: 0; transform: translate(var(--dx), 260px) rotate(540deg); } }
       .bjhand.bj21 .bjv { animation: bjPop 0.6s ease-out both; color: #ffe680; box-shadow: 0 0 16px #ffd84a; }
       /* gold counter: pop + green "+N" when gaining (coins fly in), red shake + "-N" when paying */
       #gp { position: relative; }
@@ -1486,7 +1490,87 @@
         .pn.raidpn .rcard:last-child:nth-child(odd) { grid-column: auto; }
         .pn.raidpn .rban { height: 170px; }
       }
+      /* BJ_VFX: particle overlay canvas, the deck shoe, table flashes, result stamps, floating tags, bust slump, win streak badge */
+      canvas.bjfx { position: fixed; inset: 0; width: 100%; height: 100%; z-index: 35; pointer-events: none; display: none; }
+      .bjhand { position: relative; }
+      .bjtable::before { content: ""; position: absolute; right: 10px; top: 8px; width: 26px; height: 36px; border-radius: 4px; pointer-events: none; opacity: 0.85;
+        background: repeating-linear-gradient(45deg, #1d6f6a 0 3px, #163f45 3px 6px); border: 1px solid #c9a14a; box-shadow: 2px 2px 0 #0d2f2b, 4px 4px 0 #8a6d2c66, 0 4px 8px #0008; }
+      .bjtable::after { content: ""; position: absolute; inset: 0; z-index: 4; pointer-events: none; opacity: 0; border-radius: inherit; }
+      .bjtable.bjflg::after { background: radial-gradient(ellipse at 50% 60%, #7dff9a55, transparent 70%); animation: bjFlash 0.7s ease-out var(--fd, 0s) both; }
+      .bjtable.bjflr::after { background: radial-gradient(ellipse at 50% 55%, transparent 35%, #ff3a3a66); animation: bjFlash 0.6s ease-out var(--fd, 0s) both; }
+      .bjtable.bjflw::after { background: radial-gradient(ellipse at 50% 50%, #ffe68077, transparent 70%); animation: bjFlash 0.7s ease-out var(--fd, 0s) both; }
+      @keyframes bjFlash { 0% { opacity: 0; } 15% { opacity: 1; } 100% { opacity: 0; } }
+      .bjtable.bjshake { animation-delay: var(--sd, 0.25s); }
+      .bjtable.bjgold.bjshake { animation: bjGoldT 1.6s ease-out both, bjShake calc(0.12s + var(--k) * 0.05s) ease-in-out var(--sd, 0.25s) 1; }
+      .bjstamp { position: absolute; right: 10px; top: 50%; z-index: 3; pointer-events: none; padding: 2px 10px; border: 3px solid currentColor; border-radius: 6px; white-space: nowrap;
+        font: 900 22px/1.1 "Cinzel", Georgia, serif; letter-spacing: 2px; background: #000a; text-shadow: 0 2px 0 #000; transform: translateY(-50%) rotate(-8deg);
+        animation: bjStamp 0.45s cubic-bezier(0.3, 1.6, 0.5, 1) both; }
+      .bjstamp.win { color: #7dff9a; box-shadow: 0 0 16px #7dff9a66; }
+      .bjstamp.lose, .bjstamp.bust { color: #ff5a5a; }
+      .bjstamp.push { color: #d9d2c0; }
+      @keyframes bjStamp { 0% { opacity: 0; transform: translateY(-50%) rotate(-20deg) scale(2.6); } 60% { opacity: 1; transform: translateY(-50%) rotate(-6deg) scale(0.92); } 100% { opacity: 1; transform: translateY(-50%) rotate(-8deg); } }
+      body.ph .bjstamp { font-size: 16px; padding: 1px 7px; border-width: 2px; right: 4px; }
+      .bjtag { position: absolute; left: 70px; top: -2px; z-index: 3; pointer-events: none; font: bold 20px "Cinzel", Georgia, serif; letter-spacing: 2px;
+        text-shadow: 0 2px 0 #000, 0 0 10px currentColor; animation: bjTag 1.2s ease-out both; }
+      .bjtag.st { color: #ff8a7a; }
+      @keyframes bjTag { 0% { opacity: 0; transform: translateY(10px) scale(0.6); } 20% { opacity: 1; transform: none; } 100% { opacity: 0; transform: translateY(-26px); } }
+      .bjhand.bust .bjrow { filter: grayscale(0.6) brightness(0.8); }
+      .bjhand.bjcrumble .bjrow { animation: bjCrumble 0.6s ease-in 0.3s both; }
+      @keyframes bjCrumble { 0% { filter: none; transform: none; } 30% { transform: translateY(-4px) rotate(-1deg); } 100% { filter: grayscale(0.6) brightness(0.8); transform: translateY(5px) rotate(1.5deg); } }
+      .bjstreak { position: absolute; right: 44px; top: 6px; z-index: 3; pointer-events: none; padding: 2px 10px; border-radius: 999px; white-space: nowrap;
+        font: bold 13px "Cinzel", Georgia, serif; letter-spacing: 1px; color: #ffe0b0; background: linear-gradient(180deg, #7a2a0c, #3a1406); border: 1px solid #ff8a3a; box-shadow: 0 0 10px #ff8a3a66; }
+      .bjstreak.t3 { border-color: #ffb300; color: #fff3c4; box-shadow: 0 0 14px #ffb300aa; }
+      .bjstreak.t5 { background: linear-gradient(180deg, #4a2a7a, #22103a); border-color: #c1a2ff; color: #f3e8ff; box-shadow: 0 0 16px #c1a2ffaa; }
+      .bjstreak.up { animation: bjStreak 0.6s cubic-bezier(0.3, 1.6, 0.5, 1) both; }
+      @keyframes bjStreak { 0% { opacity: 0; transform: scale(2.2); } 100% { opacity: 1; transform: none; } }
+      body.ph .bjstreak { font-size: 11px; padding: 1px 8px; right: 40px; }
+      /* blackjack HIT: the card slams down, the new total glows; STAND: a red pulse on the hand */
+      .bjc.new.slam { animation: bjSlam 0.42s cubic-bezier(0.5, 0, 0.75, 0) both; }
+      @keyframes bjSlam { 0% { opacity: 0; transform: translate(40px, -90px) rotate(-10deg) scale(1.5); } 65% { opacity: 1; transform: translateY(3px) scale(0.94, 1.06); } 82% { transform: translateY(-2px) scale(1.03, 0.97); } 100% { transform: none; } }
+      .bjhand.bjhit:not(.bj21) .bjv { animation: bjHitGlow 0.7s ease-out 0.22s both; }
+      @keyframes bjHitGlow { 35% { transform: scale(1.25); box-shadow: 0 0 22px #ffd84a, inset 0 0 10px #ffd84a88; filter: brightness(1.5); } }
+      .bjhand.bjstood { animation: bjStood 0.6s ease-out both; }
+      @keyframes bjStood { 0% { box-shadow: inset 0 0 0 2px #ff6b6b, inset 0 0 24px #ff6b6b55; } 100% { box-shadow: none; } }
+      /* blackjack Assist clock: whole seconds left, spinning coins, light rays, an aura that pulses faster and warmer at 10 s or less */
+      .bjtip { flex-wrap: wrap; }
+      .bjtip.bjend { justify-content: center; font: bold 14px "Cinzel", Georgia, serif; color: #f0d9a0; }
+      .bjclock { position: relative; display: inline-flex; align-items: center; gap: 3px; margin-left: 6px; padding: 1px 9px; border-radius: 999px; isolation: isolate; white-space: nowrap;
+        background: radial-gradient(ellipse at 50% 50%, #ffd84a33, #2a1c0acc 70%); border: 1px solid #ffd84aaa; box-shadow: 0 0 10px #ffd84a88, inset 0 0 8px #ffd84a44;
+        animation: bjAura 1.6s ease-in-out infinite; }
+      .bjclock .bjsec { font: 900 24px/1 "Cinzel", Georgia, serif; color: #fff3c4; text-shadow: 0 0 8px #ffd84a, 0 2px 0 #000; min-width: 1.2em; text-align: center; }
+      .bjclock small { font: bold 13px "Cinzel", Georgia, serif; color: #ffe680; }
+      .bjclock .bjspin { width: 14px; height: 14px; margin: 0; vertical-align: 0; animation: bjSpin 1.2s linear infinite; }
+      .bjclock .bjspin.r { animation-delay: -0.6s; }
+      .bjclock .bjrays { position: absolute; left: 50%; top: 50%; width: 72px; height: 72px; margin: -36px 0 0 -36px; z-index: -1; pointer-events: none; border-radius: 50%;
+        background: repeating-conic-gradient(#ffd84a55 0 10deg, transparent 10deg 30deg);
+        -webkit-mask: radial-gradient(circle, #000 30%, transparent 70%); mask: radial-gradient(circle, #000 30%, transparent 70%); animation: bjRays 6s linear infinite; }
+      .bjclock.hot { border-color: #ff8a3a; box-shadow: 0 0 14px #ff8a3acc, inset 0 0 10px #ff5a3a66; animation: bjAuraHot 0.6s ease-in-out infinite; }
+      .bjclock.hot .bjsec { color: #ffd0a0; text-shadow: 0 0 10px #ff6a2a, 0 2px 0 #000; }
+      .bjclock.hot .bjrays { background: repeating-conic-gradient(#ff8a3a66 0 10deg, transparent 10deg 30deg); animation-duration: 2.5s; }
+      @keyframes bjAura { 50% { box-shadow: 0 0 22px #ffd84acc, inset 0 0 12px #ffd84a77; } }
+      @keyframes bjAuraHot { 50% { box-shadow: 0 0 26px #ff6a2a, inset 0 0 14px #ff8a3a99; transform: scale(1.06); } }
+      @keyframes bjSpin { 50% { transform: scaleX(0.15); } }
+      @keyframes bjRays { to { transform: rotate(360deg); } }
+      .bjclock.lo, .bjclock.lo .bjspin { animation: none; }
+      .bjclock.lo .bjrays, .bjclock.nofx .bjrays { display: none; }
+      .bjclock.nofx { box-shadow: 0 0 5px #ffd84a66; animation: none; }
+      .bjclock.plus { animation: bjPlus 0.9s ease-out both; }
+      @keyframes bjPlus { 0% { transform: scale(1.5); box-shadow: 0 0 40px #fff, 0 0 20px #ffd84a; filter: brightness(1.8); } 100% { transform: none; } }
+      .bjplus { position: absolute; left: 50%; bottom: 100%; font: 900 18px "Cinzel", Georgia, serif; color: #c1ffb0; text-shadow: 0 2px 0 #000, 0 0 10px #7dff9a;
+        white-space: nowrap; pointer-events: none; transform: translateX(-50%); animation: bjPlusUp 1.5s ease-out both; }
+      @keyframes bjPlusUp { 0% { opacity: 0; transform: translate(-50%, 10px) scale(0.5); } 20% { opacity: 1; transform: translate(-50%, 0) scale(1.2); } 100% { opacity: 0; transform: translate(-50%, -24px); } }
+      body.ph .bjclock .bjsec { font-size: 19px; }
+      .bjchb .bjnext { display: block; font-size: 10px; line-height: 1.1; opacity: 0.85; }
+      .bjassist { grid-template-columns: minmax(0, 1fr) auto; }
+      .bjassist .bja-t { flex-wrap: wrap; gap: 2px 6px; }
+      .bjassist .bjclock { margin-left: 0; padding: 0 8px; }
+      .bjassist .bjclock .bjsec { font-size: 20px; }
+      .bjassist .bjclock .bjspin { display: none; }
+      .bjcool { font-size: 11px; opacity: 0.75; margin-top: 3px; }
       @media (prefers-reduced-motion: reduce) {
+        .bjtable .bjc, .bjtable .bjc.bjglow, .bjtable .bjrow, .bjtable.bjshake { animation: none !important; }
+        .bjclock, .bjclock.hot { box-shadow: none; }
+        .bjclock .bjrays, .bjclock .bjspin { display: none; }
         .bjassist, .bjassist::after, .bjassist .bjchb, .bjassist .bjchb::after,
         .pn.raidpn .rban::before, .pn.raidpn .rban::after, .pn.raidpn .rban img { animation: none !important; }
       }
@@ -2053,6 +2137,63 @@
           o.stop(n + p[4] + 0.02);
         } catch (e) {}
       }
+      /* ---------- BJ_SFX: blackjack sounds, all synthesized (no files). Every method is a no-op without audio or at volume 0.
+         t(f0, f1, type, vol, dur, delay): one tone; z(vol, dur, delay, hz): a filtered noise puff (card slide, chip clink). ---------- */
+      const BJ_SFX = (() => {
+        let NB = null; /* shared 0.3 s white-noise buffer, made once */
+        const ctx = () => {
+          if (!(SET.vol > 0)) return null;
+          try { AC = AC || new (window.AudioContext || window.webkitAudioContext)(); if (AC.state == "suspended") AC.resume(); return AC; } catch (e) { return null; }
+        };
+        function t(f0, f1, type, vol, dur, delay = 0) {
+          const a = ctx();
+          if (!a) return;
+          try {
+            const n = a.currentTime + delay, o = a.createOscillator(), g = a.createGain();
+            o.type = type;
+            o.frequency.setValueAtTime(f0, n);
+            o.frequency.exponentialRampToValueAtTime(Math.max(20, f1), n + dur);
+            g.gain.setValueAtTime(0.0001, n);
+            g.gain.exponentialRampToValueAtTime(Math.max(0.0002, vol * SET.vol), n + 0.008);
+            g.gain.exponentialRampToValueAtTime(0.0001, n + dur);
+            o.connect(g).connect(a.destination);
+            o.start(n);
+            o.stop(n + dur + 0.02);
+          } catch (e) {}
+        }
+        function z(vol, dur, delay = 0, hz = 2500) {
+          const a = ctx();
+          if (!a) return;
+          try {
+            if (!NB) { NB = a.createBuffer(1, Math.floor(a.sampleRate * 0.3), a.sampleRate); const d = NB.getChannelData(0); for (let i = 0; i < d.length; i++) d[i] = Math.random() * 2 - 1; }
+            const n = a.currentTime + delay, s = a.createBufferSource(), f = a.createBiquadFilter(), g = a.createGain();
+            s.buffer = NB;
+            f.type = "bandpass"; f.frequency.value = hz; f.Q.value = 0.9;
+            g.gain.setValueAtTime(Math.max(0.0002, vol * SET.vol), n);
+            g.gain.exponentialRampToValueAtTime(0.0001, n + dur);
+            s.connect(f).connect(g).connect(a.destination);
+            s.start(n);
+            s.stop(n + dur + 0.02);
+          } catch (e) {}
+        }
+        const arp = (notes, type, vol, step, dur) => notes.forEach((f, i) => t(f, f * 1.002, type, vol, dur, i * step));
+        return {
+          deal() { z(0.05, 0.09, 0, 3200); t(900, 500, "triangle", 0.02, 0.05, 0.03); },
+          flip() { z(0.04, 0.06, 0, 4200); t(1200, 1600, "sine", 0.02, 0.05, 0.02); },
+          chip() { t(2400, 2200, "sine", 0.035, 0.07); t(3100, 2900, "sine", 0.025, 0.06, 0.035); z(0.02, 0.04, 0, 6000); },
+          hit() { z(0.06, 0.08, 0, 2800); t(180, 90, "sine", 0.07, 0.12, 0.02); },
+          stand() { t(330, 300, "triangle", 0.04, 0.16); t(247, 230, "triangle", 0.03, 0.2, 0.06); },
+          double() { this.chip(); t(392, 784, "triangle", 0.05, 0.22, 0.06); t(523, 1046, "sine", 0.03, 0.25, 0.12); },
+          split() { z(0.05, 0.08, 0, 3000); z(0.05, 0.08, 0.09, 3600); t(440, 660, "triangle", 0.035, 0.12, 0.05); t(440, 330, "triangle", 0.035, 0.12, 0.14); },
+          reveal() { t(110, 98, "sawtooth", 0.025, 0.45); t(220, 233, "sine", 0.03, 0.4, 0.05); this.flip(); },
+          bust() { t(300, 70, "sawtooth", 0.05, 0.5); z(0.05, 0.25, 0.02, 600); },
+          win() { arp([523, 659, 784, 1046], "triangle", 0.05, 0.08, 0.22); },
+          lose() { arp([392, 330, 262], "triangle", 0.045, 0.12, 0.3); },
+          push() { t(440, 440, "sine", 0.035, 0.18); t(440, 440, "sine", 0.03, 0.18, 0.16); },
+          blackjack() { arp([523, 659, 784, 1046, 1318, 1568], "triangle", 0.055, 0.07, 0.3); arp([1046, 1318, 1568, 2093], "sine", 0.025, 0.07, 0.35); for (let i = 0; i < 5; i++) t(1800 + i * 160, 2600, "sine", 0.02, 0.1, 0.45 + i * 0.06); },
+          streak(n = 1) { const k = Math.min(Math.max(1, n | 0), 8), base = 523 * Math.pow(2, (k - 1) / 12); arp([base, base * 1.26, base * 1.5], "sine", 0.04, 0.06, 0.18); },
+        };
+      })();
       /* ---------- vfx: particles, floating numbers, screen shake ---------- */
       let FX = [],
         FT = [],
@@ -2334,7 +2475,6 @@
         }
         const t = Math.min(1, (now - GOLD_AT) / 600), v = Math.round(GOLD_FROM + (V.gold - GOLD_FROM) * (1 - Math.pow(1 - t, 3)));
         if (v != GOLD_SHOWN || el.textContent != String(v)) { GOLD_SHOWN = v; el.textContent = v; }
-        if (!$("dlg").hidden && document.querySelectorAll) for (const e of document.querySelectorAll("#dp .bjleft")) { const t = bjChartLeft(); if (e.textContent != t) e.textContent = t; } /* Assist countdown */
         const pb = !$("dlg").hidden && document.querySelector && document.querySelector("#dp .purse b"); /* the menu purse rolls too */
         if (pb && pb.textContent != String(v)) pb.textContent = v;
       }
@@ -4924,8 +5064,8 @@
       function partyUI() {
         CUR_DLG = "party";
         $("dlg").hidden = false;
-        const rows = partyMembers().map((m) => `<div class="up" style="--uc:${SKC[m.cls]}"><div style="min-width:0"><span class="nm"${m.me ? "" : ` style="cursor:pointer" onclick="playerUI(partyFind('${esc(m.key)}'))"`}>${esc(m.name)}${m.me ? " (you)" : ""}${(!m.me && m.key == PARTY.lead) || (m.me && isLeader() && PARTY.m.length) ? " 👑" : ""}</span>
-          <div class="sm">Lv ${m.lv} ${CL[m.cls].n}${m.real ? " · online" : m.me ? "" : " · bot"}</div></div>${isLeader() && !m.me ? `<button class="alt" onclick="partyRemove('${esc(m.key)}');partyUI()">Remove</button>` : ""}</div>`).join("");
+        const rows = partyMembers().map((m) => `<div class="up prow" style="--uc:${SKC[m.cls]}"><div class="pinfo"><span class="nm"${m.me ? "" : ` style="cursor:pointer" onclick="playerUI(partyFind('${esc(m.key)}'))"`}>${esc(m.name)}${m.me ? " (you)" : ""}${(!m.me && m.key == PARTY.lead) || (m.me && isLeader() && PARTY.m.length) ? " 👑" : ""}</span>
+          <div class="sm">Lv ${m.lv} ${CL[m.cls].n}${m.real ? " · online" : m.me ? "" : " · bot"}</div></div>${isLeader() && !m.me ? `<button class="alt prm" onclick="partyRemove('${esc(m.key)}');partyUI()" aria-label="Remove ${esc(m.name)} from party">Remove</button>` : ""}</div>`).join("");
         $("dp").innerHTML = `<h2>👥 Party (${partyMembers().length}/${PARTY_MAX})</h2>${rows}<p class="sm">Walk up to a player and press interact to invite them. Missing raid roles are filled by bots.</p>
           ${PARTY.m.length || !isLeader() ? `<button class="alt" onclick="partyLeave()">Leave party</button>` : ""}<button class="alt x" onclick="closeDlg()" title="Close">Close</button>`;
       }
@@ -6190,6 +6330,7 @@
       /* ---------- NPC dialogs ---------- */
       const dlgOpen = () => !$("dlg").hidden;
       function closeDlg() {
+        bjClockStop(); /* the blackjack Assist clock */
         CUR_DLG = "";
         $("dlg").hidden = true;
         $("dp").className = "pn"; /* the shop widens the panel */
@@ -6924,6 +7065,280 @@
         guildUI();
       }
 
+      /* ---------- BJ_VFX: blackjack juice. Visual only: never reads or changes gold, cards or results. ----------
+         One overlay canvas above the dialog, drawn only while something is alive: the rAF loop stops itself and hides the canvas.
+         Particles sit in a fixed typed-array pool (no allocation per frame): sparks, coins, chips, confetti, dust and rings.
+         Coins and chips can fly on an arc from A to B (bets onto the table, payouts to your purse, losses to the Barkeep).
+         Table beats (stamps, flashes, shake, floating tags) are CSS classes / small elements on the freshly drawn table.
+         Settings: Low spec (x0.4, smaller pool, 1x canvas) and "Full particle effects" off (x0.35) cut particles; Screen shake
+         scales or removes shake; prefers-reduced-motion drops particles, flashes and shake (CSS animations are off there too).
+         The win streak is a display counter only (not saved, never paid). */
+      const BJ_VFX = (() => {
+        const CAP = 240, SPARK = 0, COIN = 1, CHIP = 2, CONF = 3, DUST = 4, RING = 5, FLY = 8; /* kind | FLY: arcs from (ox, oy) to (tx, ty) */
+        const PAL = ["#ffd84a", "#fff3c4", "#7dff9a", "#ff4d4d", "#c1a2ff", "#5af0d8", "#ffffff", "#ff8a3a", "#2f6fd6", "#c8323c", "#2f9a4a", "#9a9a9a", "#b8860b"];
+        const C = { gold: 0, cream: 1, green: 2, red: 3, violet: 4, teal: 5, white: 6, orange: 7, blue: 8, ruby: 9, leaf: 10, grey: 11 };
+        const F = () => new Float32Array(CAP);
+        const x = F(), y = F(), vx = F(), vy = F(), l = F(), m = F(), s = F(), r = F(), vr = F(), d = F(), ox = F(), oy = F(), tx = F(), ty = F();
+        const kd = new Uint8Array(CAP), cl = new Uint8Array(CAP), P0 = { x: 0, y: 0 }, timers = [];
+        let n = 0, cv = null, g = null, W = 0, H = 0, D = 1, raf = 0, last = 0, rmq = null, streak = 0;
+        const reduced = () => { try { rmq = rmq || (typeof matchMedia == "function" ? matchMedia("(prefers-reduced-motion: reduce)") : 0); return !!(rmq && rmq.matches); } catch (e) { return false; } };
+        /* level(): particle multiplier for the current settings (0 = none) */
+        const level = () => (reduced() ? 0 : (SET.fx ? 1 : 0.35) * (SET.low ? 0.4 : 1));
+        const cap = () => (SET.low ? 80 : CAP);
+        const R = (a, b) => a + Math.random() * (b - a);
+        function add(k, c, X, Y, VX, VY, L, S, del) {
+          if (n >= cap()) return -1;
+          const i = n++;
+          kd[i] = k; cl[i] = c; x[i] = ox[i] = tx[i] = X; y[i] = oy[i] = ty[i] = Y; vx[i] = VX; vy[i] = VY; l[i] = m[i] = L; s[i] = S; r[i] = R(0, 6.28); vr[i] = R(-9, 9); d[i] = del || 0;
+          return i;
+        }
+        function mv(i, j) {
+          kd[i] = kd[j]; cl[i] = cl[j]; x[i] = x[j]; y[i] = y[j]; vx[i] = vx[j]; vy[i] = vy[j]; l[i] = l[j]; m[i] = m[j]; s[i] = s[j];
+          r[i] = r[j]; vr[i] = vr[j]; d[i] = d[j]; ox[i] = ox[j]; oy[i] = oy[j]; tx[i] = tx[j]; ty[i] = ty[j];
+        }
+        /* emit(kind, colour, x, y, count, speed, lift, life, size, delay): a burst; count is scaled by the settings */
+        function emit(k, c, X, Y, cnt, sp, up = 0, L = 0.7, S = 3, del = 0) {
+          cnt = Math.round(cnt * level());
+          for (let i = 0; i < cnt; i++) { const a = R(0, 6.283), v = R(0.3, 1) * sp; add(k, c, X, Y, Math.cos(a) * v, Math.sin(a) * v - up * R(0.5, 1), L * R(0.7, 1.2), S * R(0.7, 1.3), del + R(0, 0.06)); }
+          wake();
+          return cnt;
+        }
+        /* fly(kind, colour, x0, y0, x1, y1, count, delay, arc): coins / chips arc from one point to another, one after another */
+        function fly(k, c, X0, Y0, X1, Y1, cnt, del = 0, arc = 60) {
+          const lv = level();
+          cnt = lv ? Math.max(1, Math.round(cnt * lv)) : 0;
+          for (let i = 0; i < cnt; i++) {
+            const j = add(k | FLY, c, X0 + R(-8, 8), Y0 + R(-6, 6), 0, arc * R(0.7, 1.2), R(0.45, 0.6), k == CHIP ? 7 : 6, del + i * 0.06);
+            if (j >= 0) { tx[j] = X1 + R(-10, 10); ty[j] = Y1 + R(-5, 5); }
+          }
+          wake();
+          return cnt;
+        }
+        function ring(c, X, Y, grow = 240, del = 0) { if (level()) add(RING, c, X, Y, grow, 0, 0.45, 6, del); wake(); }
+        function ensure() {
+          if (g) return true;
+          if (typeof document == "undefined" || !document.createElement || !document.body || !document.body.appendChild) return false;
+          const c = document.createElement("canvas"), c2 = c && c.getContext && c.getContext("2d");
+          if (!c2) return false;
+          c.className = "bjfx";
+          document.body.appendChild(c);
+          cv = c; g = c2;
+          return true;
+        }
+        function fit() {
+          const w = innerWidth || 1, h = innerHeight || 1, dp = SET.low ? 1 : Math.min(1.5, (typeof devicePixelRatio != "undefined" && devicePixelRatio) || 1);
+          if (w == W && h == H && dp == D) return;
+          W = w; H = h; D = dp; cv.width = Math.round(w * dp); cv.height = Math.round(h * dp);
+        }
+        function wake() {
+          if (!n || raf || !ensure()) return;
+          fit();
+          cv.style.display = "block";
+          last = performance.now();
+          raf = requestAnimationFrame(loop) || 0;
+        }
+        function loop(t) {
+          const dt = Math.min(0.05, Math.max(0, (t - last) / 1000));
+          last = t;
+          tick(dt);
+          draw();
+          raf = n ? requestAnimationFrame(loop) || 0 : 0;
+          if (!n) { g.setTransform(1, 0, 0, 1, 0, 0); g.clearRect(0, 0, cv.width, cv.height); cv.style.display = "none"; }
+        }
+        /* tick(dt): move every live particle; dead ones are swapped out (the pool never grows) */
+        function tick(dt) {
+          for (let i = 0; i < n; i++) {
+            if (d[i] > 0) { d[i] -= dt; continue; }
+            l[i] -= dt;
+            const k = kd[i];
+            if (l[i] <= 0 || y[i] > H + 60) {
+              if (k & FLY && l[i] <= 0) emit(SPARK, k == (COIN | FLY) ? C.gold : C.cream, tx[i], ty[i], 3, 70, 20, 0.3, 2); /* a glint where it lands */
+              mv(i, --n);
+              i--;
+              continue;
+            }
+            r[i] += vr[i] * dt;
+            if (k & FLY) {
+              const t = 1 - l[i] / m[i], e = t * t * (3 - 2 * t);
+              x[i] = ox[i] + (tx[i] - ox[i]) * e;
+              y[i] = oy[i] + (ty[i] - oy[i]) * e - Math.sin(t * 3.1416) * vy[i];
+              continue;
+            }
+            if (k == RING) { s[i] += vx[i] * dt; continue; }
+            if (k == DUST) { vx[i] *= 1 - 2.5 * dt; vy[i] = vy[i] * (1 - 2.5 * dt) - 24 * dt; s[i] += 12 * dt; }
+            else if (k == CONF) { vx[i] = vx[i] * (1 - 1.6 * dt) + Math.sin(r[i]) * 40 * dt; vy[i] = Math.min(vy[i] + 320 * dt, 120); }
+            else if (k == COIN) { vy[i] += 700 * dt; vx[i] *= 1 - 0.5 * dt; }
+            else { vx[i] *= 1 - 3 * dt; vy[i] = vy[i] * (1 - 3 * dt) + 240 * dt; }
+            x[i] += vx[i] * dt;
+            y[i] += vy[i] * dt;
+          }
+        }
+        function draw() {
+          g.setTransform(D, 0, 0, D, 0, 0);
+          g.clearRect(0, 0, W, H);
+          for (let i = 0; i < n; i++) {
+            if (d[i] > 0) continue;
+            const k = kd[i] & 7, f = l[i] / m[i], X = x[i], Y = y[i], S = s[i];
+            g.globalAlpha = Math.max(0, Math.min(1, kd[i] & FLY ? f * 6 : k == RING ? f : k == DUST ? f * 0.45 : f * 2));
+            g.fillStyle = g.strokeStyle = PAL[cl[i]];
+            if (k == SPARK) g.fillRect(X - S / 2, Y - S / 2, S, S);
+            else if (k == COIN) {
+              const w = Math.abs(Math.cos(r[i])) * S + 0.6;
+              g.beginPath(); g.ellipse(X, Y, w, S, 0, 0, 6.283); g.fill();
+              g.lineWidth = 1.2; g.strokeStyle = PAL[12]; g.stroke();
+              g.fillStyle = PAL[1]; g.fillRect(X - w * 0.45, Y - S * 0.55, w * 0.3, S * 0.5);
+            } else if (k == CHIP) {
+              g.beginPath(); g.arc(X, Y, S, 0, 6.283); g.fill();
+              g.fillStyle = g.strokeStyle = PAL[6]; g.lineWidth = 1.2;
+              g.beginPath(); g.arc(X, Y, S * 0.55, 0, 6.283); g.stroke();
+              for (let q = 0; q < 4; q++) { const a = r[i] + q * 1.5708; g.fillRect(X + Math.cos(a) * S * 0.8 - 1.5, Y + Math.sin(a) * S * 0.8 - 1.5, 3, 3); }
+            } else if (k == CONF) {
+              const c = Math.cos(r[i]), sn = Math.sin(r[i]), h = S * 0.5 * Math.abs(Math.cos(r[i] * 1.7)) + 0.6;
+              g.setTransform(D * c, D * sn, -D * sn, D * c, X * D, Y * D);
+              g.fillRect(-S, -h, 2 * S, 2 * h);
+              g.setTransform(D, 0, 0, D, 0, 0);
+            } else if (k == DUST) { g.beginPath(); g.arc(X, Y, S, 0, 6.283); g.fill(); }
+            else { g.lineWidth = Math.max(1, 4 * f); g.beginPath(); g.arc(X, Y, S, 0, 6.283); g.stroke(); }
+          }
+          g.globalAlpha = 1;
+        }
+        /* at(el): centre of an element on screen, into P0 (false if it is missing or not laid out) */
+        function at(el) {
+          if (!el || !el.getBoundingClientRect) return false;
+          const b = el.getBoundingClientRect();
+          if (!b.width && !b.height) return false;
+          P0.x = b.left + b.width / 2; P0.y = b.top + b.height / 2;
+          return true;
+        }
+        /* card(hand, i): where card i of a hand lands (the cards are mid-animation, so their own boxes are not used) */
+        function card(hand, i) {
+          const row = hand && hand.querySelector && hand.querySelector(".bjrow");
+          if (!row || !row.getBoundingClientRect) return false;
+          const b = row.getBoundingClientRect(), c0 = row.firstElementChild, cw = (c0 && c0.clientWidth) || 62, ch = cw * 1.39,
+            per = Math.max(1, Math.floor((b.width + 6) / (cw + 6))), lines = Math.ceil(row.children.length / per);
+          P0.x = b.left + (i % per) * (cw + 6) + cw / 2;
+          P0.y = lines > 1 ? b.top + Math.floor(i / per) * (ch + 6) + ch / 2 : b.top + b.height / 2;
+          return true;
+        }
+        const side = (hand) => at(hand && hand.querySelector && hand.querySelector(".bjv"));
+        const purse = () => at(document.querySelector && document.querySelector("#dp .purse"));
+        /* later(fn, s): run fn after s seconds; cancel() drops every pending beat (a new deal) */
+        function later(fn, t) { timers.push(setTimeout(fn, t * 1000)); }
+        function cancel() { for (const t of timers) clearTimeout(t); timers.length = 0; }
+        /* quake(tb, k): shake the table (CSS) and the world behind it, scaled by Screen shake; none with reduced motion */
+        function quake(tb, k, del = 0.25) {
+          const v = k * (+SET.shake || 0);
+          if (!(v > 0) || reduced()) return 0;
+          if (tb && tb.style) { tb.style.setProperty("--k", Math.min(6, v).toFixed(2)); tb.style.setProperty("--sd", del + "s"); tb.classList.add("bjshake"); }
+          if (typeof P != "undefined" && P) shake(Math.min(0.07 * k, 0.6));
+          return v;
+        }
+        /* flash(tb, kind, delay): a soft coloured glow over the table (g green, r red, w gold); none in Low spec or with reduced motion */
+        function flash(tb, k, del = 0) {
+          if (!tb || !tb.style || reduced() || SET.low) return;
+          tb.style.setProperty("--fd", del + "s");
+          tb.classList.add("bjfl" + k);
+        }
+        /* stamp(hand, text, kind, delay): a rubber-stamp result label on a hand (it stays: it is the result) */
+        function stamp(hand, t, k, del = 0) { if (hand && hand.insertAdjacentHTML) hand.insertAdjacentHTML("beforeend", `<b class="bjstamp ${k}" style="animation-delay:${del}s">${t}</b>`); }
+        /* tag(hand, text, kind): a short label that floats up and is removed after its animation */
+        function tag(hand, t, k) {
+          if (!hand || !hand.insertAdjacentHTML) return;
+          hand.insertAdjacentHTML("beforeend", `<b class="bjtag ${k}">${t}</b>`);
+          const el = hand.lastElementChild;
+          later(() => el && el.remove && el.remove(), 1.3);
+        }
+        /* ---- the beats ---- */
+        return {
+          C, emit, fly, ring, quake, flash, stamp, tag, later, cancel, reduced, level,
+          n: () => n,
+          cap,
+          tick,
+          streak: () => streak,
+          /* result(net): count the display win streak (a win adds one, a loss resets, a push keeps it); returns the streak */
+          result(net) { streak = net > 0 ? streak + 1 : net < 0 ? 0 : streak; return streak; },
+          /* deal(tb, hands): chips slide from your purse to your stake, dust puffs where the first four cards land */
+          deal(tb, hands) {
+            if (!tb) return;
+            if (purse() && side(hands[1])) { const px0 = P0.x, py0 = P0.y; side(hands[1]); fly(CHIP, C.ruby, px0, py0, P0.x, P0.y - 18, 4, 0, 50); }
+            for (let h = 0; h < 2; h++) for (let i = 0; i < 2; i++) if (card(hands[h], i)) { emit(DUST, C.cream, P0.x, P0.y + 30, 4, 40, 10, 0.5, 5, 0.2 + i * 0.12); emit(SPARK, C.gold, P0.x, P0.y, 3, 90, 30, 0.3, 2, 0.2 + i * 0.12); }
+          },
+          /* hit(tb, hand, i, heavy): the new card slams down; the closer to 21, the bigger */
+          hit(tb, hand, i, heavy) {
+            if (card(hand, i)) {
+              emit(DUST, C.cream, P0.x, P0.y + 30, 5 + heavy * 2, 50 + heavy * 12, 10, 0.55, 5, 0.22);
+              emit(SPARK, heavy >= 3 ? C.orange : C.gold, P0.x, P0.y, 6 + Math.round(heavy * 3), 120 + heavy * 30, 40, 0.35, 2.4, 0.22);
+              emit(COIN, C.gold, P0.x, P0.y - 20, 3, 120, 220, 0.8, 4, 0.22);
+            }
+            if (side(hand)) ring(heavy >= 3 ? C.orange : C.gold, P0.x, P0.y, 160, 0.25);
+            quake(tb, heavy > 0 ? heavy : 0.35);
+          },
+          /* stand(hand): a red "STAND" tag floats off the hand */
+          stand(tb, hand) { tag(hand, "STAND", "st"); if (side(hand)) { emit(SPARK, C.red, P0.x, P0.y, 8, 90, 10, 0.35, 2); ring(C.red, P0.x, P0.y, 140); } quake(tb, 0.25, 0); },
+          /* double(tb, hand, i): two chip stacks join the bet, gold ring and sparks on the sideways card */
+          double(tb, hand, i) {
+            if (purse() && side(hand)) { const px0 = P0.x, py0 = P0.y; side(hand); fly(CHIP, C.gold, px0, py0, P0.x, P0.y - 18, 5, 0, 70); }
+            if (card(hand, i)) { ring(C.gold, P0.x, P0.y, 220, 0.3); emit(SPARK, C.gold, P0.x, P0.y, 16, 200, 60, 0.5, 2.6, 0.3); }
+            flash(tb, "w", 0.25);
+          },
+          /* split(tb, a, b): violet sparks along the cut, a chip stack for the new hand */
+          split(tb, a, b) {
+            if (side(b)) {
+              const bx = P0.x, by = P0.y;
+              ring(C.violet, bx, by, 200, 0.1);
+              if (purse()) fly(CHIP, C.violet, P0.x, P0.y, bx, by - 18, 4, 0, 50);
+            }
+            if (a && b && a.getBoundingClientRect && card(a, 1)) { const yy = b.getBoundingClientRect().top; for (let k = 0; k < 5; k++) emit(SPARK, C.violet, P0.x - 60 + k * 40, yy, 3, 90, 20, 0.4, 2.2, k * 0.04); }
+          },
+          /* reveal(tb, dealer, extra): the hole card flips with a glint; each extra Barkeep card lands with dust */
+          reveal(tb, dealer, extra) {
+            if (card(dealer, 1)) { emit(SPARK, C.teal, P0.x, P0.y, 12, 150, 20, 0.45, 2.4, 0.15); ring(C.teal, P0.x, P0.y, 180, 0.15); }
+            for (let j = 0; j < extra; j++) if (card(dealer, 2 + j)) emit(DUST, C.cream, P0.x, P0.y + 30, 4, 40, 10, 0.5, 5, 0.5 + j * 0.32);
+          },
+          /* bust(tb, hand): red smoke, a red flash, a jolt; the cards slump */
+          bust(tb, hand, del = 0) {
+            if (hand && hand.classList) hand.classList.add("bjcrumble");
+            if (side(hand)) { emit(DUST, C.red, P0.x, P0.y, 10, 70, 20, 0.9, 7, del + 0.3); emit(SPARK, C.red, P0.x, P0.y, 10, 160, 10, 0.4, 2.4, del + 0.3); }
+            flash(tb, "r", del + 0.3);
+            quake(tb, 1.5, del + 0.3);
+          },
+          /* win(tb, hand, del, big): payout coins fly from the hand to your purse, a green ring, confetti on a streak */
+          win(tb, hand, del, coins, conf) {
+            if (!side(hand)) return;
+            const hx = P0.x, hy = P0.y;
+            ring(C.green, hx, hy, 260, del);
+            emit(SPARK, C.green, hx, hy, 10, 170, 40, 0.5, 2.4, del);
+            if (conf) for (let k = 0; k < 3; k++) emit(CONF, k, hx, hy - 10, Math.round(conf / 3), 260, 160, 1.3, 4, del + k * 0.05);
+            if (purse()) fly(COIN, C.gold, hx, hy, P0.x, P0.y, coins, del + 0.15, 90);
+          },
+          /* lose(tb, hand, dealer, del): your chips slide over to the Barkeep */
+          lose(tb, hand, dealer, del) {
+            if (!side(hand)) return;
+            const hx = P0.x, hy = P0.y;
+            if (side(dealer)) fly(CHIP, C.ruby, hx, hy - 18, P0.x, P0.y, 3, del, 40);
+          },
+          /* push(tb, hand, del): your stake slides back to your purse */
+          push(tb, hand, del) { if (side(hand)) { const hx = P0.x, hy = P0.y; if (purse()) fly(CHIP, C.grey, hx, hy - 18, P0.x, P0.y, 2, del, 40); } },
+          /* dealerBust(tb, dealer, del): the Barkeep goes over: smoke off his row */
+          dealerBust(tb, dealer, del) { if (side(dealer)) { emit(DUST, C.grey, P0.x, P0.y, 10, 70, 30, 0.9, 7, del); emit(SPARK, C.orange, P0.x, P0.y, 12, 180, 30, 0.45, 2.4, del); } quake(tb, 1, del); },
+          /* twentyOne(tb, hand): a gold ring and sparks around the score */
+          twentyOne(tb, hand) { if (side(hand)) { ring(C.gold, P0.x, P0.y, 260, 0.2); emit(SPARK, C.gold, P0.x, P0.y, 18, 220, 50, 0.6, 2.6, 0.2); } flash(tb, "w", 0.2); },
+          /* blackjack(tb, hand): the full celebration: coin fountain, confetti, two rings, gold flash, big shake */
+          blackjack(tb, hand) {
+            if (!side(hand)) return;
+            const hx = P0.x, hy = P0.y;
+            ring(C.gold, hx, hy, 320, 0.1); ring(C.cream, hx, hy, 220, 0.3);
+            emit(COIN, C.gold, hx, hy, 26, 300, 380, 1.4, 6, 0.1);
+            for (let k = 0; k < 4; k++) emit(CONF, k ? k + 1 : 0, hx, hy, 9, 320, 260, 1.6, 4, 0.15 + k * 0.05);
+            if (purse()) fly(COIN, C.gold, hx, hy, P0.x, P0.y, 8, 0.8, 110);
+            flash(tb, "w", 0.05);
+            quake(tb, 3, 0.1);
+          },
+          /* fire(tb, el, k): flame sparks off the streak badge */
+          fire(el, k, del) { if (at(el)) emit(SPARK, k >= 5 ? C.violet : C.orange, P0.x, P0.y, 6 + Math.min(k, 8) * 2, 110, 120, 0.6, 2.4, del); },
+        };
+      })();
+
       /* ---------- Blackjack at the bar (bet gold, beat the Barkeep) ---------- */
       let BJ = null; /* {bet, p: player cards, d: dealer cards, end: "" | result text} */
       const bjCard = () => 1 + Math.floor(Math.random() * 13); /* 1 = ace, 11-13 = J Q K */
@@ -7032,22 +7447,64 @@
       /* the chart is free; the Assist (best-play hint + your cell highlighted) is rented: BJ_CHART.cost gold for BJ_CHART.sec seconds (V.bjc = end, ms) */
       const BJ_CHART = { cost: 50, sec: 30, bonus: 10 }; /* sec: Assist seconds per rent; bonus: seconds added by a natural blackjack */
       const bjChartOn = () => (V.bjc || 0) > Date.now();
-      const bjChartLeft = () => { const t = Math.max(0, Math.ceil(((V.bjc || 0) - Date.now()) / 1000)); return Math.floor(t / 60) + ":" + String(t % 60).padStart(2, "0"); };
-      /* bjAssistBox(): the Assist box inside the chart: the offer, or the time left with a button to add more */
-      function bjAssistBox() {
-        const on = bjChartOn(), btn = `<button class="bjchb" ${V.gold < BJ_CHART.cost ? "disabled" : ""} onclick="bjChartBuy()">${on ? "+" + BJ_CHART.sec + " s · " : ""}<i class="coin"></i>${BJ_CHART.cost}</button>`;
-        return on
-          ? `<div class="bjassist on"><div class="bja-t">🔮 <b>Assist</b><span class="bjleft">${bjChartLeft()}</span></div><div class="bja-d">Blackjack: +${BJ_CHART.bonus} s</div>${btn}</div>`
-          : `<div class="bjassist"><div class="bja-t">🔮 <b>Assist</b></div><div class="bja-d">Shows your best play · ${BJ_CHART.sec} s<br>Blackjack: +${BJ_CHART.bonus} s</div>${btn}</div>`;
+      const bjSecLeft = () => Math.max(0, Math.ceil(((V.bjc || 0) - Date.now()) / 1000));
+      /* Assist price: BJ_CHART.cost x V.bjm. Each rent multiplies V.bjm by BJ_PRICE.mul (cap BJ_PRICE.max); the extra cools back toward
+         x1, halving every BJ_PRICE.half minutes since the last rent (V.bjmAt). A bad save value only ever reads as x1 or more.
+         Not validated by the server yet: a hacked client could underpay (follow-up risk, see README handoff). */
+      const BJ_PRICE = { mul: 1.5, max: 20, half: 10 };
+      function bjMul() {
+        const m = Math.min(BJ_PRICE.max, Math.max(1, +V.bjm || 1)), min = Math.max(0, (Date.now() - (+V.bjmAt || 0)) / 60000);
+        return 1 + (m - 1) * Math.pow(0.5, min / BJ_PRICE.half);
       }
+      const bjPrice = () => Math.max(BJ_CHART.cost, Math.round(BJ_CHART.cost * bjMul()));
+      const bjNextPrice = () => Math.round(BJ_CHART.cost * Math.min(BJ_PRICE.max, bjMul() * BJ_PRICE.mul));
+      /* bjClock(): the Assist's seconds left: big number, spinning coins, light rays and an aura (warmer and faster at 10 s or less).
+         bjClockTick() updates only the number, once a second. Low spec: static glow; effects off: softer glow; reduced motion: number only. */
+      function bjClock() {
+        const t = bjSecLeft();
+        return `<span class="bjclock${t <= 10 ? " hot" : ""}${SET.low ? " lo" : ""}${SET.fx ? "" : " nofx"}" title="Assist time left"><i class="bjrays"></i><i class="coin bjspin"></i><b class="bjsec">${t}</b><small>s</small><i class="coin bjspin r"></i></span>`;
+      }
+      let BJ_TICK = 0, BJ_TICKING = false, BJ_VIEW = ""; /* the 1 s Assist clock timer (stopped on close and when the Assist runs out); BJ_VIEW: "chart" | "table" */
+      function bjClockStop() { if (BJ_TICK) clearTimeout(BJ_TICK); BJ_TICK = 0; BJ_TICKING = false; }
+      function bjClockStart() { bjClockStop(); if (!bjChartOn()) return; BJ_TICKING = true; BJ_TICK = setTimeout(bjClockTick, 1000 - (Date.now() % 1000) + 20); }
+      function bjClockTick() {
+        BJ_TICK = 0;
+        if (!BJ_TICKING) return;
+        const els = document.querySelectorAll ? document.querySelectorAll("#dp .bjclock") : [];
+        if (!els.length || $("dlg").hidden) return bjClockStop();
+        if (!bjChartOn()) { bjClockStop(); return BJ_VIEW == "chart" ? bjChartUI() : bjUI(); } /* the Assist ran out: redraw without it */
+        const t = bjSecLeft();
+        for (const el of els) {
+          const b = el.querySelector(".bjsec");
+          if (b) b.textContent = t;
+          if (t <= 10) el.classList.add("hot");
+        }
+        if (!SET.low) BJ_VFX.fire(els[0], t <= 10 ? 3 : 1, 0); /* a few gold sparks off the clock each second */
+        BJ_TICK = setTimeout(bjClockTick, 1000 - (Date.now() % 1000) + 20);
+      }
+      /* bjAssistBox(): the Assist box inside the chart: the offer, or the time left with a button to add more.
+         The button shows the live price, the price after this rent, and the multiplier per rent. */
+      function bjAssistBox() {
+        const on = bjChartOn(), price = bjPrice(), next = bjNextPrice(),
+          btn = `<button class="bjchb" ${V.gold < price ? "disabled" : ""} onclick="bjChartBuy()">${on ? "+" + BJ_CHART.sec + " s · " : ""}<i class="coin"></i>${price} <small class="bjnext">→ ${next} · ×${BJ_PRICE.mul}</small></button>`,
+          cool = `<div class="bja-d bjcool">Price ×${BJ_PRICE.mul} per rent · cools down over time${price > BJ_CHART.cost ? ` (now ×${bjMul().toFixed(1)})` : ""}</div>`;
+        return on
+          ? `<div class="bjassist on"><div class="bja-t">🔮 <b>Assist</b>${bjClock()}</div><div class="bja-d">Blackjack: +${BJ_CHART.bonus} s</div>${btn}${cool}</div>`
+          : `<div class="bjassist"><div class="bja-t">🔮 <b>Assist</b></div><div class="bja-d">Shows your best play · ${BJ_CHART.sec} s<br>Blackjack: +${BJ_CHART.bonus} s</div>${btn}${cool}</div>`;
+      }
+      /* bjChartBuy(): rent the Assist at the live price. It only ever spends gold. */
       function bjChartBuy() {
-        if (V.gold < BJ_CHART.cost) return;
-        goldAdd(-BJ_CHART.cost, "bjchart");
+        const price = bjPrice();
+        if (!(price >= BJ_CHART.cost) || V.gold < price) return;
+        goldAdd(-price, "bjchart");
+        V.bjm = Math.min(BJ_PRICE.max, bjMul() * BJ_PRICE.mul);
+        V.bjmAt = Date.now();
         V.bjc = Math.max(Date.now(), V.bjc || 0) + BJ_CHART.sec * 1e3;
         BJ_SIDE = true;
         save();
         toast(`🔮 Assist rented for ${BJ_CHART.sec} seconds`);
-        sfx("coin", 1.1);
+        bjSnd("chip");
+        bjSnd("streak", 0.1, 3);
         bjUI();
       }
       /* bjMini(): the chart table for the current hand, shown beside the cards while playing */
@@ -7071,6 +7528,8 @@
       function bjChartUI(tab = "hard") {
         const live = BJ && !BJ.end && bjChartOn(), col = live ? bjCol(BJ.d[0]) : -1, row = bjChartRow();
         if (row && tab == "hard" && row[0] != "hard") tab = row[0];
+        BJ_VIEW = "chart";
+        bjClockStart();
         const grid = (tbl, name, lab) => bjGrid(tbl, name, lab, row, col);
         const tabs = [["hard", "Hard"], ["soft", "Soft (Ace)"], ["pair", "Pairs"], ["odds", "Odds"]];
         let body = "";
@@ -7100,46 +7559,120 @@
       const bjCur = () => BJ.hs[BJ.i];
       const bjCanDouble = () => BJ && !BJ.end && bjCur().c.length == 2 && (BJ.tutorial || V.gold >= bjCur().bet); /* tutorial: 11 vs dealer 10, the textbook double (free if short on gold) */
       const bjCanSplit = () => BJ && !BJ.end && BJ.hs.length < 4 && bjCur().c.length == 2 && Math.min(10, bjCur().c[0]) == Math.min(10, bjCur().c[1]) && V.gold >= bjCur().bet && !BJ.tutorial;
-      /* bjFx(): plays the animation the last action asked for (BJ.fx), on the freshly drawn table */
+      /* bjSnd(k, delay, a): a BJ_SFX beat, now or after delay seconds (cancelled by the next deal); safe if BJ_SFX is missing */
+      function bjSnd(k, t = 0, a) {
+        if (typeof BJ_SFX == "undefined" || !BJ_SFX[k]) return;
+        if (t > 0) BJ_VFX.later(() => BJ_SFX[k](a), t);
+        else BJ_SFX[k](a);
+      }
+      /* bjFx(): plays the beat the last action asked for (BJ.fx) on the freshly drawn table, then, once per round, the reveal and
+         the results: stamps, payout coins, lost chips, flashes, the win streak. Visual and sound only. Without a table (tests) the
+         sounds and the streak still run. */
       function bjFx() {
-        const fx = BJ && BJ.fx, tb = document.querySelector && document.querySelector("#dp .bjtable");
-        if (!fx || !tb) return;
+        if (!BJ) return;
+        const fx = BJ.fx, endNow = !!(BJ.end && !BJ.fxEnd), tb = (document.querySelector && document.querySelector("#dp .bjtable")) || null;
+        if (!fx && !endNow) return;
         BJ.fx = null;
-        const hands = tb.querySelectorAll(".bjhand"), cur = hands[1 + (fx.hand ?? BJ.i)];
-        /* only risky hits shake: a mini shake at 17, a bit more at 18, then clearly bigger at 19 and 20 (21 or bust: 5); +0.5 per earlier hit on this hand */
-        const tot = fx.tot || 0, heavy = fx.k == "hit" && tot >= 17 ? ({ 17: 0.5, 18: 0.9, 19: 2.6, 20: 3.6 }[tot] ?? 5) + Math.max(0, (fx.n || 1) - 1) * 0.5 : 0;
-        if (heavy > 0) {
-          tb.style.setProperty("--k", heavy);
-          tb.classList.add("bjshake");
-          const c = cur && cur.querySelectorAll(".bjc.new");
-          if (c && c.length) c[c.length - 1].classList.add("heavy");
-          if (P) shake(Math.min(0.07 * heavy, 0.6));
-          if (heavy >= 5) sfx("slam", 0.6 + heavy * 0.05); /* a deep thud near 21 */
+        const hands = tb ? tb.querySelectorAll(".bjhand") : [], k = fx ? fx.k : "", hi = fx && fx.hand != null ? fx.hand : BJ.i, cur = hands[1 + hi], hc = BJ.hs[hi] ? BJ.hs[hi].c : [];
+        if (k == "deal") { BJ_VFX.deal(tb, hands); bjSnd("chip"); bjSnd("deal", 0.2); bjSnd("deal", 0.32); }
+        if (k == "hit" || k == "21") {
+          /* only risky hits shake: a mini shake at 17, a bit more at 18, then clearly bigger at 19 and 20 (bust: 5); +0.5 per earlier hit on this hand */
+          const tot = bjVal(hc), heavy = k == "hit" && tot >= 17 ? ({ 17: 0.5, 18: 0.9, 19: 2.6, 20: 3.6 }[tot] ?? 5) + Math.max(0, (fx.n || 1) - 1) * 0.5 : 0;
+          if (cur) { const c = cur.querySelectorAll(".bjc.new"); if (c.length) c[c.length - 1].classList.add(heavy > 0 ? "heavy" : "slam"); if (!BJ.end) cur.classList.add("bjhit"); }
+          BJ_VFX.hit(tb, cur, hc.length - 1, heavy);
+          bjSnd("deal");
+          bjSnd("flip", 0.1);
+          bjSnd("hit", 0.22);
+          if (tot > 21) { BJ_VFX.bust(tb, cur); bjSnd("bust", 0.25); }
+          else if (heavy >= 5) sfx("slam", 0.6 + heavy * 0.05); /* a deep thud near 21 */
         }
-        if (fx.k == "21" && cur) { cur.classList.add("bj21"); cur.insertAdjacentHTML("beforeend", `<b class="bjx2">21!</b>`); sfx("coin", 1.6); }
-        if (fx.k == "double" && cur) {
-          cur.classList.add("bjdbl");
-          const c = cur.querySelectorAll(".bjc");
-          if (c.length) c[c.length - 1].classList.add("side");
-          cur.insertAdjacentHTML("beforeend", `<b class="bjx2">×2</b>`);
+        if (k == "21") {
+          if (cur) { cur.classList.add("bj21"); cur.insertAdjacentHTML("beforeend", `<b class="bjx2">21!</b>`); }
+          BJ_VFX.twentyOne(tb, cur);
+          sfx("coin", 1.6);
         }
-        if (fx.k == "split") for (const k of [0, 1]) hands[1 + BJ.i + k] && hands[1 + BJ.i + k].classList.add(k ? "bjsplitB" : "bjsplitA");
-        if (fx.k == "blackjack") { /* natural blackjack: golden banner, card glow, coin rain, big shake */
-          tb.insertAdjacentHTML("beforeend", `<div class="bjbig">BLACKJACK!<small>pays 3×${fx.ext ? ` · 🔮 +${BJ_CHART.bonus} s Assist` : ""}</small></div>`);
-          tb.classList.add("bjgold");
-          for (const c of hands[1] ? hands[1].querySelectorAll(".bjc") : []) c.classList.add("bjglow");
-          let rain = "";
-          for (let k = 0; k < 18; k++) rain += `<i class="coin bjcoin" style="left:${(k * 37) % 100}%;animation-delay:${(k % 6) * 0.08}s;--dx:${(k % 5) * 12 - 24}px"></i>`;
-          tb.insertAdjacentHTML("beforeend", rain);
-          if (P) { shake(0.5); burst(P.x, P.y, "#ffd84a", 60, 260); }
-          [1, 1.26, 1.5, 2].forEach((m, k) => setTimeout(() => sfx("coin", m), k * 110));
+        if (k == "stand") { if (cur) cur.classList.add("bjstood"); BJ_VFX.stand(tb, cur); bjSnd("stand"); }
+        if (k == "double") {
+          if (cur) {
+            cur.classList.add("bjdbl");
+            const c = cur.querySelectorAll(".bjc");
+            if (c.length) c[c.length - 1].classList.add("side");
+            cur.insertAdjacentHTML("beforeend", `<b class="bjx2">×2</b>`);
+          }
+          BJ_VFX.double(tb, cur, hc.length - 1);
+          bjSnd("double");
+          bjSnd("deal", 0.3);
+          if (bjVal(hc) > 21) { BJ_VFX.bust(tb, cur, 0.2); bjSnd("bust", 0.5); }
         }
-        if (fx.k == "reveal" && hands[0]) { const c = hands[0].querySelectorAll(".bjc"); if (c[1]) c[1].classList.add("flip"); }
+        if (k == "split") {
+          for (const j of [0, 1]) hands[1 + hi + j] && hands[1 + hi + j].classList.add(j ? "bjsplitB" : "bjsplitA");
+          BJ_VFX.split(tb, hands[1 + hi], hands[2 + hi]);
+          bjSnd("split");
+          bjSnd("chip", 0.12);
+        }
+        if (k == "blackjack") { /* natural blackjack: golden banner, card glow, coin fountain, confetti, big shake */
+          if (tb && !BJ_VFX.reduced()) { /* reduced motion: no banner (the result line says it) */
+            tb.insertAdjacentHTML("beforeend", `<div class="bjbig">BLACKJACK!<small>pays 3×${fx.ext ? ` · 🔮 +${BJ_CHART.bonus} s Assist` : ""}</small></div>`);
+            const big = tb.lastElementChild;
+            BJ_VFX.later(() => big && big.remove && big.remove(), 2.4);
+            tb.classList.add("bjgold");
+            if (!BJ_VFX.reduced() && !SET.low) for (const c of hands[1] ? hands[1].querySelectorAll(".bjc") : []) c.classList.add("bjglow");
+          }
+          BJ_VFX.deal(tb, hands);
+          BJ_VFX.blackjack(tb, hands[1]);
+          const clk = fx.ext && document.querySelector && document.querySelector("#dp .bjclock"); /* the Assist got +10 s: flash the clock, pop "+10 s" */
+          if (clk) { clk.classList.add("plus"); clk.insertAdjacentHTML("beforeend", `<b class="bjplus">+${BJ_CHART.bonus} s</b>`); const pl = clk.lastElementChild; BJ_VFX.later(() => pl && pl.remove && pl.remove(), 1.6); BJ_VFX.fire(clk, 5, 0.3); }
+          if (P) burst(P.x, P.y, "#ffd84a", 60, 260);
+          bjSnd("chip");
+          bjSnd("deal", 0.2);
+          bjSnd("blackjack", 0.3);
+        }
+        if (endNow) bjFxEnd(tb, hands, k == "blackjack");
+      }
+      /* bjFxEnd(tb, hands, nat): the round is settled: flip the hole card, land the Barkeep's draws, then stamp every hand and
+         move the money (coins to your purse, chips to the Barkeep). T = when the Barkeep's last card has landed. */
+      function bjFxEnd(tb, hands, nat) {
+        BJ.fxEnd = 1;
+        const dealer = hands[0], extra = BJ.reveal ? Math.max(0, BJ.d.length - 2) : 0;
+        let T = 0.35;
+        if (BJ.reveal) {
+          BJ.reveal = 0;
+          const c = dealer && dealer.querySelectorAll(".bjc");
+          if (c && c[1]) c[1].classList.add("flip");
+          BJ_VFX.reveal(tb, dealer, extra);
+          bjSnd("reveal");
+          for (let j = 0; j < extra; j++) bjSnd("deal", 0.5 + j * 0.32);
+          T = extra ? 0.8 + (extra - 1) * 0.32 : 0.55;
+        }
+        const st = BJ_VFX.result(BJ.win);
+        if (bjVal(BJ.d) > 21) { BJ_VFX.stamp(dealer, "BUST", "bust", T - 0.1); BJ_VFX.dealerBust(tb, dealer, T - 0.1); }
+        let busts = 0;
+        BJ.hs.forEach((h, j) => {
+          const el = hands[1 + j];
+          if (bjVal(h.c) > 21) { busts++; BJ_VFX.stamp(el, "BUST", "bust", 0); }
+          else if (h.res == "win") {
+            BJ_VFX.stamp(el, nat ? "BLACKJACK" : "WIN", "win", T);
+            if (!nat) BJ_VFX.win(tb, el, T, Math.min(14, 4 + Math.round(h.bet / 10)), st >= 3 ? 6 + Math.min(st, 8) * 3 : 0);
+          } else if (h.res == "push") { BJ_VFX.stamp(el, "PUSH", "push", T); BJ_VFX.push(tb, el, T); }
+          else { BJ_VFX.stamp(el, "LOSE", "lose", T); BJ_VFX.lose(tb, el, dealer, T); }
+        });
+        if (BJ.win > 0) { BJ_VFX.flash(tb, "g", T); if (!nat) bjSnd("win", T); }
+        else if (BJ.win < 0) { if (busts < BJ.hs.length) { BJ_VFX.flash(tb, "r", T); BJ_VFX.quake(tb, 0.6, T); bjSnd("lose", T); } }
+        else bjSnd("push", T);
+        if (st >= 2) {
+          if (tb) {
+            tb.insertAdjacentHTML("beforeend", `<b class="bjstreak up t${st >= 5 ? 5 : st >= 3 ? 3 : 2}" style="animation-delay:${T + 0.3}s">🔥 ${st} in a row</b>`);
+            BJ_VFX.fire(tb.lastElementChild, st, T + 0.3);
+          }
+          bjSnd("streak", T + 0.45, st);
+        }
       }
       function bjUI() {
-        if (BJ && BJ.end && BJ.wasHidden) { BJ.wasHidden = 0; BJ.fx = BJ.fx || { k: "reveal" }; }
+        if (BJ && BJ.end && BJ.wasHidden) { BJ.wasHidden = 0; BJ.reveal = 1; }
+        BJ_VIEW = "table";
         bjUIDraw();
         bjFx();
+        bjClockStart();
       }
       function bjUIDraw() {
         if ($("dp").classList) $("dp").classList.remove("bjwide");
@@ -7149,7 +7682,7 @@
             const dSt = BJ.hs.every((h) => h.res == "lose") ? "win" : BJ.hs.every((h) => h.res == "win") ? "lose" : "";
             last = `<div class="qo ${BJ.win > 0 ? "done" : ""}">${BJ.end}</div><div class="bjtable">${bjHand(BJ.d, "d", dSt)}${BJ.hs.map((h, k) => bjHand(h.c, "p" + k, h.res == "push" ? "" : h.res, false, h.bet)).join("")}</div>`;
           }
-          const rent = "";
+          const rent = bjChartOn() ? `<div class="bjtip bjend">🔮 Assist${bjClock()}</div>` : "";
           $("dp").innerHTML = `<h2>🍺 The Barkeep</h2><p class="sm">"Fancy a hand of blackjack? Beat my cards, double your coin."</p>${last}${rent}
             <div class="purse"><span class="coin"></span><b>${V.gold}</b></div>
             <div class="row">${[10, 50, 100].map((b) => `<button ${V.gold < b ? "disabled" : ""} onclick="bjDeal(${b})"><span class="coin"></span>${b}</button>`).join("")}</div>
@@ -7160,9 +7693,9 @@
         BJ.wasHidden = 1;
         if (BJ_SIDE && $("dp").classList) $("dp").classList.add("bjwide");
         $("dp").innerHTML = `<h2>🍺 Blackjack</h2><div class="bjbet">${((t) => `Bet <i class="coin"></i>${t} <span class="bjpay">W:<i class="coin"></i>${t * 2}</span> <span class="bjbjp">BJ:<i class="coin"></i>${t * 3}</span>`)(BJ.hs.reduce((n, h) => n + h.bet, 0))}</div><div class="bjwrap ${BJ_SIDE ? "" : "solo"}"><div class="bjmain">
-          <div class="bjtable">${bjHand(BJ.d, "d", "", true)}${BJ.hs.map((h, k) => bjHand(h.c, "p" + k, many && k == BJ.i ? "now" : "", false, many || h.bet != BJ.bet ? h.bet : 0)).join("")}</div>
+          <div class="bjtable">${bjHand(BJ.d, "d", "", true)}${BJ.hs.map((h, k) => bjHand(h.c, "p" + k, many && k == BJ.i ? "now" : "", false, many || h.bet != BJ.bet ? h.bet : 0)).join("")}${((st) => (st >= 2 ? `<b class="bjstreak t${st >= 5 ? 5 : st >= 3 ? 3 : 2}">🔥 ${st} in a row</b>` : ""))(BJ_VFX.streak())}</div>
           <div class="bjtip"><div class="purse"><span class="coin"></span><b>${V.gold}</b></div>${bjChartOn()
-            ? `🔮 Best play: <b class="${BJ_ACT[bjAdvice(bjCur().c, BJ.d[0], bjCanDouble(), bjCanSplit())][1]}">${BJ_ACT[bjAdvice(bjCur().c, BJ.d[0], bjCanDouble(), bjCanSplit())][0]}</b><span class="bjleft">${bjChartLeft()}</span>`
+            ? `🔮 Best play: <b class="${BJ_ACT[bjAdvice(bjCur().c, BJ.d[0], bjCanDouble(), bjCanSplit())][1]}">${BJ_ACT[bjAdvice(bjCur().c, BJ.d[0], bjCanDouble(), bjCanSplit())][0]}</b>${bjClock()}`
             : ""}<button class="bjchb ${BJ_SIDE ? "on" : ""}" aria-expanded="${BJ_SIDE}" title="${BJ_SIDE ? "Hide strategy chart" : "Show strategy chart"}" onclick="BJ_SIDE=!BJ_SIDE;bjUI()">📖 ${BJ_SIDE ? "Hide" : "Show"} chart</button></div>
           <div class="row">${BJ.tutorial ? `<p class="sm">You hold 11: always double here!</p>` : `<button onclick="bjHit()">HIT</button><button class="bjst" onclick="bjStand()">STAND</button>`}${bjCanDouble() ? `<button class="bjdb" onclick="bjDouble()">DOUBLE</button>` : ""}${bjCanSplit() ? `<button class="bjsp" onclick="bjSplit()">SPLIT</button>` : ""}</div></div>${BJ_SIDE ? bjMini() : ""}</div>`;
       }
@@ -7174,7 +7707,8 @@
         const p = tutorialHand ? [5, 6] : [bjCard(), bjCard()], d = tutorialHand ? [10, 7] : [bjCard(), bjCard()];
         BJ = { bet, hs: [{ c: p, bet }], i: 0, d, end: "", win: 0, tutorial: tutorialHand };
         Object.defineProperty(BJ, "p", { get: () => BJ.hs[BJ.i].c }); /* the hand being played */
-        sfx("ui");
+        BJ_VFX.cancel(); /* drop the last round's pending beats */
+        BJ.fx = { k: "deal" };
         if (bjVal(p) == 21) return bjFinish(); /* natural blackjack */
         bjUI();
       }
@@ -7189,15 +7723,14 @@
         if (!BJ || BJ.end) return;
         bjCur().c.push(BJ.tutorial ? 10 : bjCard());
         bjCur().hits = (bjCur().hits || 0) + 1;
-        BJ.fx = { k: "hit", n: bjCur().hits, hand: BJ.i, tot: bjVal(bjCur().c) };
-        sfx("ui", 1.2 - Math.min(bjCur().hits, 5) * 0.08); /* deeper thud for each card in a row */
         const total = bjVal(bjCur().c);
-        if (total == 21) BJ.fx = { k: "21", hand: BJ.i };
+        BJ.fx = { k: total == 21 ? "21" : "hit", n: bjCur().hits, hand: BJ.i };
         if (BJ.tutorial && total == 21) return bjFinish();
         total >= 21 ? bjNext() : bjUI();
       }
       function bjStand() {
         if (!BJ || BJ.end) return;
+        BJ.fx = { k: "stand", hand: BJ.i };
         bjNext();
       }
       /* bjDouble(): double the bet, take exactly one card, the hand ends */
@@ -7208,7 +7741,6 @@
         bjCur().c.push(BJ.tutorial ? 10 : bjCard()); /* tutorial double lands 21 */
         BJ.fx = { k: "double", hand: BJ.i };
         if (P) burst(P.x, P.y, "#ffd84a", 18, 140);
-        sfx("coin", 0.8);
         bjNext();
       }
       /* bjSplit(): a pair becomes two hands with the same bet; both get their second card at once, then you play hand 1, then hand 2 */
@@ -7220,7 +7752,6 @@
         h.c.push(bjCard());
         if (BJ.seen) for (const k of Object.keys(BJ.seen)) if (k.startsWith("p")) BJ.seen[k] = Math.min(BJ.seen[k], 1);
         BJ.fx = { k: "split", hand: BJ.i };
-        sfx("ui", 0.9);
         bjVal(h.c) == 21 ? bjNext() : bjUI();
       }
       /* bjFinish(): settles every hand. Win pays 2x, natural blackjack (unsplit) 3x, push refunds. */
@@ -7249,7 +7780,7 @@
         BJ.end = one
           ? (bjVal(h0.c) > 21 ? "Bust! The Barkeep takes your coin." : msgs[0] == "BLACKJACK!" ? "BLACKJACK! +" + paid : h0.res == "win" ? "You win! +" + paid : h0.res == "push" ? "Push. Your bet is returned." : "The house wins this round.")
           : msgs.map((m, k) => "Hand " + (k + 1) + ": " + m).join(" · ") + (BJ.win > 0 ? "  +" + BJ.win : BJ.win < 0 ? "  " + BJ.win : "");
-        if (BJ.win > 0) { bountyAdd("bj"); if (P) burst(P.x, P.y, "#ffd84a", 26, 170); sfx("coin", 1.4); } else if (BJ.win < 0) sfx("hurt");
+        if (BJ.win > 0) { bountyAdd("bj"); if (P) burst(P.x, P.y, "#ffd84a", 26, 170); } /* sounds: bjFxEnd */
         save();
         bjUI();
       }

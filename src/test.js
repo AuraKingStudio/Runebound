@@ -20,7 +20,7 @@ ctx.Math=testMath;
 ctx.RBNet=fakeNet;
 ctx.window=ctx;vm.createContext(ctx);
 vm.runInContext(SRC+`
-;globalThis.devMin=devMin;globalThis.devFs=devFs;globalThis.T={V:()=>V,raidDrops,invUI,SMITH,setRaidTrial:(n)=>RAID_TRIAL=n,hpmF3:()=>hpm(),dashF:(p)=>dash(p),heal:(p,n,src)=>heal(p,n,src),PETS,npcHidden:(n)=>npcHidden(n),loreRewardT:(b)=>loreReward(b),clampWT:(p)=>clampW(p),maidTrade:(i)=>maidTrade(i),maidenUI:()=>maidenUI(),seraphBuy,BLESS,qAct:(a)=>qAct(a),bless,dmF2:()=>dm(),cdmF2:()=>cdm(),TRIAL_SEL,enterRaidT:(k)=>enterRaid(k),craftRefine,hpmF:()=>hpm(),cdmF:()=>cdm(),wp,eqRoll,dmF:()=>dm(),craftCost,craftMake,craftTemper,craftSalvage,FORGE,smithUI,invWear,MATS,setRaid:(k)=>S.raid=k,CLASS_DMG:()=>CLASS_DMG,P:()=>P,S:()=>S,start,devAdd,devUp,devUI,devCls,devHeal,devWipe,devResetQ,devArena,devBoss,devHub,DEV,hurt,act,step,pauseGame,resumeGame,isPaused:()=>paused,QUESTS,UPG,toggleDev,buy,shopUI,qAct,togglePause,dailyCheck,saveName,lvlInfo,gainXP,lvlCol,loreReward,isUnl,tutNext,bjVal,bjDeal,bjHit,bjStand,bjDouble,bjSplit,BJ:()=>BJ,guildFound,guildRecruit,gBonus,bountyDay,bountyAdd,bountyClaim,guildJoin,guildTab,rankPool,rankRefresh,rankSort,dm,dash,dashStep,setIn,padPoll,inMode:()=>INMODE,KEYHINT,HUBV:()=>HUBV,BOT_STUCK:()=>BOT_STUCK,ENGINE,cdMul,discordUnlock,openDlg,TUT_DONE,ult,ultDmg,ULT,inter,hitB,DASH,ZONE_DMG,RAIDS,BOSSES,raidTeam,raidAI,partyMembers,partyAdd,partyRemove,raidUI,playerUI,partyMessage,bash,taunt,inTele,toArena,toHub,raidPuppet,PARTY:()=>PARTY,netRelayFlush,raidNet,raidState,raidApply,raidNetStep,arena,HUB_NPCS,BOT_NPC_LV,BARKEEP,CLASSN,SKC,PEMB,hubJoin,hubLeave,hubCount,HUB_MAX,hubVisitStep,botName,botLook,chatSend,COS,cosOwn,cosV,cosBuyGold,cosEquip,shopPay,myEmote,streamPts,crossFrame,bridgeAt,riverNear,clampW,WF,STATUE,PORTAL,SET,keyLabel,EDGE,inIsle,netReceive,netPrepareHub,netStep,netPack,netUnpack,netAudit,auditRules,goldAdd,gainXP,netStats,LEDGER:()=>LEDGER,FX:()=>FX,FT:()=>FT,shk:()=>shk,marketUI,setNetTestSession:(role,session)=>{NET_ROLE=role;NET_SESSION=session;NET_CONNECTED=!!session;NET_AUTO_STARTED=!!session;},netTestState:()=>({role:NET_ROLE,session:NET_SESSION,connected:NET_CONNECTED}),els:null};`,ctx);
+;globalThis.devMin=devMin;globalThis.devFs=devFs;globalThis.T={V:()=>V,raidDrops,invUI,SMITH,setRaidTrial:(n)=>RAID_TRIAL=n,hpmF3:()=>hpm(),dashF:(p)=>dash(p),heal:(p,n,src)=>heal(p,n,src),PETS,npcHidden:(n)=>npcHidden(n),loreRewardT:(b)=>loreReward(b),clampWT:(p)=>clampW(p),maidTrade:(i)=>maidTrade(i),maidenUI:()=>maidenUI(),seraphBuy,BLESS,qAct:(a)=>qAct(a),bless,dmF2:()=>dm(),cdmF2:()=>cdm(),TRIAL_SEL,enterRaidT:(k)=>enterRaid(k),craftRefine,hpmF:()=>hpm(),cdmF:()=>cdm(),wp,eqRoll,dmF:()=>dm(),craftCost,craftMake,craftTemper,craftSalvage,FORGE,smithUI,invWear,MATS,setRaid:(k)=>S.raid=k,CLASS_DMG:()=>CLASS_DMG,P:()=>P,S:()=>S,start,devAdd,devUp,devUI,devCls,devHeal,devWipe,devResetQ,devArena,devBoss,devHub,DEV,hurt,act,step,pauseGame,resumeGame,isPaused:()=>paused,QUESTS,UPG,toggleDev,buy,shopUI,qAct,togglePause,dailyCheck,saveName,lvlInfo,gainXP,lvlCol,loreReward,isUnl,tutNext,bjVal,bjDeal,bjHit,bjStand,bjDouble,bjSplit,BJ:()=>BJ,guildFound,guildRecruit,gBonus,bountyDay,bountyAdd,bountyClaim,guildJoin,guildTab,rankPool,rankRefresh,rankSort,dm,dash,dashStep,setIn,padPoll,inMode:()=>INMODE,KEYHINT,HUBV:()=>HUBV,BOT_STUCK:()=>BOT_STUCK,ENGINE,cdMul,discordUnlock,openDlg,TUT_DONE,ult,ultDmg,ULT,inter,hitB,DASH,ZONE_DMG,RAIDS,BOSSES,raidTeam,raidAI,partyMembers,partyAdd,partyRemove,raidUI,playerUI,partyMessage,bash,taunt,inTele,toArena,toHub,raidPuppet,PARTY:()=>PARTY,netRelayFlush,raidNet,raidState,raidApply,raidNetStep,arena,HUB_NPCS,BOT_NPC_LV,BARKEEP,CLASSN,SKC,PEMB,hubJoin,hubLeave,hubCount,HUB_MAX,hubVisitStep,botName,botLook,chatSend,COS,cosOwn,cosV,cosBuyGold,cosEquip,shopPay,myEmote,streamPts,crossFrame,bridgeAt,riverNear,clampW,WF,STATUE,PORTAL,SET,keyLabel,EDGE,inIsle,netReceive,netPrepareHub,netStep,netPack,netUnpack,netAudit,auditRules,goldAdd,gainXP,netStats,LEDGER:()=>LEDGER,FX:()=>FX,FT:()=>FT,shk:()=>shk,marketUI,BJ_SFX,setNetTestSession:(role,session)=>{NET_ROLE=role;NET_SESSION=session;NET_CONNECTED=!!session;NET_AUTO_STARTED=!!session;},netTestState:()=>({role:NET_ROLE,session:NET_SESSION,connected:NET_CONNECTED}),els:null};`,ctx);
 vm.runInContext('T.raidChatSend=raidChatSend;T.pingBoss=pingBoss;',ctx);
 vm.runInContext('T.bjSide=()=>BJ_SIDE;',ctx);
 const T=ctx.T,BENCH_ONLY=process.argv.includes('--bench');let f=0;const ok=(c,m)=>{if(!c||!BENCH_ONLY)console.log((c?'PASS ':'FAIL ')+m);if(!c)f++};
@@ -126,9 +126,63 @@ T.bjHit();ok(T.V().gold==110&&ctx.document.getElementById('dp').innerHTML.includ
 {const M=ctx.Math;const seq=(a)=>{ctx.Math=Object.create(Math);ctx.Math.random=()=>a.length?a.shift():.1;};
  /* rolls map to ranks 1-13: .5 -> 7, .7 -> 10, .3 -> 4 */
  seq([.5,.3,.7,.6,.7]);T.V().gold=100;T.bjDeal(10);T.bjDouble();ok(T.BJ().end&&T.BJ().hs[0].bet==20&&T.BJ().hs[0].c.length==3,'blackjack: double takes one card, doubles the bet and ends the hand');
+{const M=['deal','flip','chip','hit','stand','double','split','reveal','bust','win','lose','push','blackjack','streak'],X=T.BJ_SFX,vol=T.SET.vol;
+ ok(M.every(m=>typeof X[m]=='function'),'BJ_SFX: every API method exists');
+ const had=ctx.AudioContext;delete ctx.AudioContext;let threw=false;try{T.SET.vol=1;M.forEach(m=>X[m](3));}catch(e){threw=true;}
+ ok(!threw,'BJ_SFX: no AudioContext -> every method is a safe no-op');
+ let nodes=0;const prm=()=>({setValueAtTime(){},exponentialRampToValueAtTime(){},value:0}),node=()=>(nodes++,{type:'',frequency:prm(),gain:prm(),Q:prm(),buffer:null,connect:x=>x||{connect:y=>y},start(){},stop(){}});
+ ctx.AudioContext=function(){return{currentTime:0,state:'running',sampleRate:8000,destination:{},resume(){},createOscillator:node,createGain:node,createBiquadFilter:node,createBufferSource:node,createBuffer:(c,n)=>({getChannelData:()=>new Float32Array(n)})};};
+ T.SET.vol=0;M.forEach(m=>X[m](2));ok(nodes==0,'BJ_SFX: volume 0 -> no audio nodes are made');
+ T.SET.vol=0.5;threw=false;try{M.forEach(m=>X[m](2));}catch(e){threw=true;}ok(!threw&&nodes>0,'BJ_SFX: with audio, every method plays without throwing');
+ T.SET.vol=vol;if(had)ctx.AudioContext=had;else delete ctx.AudioContext;}
  seq([.5,.5,.7,.6,.7,.7]);T.V().gold=100;T.bjDeal(10);const g=T.V().gold;T.bjSplit();ok(T.BJ().hs.length==2&&T.V().gold==g-10&&T.BJ().hs.every(h=>h.c.length==2),'blackjack: a pair splits into two hands, each with the bet');
  T.bjStand();T.bjStand();ok(T.BJ().end&&T.BJ().hs.every(h=>h.res),'blackjack: each split hand is played and settled');
  ctx.Math=M;}
+/* ---- blackjack juice (BJ_VFX), its sound wiring, and the Assist price + clock ---- */
+{const rs0=randomState;vm.runInContext('T.BJ_VFX=BJ_VFX;T.bjPrice=bjPrice;T.bjMul=bjMul;T.bjChartBuy=bjChartBuy;T.bjTicking=()=>BJ_TICKING;T.closeDlg=closeDlg;',ctx);
+ const X=T.BJ_VFX,S=T.SET,old={fx:S.fx,low:S.low,shake:S.shake},drain=()=>{for(let i=0;i<8;i++)X.tick(1);},mq={matches:false};ctx.matchMedia=()=>mq;
+ S.fx=1;S.low=0;S.shake=1;drain();
+ X.emit(0,0,100,100,1000,100);ok(X.n()<=240&&X.n()>0,'BJ_VFX: particles come from a fixed pool that never grows ('+X.n()+')');
+ drain();ok(X.n()==0,'BJ_VFX: dead particles return to the pool');
+ X.emit(0,0,0,0,100,100);const full=X.n();drain();S.low=1;X.emit(0,0,0,0,100,100);const low=X.n();drain();S.low=0;S.fx=0;X.emit(0,0,0,0,100,100);const nofx=X.n();drain();S.fx=1;
+ ok(full==100&&low==40&&nofx==35,'BJ_VFX: Low spec and effects-off cut particles ('+full+'/'+low+'/'+nofx+')');
+ S.low=1;X.emit(0,0,0,0,1000,100);ok(X.n()<=80,'BJ_VFX: Low spec uses a smaller pool');drain();S.low=0;
+ S.shake=0;ok(X.quake(null,3)==0,'BJ_VFX: Screen shake 0 -> no table shake');S.shake=1;ok(X.quake(null,3)>0,'BJ_VFX: shake on when allowed');
+ mq.matches=true;ok(X.emit(0,0,0,0,50,100)==0&&X.fly(1,0,0,0,9,9,5)==0&&X.quake(null,3)==0&&X.n()==0,'BJ_VFX: reduced motion -> no particles, flights or shake');mq.matches=false;
+ ok(X.result(10)==X.streak()&&X.result(5)>=2&&X.result(0)>=2&&X.result(-5)==0,'BJ_VFX: win streak counts wins, keeps on a push, resets on a loss');
+ /* a fake table: what the natural-blackjack beat inserts, with and without reduced motion */
+ const M=ctx.Math,seq=(a)=>{ctx.Math=Object.create(Math);ctx.Math.random=()=>a.length?a.shift():.5;},ins=[];
+ const el=()=>({classList:{add(){},remove(){}},style:{setProperty(){}},insertAdjacentHTML(p,h){ins.push(h)},querySelectorAll:()=>[],querySelector:()=>null,getBoundingClientRect:()=>({left:0,top:0,width:0,height:0}),lastElementChild:null});
+ const tb=el();tb.querySelectorAll=()=>[el(),el()];ctx.document.querySelector=(s)=>s=='#dp .bjtable'?tb:null;
+ const natural=()=>{ins.length=0;seq([0,.99,.5,.5]);T.V().gold=100;T.V().bj1=1;T.bjDeal(10);ctx.Math=M;return T.BJ().end.startsWith('BLACKJACK');};
+ ok(natural()&&ins.some(h=>h.includes('bjbig'))&&T.V().gold==120,'blackjack: a natural shows the BLACKJACK banner and still pays 3x');
+ mq.matches=true;ok(natural()&&!ins.some(h=>h.includes('bjbig')||h.includes('bjcoin')),'blackjack: reduced motion -> no BLACKJACK banner or coin rain');mq.matches=false;
+ ok(/prefers-reduced-motion: reduce\) \{\s*\.bjtable \.bjc, \.bjtable \.bjc\.bjglow/.test(fs.readFileSync(path.join(__dirname,'..','index.html'),'utf8')),'blackjack: reduced motion also stops the !important card glow');
+ delete ctx.document.querySelector;
+ /* every beat calls its BJ_SFX sound (delayed ones run when their timer fires) */
+ const calls=[],keep={},st=ctx.setTimeout,q=[];for(const k of Object.keys(T.BJ_SFX)){keep[k]=T.BJ_SFX[k];T.BJ_SFX[k]=()=>calls.push(k);}
+ ctx.setTimeout=(fn)=>{q.push(fn);return q.length;};const flush=()=>{const a=q.splice(0);a.forEach(fn=>fn());};
+ seq([.5,.3,.7,.6,.7,.7,.7]);T.V().gold=100;T.bjDeal(10);flush();ok(calls.includes('chip')&&calls.includes('deal'),'blackjack sfx: the deal clinks chips and slides cards');
+ calls.length=0;T.bjHit();flush();ok(['deal','flip','hit'].every(k=>calls.includes(k)),'blackjack sfx: a hit slides, flips and slams ('+calls.join(',')+')');
+ if(!T.BJ().end){T.bjStand();flush();}ok(calls.includes('reveal')&&calls.some(k=>['win','lose','push','bust'].includes(k)),'blackjack sfx: the end reveals and plays the result ('+calls.join(',')+')');
+ calls.length=0;seq([.5,.5,.7,.6,.7,.7,.7,.7]);T.V().gold=100;T.bjDeal(10);T.bjSplit();flush();ok(calls.includes('split'),'blackjack sfx: split');
+ calls.length=0;T.bjStand();flush();ok(calls.includes('stand'),'blackjack sfx: stand');T.bjStand();flush();
+ calls.length=0;seq([.5,.3,.7,.6,.7]);T.V().gold=100;T.bjDeal(10);T.bjDouble();flush();ok(calls.includes('double'),'blackjack sfx: double');
+ ctx.Math=M;ctx.setTimeout=st;for(const k of Object.keys(keep))T.BJ_SFX[k]=keep[k];
+ /* Assist: the price multiplies on each rent, cools down over time, only ever spends, and the 1 s clock stops on close */
+ const RD=ctx.Date;let now=RD.now();ctx.Date=class extends RD{static now(){return now;}};
+ const V=T.V();V.bjm=1;V.bjmAt=0;V.bjc=0;V.gold=1000;
+ ok(T.bjPrice()==50,'assist: starts at 50');
+ T.bjChartBuy();ok(V.gold==950&&T.bjPrice()==75,'assist: a rent costs 50, the next costs 75 (x1.5)');
+ T.bjChartBuy();ok(V.gold==875&&T.bjPrice()==113,'assist: the price keeps multiplying (113)');
+ ok(ctx.document.getElementById('dp').innerHTML.includes('class="bjsec">60<')&&T.bjTicking(),'assist: the table shows whole seconds left and the 1 s clock runs');
+ T.closeDlg();ok(!T.bjTicking(),'assist: closing the menu stops the clock timer');
+ now+=10*60000;ok(T.bjPrice()==81,'assist: the extra price halves every 10 minutes ('+T.bjPrice()+')');
+ now+=600*60000;ok(T.bjPrice()==50,'assist: the price cools back to 50');
+ V.gold=40;const bjc=V.bjc;T.bjChartBuy();ok(V.gold==40&&V.bjc==bjc,'assist: cannot rent when gold is short of the price');
+ for(const bad of [-5,NaN,'x',0.1])(V.bjm=bad,V.bjmAt=now);ok(T.bjPrice()==50,'assist: a broken save multiplier reads as x1 (never below 50)');
+ V.bjm=1e9;V.bjmAt=now;ok(T.bjPrice()==1000,'assist: the multiplier is capped at x20');
+ V.bjm=1;V.bjmAt=0;V.bjc=0;ctx.Date=RD;S.fx=old.fx;S.low=old.low;S.shake=old.shake;delete ctx.matchMedia;randomState=rs0;}
 T.V().gd=null;T.guildFound('Rune Riders');ok(T.V().gd&&T.V().gd.name=='Rune Riders','guild: found a guild');
 T.V().gold=1000;T.guildRecruit();T.guildRecruit();ok(T.V().gd.m.length==2&&T.V().gold==700&&Math.abs(T.gBonus()-0.06)<1e-9,'guild: recruits cost 100, 200 and give +3% each');
 T.V().bo=null;const bo=T.bountyDay();ok(bo.ids.length==3,'bounties: 3 rolled per day');
@@ -801,6 +855,8 @@ function runBench({scenario,players:N,seconds}){
  const sc=SCENARIOS[scenario],SEC=Math.max(seconds||3,sc.seconds||0),c={...ctx};c.window=c;vm.createContext(c);
  vm.runInContext(SRC.replace(/const HUB_MAX = \d+;/,'const HUB_MAX = '+N+';')+';globalThis.B={netReceive,netStep,netPrepareHub,hubVisitStep,devHub,clampW,netStats,netAudit,CL,V:()=>V,HUBV:()=>HUBV};',c);
  const B=c.B,ms=()=>Number(process.hrtime.bigint())/1e6,cpu={recv:0,send:0,smooth:0},FRAME=1000/60;
+ /* the first 0.5 s is JIT warm-up in a fresh context: run it, but leave it out of the CPU numbers */
+ const WARM=30;let timed=false;
  const r={scenario,players:N,cheaters:0,kickedCheat:0,kickedHonest:0,honestMoves:0,honestCorrected:0,cheatMoves:0,cheatCorrected:0,
   chatSent:0,chatAccepted:0,chatRejected:0,honestChatSent:0,honestChatAccepted:0,churned:0,guestBytes:0,guestMsgs:0,audits:0,hostAuditFailures:0};
  let next=0,seq=0,seen=0;const guests=new Map();
@@ -831,7 +887,7 @@ function runBench({scenario,players:N,seconds}){
  const auditHost=()=>{const snap=B.netStats('bench-auditor',1);const res=B.netAudit(hostPrev,snap,netClock-hostAt);hostAt=netClock;if(res.next)hostPrev=res.next;if(res.reasons.length)r.hostAuditFailures++;};
  auditHost();
  for(let frame=0;frame<SEC*60;frame++){
-  netClock+=FRAME;k.t=frame/60;
+  netClock+=FRAME;k.t=frame/60;timed=frame>=WARM;
   if(sc.churn&&frame>0&&frame%Math.round(sc.churn/FRAME)==0&&guests.size){const old=[...guests.keys()][0];guests.delete(old);fakeNet.disconnect(old);join();r.churned++;}
   if(sc.hostCheat&&frame%120==60)B.V().gold+=250; /* the master's own Cheat Engine edit */
   if(frame%240==0&&frame)auditHost();
@@ -840,21 +896,21 @@ function runBench({scenario,players:N,seconds}){
    const m=sc.guest(g,k);if(!m)continue;
    if(m.type=='m')m.s=++seq;else m.seq=++seq; /* moves number themselves in s, queries (chat) in seq */
    const before=fakeBroadcast.length,bytes=JSON.stringify(m).length;r.guestBytes+=bytes;r.guestMsgs++;
-   const t0=ms();B.netReceive(g.id,m);cpu.recv+=ms()-t0;
+   const t0=ms();B.netReceive(g.id,m);if(timed)cpu.recv+=ms()-t0;
    const replies=fakeBroadcast.slice(before).filter(x=>x.id==g.id);
    if(m.type=='m'){const corrected=replies.some(x=>x.msg.type=='c');if(g.cheater){r.cheatMoves++;if(corrected)r.cheatCorrected++;}else{r.honestMoves++;if(corrected)r.honestCorrected++;}}
    else if(m.type=='chat'){r.chatSent++;if(!g.cheater)r.honestChatSent++;const ack=replies.find(x=>x.msg.type=='ack');if(ack?.msg.ok){r.chatAccepted++;if(!g.cheater)r.honestChatAccepted++;}else if(ack)r.chatRejected++;}
    guestInbox();
   }
-  if(frame%3==0){const t0=ms();B.netStep();cpu.send+=ms()-t0;guestInbox();}
-  const t0=ms();B.hubVisitStep(FRAME/1000);cpu.smooth+=ms()-t0;
+  if(frame%3==0){const t0=ms();B.netStep();if(timed)cpu.send+=ms()-t0;guestInbox();}
+  const t0=ms();B.hubVisitStep(FRAME/1000);if(timed)cpu.smooth+=ms()-t0;
  }
  let up=0,upMsgs=0;const states=[];
  const byType={}; /* host upload split by message type: bytes and messages per second */
  for(const m of fakeBroadcast){const b=JSON.stringify(m.msg).length,n=m.id=='all'?guests.size:1;up+=b*n;upMsgs+=n;if(m.msg.type=='s')states.push(b);const e=byType[m.msg.type]||(byType[m.msg.type]={bytes:0,msgs:0});e.bytes+=b*n;e.msgs+=n;}
- const per=(x)=>+(x/SEC).toFixed(1);
+ const per=(x)=>+(x/SEC).toFixed(1),CSEC=(SEC*60-WARM)/60; /* seconds that were timed */
  Object.assign(r,{seconds:SEC,endPlayers:B.HUBV().filter(v=>v.netClientId).length+1,
-  cpuMs:+((cpu.recv+cpu.send+cpu.smooth)/SEC).toFixed(2),recvMs:+(cpu.recv/SEC).toFixed(2),sendMs:+(cpu.send/SEC).toFixed(2),smoothMs:+(cpu.smooth/SEC).toFixed(2),
+  cpuMs:+((cpu.recv+cpu.send+cpu.smooth)/CSEC).toFixed(2),recvMs:+(cpu.recv/CSEC).toFixed(2),sendMs:+(cpu.send/CSEC).toFixed(2),smoothMs:+(cpu.smooth/CSEC).toFixed(2),
   upKBps:per(up/1024),wireUpKBps:per((up+upMsgs*WIRE_OVERHEAD)/1024),upMsgsPerSec:Math.round(upMsgs/SEC),
   downKBps:per(r.guestBytes/1024),wireDownKBps:per((r.guestBytes+r.guestMsgs*WIRE_OVERHEAD)/1024),
   perGuestUpKBps:+(r.guestBytes/SEC/1024/Math.max(1,N-1)).toFixed(2),
@@ -897,8 +953,9 @@ async function benchTests(){
  for(const [scenario,players] of plan){
   if(!SCENARIOS[scenario]){ok(false,`bench: unknown scenario "${scenario}" (have: ${Object.keys(SCENARIOS).join(', ')})`);continue;}
   let r=runBench({scenario,players,seconds});
-  /* CPU is wall-clock time, so a busy PC (GC, other apps) can inflate one run: over budget -> run again, keep the faster one */
-  if(r.cpuMs*PHONE_SLOWDOWN>PHONE_CPU_MS*0.8){const r2=runBench({scenario,players,seconds});if(r2.cpuMs<r.cpuMs)r=r2;}
+  /* CPU is wall-clock time, so GC or other apps can inflate one run: a row near the budget is measured 5 times and the
+     median counts (one noisy run can neither fail nor pass it; a real regression moves the median) */
+  if(r.cpuMs*PHONE_SLOWDOWN>PHONE_CPU_MS*0.6){const runs=[r,...Array.from({length:4},()=>runBench({scenario,players,seconds}))].sort((a,b)=>a.cpuMs-b.cpuMs);r=runs[2];}
   rows.push(r);
   for(const [c,label] of [...BASE_CHECKS(r),...SCENARIOS[scenario].checks(r)])ok(c,`bench ${scenario} ${players}p: ${label}`);
   if(!BENCH_ONLY)console.log('BENCH',JSON.stringify({scenario,players,cpuMs:r.cpuMs,upKBps:r.upKBps,downKBps:r.downKBps,biggestState:r.biggestState}));
