@@ -150,6 +150,8 @@ V.eq.bag[0]={id:'w1',t:'dmg',k:'wt',r:2};ok(T.wp('dr')==0.04&&T.wp('cd1')==0.15,
 V.eq.bag[0].r=4;ok(T.wp('hp')==0.2,'weapon: the Legendary Aegis gives +20% max health');P.cls='heal';V.eq.bag[0]={id:'w1',t:'dmg',k:'wh',r:4};ok(T.wp('emp')==0.4,'weapon: the Legendary Staff makes Empower last longer');ok(T.wp('hl')==0.06&&T.wp('zl')==0.2,'weapon: the Staff gives more healing and a longer Circle');
 const st=T.eqRoll(3);ok(st.length==4&&st.filter(i=>i.t=='dmg').length==1&&st[3].k=='wh'&&st.slice(0,3).every(i=>i.t!='dmg'),'shop: 3 armor/charm pieces + 1 weapon for your class');
 P.cls=c0;V.eq={bag:[],on:{}};}
+/* ---------- dash aim setting ---------- */
+ok(SRC.includes('MOUSE.on && !SET.dashMove')&&SRC.includes('SET.dashMove=${v}'),'settings: dash aim can follow the cursor or the movement keys');
 /* ---------- chat and emotes ---------- */
 T.chatSend('hello there');ok(T.P().say&&T.P().say.t=='hello there','chat: your line shows as a bubble');
 T.chatSend('/wave');ok(T.P().emo&&T.P().emo.e=='👋','chat: /wave plays the emote');
