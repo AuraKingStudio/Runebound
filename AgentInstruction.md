@@ -21,10 +21,12 @@ Runebound is a browser-only (.io-style web) action game with a sky-island hub (N
 | File | Role |
 |---|---|
 | `index.html` | The whole browser game: CSS, embedded art, game logic, WebRTC transport, hub networking. Keep browser code here. |
-| `src/app.js` | The only Node file: the hub directory service (`npm run signaling`); tests `require` it for `createDirectoryServer`. |
+| `src/app.js` | Hub service: hub directory (`npm run signaling`) + market routes `/api/market/*`; tests `require` it for `createDirectoryServer`. |
+| `src/market.js` | Player market, server escrow: `createMarket({file})` with browse/sell/buy/cancel/collect; JSON store `market.json` (git-ignored, atomic writes). |
+| `src/playtest.js` | LAN playtest: static server on 8080 + hub service on 8787 (`npm run playtest`). |
 | `src/test.js` | Tests for game, raids, party, networking, anti-cheat, transport, directory, rate limit + scenario benchmark (`npm test`, `npm run bench`, `npm run bench -- --raids=N`). Parses the `<script>` block of `index.html`. |
-| `assets/icon.png` | Tab icon. One of only two allowed image files (with the embedded arena background). Code lives in `src/`. |
-| `package.json` | Scripts only: `npm test`, `npm run bench`, `npm run dev` (live-server on 8080), `npm run signaling`. Only dev dependency: live-server. |
+| `assets/icon.png` | Tab icon: the only image file (arenas, NPCs, UI are all code-drawn). Code lives in `src/`. |
+| `package.json` | Scripts only: `npm test`, `npm run bench`, `npm run dev` (live-server on 8080), `npm run signaling`, `npm run playtest`. Only dev dependency: live-server. |
 | `.nojekyll` | Makes GitHub Pages serve files as-is. |
 
 Removed in this pass as unused: `tools/board.js`, `version.json` (plus the in-game dev board and update banner), `ads-config.js`, `privacy.html`, `banner.png`, `icon.svg`, the old copy-paste invite-code transport, and the old `main.js`, `signaling-server.js` and `test/dev.test.js`, which were merged into `src/`. Electron and the Windows .exe build (`build-exe.bat`, electron and electron-builder) were removed: it's a web-only game.
@@ -288,6 +290,8 @@ Built and tested (unit tests plus the `cheat`, `flood`, `econ`, `hphack`, `chat`
 
 - Hub perf (1600x900 @1.5x, headless CPU): frame 29 ms -> ~10 ms. Grass was 91% of it: the camera's endless sub-pixel easing changed the band cache key every frame (full rebuild + reallocation, 26.7 ms). Fixes: key rounds camera e/f and zoom, band canvases reused, bands painted at 1x (q = 1/DPR) and scaled up, redrawn at GB_HZ 20. Grass now ~1.2 ms. Grass sway halved.
 - Seraph icon: praying angel (halo, head, bell robe, joined hands, raised wings). Plinth: one sigil in a ring (the small runes overlapped).
+
+- Cleanup pass: removed the Class Master's 3-icon disc drawing (he is not in the hub), SMITH_COST (old Smith blessings), the stale class-NPC orbit test; README rewritten (NPCs, raids, gear, market, files).
 
 ## Not done / open
 

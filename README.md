@@ -2,16 +2,59 @@
 
 # Runebound (prototype)
 
-- A browser game: play it at the link above, or open `index.html` locally (single player works offline).
-- Progress (gold, upgrades, quests) is saved in the browser's storage.
-- Press **Esc** or **P** (or use Pause) to pause.
+A co-op raid game that runs in the browser: a floating hub island, NPCs, and boss raids for 3 or 6 players (you plus bots or friends). All art is drawn in code (canvas and SVG); the only image file is `assets/icon.png`.
+
+- Play at the link above, or open `index.html` locally (single player works offline).
+- Your progress (gold, gear, materials, quests) is saved in the browser. Market listings are held by the hub service (see below).
+- **Esc** or **P** pauses. **Settings** (top bar) has sound, keys, frame cap (30/60/144/Max), Show FPS, Low spec mode and dash aim.
+
+## What is in the game
+
+- **Hub NPCs** (8 spots, one kept free for a future pet NPC):
+
+  | NPC | What they do |
+  |---|---|
+  | Elder | Quest chain; some quests unlock NPCs |
+  | Merchant | Upgrades, rotating equipment stock, and the player **Market** |
+  | Archivist | Tales with gifts and secret pages |
+  | Smith | Forge gear from raid materials, temper, salvage, refine |
+  | Seraph | One-raid blessings for gold |
+  | Maiden | Rare trader, and a free daily blessing |
+  | Barkeep | Blackjack |
+
+  Class change is the **Class** button in the top bar.
+- **Raids:** The Hollow Seer (3 players) and Thornmaw Colossus (6 players). **Rune Trials** are endless harder versions with bigger rewards.
+- **Gear:** six slots (weapon per class, armor, charm, helmet, gloves, boots), five rarities, and a perk on class weapons at each rarity.
+- **Materials:** about 4 per raid win, used to forge and trade.
 
 ## Files
 
 - `index.html`: the whole browser game, including its networking.
-- `src/app.js`: the only Node file: the hub directory service (`npm run signaling`).
-- `src/test.js`: game, transport and directory tests (`npm test`).
+- `src/app.js`: the hub service: hub directory (WebRTC setup) and the market routes (`npm run signaling`).
+- `src/market.js`: the player market (server escrow) and its JSON store.
+- `src/playtest.js`: LAN playtest: serves the game and the hub service together (`npm run playtest`).
+- `src/test.js`: game, network, market and directory tests (`npm test`); `npm run bench` runs the raid and network benchmarks.
 - `assets/icon.png`: tab icon.
+- `AgentInstruction.md`: working notes and rules for contributors and coding agents.
+
+## Player market (server escrow)
+
+Merchant › **Market** lets players sell materials and spare gear to each other for gold.
+
+**How a trade works**
+
+- **Listing:** listing an item moves it from the player's save to the server. The server is then the only copy.
+- **Buying:** buying delivers the item from the server at once.
+- **Payouts:** the seller collects the gold, minus a 5% tax (a gold sink), with **Collect**.
+- **Expiry:** unsold items return to the seller after 48 h.
+- **Limits:** at most 6 open listings per player, and prices from 1 to 1,000,000.
+
+**How the data is stored**
+
+- **Identity:** each player has a private random key in `localStorage` (`rb_mtok`). The server stores only its SHA-256 hash.
+- **File:** listings and payouts live in `market.json`, which is git-ignored. The server writes it atomically (a temp file, then a rename) and at most every 500 ms.
+
+**Known gap:** wallets (gold, items) still live in the browser save, so an edited save can list items it never earned. The planned fix is server-side wallets once the game runs on a VPS.
 
 ## Player-hosted hubs (pilot)
 
