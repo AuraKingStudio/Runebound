@@ -1894,9 +1894,14 @@
         }
       }
       /* ftxt(x, y, text, color, size = 15): floating text that rises and fades (damage numbers, rewards). */
-      function ftxt(x, y, t, col, sz) {
+      /* ftxt(x, y, text, colour, size, o): floating combat text. Numbers pop in (overshoot), arc up and drift sideways, then
+         shrink away; words float straight up. o = { num, big, own, crit }: your hits are big, allies' small and dim. */
+      function ftxt(x, y, t, col, sz, o = {}) {
         if (!SET.dmg) return;
-        FT.push({ x: x + rnd(-10, 10), y, t, col, sz, l: 0.9 });
+        const num = o.num || typeof t == "number", L = o.crit ? 1.2 : num ? 0.95 : 1.1;
+        if (FT.length > 70) FT.shift(); /* hard cap so a busy fight never floods the screen */
+        FT.push({ x: x + rnd(-12, 12), y, t: o.crit ? t + "!" : t, col, sz, l: L, L, num, big: o.big || o.crit, crit: o.crit, dim: o.dim,
+          vx: num ? rnd(-36, 36) : 0, vy: num ? -rnd(85, 115) : -34, rot: o.crit ? rnd(-0.12, 0.12) : 0 });
       }
       const shake = (v) => {
         shk = Math.max(shk, v * SET.shake);
@@ -4647,6 +4652,7 @@
         MOUSE.x = ((e.clientX - r.left) * d - ox) / sc + CAM.x;
         MOUSE.y = ((e.clientY - r.top) * d - oy) / sc + CAM.y;
         MOUSE.on = true;
+        MOUSE.sx = e.clientX; MOUSE.sy = e.clientY; MOUSE.t = performance.now(); /* screen point: re-mapped at use (camera / resize) */
       });
       document.addEventListener("mouseleave", () => (MOUSE.on = false));
       function hurt(p, d) {
@@ -4706,7 +4712,8 @@
       const ZONE_DMG = 1.25; /* damage bonus while standing in a healer's Circle */
       function hitB(d, src = P, full = 0) { /* full: skip CLASS_DMG (Overdrive keeps its whole punch) */
         d = d * SKM; /* skill level bonus for direct hits */
-        if (src === P && wp("crit") && Math.random() < wp("crit")) { d *= 2; if (S.b) ftxt(S.b.x, S.b.y - S.b.r - 18, "CRIT!", "#ff9f43", 13); } /* Twin Fangs (Legendary) */
+        let crit = 0;
+        if (src === P && wp("crit") && Math.random() < wp("crit")) { d *= 2; crit = 1; } /* Twin Fangs (Legendary): shown as a big orange number */
         const b = S.b;
         if (!b || S.end) return;
         const z = S.zo && S.zo.some((o) => dist(src, o) < o.r) ? ZONE_DMG : 1; /* standing in a healer's Circle: hits harder */
@@ -4715,7 +4722,9 @@
         b.dmg = b.dmg || {}; b.dmg[src.cls] = (b.dmg[src.cls] || 0) + v; /* damage share per class (balance checks) */
         b.hf = 0.08;
         b.thr[src.id] = (b.thr[src.id] || 0) + v * (src.cls == "tank" ? 3 : 1); /* tanks draw 3x threat */
-        ftxt(b.x, b.y - b.r - 4, Math.round(v), d >= 25 ? "#ffd84a" : "#fff");
+        { const own = src === P, big = d >= 25;
+          ftxt(b.x, b.y - b.r - 4, Math.round(v), crit ? "#ff9f43" : own ? (big ? "#ffd84a" : "#ffffff") : mixHex(SKC[src.cls] || "#ffffff", "#ffffff", 0.45),
+            crit ? 26 : own ? (big ? 21 : 16) : 12, { num: 1, big: own && big, crit, dim: !own }); }
         burst(
           b.x + rnd(-14, 14),
           b.y + rnd(-14, 14),
@@ -5060,8 +5069,13 @@
         clampW(e);
         return { x: e.x, y: e.y };
       }
+      /* mousePoint(p): where the cursor is in the world now (re-mapped from the last screen point, so camera moves since the last
+         mouse move don't matter). Works whenever a mouse was used in the last 20 s, even if a controller blip or the cursor
+         leaving the window changed the input mode: the healer's Circle should always land where you point. */
       function mousePoint(p) {
-        return INMODE == "kb" && MOUSE.on ? mouseClamp(p, MOUSE) : null;
+        if (MOUSE.sx == null || (INMODE != "kb" && performance.now() - (MOUSE.t || 0) > 20000)) return null;
+        const r = cv.getBoundingClientRect(), d = cv.width / (r.width || 1);
+        return mouseClamp(p, { x: ((MOUSE.sx - r.left) * d - ox) / sc + CAM.x, y: ((MOUSE.sy - r.top) * d - oy) / sc + CAM.y });
       }
       function empower(p, t) {
         const bd = p === P ? 1 + eqSt("bd") + wp("emp") : 1;
@@ -12267,12 +12281,39 @@
         c.strokeStyle = "#000";
         for (const f of FT) {
           f.l -= dt;
-          f.y -= 38 * dt;
-          c.globalAlpha = cl(f.l * 2, 0, 1);
-          c.font = `bold ${f.sz || 15}px Georgia`;
-          c.fillStyle = f.col;
-          c.strokeText(f.t, f.x, f.y);
-          c.fillText(f.t, f.x, f.y);
+          const a = f.L - f.l; /* age */
+          f.vy += (f.num ? 150 : 0) * dt; /* numbers arc: rise fast, slow down, sink a little */
+          f.x += f.vx * dt;
+          f.y += f.vy * dt;
+          f.vx *= 1 - 2.5 * dt;
+          /* pop: 0.55 -> 1.35 -> 1 in the first 0.24 s, shrink in the last 0.25 s */
+          let k = a < 0.1 ? 0.55 + (a / 0.1) * 0.8 : a < 0.24 ? 1.35 - ((a - 0.1) / 0.14) * 0.35 : 1;
+          if (f.l < 0.25) k *= 0.6 + (f.l / 0.25) * 0.4;
+          if (f.crit) k *= 1 + 0.08 * Math.sin(a * 40) * Math.max(0, 1 - a * 3); /* crits wobble */
+          const sz = f.sz || 15;
+          c.globalAlpha = cl(f.l * 3, 0, 1) * (f.dim ? 0.75 : 1);
+          c.save();
+          c.translate(f.x, f.y);
+          c.rotate(f.rot);
+          c.scale(k, k);
+          c.font = f.num ? `italic 900 ${sz}px Georgia` : `bold ${sz}px "Cinzel", Georgia`;
+          const gr = c.createLinearGradient(0, -sz * 0.8, 0, sz * 0.2);
+          gr.addColorStop(0, mixHex(f.col, "#ffffff", 0.7));
+          gr.addColorStop(1, f.col);
+          c.lineJoin = "round";
+          c.lineWidth = f.big ? 5 : 3.5;
+          c.strokeStyle = mixHex(f.col, "#000000", 0.82);
+          if (f.big && !f.dim) { c.shadowColor = f.col; c.shadowBlur = 12; }
+          c.strokeText(f.t, 0, 0);
+          c.shadowBlur = 0;
+          c.fillStyle = gr;
+          c.fillText(f.t, 0, 0);
+          if (f.big && a < 0.2) { /* white flash on the pop */
+            c.globalAlpha *= 1 - a / 0.2;
+            c.fillStyle = "#fff";
+            c.fillText(f.t, 0, 0);
+          }
+          c.restore();
         }
         c.restore();
         FT = FT.filter((f) => f.l > 0);
