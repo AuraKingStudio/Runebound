@@ -6,3 +6,5 @@ node_modules/
 feedback.log
 market.json
 market.json.tmp
+brain.json
+brain.json.tmp

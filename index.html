@@ -1726,9 +1726,16 @@
           return fetch(url + "/api/market/" + action, { method: "POST", headers: { "content-type": "application/json" }, body: JSON.stringify(body || {}), cache: "no-store" })
             .then((r) => r.json().then((data) => ({ ok: r.ok, status: r.status, data })), () => ({ ok: false, status: 0, data: { error: "The market is offline." } }));
         }
+        /* brain(action, body): the Synapse's shared brain on the hub service ("get" weights, "train" with one fight's observations) */
+        function brain(action, body) {
+          const url = directoryUrl && directoryUrl != "room" ? directoryUrl : "http://localhost:8787";
+          return fetch(url + "/api/brain/" + action, { method: "POST", headers: { "content-type": "application/json" }, body: JSON.stringify(body || {}), cache: "no-store" })
+            .then((r) => r.json().then((data) => ({ ok: r.ok, status: r.status, data })), () => ({ ok: false, status: 0, data: {} }));
+        }
         window.RBNet = Object.freeze({
           sendFeedback,
           market,
+          brain,
           setHandlers,
           setIceServers,
           configureDirectory,
@@ -2185,7 +2192,7 @@
         bark: { n: "Thornbark", e: "🪵", col: "#9bd06a", d: "Ironhard bark peeled from Thornmaw." },
         heart: { n: "Colossus Heart", e: "💚", col: "#5dff8a", d: "Rare. It still beats, slowly." },
       };
-      const MAT_DROP = { seer: [["shard", 1, 2], ["eye", 0.12]], thornmaw: [["bark", 1, 2], ["heart", 0.15]] }; /* about 4 items per win in all */
+      const MAT_DROP = { seer: [["shard", 1, 2], ["eye", 0.12]], thornmaw: [["bark", 1, 2], ["heart", 0.15]], synapse: [["shard", 1, 2], ["bark", 1, 2], ["eye", 0.1], ["heart", 0.1]] }; /* about 4 items per win in all */
       /* ---------- Rune Trials: repeatable harder raids (the grind ladder) ----------
          Trial t: boss +20% health and +12% damage per level; drops, gold and XP +25% per level (reward bonus caps at Trial 10).
          V.trial[raid] = highest Trial unlocked (winning Trial t unlocks t+1). TRIAL_SEL = what the raid card has picked. */
@@ -4348,13 +4355,18 @@
       const RAIDS = {
         small: { n: "Small Raid", size: 3, comp: { tank: 1, heal: 1, dps: 1 }, boss: "seer", reward: 1 },
         large: { n: "Large Raid", size: 6, comp: { tank: 2, heal: 2, dps: 2 }, boss: "thornmaw", reward: 1.5 },
-        epic: { n: "Epic Raid", size: 12, comp: { tank: 4, heal: 4, dps: 4 }, locked: true },
+        epic: { n: "Epic Raid", size: 12, comp: { tank: 4, heal: 4, dps: 4 }, boss: "synapse", reward: 2.2 },
       };
       const BOSSES = {
         seer: { n: "The Hollow Seer", hp: 20000, r: 34, sp: 34, atk: 40, atkT: 1.5, body: "#1b1233", ring: ["#a78bff", "#ff4d8d"], eye: ["#7aa2ff", "#ff4d8d"],
           weak: [0.75, 0.35], doom: 0.6, spells: [["slam", "marks", "lances", "hex", "cross", "judge"], ["slam", "storm", "ring", "lances", "hex", "judge", "marks", "rain", "storm", "cross"]] },
         thornmaw: { n: "Thornmaw Colossus", hp: 40000, r: 44, sp: 30, atk: 44, atkT: 1.6, body: "#1d2a14", ring: ["#9bd16a", "#ff7a3c"], eye: ["#d8ff7a", "#ff7a3c"],
           horns: 1, cleave: 70, weak: [0.75, 0.35], doom: 0.6, spells: [["split", "marks", "lances", "nova", "cross", "judge"], ["split", "storm", "ring", "lances", "nova", "judge", "marks", "charge", "storm", "cross"]] },
+        /* The Echo Archon (key "synapse"): an armoured warlord that learns. It starts with the normal boss AI; a shared neural
+           network (src/brain.js on the hub service) learns from every fight where players dodge and which spells land, and the
+           Archon leads its aim and picks spells with it. It does not look like a network: only its glow grows as it learns. */
+        synapse: { n: "The Echo Archon", hp: 85000, r: 42, sp: 32, atk: 46, atkT: 1.45, body: "#0b1530", ring: ["#5ad7ff", "#ff4dd2"], eye: ["#9ff3ff", "#ff4dd2"],
+          net: 1, weak: [0.75, 0.35], doom: 0.6, spells: [["slam", "marks", "lances", "hex", "split", "cross", "nova", "judge"], ["storm", "ring", "lances", "rain", "charge", "hex", "split", "nova", "judge", "cross", "marks"]] },
       };
       /* SPELLS[name](b, f, tg): starts a telegraph (S.ao) and sets the next cast delay. f = phase/enrage damage factor.
          Circle: {x, y, r}. Line: {ln: 1, x, y, a (angle), len, w}. t = seconds until it lands, m = full telegraph time. */
@@ -4461,6 +4473,7 @@
         S.sc = "arena";
         S.raid = RAIDS[key] && !RAIDS[key].locked ? key : "small";
         S.trial = Math.max(0, Math.min(TRIAL.max, RAID_TRIAL | 0)); /* set by enterRaid / the leader's message */
+        if (RAIDS[S.raid].boss == "synapse") brainLoad(); else BRAIN_LOG = null;
         RAID_TRIAL = 0;
         S.end = 0;
         S.at = 0;
@@ -4661,7 +4674,7 @@
         } catch (e) {}
         return BOSS_PIC[key];
       }
-      const RAID_DIFF = { small: [1, "Learn the dance"], large: [2, "Hits hard, splits the party"], epic: [3, "For seasoned guilds"] };
+      const RAID_DIFF = { small: [1, "Learn the dance"], large: [2, "Hits hard, splits the party"], epic: [3, "It learns from every raider it fights"] };
       function raidUI() {
         CUR_DLG = "raid";
         $("dlg").hidden = false;
@@ -4818,6 +4831,7 @@
         V.rc = (V.rc || 0) + 1; /* raids played: the equipment stock re-rolls every 2 */
         V.best = V.best ? Math.min(V.best, S.at) : S.at;
         S.end = "win";
+        if (BRAIN_LOG) brainSend();
         S.res = 5;
         V.trial = V.trial || {};
         if ((S.trial || 0) >= (V.trial[S.raid] || 0) && (S.trial || 0) < TRIAL.max) { V.trial[S.raid] = (S.trial || 0) + 1; setTimeout(() => toast(`Rune Trial ${V.trial[S.raid]} unlocked for the ${RAIDS[S.raid].n}!`), 1800); }
@@ -5426,6 +5440,7 @@
       function raidEnd(why) {
         raidEvent(["end", "lose", why]);
         S.end = "lose";
+        if (BRAIN_LOG) brainSend();
         S.why = why;
         S.res = 5;
         gainXP(Math.round(30 * (1 + fresh())), "raid");
@@ -5529,7 +5544,7 @@
             if (a.charge) { const e = { x: a.x + Math.cos(a.a) * a.len, y: a.y + Math.sin(a.a) * a.len, hp: 1 }; clampW(e); b.x = e.x; b.y = e.y; }
             if (a.lunge) { b.x = a.x; b.y = a.y; }
             sfx("slam");
-            for (const p of raidAlive()) if (inTele(p, a)) hurt(p, a.d);
+            for (const p of raidAlive()) if (inTele(p, a)) { hurt(p, a.d); if (a.sp && BRAIN_LOG && BRAIN_LOG.spells[a.sp]) BRAIN_LOG.spells[a.sp][0]++; }
           }
         }
         S.ao = S.ao.filter((a) => a.t > 0);
@@ -5632,15 +5647,87 @@
           hurt(tg, b.def.atk * f * (tg.cls == "tank" ? 0.4 * (1 + 0.12 * Math.max(0, (b.sun || 0) - 1)) : 1)); /* tanks take 40% of boss blows (+Sunder) */
           if (b.def.cleave) for (const p of alive) if (p !== tg && dist(p, tg) < b.def.cleave) hurt(p, b.def.atk * f * 0.5 * (p.cls == "tank" ? 0.4 : 1));
         }
+        if (b.def.net) brainStep(b, dt);
         if (b.weak > 0) return; /* staggered: no spells */
         b.cd -= dt;
         if (b.cd <= 0) {
-          const list = b.def.spells[b.ph - 1], sp = list[b.n++ % list.length];
+          const list = b.def.spells[b.ph - 1], sp = b.def.net ? brainCast(b, list) : list[b.n++ % list.length];
           const n0 = S.ao.length;
           SPELLS[sp](b, f, tg);
+          if (b.def.net) brainAim(b, n0, sp); /* the Synapse leads its aim with what it has learned */
           if (b.ph == 2) for (let k = n0; k < S.ao.length; k++) { S.ao[k].t *= P2_REACT; S.ao[k].m *= P2_REACT; } /* phase 2: less time to react */
           ftxt(b.x, b.y - b.r - 16, SPELL_NAME[sp], "#ffb0b8", 12);
         }
+      }
+      /* ---------- the Synapse's brain (client side). BRAIN = weights from the hub service (/api/brain/get), fetched when an epic
+         raid starts; offline it stays at generation 0 = the normal boss AI. trust = min(cap, gen / 40): how much it leads its
+         aim with the prediction and how often it picks spells by their learned scores. During the fight it samples every
+         player each 0.35 s (features now, displacement 0.7 s later) and counts spell hits; at the end it sends them to train. */
+      let BRAIN = { gen: 0, cap: 1, spells: {} }, BRAIN_LOG = null;
+      const brainTrust = () => (BRAIN.w1 ? Math.min(BRAIN.cap ?? 1, (BRAIN.gen || 0) / 40) : 0);
+      function brainFeat(b, p) {
+        const vx = ((p.x - (p._bx ?? p.x)) / 0.35) / 250, vy = ((p.y - (p._by ?? p.y)) / 0.35) / 250;
+        return [(p.x - b.x) / 300, (p.y - b.y) / 300, cl(vx, -3, 3), cl(vy, -3, 3), (p.dcd || 0) <= 0 ? 1 : 0, p.hp / (p.mh || 1)];
+      }
+      function brainPredict(f) {
+        if (!BRAIN.w1) return [0, 0];
+        const h = BRAIN.w1.map((row, j) => Math.tanh(row.reduce((a, w, i) => a + w * f[i], BRAIN.b1[j])));
+        return BRAIN.w2.map((row, k) => row.reduce((a, w, j) => a + w * h[j], BRAIN.b2[k]) * 150);
+      }
+      function brainLoad() {
+        BRAIN_LOG = { samples: [], pend: [], spells: {}, at: 0 };
+        if (window.RBNet && RBNet.brain) RBNet.brain("get", {}).then((r) => { if (r.ok && r.data && Array.isArray(r.data.w1)) BRAIN = r.data; });
+      }
+      /* brainStep(b, dt): sample positions; resolve samples 0.7 s old into (features, displacement) pairs */
+      function brainStep(b, dt) {
+        const L = BRAIN_LOG;
+        if (!L) return;
+        L.at += dt;
+        if (L.at < 0.35) return;
+        L.at = 0;
+        const now = S.at;
+        for (const p of raidAlive()) { L.pend.push({ id: p.id, f: brainFeat(b, p), x: p.x, y: p.y, t: now }); p._bx = p.x; p._by = p.y; }
+        L.pend = L.pend.filter((q) => {
+          if (now - q.t < 0.7) return true;
+          const p = actor(q.id);
+          if (p && p.hp > 0) { const smp = [q.f.map((v) => +v.toFixed(3)), [+((p.x - q.x) / 150).toFixed(3), +((p.y - q.y) / 150).toFixed(3)]]; if (L.samples.length < 600) L.samples.push(smp); else L.samples[Math.floor(Math.random() * 600)] = smp; }
+          return false;
+        });
+      }
+      /* brainCast(b, list): which spell next. With probability = trust, a spell weighted by its learned hit score; else the normal order */
+      function brainCast(b, list) {
+        const tr = brainTrust();
+        if (!tr || Math.random() > tr) return list[b.n++ % list.length];
+        const w = list.map((k) => Math.exp(2 * (BRAIN.spells[k] ?? 0.5))), sum = w.reduce((a, v) => a + v, 0);
+        let r = Math.random() * sum;
+        for (let i = 0; i < list.length; i++) if ((r -= w[i]) <= 0) return list[i];
+        return list[0];
+      }
+      /* brainAim(b, n0, sp): shift the zones this cast just placed on a player toward where the brain predicts that player goes */
+      function brainAim(b, n0, sp) {
+        const tr = brainTrust();
+        for (let k = n0; k < S.ao.length; k++) {
+          const a = S.ao[k];
+          a.sp = sp;
+          if (BRAIN_LOG) BRAIN_LOG.spells[sp] = BRAIN_LOG.spells[sp] || [0, 0];
+          if (!tr) continue;
+          const p = raidAlive().find((q) => (a.ln ? false : Math.hypot(q.x - a.x, q.y - a.y) < 14));
+          if (!p) continue;
+          const [px, py] = brainPredict(brainFeat(b, p));
+          a.x += px * tr; a.y += py * tr;
+          const d = Math.hypot(a.x - ARENA.x, a.y - ARENA.y), m = ARENA.r - 10;
+          if (d > m) { a.x = ARENA.x + ((a.x - ARENA.x) / d) * m; a.y = ARENA.y + ((a.y - ARENA.y) / d) * m; }
+        }
+        if (BRAIN_LOG) { BRAIN_LOG.spells[sp] = BRAIN_LOG.spells[sp] || [0, 0]; BRAIN_LOG.spells[sp][1]++; }
+      }
+      /* brainSend(): after an epic fight, hand the observations to the shared brain */
+      function brainSend() {
+        const L = BRAIN_LOG;
+        BRAIN_LOG = null;
+        if (!L || L.samples.length < 10 || !window.RBNet || !RBNet.brain) return;
+        RBNet.brain("train", { tok: mktTok(), samples: L.samples, spells: L.spells }).then((r) => {
+          if (r.ok && r.data) setTimeout(() => toast(r.data.kept ? `🧠 The Echo Archon learned from your raid (generation ${r.data.gen})` : "🧠 The Echo Archon studied your raid but learned nothing new"), 2500);
+        });
       }
       /* pause: freezes the simulation (step) but keeps drawing. Esc closes a dialog first, then pauses. */
       let paused = false;
@@ -11973,16 +12060,17 @@
          seer: a cracked rune platform adrift in a purple void, pillars with blue orbs, floating rocks.
          thornmaw: an overgrown ruin at dusk, mossy flagstones split by glowing roots, broken pillars wrapped in thorns. */
       const ARENAC = {};
-      const ARENA_KIND = () => (RAIDS[S.raid] || RAIDS.small).boss == "thornmaw" ? "thorn" : "void";
+      const ARENA_KIND = () => ({ thornmaw: "thorn", synapse: "net" })[(RAIDS[S.raid] || RAIDS.small).boss] || "void";
       const ARENA_PAL = {
         void: { bg0: "#1a1238", bg1: "#4a3a8a", neb: [[170, 120, 255], [110, 150, 255]], floor0: "#8e88b6", floor1: "#4c4672", rim0: "#aaa2d0", rim1: "#5a5482", crack: "#b77dff", rune: "#8fa8ff", orb: [120, 170, 255], deco: "#4a4560" },
         thorn: { bg0: "#1c2e1a", bg1: "#55703a", neb: [[150, 200, 90], [230, 170, 90]], floor0: "#a39c7c", floor1: "#666248", rim0: "#cfc7a0", rim1: "#6e6a4e", crack: "#9dff6a", rune: "#c9ff8a", orb: [180, 255, 120], deco: "#3c4a2c" },
+        net: { bg0: "#06121e", bg1: "#123a5a", neb: [[60, 200, 255], [220, 80, 210]], floor0: "#6f8fa8", floor1: "#2c3e52", rim0: "#93b4cc", rim1: "#3a5068", crack: "#5ad7ff", rune: "#9ff3ff", orb: [90, 215, 255], deco: "#2c4058" },
       };
       function arenaPaint(kind) {
         const K = 2, cv6 = document.createElement("canvas");
         cv6.width = W * K;
         cv6.height = H * K;
-        const g = cv6.getContext("2d"), r = rng(kind == "void" ? 77 : 91), A = ARENA, pal = ARENA_PAL[kind];
+        const g = cv6.getContext("2d"), r = rng(kind != "thorn" ? 77 : 91), A = ARENA, pal = ARENA_PAL[kind];
         if (!g || !g.getImageData) return cv6;
         g.scale(K, K);
         /* backdrop: a deep gradient, then soft nebula clouds (fBm noise at low res, smoothed up) */
@@ -11998,17 +12086,17 @@
           const lg = lc.getContext("2d"), im = lg.createImageData(lw, lh);
           for (let y = 0; y < lh; y++)
             for (let x = 0; x < lw; x++) {
-              const n = fbm(x / 26, y / 26, kind == "void" ? 5 : 9), m = fbm(x / 14 + 9, y / 14, 3), o = (y * lw + x) * 4, c0 = pal.neb[m > 0.5 ? 0 : 1];
+              const n = fbm(x / 26, y / 26, kind != "thorn" ? 5 : 9), m = fbm(x / 14 + 9, y / 14, 3), o = (y * lw + x) * 4, c0 = pal.neb[m > 0.5 ? 0 : 1];
               im.data[o] = c0[0]; im.data[o + 1] = c0[1]; im.data[o + 2] = c0[2];
               im.data[o + 3] = Math.max(0, n - 0.42) * 2.2 * 255;
             }
           lg.putImageData(im, 0, 0);
           g.imageSmoothingEnabled = true;
-          g.globalAlpha = kind == "void" ? 0.7 : 0.45;
+          g.globalAlpha = kind != "thorn" ? 0.7 : 0.45;
           g.drawImage(lc, 0, 0, W, H);
           g.globalAlpha = 1;
         }
-        if (kind == "void") { /* stars */
+        if (kind != "thorn") { /* stars */
           for (let i = 0; i < 160; i++) { const x = r() * W, y = r() * H; g.fillStyle = `rgba(220,210,255,${0.2 + r() * 0.6})`; g.fillRect(x, y, r() < 0.1 ? 2 : 1, r() < 0.1 ? 2 : 1); }
         } else { /* dusk forest silhouettes all around, and a canopy of leaves at the edges */
           for (let i = 0; i < 70; i++) {
@@ -12020,7 +12108,7 @@
             g.beginPath(); g.arc(x, y, rr, 0, 6.3); g.fill();
           }
         }
-        if (kind == "void") {
+        if (kind != "thorn") {
           /* void rifts: thin glowing tears in the backdrop */
           for (let i = 0; i < 5; i++) {
             let x = r() * W, y = r() * H, a = r() * 6.28;
@@ -12074,8 +12162,8 @@
           const a = r() * 6.28, d = A.r + 50 + r() * 200, x = A.x + Math.cos(a) * d * 1.35, y = A.y + Math.sin(a) * d * 0.95;
           const sz = 8 + r() * 22;
           if (!(x > -30 && x < W + 30 && y > -30 && y < H + 30)) continue;
-          rock(x, y, sz, kind == "void" ? "#6a6488" : "#7a7a5a", kind == "void" ? "#1e1a30" : "#2a2c1e");
-          if (kind == "void" && sz > 16) for (let k = 0; k < 3; k++) { /* crystals growing from the bigger rocks */
+          rock(x, y, sz, kind != "thorn" ? "#6a6488" : "#7a7a5a", kind != "thorn" ? "#1e1a30" : "#2a2c1e");
+          if (kind != "thorn" && sz > 16) for (let k = 0; k < 3; k++) { /* crystals growing from the bigger rocks */
             const cx = x + (r() - 0.5) * sz, cy = y - sz * 0.3, h = 8 + r() * 14, a = (r() - 0.5) * 0.8;
             g.save(); g.translate(cx, cy); g.rotate(a); g.shadowColor = "#9a7dff"; g.shadowBlur = 10;
             const cg = g.createLinearGradient(-3, 0, 3, 0); cg.addColorStop(0, "#5a46b8"); cg.addColorStop(1, "#d6c8ff");
@@ -12095,7 +12183,7 @@
           g.strokeStyle = "rgba(0,0,0,.35)"; g.lineWidth = 1;
           for (let k = 1; k < 4; k++) { g.beginPath(); g.arc(A.x, A.y + (dep * k) / 4, rimR, 0.15, Math.PI - 0.15); g.stroke(); }
           for (let k = 0; k < 40; k++) { const a = 0.1 + (k / 40) * (Math.PI - 0.2), x = A.x + Math.cos(a) * rimR, y = A.y + Math.sin(a) * rimR; g.beginPath(); g.moveTo(x, y + (k % 3) * 6); g.lineTo(x, y + dep * (0.5 + (k % 2) * 0.4)); g.stroke(); }
-          if (kind == "void") { g.fillStyle = "#2a2640"; for (let k = 0; k < 7; k++) { const a = 0.3 + r() * 2.5, x = A.x + Math.cos(a) * rimR * 0.95, y = A.y + Math.sin(a) * rimR + dep; g.beginPath(); g.moveTo(x - 10, y - 4); g.lineTo(x, y + 14 + r() * 16); g.lineTo(x + 10, y - 4); g.fill(); } } /* hanging rock spurs */
+          if (kind != "thorn") { g.fillStyle = "#2a2640"; for (let k = 0; k < 7; k++) { const a = 0.3 + r() * 2.5, x = A.x + Math.cos(a) * rimR * 0.95, y = A.y + Math.sin(a) * rimR + dep; g.beginPath(); g.moveTo(x - 10, y - 4); g.lineTo(x, y + 14 + r() * 16); g.lineTo(x + 10, y - 4); g.fill(); } } /* hanging rock spurs */
           else { g.strokeStyle = "#2a1e10"; g.lineWidth = 3; for (let k = 0; k < 10; k++) { const a = 0.2 + r() * 2.7, x = A.x + Math.cos(a) * rimR * 0.98, y = A.y + Math.sin(a) * rimR; g.beginPath(); g.moveTo(x, y); g.quadraticCurveTo(x + (r() - 0.5) * 10, y + dep * 0.6, x + (r() - 0.5) * 16, y + dep + 10); g.stroke(); } } /* roots spilling over */
         }
         const rg = g.createRadialGradient(A.x + 60, A.y - 80, 40, A.x, A.y, rimR);
@@ -12137,7 +12225,7 @@
         for (let i = 0; i < 40; i++) {
           const a = r() * 6.28, d = Math.sqrt(r()) * A.r, x = A.x + Math.cos(a) * d, y = A.y + Math.sin(a) * d, rr = 12 + r() * 36;
           const gr = g.createRadialGradient(x, y, 0, x, y, rr);
-          gr.addColorStop(0, kind == "void" ? "rgba(20,10,40,.35)" : "rgba(90,130,50,.4)");
+          gr.addColorStop(0, kind != "thorn" ? "rgba(20,10,40,.35)" : "rgba(90,130,50,.4)");
           gr.addColorStop(1, "rgba(0,0,0,0)");
           g.fillStyle = gr;
           g.fillRect(x - rr, y - rr, rr * 2, rr * 2);
@@ -12154,8 +12242,8 @@
         g.strokeStyle = "rgba(0,0,0,.35)"; g.lineWidth = 0.8;
         for (let i = 0; i < 30; i++) { let a = r() * 6.28, d = Math.sqrt(r()) * A.r, x = A.x + Math.cos(a) * d, y = A.y + Math.sin(a) * d, b0 = r() * 6.28; g.beginPath(); g.moveTo(x, y); for (let k = 0; k < 4; k++) { b0 += (r() - 0.5) * 1.2; x += Math.cos(b0) * 7; y += Math.sin(b0) * 7; g.lineTo(x, y); } g.stroke(); }
         /* pebbles and rubble */
-        for (let i = 0; i < 70; i++) { const a = r() * 6.28, d = Math.sqrt(r()) * A.r, x = A.x + Math.cos(a) * d, y = A.y + Math.sin(a) * d, pr = 1 + r() * 2.5; g.fillStyle = "rgba(0,0,0,.35)"; g.beginPath(); g.ellipse(x + 1, y + 1, pr, pr * 0.7, 0, 0, 6.3); g.fill(); g.fillStyle = kind == "void" ? "#6a6488" : "#8a8a6a"; g.beginPath(); g.ellipse(x, y, pr, pr * 0.7, 0, 0, 6.3); g.fill(); }
-        if (kind == "void") { /* scorch marks from old battles */
+        for (let i = 0; i < 70; i++) { const a = r() * 6.28, d = Math.sqrt(r()) * A.r, x = A.x + Math.cos(a) * d, y = A.y + Math.sin(a) * d, pr = 1 + r() * 2.5; g.fillStyle = "rgba(0,0,0,.35)"; g.beginPath(); g.ellipse(x + 1, y + 1, pr, pr * 0.7, 0, 0, 6.3); g.fill(); g.fillStyle = kind != "thorn" ? "#6a6488" : "#8a8a6a"; g.beginPath(); g.ellipse(x, y, pr, pr * 0.7, 0, 0, 6.3); g.fill(); }
+        if (kind != "thorn") { /* scorch marks from old battles */
           for (let i = 0; i < 6; i++) { const a = r() * 6.28, d = 60 + r() * (A.r - 80), x = A.x + Math.cos(a) * d, y = A.y + Math.sin(a) * d, rr = 18 + r() * 22; const sg = g.createRadialGradient(x, y, 0, x, y, rr); sg.addColorStop(0, "rgba(0,0,0,.45)"); sg.addColorStop(0.6, "rgba(40,10,60,.2)"); sg.addColorStop(1, "rgba(0,0,0,0)"); g.fillStyle = sg; g.fillRect(x - rr, y - rr, rr * 2, rr * 2); }
         } else {
           /* grass in the slab joints near the rim, fallen leaves, glowing mushrooms */
@@ -12166,7 +12254,7 @@
         }
         g.restore();
         /* chipped rim: a few stones broken off the edge */
-        for (let i = 0; i < 6; i++) { const a = r() * 6.28, x = A.x + Math.cos(a) * (rimR - 4), y = A.y + Math.sin(a) * (rimR - 4); g.fillStyle = kind == "void" ? "#120e1e" : "#1a1c12"; g.beginPath(); g.moveTo(x + Math.cos(a + 1.6) * 9, y + Math.sin(a + 1.6) * 9); g.lineTo(x + Math.cos(a) * 6, y + Math.sin(a) * 6); g.lineTo(x - Math.cos(a + 1.6) * 9, y - Math.sin(a + 1.6) * 9); g.closePath(); g.fill(); }
+        for (let i = 0; i < 6; i++) { const a = r() * 6.28, x = A.x + Math.cos(a) * (rimR - 4), y = A.y + Math.sin(a) * (rimR - 4); g.fillStyle = kind != "thorn" ? "#120e1e" : "#1a1c12"; g.beginPath(); g.moveTo(x + Math.cos(a + 1.6) * 9, y + Math.sin(a + 1.6) * 9); g.lineTo(x + Math.cos(a) * 6, y + Math.sin(a) * 6); g.lineTo(x - Math.cos(a + 1.6) * 9, y - Math.sin(a + 1.6) * 9); g.closePath(); g.fill(); }
         /* rune circles in the middle (engraved: dark groove + light lip) */
         const groove = (rad, w) => { g.lineWidth = w; g.strokeStyle = "rgba(0,0,0,.45)"; g.beginPath(); g.arc(A.x, A.y + 1, rad, 0, 6.3); g.stroke(); g.lineWidth = 1; g.strokeStyle = "rgba(255,255,255,.1)"; g.beginPath(); g.arc(A.x, A.y - 1, rad, 0, 6.3); g.stroke(); };
         groove(62, 3); groove(92, 2); groove(112, 2);
@@ -12174,13 +12262,13 @@
           const c = g, t = 0;
         /* rim decor: 8 pillars with glowing orbs (void) / broken mossy columns wrapped in thorns with green lights (thorn) */
         for (let k = 0; k < 8; k++) {
-          const a = (k / 8) * 6.28 + 0.39, x = A.x + Math.cos(a) * (A.r + 26), y = A.y + Math.sin(a) * (A.r + 22), hgt = kind == "void" ? 34 : 18 + (k % 3) * 8;
+          const a = (k / 8) * 6.28 + 0.39, x = A.x + Math.cos(a) * (A.r + 26), y = A.y + Math.sin(a) * (A.r + 22), hgt = kind != "thorn" ? 34 : 18 + (k % 3) * 8;
           c.fillStyle = "rgba(0,0,0,.4)"; c.beginPath(); c.ellipse(x + 6, y + 4, 16, 6, 0, 0, 6.3); c.fill();
           const gr = c.createLinearGradient(x - 12, 0, x + 12, 0);
-          gr.addColorStop(0, kind == "void" ? "#2a2640" : "#34382a"); gr.addColorStop(0.7, kind == "void" ? "#77709a" : "#8a8c68"); gr.addColorStop(1, kind == "void" ? "#4a4566" : "#55583e");
+          gr.addColorStop(0, kind != "thorn" ? "#2a2640" : "#34382a"); gr.addColorStop(0.7, kind != "thorn" ? "#77709a" : "#8a8c68"); gr.addColorStop(1, kind != "thorn" ? "#4a4566" : "#55583e");
           c.fillStyle = gr;
           c.fillRect(x - 11, y - hgt, 22, hgt);
-          c.fillStyle = kind == "void" ? "#8a84ae" : "#9a9c78";
+          c.fillStyle = kind != "thorn" ? "#8a84ae" : "#9a9c78";
           c.beginPath(); c.ellipse(x, y - hgt, 11, 4.5, 0, 0, 6.3); c.fill();
           c.beginPath(); c.ellipse(x, y, 13, 5, 0, 0, Math.PI); c.fill();
           if (kind == "thorn") { c.strokeStyle = "#3a5a22"; c.lineWidth = 2.5; c.beginPath(); for (let q = 0; q <= hgt; q += 3) c.lineTo(x + Math.sin(q * 0.35 + k) * 11, y - q); c.stroke(); c.fillStyle = "#5c8a34"; c.beginPath(); c.ellipse(x - 2, y - hgt - 1, 9, 3.5, 0, 0, 6.3); c.fill(); }
@@ -12212,7 +12300,7 @@
         /* light, hub style: warm sun from the top-right, soft rays, a bright pool on the floor, cool shade bottom-left */
         c.save();
         c.globalCompositeOperation = "lighter";
-        const sun = kind == "void" ? "200,180,255" : "255,226,170";
+        const sun = kind != "thorn" ? "200,180,255" : "255,226,170";
         const sp = c.createRadialGradient(W * 0.86, -40, 20, W * 0.86, -40, 620);
         sp.addColorStop(0, `rgba(${sun},.32)`); sp.addColorStop(1, `rgba(${sun},0)`);
         c.fillStyle = sp; c.fillRect(0, 0, W, H);
@@ -12223,11 +12311,11 @@
           c.beginPath(); c.moveTo(x0, -10); c.lineTo(x0 + w0, -10); c.lineTo(x0 + w0 - 300, H + 10); c.lineTo(x0 - 300 - w0 * 0.4, H + 10); c.closePath(); c.fill();
         }
         const pool = c.createRadialGradient(A.x + 40, A.y - 40, 10, A.x + 40, A.y - 40, A.r * 0.95);
-        pool.addColorStop(0, `rgba(${sun},${kind == "void" ? 0.16 : 0.08})`); pool.addColorStop(1, `rgba(${sun},0)`);
+        pool.addColorStop(0, `rgba(${sun},${kind != "thorn" ? 0.16 : 0.08})`); pool.addColorStop(1, `rgba(${sun},0)`);
         c.fillStyle = pool; c.beginPath(); c.arc(A.x, A.y, A.r, 0, 6.3); c.fill();
         c.restore();
         const sh = c.createLinearGradient(W, 0, 0, H);
-        sh.addColorStop(0, "rgba(0,0,10,0)"); sh.addColorStop(1, kind == "void" ? "rgba(30,10,60,.22)" : "rgba(20,30,40,.2)");
+        sh.addColorStop(0, "rgba(0,0,10,0)"); sh.addColorStop(1, kind != "thorn" ? "rgba(30,10,60,.22)" : "rgba(20,30,40,.2)");
         c.fillStyle = sh; c.fillRect(0, 0, W, H);
         const vg = c.createRadialGradient(A.x, A.y, A.r * 1.05, A.x, A.y, 680);
         vg.addColorStop(0, "rgba(0,0,0,0)"); vg.addColorStop(1, "rgba(0,0,0,.3)");
@@ -12239,7 +12327,7 @@
       const ARENA_CRACKS = {};
       function arenaCracks(kind) {
         if (ARENA_CRACKS[kind]) return ARENA_CRACKS[kind];
-        const r = rng(kind == "void" ? 501 : 777), A = ARENA, out = [];
+        const r = rng(kind != "thorn" ? 501 : 777), A = ARENA, out = [];
         for (let i = 0; i < 9; i++) { /* branching lines from near the centre out to the rim */
           let a = r() * 6.28, d = 40 + r() * 50, x = A.x + Math.cos(a) * d, y = A.y + Math.sin(a) * d;
           const pts = [[x, y]];
@@ -12259,13 +12347,13 @@
         /* cracks (void) / roots (thorn): a dark channel with a glowing core that pulses outward */
         const cr = arenaCracks(kind);
         cr.forEach((pts, i) => {
-          c.strokeStyle = kind == "void" ? "rgba(10,0,25,.8)" : "rgba(40,28,14,.95)";
-          c.lineWidth = kind == "void" ? 4 : 7;
+          c.strokeStyle = kind != "thorn" ? "rgba(10,0,25,.8)" : "rgba(40,28,14,.95)";
+          c.lineWidth = kind != "thorn" ? 4 : 7;
           c.beginPath(); pts.forEach((q, k) => (k ? c.lineTo : c.moveTo).call(c, q[0], q[1])); c.stroke();
           const pulse = 0.45 + 0.55 * Math.max(0, Math.sin(t * 1.6 - i * 0.7));
           c.globalCompositeOperation = "lighter";
           c.strokeStyle = pal.crack;
-          c.globalAlpha = 0.25 * pulse; c.lineWidth = kind == "void" ? 7 : 6;
+          c.globalAlpha = 0.25 * pulse; c.lineWidth = kind != "thorn" ? 7 : 6;
           c.beginPath(); pts.forEach((q, k) => (k ? c.lineTo : c.moveTo).call(c, q[0], q[1])); c.stroke();
           c.globalAlpha = 0.85 * pulse; c.lineWidth = 1.4;
           c.beginPath(); pts.forEach((q, k) => (k ? c.lineTo : c.moveTo).call(c, q[0], q[1])); c.stroke();
@@ -12287,8 +12375,8 @@
         c.globalAlpha = 1;
         /* rim orbs (the pillars themselves are baked into ARENAC) */
         for (let k = 0; k < 8; k++) {
-          const a = (k / 8) * 6.28 + 0.39, x = A.x + Math.cos(a) * (A.r + 26), y = A.y + Math.sin(a) * (A.r + 22), hgt = kind == "void" ? 34 : 18 + (k % 3) * 8;
-          const fl = 0.75 + 0.25 * Math.sin(t * 3 + k * 1.7), [or, og, ob] = pal.orb, oy = y - hgt - (kind == "void" ? 12 + Math.sin(t * 1.5 + k) * 2 : 6);
+          const a = (k / 8) * 6.28 + 0.39, x = A.x + Math.cos(a) * (A.r + 26), y = A.y + Math.sin(a) * (A.r + 22), hgt = kind != "thorn" ? 34 : 18 + (k % 3) * 8;
+          const fl = 0.75 + 0.25 * Math.sin(t * 3 + k * 1.7), [or, og, ob] = pal.orb, oy = y - hgt - (kind != "thorn" ? 12 + Math.sin(t * 1.5 + k) * 2 : 6);
           c.globalCompositeOperation = "lighter";
           c.globalAlpha = fl;
           c.drawImage(softBlob(`${or},${og},${ob}`, 0.55), x - 34, oy - 34, 68, 68);
@@ -12296,7 +12384,7 @@
           c.globalCompositeOperation = "source-over";
           c.fillStyle = `rgb(${Math.min(255, or + 80)},${Math.min(255, og + 60)},255)`;
           if (kind == "thorn") c.fillStyle = "#e8ffb0";
-          c.beginPath(); c.arc(x, oy, kind == "void" ? 6 : 3.5, 0, 6.3); c.fill();
+          c.beginPath(); c.arc(x, oy, kind != "thorn" ? 6 : 3.5, 0, 6.3); c.fill();
         }
         /* ambient life: leaves and petals falling through the sunlight (thorn) / big slow void wisps drifting (seer) */
         if (!SET.low) {
@@ -12324,8 +12412,8 @@
         /* motes: void sparks rising (seer) / fireflies drifting (thorn) */
         c.globalCompositeOperation = "lighter";
         for (let i = 0; i < (SET.low ? 0 : 40); i++) {
-          const sp = 6 + (i % 5) * 3, x = ((i * 211 + Math.sin(t * 0.4 + i) * 40) % W + W) % W, y = kind == "void" ? H - (((i * 137 + t * sp) % (H + 20)) - 10) : ((i * 137) % H) + Math.sin(t * 0.7 + i * 1.3) * 20, tw = 0.3 + 0.7 * Math.max(0, Math.sin(t * 2.3 + i * 1.9));
-          const [or, og, ob] = kind == "void" ? [190, 140, 255] : [210, 255, 140];
+          const sp = 6 + (i % 5) * 3, x = ((i * 211 + Math.sin(t * 0.4 + i) * 40) % W + W) % W, y = kind != "thorn" ? H - (((i * 137 + t * sp) % (H + 20)) - 10) : ((i * 137) % H) + Math.sin(t * 0.7 + i * 1.3) * 20, tw = 0.3 + 0.7 * Math.max(0, Math.sin(t * 2.3 + i * 1.9));
+          const [or, og, ob] = kind != "thorn" ? [190, 140, 255] : [210, 255, 140];
           c.globalAlpha = tw;
           c.drawImage(softBlob(`${or},${og},${ob}`, 0.6), x - 5, y - 5, 10, 10);
         }
@@ -12342,6 +12430,44 @@
         const R = b.r, t = S.tm, p2 = b.ph == 2, tg = actor(b.cur || b.tg), look = tg ? Math.atan2(tg.y - b.y, tg.x - b.x) : Math.PI / 2;
         const lx = Math.cos(look), ly = Math.sin(look);
         const crack = (pts, w) => { c.strokeStyle = rc; c.lineWidth = w; c.shadowColor = rc; c.shadowBlur = 10; c.beginPath(); pts.forEach((q, k) => (k ? c.lineTo : c.moveTo).call(c, q[0] * R, q[1] * R)); c.stroke(); c.shadowBlur = 0; };
+        if (D.net) { /* The Echo Archon, seen from above: a cape, broad steel pauldrons, a plated torso, a crowned helm with a
+           visor that tracks its target, and two blades orbiting it. Its glow (visor, rune seams) grows with its brain (BRAIN.gen). */
+          const bob = Math.sin(t * 1.6) * 2, gl = Math.min(1, (BRAIN.gen || 0) / 40), glow = p2 ? ec : rc;
+          c.fillStyle = "rgba(0,0,0,.45)"; c.beginPath(); c.ellipse(4, R * 0.85, R * 1.05, R * 0.32, 0, 0, 6.3); c.fill();
+          /* cape */
+          const cp = c.createLinearGradient(0, -R * 0.4, 0, R * 1.1); cp.addColorStop(0, "#2a1f3a"); cp.addColorStop(1, "#120c1c");
+          c.fillStyle = cp; c.beginPath(); c.moveTo(-R * 0.8, -R * 0.35 + bob); c.quadraticCurveTo(-R * 1.15, R * 0.6, -R * 0.75, R * 1.05); c.lineTo(R * 0.75, R * 1.05); c.quadraticCurveTo(R * 1.15, R * 0.6, R * 0.8, -R * 0.35 + bob); c.closePath(); c.fill();
+          /* orbiting blades */
+          for (let k = 0; k < 2; k++) {
+            const a = t * 1.1 + k * Math.PI, bx = Math.cos(a) * R * 1.35, by = Math.sin(a) * R * 0.9 + bob;
+            c.save(); c.translate(bx, by); c.rotate(a + Math.PI / 2);
+            const bg2 = c.createLinearGradient(-3, 0, 3, 0); bg2.addColorStop(0, "#e8eef8"); bg2.addColorStop(1, "#7a8496");
+            c.fillStyle = bg2; c.beginPath(); c.moveTo(-3.5, 8); c.lineTo(0, -22); c.lineTo(3.5, 8); c.closePath(); c.fill();
+            c.fillStyle = glow; c.shadowColor = glow; c.shadowBlur = 6 + 8 * gl; c.fillRect(-7, 7, 14, 3); c.shadowBlur = 0;
+            c.restore();
+          }
+          /* pauldrons and torso */
+          const st = (x0, y0, x1, y1) => { const sg = c.createLinearGradient(x0, y0, x1, y1); sg.addColorStop(0, "#c9d2e0"); sg.addColorStop(0.5, "#6a7486"); sg.addColorStop(1, "#262c38"); return sg; };
+          c.fillStyle = st(-R, -R, R, R);
+          c.beginPath(); c.ellipse(-R * 0.62, -R * 0.12 + bob, R * 0.42, R * 0.32, -0.3, 0, 6.3); c.fill();
+          c.beginPath(); c.ellipse(R * 0.62, -R * 0.12 + bob, R * 0.42, R * 0.32, 0.3, 0, 6.3); c.fill();
+          c.fillStyle = st(-R * 0.5, -R * 0.4, R * 0.5, R * 0.6);
+          c.beginPath(); c.moveTo(-R * 0.5, -R * 0.2 + bob); c.lineTo(R * 0.5, -R * 0.2 + bob); c.lineTo(R * 0.38, R * 0.62 + bob); c.lineTo(0, R * 0.8 + bob); c.lineTo(-R * 0.38, R * 0.62 + bob); c.closePath(); c.fill();
+          /* glowing rune seams on the armour (brighter as it learns) */
+          c.strokeStyle = glow; c.lineWidth = 1.6; c.shadowColor = glow; c.shadowBlur = 4 + 10 * gl; c.globalAlpha = 0.55 + 0.45 * gl;
+          c.beginPath(); c.moveTo(0, -R * 0.12 + bob); c.lineTo(0, R * 0.7 + bob); c.moveTo(-R * 0.3, R * 0.15 + bob); c.lineTo(R * 0.3, R * 0.15 + bob); c.stroke();
+          c.beginPath(); c.arc(-R * 0.62, -R * 0.12 + bob, R * 0.2, 3.6, 5.6); c.stroke(); c.beginPath(); c.arc(R * 0.62, -R * 0.12 + bob, R * 0.2, 3.8, 5.8); c.stroke();
+          c.globalAlpha = 1; c.shadowBlur = 0;
+          /* crowned helm with a visor that tracks its target */
+          c.fillStyle = st(-R * 0.3, -R * 0.75, R * 0.3, -R * 0.2);
+          c.beginPath(); c.arc(0, -R * 0.42 + bob, R * 0.3, 0, 6.3); c.fill();
+          c.fillStyle = "#3a3048";
+          for (let k = -2; k <= 2; k++) { c.beginPath(); c.moveTo(k * R * 0.11 - 3, -R * 0.66 + bob); c.lineTo(k * R * 0.11, -R * (0.86 - Math.abs(k) * 0.05) + bob); c.lineTo(k * R * 0.11 + 3, -R * 0.66 + bob); c.closePath(); c.fill(); } /* crown */
+          c.fillStyle = glow; c.shadowColor = glow; c.shadowBlur = 10 + 14 * gl;
+          c.beginPath(); c.ellipse(lx * R * 0.06, -R * 0.42 + bob + ly * R * 0.04, R * 0.2, R * 0.05, 0, 0, 6.3); c.fill(); c.shadowBlur = 0;
+          if (f || b.hf > 0) { c.globalAlpha = 0.45; c.fillStyle = "#fff"; c.beginPath(); c.arc(0, bob, R * 0.75, 0, 6.3); c.fill(); c.globalAlpha = 1; }
+          return;
+        }
         if (!D.horns) {
           const bob = Math.sin(t * 2.2) * 4;
           /* ground shadow (doesn't bob) and a void pool under it */
@@ -12976,7 +13102,7 @@
           if (b.weak > 0) bar(330, 34, 240, 6, b.weak / 5, "#ffe066");
           c.textAlign = "center";
           c.fillStyle = "#fff";
-          c.fillText(`${D.n}  -  Phase ${b.ph}   ${S.at.toFixed(0)}s${b.brk > 0 ? "   ·   POISE BROKEN +50%" : b.enr > 0 ? "   ·   ENRAGED" : ""}`, 450, 54);
+          c.fillText(`${D.n}${D.net ? `  ·  🧠 gen ${BRAIN.gen || 0}` : ""}  -  Phase ${b.ph}   ${S.at.toFixed(0)}s${b.brk > 0 ? "   ·   POISE BROKEN +50%" : b.enr > 0 ? "   ·   ENRAGED" : ""}`, 450, 54);
           if (b.doom) { c.fillStyle = "#c9a3ff"; c.font = "bold 14px Georgia"; const tgt = S.ps.find((p) => p.id == b.doom.id); c.fillText(`☠ DOOM on ${tgt === P ? "YOU" : tgt ? tgt.name : "?"}: ${b.doom.orbs.filter((o) => !o.got).length} runes left · ${b.doom.t.toFixed(1)}s`, 450, 74); c.font = "13px Georgia"; }
           /* party frames: name, class color, health */
           c.textAlign = "left";

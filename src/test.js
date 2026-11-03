@@ -1,20 +1,53 @@
 // Headless logic test for dev tools: stubs the DOM, runs the real game script.
 const fs=require('fs'),http=require('node:http'),vm=require('vm'),path=require('path');
 const {createDirectoryServer}=require('./app.js');
+const {createBrain}=require('./brain.js');
+const os=require('node:os');
 const SCRIPT=fs.readFileSync(path.join(__dirname,'..','index.html'),'utf8').match(/<script>([\s\S]*)<\/script>/)[1];
 const NET_START='/* Browser networking block:',NET_END='/* End browser networking block. */',NET_START_INDEX=SCRIPT.indexOf(NET_START),NET_END_INDEX=SCRIPT.indexOf(NET_END);
 if(NET_START_INDEX<0||NET_END_INDEX<=NET_START_INDEX)throw new Error('Browser networking block is missing from index.html.');
 const NETSRC=SCRIPT.slice(NET_START_INDEX,NET_END_INDEX),SRC=SCRIPT.slice(0,NET_START_INDEX)+SCRIPT.slice(NET_END_INDEX+NET_END.length);
 let netClock=0,fakePeers=[],fakeHandlers={},fakeBroadcast=[],fakeDirectory=[];
 const fakeNet={directorySend:(path,data)=>{fakeDirectory.push({path,data});return Promise.resolve({ok:true});},setHandlers:h=>fakeHandlers=h,peerIds:()=>fakePeers.slice(),send:(id,msg)=>{fakeBroadcast.push({id,msg});return fakePeers.includes(id)},broadcast:msg=>{fakeBroadcast.push({id:'all',msg});return fakePeers.length},disconnect:id=>{fakePeers=fakePeers.filter(p=>p!=id);fakeHandlers.onClose?.(id)},disconnectAll:()=>{const old=fakePeers.slice();fakePeers=[];old.forEach(id=>fakeHandlers.onClose?.(id));}};
+let fakeBrainCalls=[];
+fakeNet.brain=(action,body)=>{fakeBrainCalls.push({action,body});return Promise.resolve({ok:true,status:200,data:action=='get'?{gen:0,cap:1,spells:{}}:{gen:1,kept:true}});};
 const els={};const doc={addEventListener(){},createTextNode:t=>t,getElementById:id=>els[id]||(els[id]={style:{},dataset:{},children:[{style:{}}],value:'',addEventListener(){},append(){},setPointerCapture(){},getContext:()=>new Proxy({},{get:()=>()=>({addColorStop(){}}),set:()=>true}),set innerHTML(v){this._h=v},get innerHTML(){return this._h||''},hidden:false,textContent:''}),querySelectorAll:()=>[],body:{className:'',appendChild(){}},createElement:()=>({style:{},remove(){},append(){},classList:{add(){},remove(){}}}),documentElement:{cls:new Set(),classList:{add(c){doc.documentElement.cls.add(c)},remove(c){doc.documentElement.cls.delete(c)}},style:{setProperty(){}}}};
 const store={};
 const ctx={document:doc,window:{},innerWidth:900,innerHeight:600,performance:{now:()=>netClock},requestAnimationFrame(){},addEventListener(){},localStorage:{getItem:k=>store[k]||null,setItem:(k,v)=>store[k]=v,removeItem:k=>delete store[k]},Image:function(){this.complete=false},location:{search:''},console,setTimeout:f=>0,clearTimeout(){},Math,JSON,Object,Array,Date,Number,parseInt,isNaN,btoa,atob,escape,unescape,encodeURIComponent,decodeURIComponent};
+const testMath=Object.create(Math);let randomState=0x5eed1234;
+testMath.random=()=>{randomState=(1664525*randomState+1013904223)>>>0;return randomState/0x100000000;};
+ctx.Math=testMath;
 ctx.RBNet=fakeNet;
 ctx.window=ctx;vm.createContext(ctx);
 vm.runInContext(SRC+`
 ;globalThis.devMin=devMin;globalThis.devFs=devFs;globalThis.T={V:()=>V,raidDrops,invUI,SMITH,setRaidTrial:(n)=>RAID_TRIAL=n,hpmF3:()=>hpm(),dashF:(p)=>dash(p),heal:(p,n,src)=>heal(p,n,src),PETS,npcHidden:(n)=>npcHidden(n),loreRewardT:(b)=>loreReward(b),clampWT:(p)=>clampW(p),maidTrade:(i)=>maidTrade(i),maidenUI:()=>maidenUI(),seraphBuy,BLESS,qAct:(a)=>qAct(a),bless,dmF2:()=>dm(),cdmF2:()=>cdm(),TRIAL_SEL,enterRaidT:(k)=>enterRaid(k),craftRefine,hpmF:()=>hpm(),cdmF:()=>cdm(),wp,eqRoll,dmF:()=>dm(),craftCost,craftMake,craftTemper,craftSalvage,FORGE,smithUI,invWear,MATS,setRaid:(k)=>S.raid=k,CLASS_DMG:()=>CLASS_DMG,P:()=>P,S:()=>S,start,devAdd,devUp,devUI,devCls,devHeal,devWipe,devResetQ,devArena,devBoss,devHub,DEV,hurt,act,step,pauseGame,resumeGame,isPaused:()=>paused,QUESTS,UPG,toggleDev,buy,shopUI,qAct,togglePause,dailyCheck,saveName,lvlInfo,gainXP,lvlCol,loreReward,isUnl,tutNext,bjVal,bjDeal,bjHit,bjStand,bjDouble,bjSplit,BJ:()=>BJ,guildFound,guildRecruit,gBonus,bountyDay,bountyAdd,bountyClaim,guildJoin,guildTab,rankPool,rankRefresh,rankSort,dm,dash,dashStep,setIn,padPoll,inMode:()=>INMODE,KEYHINT,HUBV:()=>HUBV,BOT_STUCK:()=>BOT_STUCK,ENGINE,cdMul,discordUnlock,openDlg,TUT_DONE,ult,ultDmg,ULT,inter,hitB,DASH,ZONE_DMG,RAIDS,BOSSES,raidTeam,raidAI,partyMembers,partyAdd,partyRemove,raidUI,playerUI,partyMessage,bash,taunt,inTele,toArena,PARTY:()=>PARTY,netRelayFlush,raidNet,raidState,raidApply,raidNetStep,arena,toArena,HUB_NPCS,BOT_NPC_LV,BARKEEP,CLASSN,SKC,PEMB,hubJoin,hubLeave,hubCount,HUB_MAX,hubVisitStep,botName,botLook,chatSend,COS,cosOwn,cosV,cosBuyGold,cosEquip,shopPay,myEmote,streamPts,crossFrame,bridgeAt,riverNear,clampW,WF,STATUE,PORTAL,SET,keyLabel,EDGE,inIsle,netReceive,netPrepareHub,netStep,netPack,netUnpack,netAudit,auditRules,goldAdd,gainXP,netStats,LEDGER:()=>LEDGER,FX:()=>FX,FT:()=>FT,shk:()=>shk,els:null};`,ctx);
 const T=ctx.T,BENCH_ONLY=process.argv.includes('--bench');let f=0;const ok=(c,m)=>{if(!c||!BENCH_ONLY)console.log((c?'PASS ':'FAIL ')+m);if(!c)f++};
+Object.assign(T,{brainLoad:ctx.brainLoad,brainStep:ctx.brainStep,brainSend:ctx.brainSend,brainLog:()=>vm.runInContext('BRAIN_LOG',ctx)});
+function brainUnitTests(){
+ const dir=fs.mkdtempSync(path.join(os.tmpdir(),'runebound-brain-')),file=path.join(dir,'brain.json');
+ try{
+  const brain=createBrain({file,now:()=>100000,adminKey:'test-admin-key'});
+  const [status,initial]=brain.get();ok(status==200&&initial.gen==0&&initial.w1.length==8&&initial.w2.length==2,'brain: starts with a public generation-zero model');
+  ok(!('opt'in initial)&&!('hist'in initial),'brain: private optimizer and rollback history are not public');
+  ok(brain.train({tok:'invalid',samples:[]})[0]==400,'brain: rejects malformed player keys');
+  ok(brain.train({tok:'a'.repeat(32),samples:Array(9).fill([[0,0,0,0,1,1],[0,0]])})[0]==400,'brain: rejects insufficient training samples');
+  const samples=Array.from({length:40},()=>[[0,0,0,0,1,1],[0,0]]);
+  const [trained,result]=brain.train({tok:'a'.repeat(32),samples,spells:{slam:[4,4]}});
+  ok(trained==200&&result.kept&&result.gen==1,'brain: learns from a valid fight and advances one generation');
+  ok(brain.get()[1].fights==1&&brain.get()[1].samples==40&&brain.get()[1].spells.slam==0.575,'brain: records accepted samples and spell performance');
+  ok(brain.train({tok:'a'.repeat(32),samples})[0]==429,'brain: throttles repeat training by player key');
+  brain.flush();
+  const loaded=createBrain({file,now:()=>100000,adminKey:'test-admin-key'});
+  ok(loaded.get()[1].gen==1&&loaded.get()[1].w1[0].every(Number.isFinite),'brain: persists and reloads a trained model');
+  ok(loaded.admin({key:'wrong',action:'reset'})[0]==403,'brain: protects admin controls with the configured key');
+  ok(loaded.admin({key:'é'.repeat('test-admin-key'.length),action:'reset'})[0]==403,'brain: rejects wrong keys with mismatched UTF-8 byte lengths');
+  ok(loaded.admin({key:'test-admin-key',action:'cap',value:0.4})[1].cap==0.4,'brain: admin can adjust the difficulty cap');
+  ok(loaded.admin({key:'test-admin-key',action:'cap',value:'bad'})[0]==400,'brain: rejects an invalid difficulty cap');
+  ok(loaded.admin({key:'test-admin-key',action:'rollback',value:0})[1].gen==0,'brain: admin can roll back to a retained generation');
+  loaded.flush();
+ }finally{fs.rmSync(dir,{recursive:true,force:true});}
+}
+brainUnitTests();
 T.start();ok(T.S().sc=='hub','start -> hub');
 ctx.document.getElementById('dlg').hidden=true;const pausedAt=T.S().tm;T.pauseGame();T.step(.1);ok(T.isPaused()&&T.S().tm===pausedAt,'pause freezes the game');T.resumeGame();ok(!T.isPaused(),'resume re-enables play');
 ok(!T.V().name&&T.V().ds===undefined,'first start asks for a name before the daily bonus');
@@ -133,7 +166,7 @@ for(let i=0;i<12;i++)T.hubLeave('real'+i);ok(!T.HUBV().some(v=>!v.bot),'hub: lea
    if(inPed(v)&&bad.length<5)bad.push(`${v.name} in a pedestal at ${v.x|0},${v.y|0}`);if(inRiver(v)&&bad.length<5)bad.push(`${v.name} in the river at ${v.x|0},${v.y|0}`);
    const L=last.get(v)||{x:v.x,y:v.y,s:0};const moved=Math.hypot(v.x-L.x,v.y-L.y)>2;
    L.s=v.goal&&!(v.wait>0)&&!moved?L.s+1:0;if(L.s==4)pinned++;L.x=v.x;L.y=v.y;last.set(v,L);}}
- console.log('  lobby run: samples',samples,'pinned >3s:',pinned,'bad:',bad.join('; ')||'none');
+ console.log('  lobby run: samples',samples,'pinned >3s:',pinned,'bad:',bad.join('; ')||'none'); /* prints where, if any */
  ok(!bad.length,'hub: bots never stand inside a pedestal or the river (10 min)');ok(pinned<=2,'hub: bots are never pinned for long (10 min)');}
 {const s0=T.BOT_STUCK(),n0=T.HUBV().length;for(let i=0;i<60*240;i++)T.step(1/60);const g=T.BOT_STUCK()-s0;console.log('  bot give-ups in 240s:',g,'bots',n0);ok(g<=2,'hub: bots path around the river (rarely give up stuck)');}
 {const lo=T.HUB_NPCS({lv:1}),hi=T.HUB_NPCS({lv:60});ok(lo.every(n=>!n.lk||n.lk=='barkeep')&&hi.length==7,'hub: bots only visit NPCs their level has unlocked');}
@@ -295,8 +328,8 @@ function raidSim(key,cls,setup,pre){
  T.devHub();T.P().cls='dps';
  const tm=T.raidTeam('small').team;ok(tm.length==3&&['tank','heal','dps'].every(k=>tm.filter(m=>m.cls==k).length==1)&&tm[0].me,'raid: a small raid is you plus bots for the 2 missing roles');
  const lg=T.raidTeam('large').team;ok(lg.length==6&&['tank','heal','dps'].every(k=>lg.filter(m=>m.cls==k).length==2),'raid: a large raid is 2 tanks, 2 healers, 2 DPS');
- ok(T.raidTeam('epic').err&&T.RAIDS.epic.locked,'raid: the epic raid is sealed');
- T.raidUI();const html=ctx.document.getElementById('dp').innerHTML;ok(html.includes('Hollow Seer')&&html.includes('Thornmaw')&&html.includes('class="chains"'),'raid select: small and large bosses, epic in chains');
+ ok(!T.raidTeam('epic').err&&T.raidTeam('epic').team.length==12&&T.RAIDS.epic.boss=='synapse','raid: the epic raid is open: 12 raiders vs the Echo Archon');
+ T.raidUI();const html=ctx.document.getElementById('dp').innerHTML;ok(html.includes('Hollow Seer')&&html.includes('Thornmaw')&&html.includes('Echo Archon'),'raid select: small, large and epic bosses');
  const tanks=[1,2].map(i=>T.hubJoin('rbt'+i,{name:'RbTank'+i,cls:'tank',quiet:1},1));tanks.forEach(v=>T.partyAdd(v.id));
  ok(T.raidTeam('small').err&&!T.raidTeam('large').err,'party: 2 extra tanks are too many for a small raid, fine for a large one');
  tanks.forEach(v=>T.partyRemove(v.id));ok(T.PARTY().m.length==0,'party: members can be removed');
@@ -304,6 +337,15 @@ function raidSim(key,cls,setup,pre){
  {T.closeDlg&&T.closeDlg();ctx.document.getElementById('dlg').hidden=true;bot.inn=0;bot.out=0;bot.x=330;bot.y=420;T.P().x=bot.x+10;T.P().y=bot.y;T.inter();ok(ctx.document.getElementById('dlg').hidden,'party: interact near a player sends the invite at once, no menu');}
  T.partyAdd(bot.id);const pm=T.partyMembers();ok(pm.length==2&&pm[1].name==bot.name&&pm[1].cls==bot.cls,'party: a party member joins your raid team');
  T.partyRemove(bot.id);
+}
+{
+ fakeBrainCalls=[];store.rb_mtok='c'.repeat(32);T.devHub();T.toArena('epic');
+ ok(fakeBrainCalls.some(c=>c.action=='get'),'game brain: fetches shared weights when the epic raid starts');
+ for(let i=0;i<60*6;i++)T.step(1/60);
+ const log=T.brainLog();ok(log&&log.samples.length>=10,'game brain: samples player movement during the epic raid');
+ T.brainSend();
+ const sent=fakeBrainCalls.find(c=>c.action=='train');
+ ok(sent&&sent.body.samples.length>=10&&sent.body.tok=='c'.repeat(32),'game brain: submits the sampled fight with the market token');
 }
 {
  T.devHub();T.toArena('small');const b=T.S().b,tank=T.S().ps.find(p=>p.cls=='tank');
@@ -546,6 +588,30 @@ async function signalingTests(){
   await new Promise(resolve=>server.close(resolve));
  }
 }
+async function brainHttpTests(){
+ const dir=fs.mkdtempSync(path.join(os.tmpdir(),'runebound-brain-http-')),file=path.join(dir,'brain.json'),previousKey=process.env.ADMIN_KEY;
+ process.env.ADMIN_KEY='test-http-admin-key';
+ const {server,brain}=createDirectoryServer({allowedOrigins:[],market:false,brainFile:file});
+ try{
+  await new Promise((resolve,reject)=>{server.once('error',reject);server.listen(0,'127.0.0.1',resolve);});
+  const base=`http://127.0.0.1:${server.address().port}`;
+  const post=async(path,body)=>{const response=await fetch(base+path,{method:'POST',headers:{'content-type':'application/json'},body:JSON.stringify(body)});return{status:response.status,body:await response.json()};};
+  const initial=await post('/api/brain/get',{});
+  ok(initial.status==200&&initial.body.gen==0&&initial.body.w1.length==8,'brain API: serves the current shared model');
+  ok((await post('/api/brain/train',{tok:'bad',samples:[]})).status==400,'brain API: rejects invalid training payloads');
+  const samples=Array.from({length:40},()=>[[0,0,0,0,1,1],[0,0]]);
+  const trained=await post('/api/brain/train',{tok:'b'.repeat(32),samples});
+  ok(trained.status==200&&trained.body.gen==1&&trained.body.kept,'brain API: accepts and records a valid fight');
+  ok((await post('/api/brain/train',{tok:'b'.repeat(32),samples})).status==429,'brain API: applies per-player training throttling');
+  ok((await post('/api/brain/admin',{key:'test-http-admin-key',action:'cap',value:0})).body.cap==0,'brain API: routes authenticated admin controls');
+  ok((await post('/api/brain/admin',{key:'wrong',action:'reset'})).status==403,'brain API: rejects unauthenticated admin controls');
+ }finally{
+  brain.flush();
+  await new Promise(resolve=>server.close(resolve));
+  if(previousKey===undefined)delete process.env.ADMIN_KEY;else process.env.ADMIN_KEY=previousKey;
+  fs.rmSync(dir,{recursive:true,force:true});
+ }
+}
 async function reportTests(){
  const {server}=createDirectoryServer({allowedOrigins:[]});await new Promise(r=>server.listen(0,'127.0.0.1',r));
  const base=`http://127.0.0.1:${server.address().port}`,post=(path,body)=>fetch(base+path,{method:'POST',headers:{'content-type':'application/json'},body:JSON.stringify(body)}).then(async r=>({status:r.status,body:await r.json()}));
@@ -741,4 +807,4 @@ async function benchTests(){
 }
 {T.V().mat={};T.setRaid('large');const d=T.raidDrops(true);ok(T.V().mat.dust>=3&&T.V().mat.bark>=1&&d.some(x=>x[0]=='bark'),'materials: a large raid win drops Rune Dust and Thornbark');const l=T.raidDrops(false);ok(l.length==1&&l[0][0]=='dust','materials: a loss still gives a little dust');
  T.V().eq={bag:[{id:'a1',t:'tank',k:'dr',r:1},{id:'a2',t:'tank',k:'dr',r:2}],on:{tank:'a1'}};T.invWear('a2');ok(T.V().eq.on.tank=='a2','inventory: wearing an item swaps it into its slot');T.invWear('a2');ok(!T.V().eq.on.tank,'inventory: clicking a worn item takes it off');T.invUI();ok(ctx.document.getElementById('dp').innerHTML.includes('Thornbark'),'inventory: shows materials');}
-(BENCH_ONLY?Promise.resolve():networkTests().then(signalingTests).then(reportTests).then(rateLimitTests).then(()=>marketHttpTests())).then(benchTests).then(()=>{console.log(f?f+' FAILED':'ALL PASSED');process.exit(f?1:0);}).catch(e=>{console.error(e);process.exit(1);});
+(BENCH_ONLY?Promise.resolve():networkTests().then(signalingTests).then(brainHttpTests).then(reportTests).then(rateLimitTests).then(()=>marketHttpTests())).then(benchTests).then(()=>{console.log(f?f+' FAILED':'ALL PASSED');process.exit(f?1:0);}).catch(e=>{console.error(e);process.exit(1);});

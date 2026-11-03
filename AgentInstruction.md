@@ -294,9 +294,11 @@ Built and tested (unit tests plus the `cheat`, `flood`, `econ`, `hphack`, `chat`
 - Cleanup pass: removed the Class Master's 3-icon disc drawing (he is not in the hub), SMITH_COST (old Smith blessings), the stale class-NPC orbit test; README rewritten (NPCs, raids, gear, market, files).
 
 - Tests: 10-min lobby run (bots never in a pedestal/river, never pinned), all 8 blessings, pedestal collision, pet placeholder, 300 Archivist rewards, market over real HTTP. Bench (--raids=N) adds Rune Trial rows: Trial 2 ~50%, Trial 5 0% fresh, 100% with a Legendary set.
+- Epic Raid: 12 players (4 tanks, 4 healers, 4 DPS) fight The Echo Archon (`synapse`). The hub service hosts the shared model in `src/brain.js`; the browser requests weights and submits bounded fight observations. The brain is generation 0/offline-safe until trained.
 
 ## Not done / open
 
+- The Echo Archon's brain has headless client, service, and HTTP tests, but has not been validated in a real browser against a hosted hub.
 - Host migration and reconnect: a hub dies when its host leaves.
 - Raids are run by the party leader's screen (see Latest); no leader migration, so the raid ends if the leader leaves.
 - Not tested on a real phone as master; the 5× phone slowdown is an estimate. On phones the browser pauses when the screen locks or the app is switched, so a phone master needs host migration.
@@ -312,3 +314,27 @@ Built and tested (unit tests plus the `cheat`, `flood`, `econ`, `hphack`, `chat`
 - Never send save data to the directory; it gets only the minimal display profile.
 - Keep input validation, bounded messages, CORS and rate limits.
 - Commit only tested changes and update this file before pushing.
+
+## Switching agents / clean pickup
+
+The next agent may have no chat history or prior game context. Leave the repository itself with a reliable handoff; do not rely on conversation memory.
+
+### When starting
+
+1. Read the **Agent handoff** section in `README.md`, then this file. Treat the README handoff as the latest task state, and this file as the durable project rules and broader context.
+2. Check `git status` and inspect the relevant diffs before editing. A dirty tree may contain another agent's or the owner's work. Preserve it; do not reset, revert, overwrite, or claim it as yours. If it overlaps the requested change and intent is unclear, stop and ask.
+3. Identify the user's current goal and acceptance criteria. If the handoff does not establish them, ask rather than inventing a gameplay task. Read the relevant code and tests before changing behavior; validate assumptions against the implementation because older notes can become stale.
+4. Keep scope focused. Do not treat old "pending" ideas, known issues, or roadmap notes as authorization to implement them.
+
+### Before handing off
+
+Update the **Current handoff** in `README.md` at the end of each task that changes the repository or leaves work in progress. Replace the previous handoff; do not append an accumulating task diary. Include:
+
+- update date, requested goal, and current status (done, in progress, or blocked);
+- what changed and the important files/symbols involved;
+- decisions, constraints, or behavior the next agent must preserve;
+- exact validation commands and outcomes, including what was not run;
+- known failures, unresolved questions, risks, and the next concrete action;
+- relevant pre-existing/uncommitted work and anything intentionally left untouched.
+
+Be explicit about what is verified versus planned or inferred. If no code changed, say so. If blocked or interrupted, record the partial state and safest next step; never describe incomplete work as complete. Keep the handoff concise and omit secrets, credentials, and unnecessary player data. Update this instruction file only when durable project rules or context change; record task-specific state in the README handoff instead.

@@ -37,6 +37,22 @@ A co-op raid game that runs in the browser: a floating hub island, NPCs, and bos
 - `assets/icon.png`: tab icon.
 - `AgentInstruction.md`: working notes and rules for contributors and coding agents.
 
+## Agent handoff
+
+Before handing work to another agent, update this section with enough detail for someone unfamiliar with the game to continue without guessing. Keep it current and concise; distinguish verified facts from plans, and do not overwrite or discard unrelated work in a dirty working tree.
+
+### Current handoff
+
+- **Updated:** 2026-11-03
+- **Task and goal:** Resolve the test and validation blockers identified before publishing the pending game changes.
+- **Status:** Fixed the validation blockers; the complete test suite and benchmark pass.
+- **Changes:** `src/test.js` now checks brain initialization, training, persistence, throttling, admin controls, HTTP routes, the Epic Raid client sample/send flow, and uses a fixed RNG for repeatable gameplay simulations. `src/brain.js` now safely rejects admin keys whose UTF-8 byte lengths differ and cancels pending save timers on synchronous flush. `AgentInstruction.md` records the Echo Archon and remaining real-browser validation gap.
+- **Decisions:** Preserve gameplay assertions; make simulation inputs reproducible instead of weakening expected outcomes. Keep admin failures shaped as 403 rather than allowing `timingSafeEqual` to throw.
+- **Validation:** `npm test` and `npm run bench` both pass with stable lobby/raid results and headless Epic Raid brain flow. `git diff --check` passes.
+- **Known issues and risks:** No real-browser or hosted-hub end-to-end validation has been run for the Echo Archon.
+- **Next step:** Verify the Echo Archon against a real browser and hub service before relying on its learned behavior in a hosted game. Changes are ready to commit and push.
+- **Worktree notes:** The Epic raid UI, shared brain service/routes, tests, and handoff documentation form one coherent change set; do not partially publish the UI without its service or vice versa.
+
 ## Player market (server escrow)
 
 Merchant › **Market** lets players sell materials and spare gear to each other for gold.

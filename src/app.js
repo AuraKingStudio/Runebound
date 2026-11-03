@@ -6,6 +6,7 @@
 const http = require("node:http");
 const { randomBytes } = require("node:crypto");
 const { createMarket } = require("./market.js");
+const { createBrain } = require("./brain.js");
 
 const MAX_BODY_BYTES = 16 * 1024;
 const MAX_HUBS = 10;
@@ -41,6 +42,7 @@ function createDirectoryServer(options = {}) {
   ]);
   const feedbackFile = options.feedbackFile || require("path").join(__dirname, "..", "feedback.log");
   const market = options.market === false ? null : createMarket({ file: options.marketFile });
+  const brain = options.brain === false ? null : createBrain({ file: options.brainFile });
   /* local playtests: any page served from this network (192.168.x.x, 10.x.x.x, 172.16-31.x.x) may use the service */
   const lanOrigin = (o) => options.allowLan !== false && /^http:\/\/(192\.168\.\d+\.\d+|10\.\d+\.\d+\.\d+|172\.(1[6-9]|2\d|3[01])\.\d+\.\d+)(:\d+)?$/.test(o);
   const hubs = new Map();
@@ -152,6 +154,13 @@ function createDirectoryServer(options = {}) {
       const [status, value] = market[mk[1]](body || {});
       return send(res, status, value);
     }
+    /* the epic boss's shared brain: /api/brain/get (weights) and /api/brain/train (observations from one fight) */
+    const bk = /^\/api\/brain\/(get|train|admin)$/.exec(url.pathname);
+    if (bk) {
+      if (!brain) return send(res, 503, { error: "The brain is offline on this server." });
+      const [status, value] = brain[bk[1]](body || {});
+      return send(res, status, value);
+    }
     if (url.pathname === "/api/feedback") {
       /* playtest notes: one JSON line per note in feedback.log (no session needed; size-capped, rate-limited above) */
       if (typeof body.text !== "string" || !body.text.trim() || body.text.length > 1500) return send(res, 400, { error: "Feedback is invalid." });
@@ -255,7 +264,7 @@ function createDirectoryServer(options = {}) {
       else res.destroy(error);
     });
   });
-  return { server, hubs, sessions, cleanup, market };
+  return { server, hubs, sessions, cleanup, market, brain };
 }
 
 if (require.main === module) {
