@@ -254,8 +254,9 @@
       .prow { flex-wrap: wrap; }
       .prow .pinfo { flex: 1 1 140px; min-width: 0; }
       .prow .pinfo .sm { white-space: nowrap; overflow: hidden; text-overflow: ellipsis; font-size: 14px; color: #e8dcc0; }
-      .prow button.prm { width: auto; flex: none; margin: 0; min-height: 40px; padding: 8px 18px; letter-spacing: 1.5px; font-size: 13px; }
+      .prow button.prm { width: auto; flex: none; margin: 0; min-height: 40px; padding: 8px 18px; letter-spacing: 1.5px; font-size: 14px; color: #fff1c8; text-shadow: 0 1px 2px #000; }
       @media (max-width: 380px) { .prow button.prm { flex: 1 1 100%; } }
+      .prow button.prm:not(:disabled) { color: #fff1c8 !important; text-shadow: 0 1px 2px #000 !important; background: linear-gradient(180deg, #ffd84a, #a86f00) !important; } /* beats the class-coloured .up button: light text on the dark plate */
       .pips {
         display: inline-flex;
         gap: 4px;
