@@ -7646,7 +7646,7 @@
         FLAIR[n.fx] = cv7;
         if (!g || !g.setTransform) return cv7;
         g.scale(S2, S2); g.translate(w / 2, h / 2);
-        const OFF = { cards: [0, 24], coins: [0, 24], arms: [0, 48], book: [0, 32], elder: [-26, 14], banners: [0, 28], roses: [0, 18] }[n.fx] || [0, 0];
+        const OFF = { cards: [0, 24], coins: [0, 24], arms: [0, 48], book: [0, 32], elder: [-26, 32], banners: [0, 28], roses: [0, 18] }[n.fx] || [0, 0];
         g.scale(1.7, 1.7); g.translate(OFF[0], OFF[1]); /* each design was drawn above the disc: move its centre onto the disc and enlarge */
         g.lineCap = g.lineJoin = "round";
         const glow = (col, b) => { g.shadowColor = col; g.shadowBlur = b; };
@@ -7671,21 +7671,23 @@
           g.fillStyle = "#8a5c08"; g.font = `bold ${r}px Georgia`; g.textAlign = "center"; g.textBaseline = "middle"; g.fillText("ᚱ", x, y + 0.5);
         };
         switch (n.fx) {
-          case "cards": card(-8, -26, -0.2, "A", "♠", 0); card(8, -26, 0.2, "K", "♥", 1); break; /* tight fan */
+          case "cards": break; /* drawn live in npc(): they shuffle */
           case "coins": coin(-13, -24, 9); coin(13, -24, 9); coin(0, -32, 11); break; /* close stack */
           case "arms": { /* one heater shield, one sword laid diagonally across it */
             g.translate(0, -16);
             glow("#ff9f43", 8);
+            g.save(); g.translate(0, -32); g.scale(0.85, 0.85); g.translate(0, 32); /* shield a little smaller */
             const sg = g.createLinearGradient(-15, -52, 15, -14); sg.addColorStop(0, "#ffb35a"); sg.addColorStop(1, "#8a3c10");
             g.fillStyle = sg; g.strokeStyle = "#ffe0a0"; g.lineWidth = 1.6;
             g.beginPath(); g.moveTo(-15, -52); g.lineTo(15, -52); g.lineTo(15, -35); g.quadraticCurveTo(15, -20, 0, -13); g.quadraticCurveTo(-15, -20, -15, -35); g.closePath(); g.fill(); g.stroke();
             g.shadowBlur = 0; g.strokeStyle = "rgba(255,240,200,.6)"; g.lineWidth = 1; g.beginPath(); g.moveTo(-11, -48); g.lineTo(11, -48); g.lineTo(11, -35); g.quadraticCurveTo(11, -23, 0, -17); g.quadraticCurveTo(-11, -23, -11, -35); g.closePath(); g.stroke();
+            g.restore();
             g.save(); g.translate(0, -32); g.rotate(0.75); /* the sword, point up-right, over the shield */
             glow("#ffe0a0", 6);
             const bl = g.createLinearGradient(-3, 0, 3, 0); bl.addColorStop(0, "#f4f7fb"); bl.addColorStop(1, "#8a93a6");
-            g.fillStyle = bl; g.beginPath(); g.moveTo(-2.6, 6); g.lineTo(0, -34); g.lineTo(2.6, 6); g.closePath(); g.fill();
+            g.fillStyle = bl; g.beginPath(); g.moveTo(-4.2, 6); g.lineTo(-3.4, -26); g.lineTo(0, -36); g.lineTo(3.4, -26); g.lineTo(4.2, 6); g.closePath(); g.fill(); /* broad blade */
             g.shadowBlur = 0; g.strokeStyle = "rgba(255,255,255,.7)"; g.lineWidth = 0.6; g.beginPath(); g.moveTo(0, 4); g.lineTo(0, -30); g.stroke();
-            g.fillStyle = "#c9a14a"; g.fillRect(-9, 6, 18, 3.4); g.fillStyle = "#5a3a1a"; g.fillRect(-1.8, 9.4, 3.6, 11); g.fillStyle = "#c9a14a"; g.beginPath(); g.arc(0, 22, 2.8, 0, 6.3); g.fill();
+            g.fillStyle = "#c9a14a"; g.fillRect(-11, 6, 22, 3.8); g.fillStyle = "#5a3a1a"; g.fillRect(-2, 9.8, 4, 11); g.fillStyle = "#c9a14a"; g.beginPath(); g.arc(0, 22, 2.8, 0, 6.3); g.fill();
             g.restore();
             break; }
           case "book": { /* an open tome standing upright, facing you: cover behind, two pages fanned from the spine (70% size) */
@@ -7704,8 +7706,8 @@
             g.fillStyle = "rgba(90,215,255,.9)"; g.font = "8px " + RUNE_FONT; g.textAlign = "center"; g.textBaseline = "middle"; g.fillText("ᛟ", -13, -25); g.fillText("ᚨ", 13, -25);
             break; }
           case "elder": { /* tall staff with a glowing crystal (tilted 45° right), floating runes */
-            g.save(); g.translate(26, -32); g.rotate(0.785); g.translate(-26, 32);
-            g.strokeStyle = "#6a4a2a"; g.lineWidth = 3.4; g.beginPath(); g.moveTo(24, 6); g.quadraticCurveTo(28, -24, 26, -52); g.stroke();
+            g.save(); g.translate(26, -32); g.rotate(0.785); g.scale(0.75, 0.75); g.translate(-26, 32); /* 25% smaller: less wood */
+            g.strokeStyle = "#6a4a2a"; g.lineWidth = 2.6; g.beginPath(); g.moveTo(24, 6); g.quadraticCurveTo(28, -24, 26, -52); g.stroke();
             g.strokeStyle = "#a07a4a"; g.lineWidth = 1; g.beginPath(); g.moveTo(23, 4); g.quadraticCurveTo(27, -24, 25, -50); g.stroke();
             glow("#b48cff", 14);
             const cg = g.createLinearGradient(20, -66, 32, -54); cg.addColorStop(0, "#f2e8ff"); cg.addColorStop(1, "#8a5cff");
@@ -7714,18 +7716,7 @@
             g.fillStyle = "rgba(200,170,255,.85)"; g.font = "9px " + RUNE_FONT; g.textAlign = "center"; g.textBaseline = "middle";
             [["ᚨ", -26, -30], ["ᛗ", -18, -44], ["ᛟ", -4, -52]].forEach(([r2, x, y]) => g.fillText(r2, x, y));
             break; }
-          case "banners": { /* the three class emblems in a glowing triangle (tank top, dps left, healer right), joined by a rune line */
-            const pts = [[0, -50, "tank", "#4da3ff"], [-25, -18, "dps", "#ff6a5a"], [25, -18, "heal", "#5dff8a"]];
-            g.strokeStyle = "rgba(255,240,200,.55)"; g.lineWidth = 1.4; g.setLineDash([3, 3]);
-            g.beginPath(); pts.forEach(([x, y], k) => (k ? g.lineTo(x, y) : g.moveTo(x, y))); g.closePath(); g.stroke(); g.setLineDash([]);
-            for (const [x, y, k, col] of pts) {
-              g.save(); g.translate(x, y);
-              glow(col, 10); g.fillStyle = "#0b1218"; g.beginPath(); g.arc(0, 0, 11, 0, 6.3); g.fill();
-              g.strokeStyle = col; g.lineWidth = 1.6; g.stroke();
-              g.scale(0.85, 0.85); g.fillStyle = col; if (typeof PEMB != "undefined" && PEMB[k]) g.fill(PEMB[k]);
-              g.restore();
-            }
-            break; }
+          case "banners": break; /* drawn live in npcAnim(): the emblems orbit, staying upright */
           case "roses": { /* an arch of rose vines */
             g.strokeStyle = "#4f8a36"; g.lineWidth = 2.4;
             g.beginPath(); g.moveTo(-26, 4); g.bezierCurveTo(-34, -40, 34, -40, 26, 4); g.stroke();
@@ -7751,6 +7742,102 @@
         if (cg2) { cg2.drawImage(cv7, 0, 0); g.globalCompositeOperation = "destination-over"; g.shadowColor = "rgba(40,22,8,.6)"; g.shadowBlur = 10 * S2; g.drawImage(cp, 0, 0); g.shadowBlur = 0; }
         g.globalCompositeOperation = "source-over";
         return cv7;
+      }
+      /* npcAnim(n, t, fy): the live bits of the emblems (cheap paths, no gradients built per frame except tiny ones) */
+      /* npcNear(n, t): 0..1, eases toward 1 while you stand within 160 px (so the reactions fade in and out smoothly).
+         Also advances n._ck, the NPC's own animation clock: it runs up to 3x faster when you are close. */
+      function npcNear(n, t) {
+        const dt = Math.min(0.1, Math.max(0, t - (n._lt ?? t)));
+        n._lt = t;
+        const want = P && dist(P, n) < 160 ? 1 : 0;
+        n._nk = (n._nk || 0) + (want - (n._nk || 0)) * Math.min(1, dt * 3);
+        n._ck = (n._ck || 0) + dt * (1 + 2 * n._nk);
+        return n._nk;
+      }
+      function npcAnim(n, t0, fy, nk = 0) {
+        const ga = c.globalAlpha, t = n._ck ?? t0;
+        if (n.fx == "cards") { /* two cards; every 6 s they shuffle: slide past each other with a little lift, then swap sides */
+          const ph = (t % 6) / 1.1, sw = Math.floor(t / 6) % 2, s = ph < 1 ? ph : 1;
+          const e = s < 1 ? 0.5 - Math.cos(s * Math.PI) / 2 : 1;
+          const cards = [["A", "♠"], ["K", "♥"]].map((cd, k) => {
+            const from = (k ^ sw) ? 13.6 : -13.6, to = s < 1 ? -from : from, x = from + (to - from) * (s < 1 ? e : 0);
+            return { cd, x, lift: s < 1 ? Math.sin(s * Math.PI) * (k ? -10 : 6) : 0, a: (x / 13.6) * 0.2, front: s < 1 ? (k ? s > 0.5 : s <= 0.5) : k == 1 };
+          }).sort((p, q) => p.front - q.front);
+          for (const q of cards) {
+            c.save(); c.translate(q.x, -3.4 + fy + q.lift); c.rotate(q.a);
+            c.shadowColor = "#ff5a78"; c.shadowBlur = 10;
+            c.fillStyle = "rgba(60,10,22,.55)"; c.strokeStyle = "#ff5a78"; c.lineWidth = 2.4;
+            c.beginPath(); c.roundRect ? c.roundRect(-18.5, -27, 37, 54, 5) : c.rect(-18.5, -27, 37, 54); c.fill(); c.stroke();
+            c.shadowBlur = 0; c.strokeStyle = "rgba(255,90,120,.5)"; c.lineWidth = 1; c.strokeRect(-14.5, -23, 29, 46);
+            c.fillStyle = "#ff3355"; c.textAlign = "center"; c.textBaseline = "middle";
+            c.font = "bold 14px Georgia"; c.fillText(q.cd[0], -8, -15); c.font = "22px Georgia"; c.fillText(q.cd[1], 0, 4);
+            c.restore();
+          }
+        } else if (n.fx == "banners") { /* the three class emblems orbit very slowly on a dashed ring; each stays upright */
+          n._ang = (n._ang || 0) + 0.004 + 0.02 * nk; /* very slow; faster when you are close */
+          const R0 = 36, base = n._ang, pts = [0, 1, 2].map((k) => { const a = -Math.PI / 2 + (k * 2 * Math.PI) / 3 + base; return [Math.cos(a) * R0, Math.sin(a) * R0 + 6 + fy, ["tank", "dps", "heal"][k]]; });
+          c.strokeStyle = mixHex(n.col, "#ffffff", 0.3); c.globalAlpha = ga * 0.55; c.lineWidth = 2; c.setLineDash([5, 5]);
+          c.beginPath(); pts.forEach(([x, y], k) => (k ? c.lineTo(x, y) : c.moveTo(x, y))); c.closePath(); c.stroke(); c.setLineDash([]);
+          c.globalAlpha = ga * (n.fa ?? 0.88);
+          for (const [x, y, k] of pts) {
+            c.save(); c.translate(x, y);
+            c.shadowColor = n.col; c.shadowBlur = 10;
+            c.fillStyle = "#0b1218"; c.beginPath(); c.arc(0, 0, 12.5, 0, 6.3); c.fill();
+            c.strokeStyle = n.col; c.lineWidth = 2; c.stroke(); c.shadowBlur = 0;
+            c.fillStyle = n.col; if (PEMB[k]) c.fill(PEMB[k]); /* smaller */
+            c.restore();
+          }
+          c.globalAlpha = ga;
+        } else if (n.fx == "elder") { /* now and then the crystal flashes, as if casting */
+          if (nk > 0.02) { c.globalCompositeOperation = "lighter"; c.globalAlpha = ga * 0.5 * nk; c.drawImage(softBlob("200,170,255", 0.9), 25.3 - 20, -25.3 + fy - 20, 40, 40); c.globalCompositeOperation = "source-over"; c.globalAlpha = ga; }
+          const p = (t + n.x * 0.01) % 5;
+          if (p < 0.8) {
+            const k = Math.sin((p / 0.8) * Math.PI), x = 25.3, y = -25.3 + fy; /* the crystal tip */
+            c.globalCompositeOperation = "lighter";
+            c.globalAlpha = ga * k;
+            c.drawImage(softBlob("200,170,255", 0.9), x - 26, y - 26, 52, 52);
+            c.strokeStyle = "#f2e8ff"; c.lineWidth = 1.5;
+            c.beginPath(); for (let q = 0; q < 4; q++) { const a = q * 1.571 + t; c.moveTo(x + Math.cos(a) * 4, y + Math.sin(a) * 4); c.lineTo(x + Math.cos(a) * (10 + 10 * k), y + Math.sin(a) * (10 + 10 * k)); } c.stroke();
+            c.globalCompositeOperation = "source-over";
+            c.globalAlpha = ga;
+          }
+        } else if (n.fx == "arms" && nk > 0.02) { /* a gleam runs up the blade */
+          const u = (t * 0.9) % 1.4;
+          if (u < 1) {
+            c.save(); c.translate(0, fy); c.rotate(0.75);
+            const y = 10 - u * 70;
+            c.globalCompositeOperation = "lighter"; c.globalAlpha = ga * nk * Math.sin(u * Math.PI);
+            c.drawImage(softBlob("255,240,210", 0.9), -9, y - 9, 18, 18);
+            c.restore(); c.globalCompositeOperation = "source-over"; c.globalAlpha = ga;
+          }
+        } else if (n.fx == "roses" && nk > 0.02) { /* petals drift down */
+          c.fillStyle = "#ff8fc8";
+          for (let q = 0; q < 6; q++) {
+            const u = (t * 0.35 + q / 6) % 1, x = Math.sin(q * 2.3 + t) * 34, y = -50 + u * 80 + fy;
+            c.globalAlpha = ga * nk * Math.sin(u * Math.PI);
+            c.beginPath(); c.ellipse(x, y, 3, 1.8, t * 2 + q, 0, 6.3); c.fill();
+          }
+          c.globalAlpha = ga;
+        } else if (n.fx == "book") { /* every 5 s a page turns from right to left over the spine */
+          const p = (t + 1.3) % 5;
+          if (p < 0.7) {
+            const k = Math.cos((p / 0.7) * Math.PI), w = 31 * k; /* 31 -> -31 */
+            c.globalAlpha = ga * 0.55;
+            c.fillStyle = k > 0 ? "#e6f7ff" : "#bfe6f5"; c.strokeStyle = "rgba(30,74,102,.5)"; c.lineWidth = 0.8;
+            c.beginPath(); c.moveTo(0, -31 + fy); c.quadraticCurveTo(w * 0.5, -35 + fy, w, -28 + fy); c.lineTo(w, 16 + fy); c.quadraticCurveTo(w * 0.5, 10 + fy, 0, 13 + fy); c.closePath(); c.fill(); c.stroke();
+            c.globalAlpha = ga;
+          }
+        } else if (n.fx == "coins") { /* a coin flips up out of the pile now and then and drops back */
+          const p = (t + 0.7) % 4.5;
+          if (p < 0.9) {
+            const k = p / 0.9, y = -30 - Math.sin(k * Math.PI) * 26 + fy, sx = Math.cos(k * Math.PI * 6);
+            c.save(); c.translate(6, y); c.scale(Math.max(0.12, Math.abs(sx)), 1);
+            c.shadowColor = "#ffd84a"; c.shadowBlur = 8;
+            c.fillStyle = sx > 0 ? "#ffd84a" : "#d9a420"; c.beginPath(); c.arc(0, 0, 8, 0, 6.3); c.fill();
+            c.shadowBlur = 0; c.strokeStyle = "#8a5c08"; c.lineWidth = 1; c.beginPath(); c.arc(0, 0, 5.6, 0, 6.3); c.stroke();
+            c.restore();
+          }
+        }
       }
       function npc(n, mark) {
         /* locked NPCs show as a faint 20% ghost ("???" + padlock) until they appear */
@@ -7835,9 +7922,10 @@
           c.globalAlpha = ga3 * (n.fa ?? 0.88) * (0.9 + 0.1 * Math.sin(t * 2 + n.x)); /* fa: how solid the emblem is */
           c.drawImage(sp, -85, -85 + fy, 170, 170);
           c.globalAlpha = ga3;
+          npcAnim(n, t, fy, npcNear(n, t));
         }
         if (n.wings && !ghost) { /* the Seraph: two radiant wings (slow beat) and a halo, drawn behind the disc */
-          const fl = Math.sin(t * 1.6) * 0.08, ga2 = c.globalAlpha;
+          const nk2 = npcNear(n, t), fl = Math.sin((n._ck || t) * 1.6) * (0.08 + 0.06 * nk2), ga2 = c.globalAlpha;
           for (const sd of [-1, 1]) {
             c.save(); c.scale(sd, 1); c.rotate(-0.25 + fl);
             for (let q = 0; q < 6; q++) { /* feathers, longest on top */

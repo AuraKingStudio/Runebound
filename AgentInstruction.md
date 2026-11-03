@@ -274,6 +274,10 @@ Built and tested (unit tests plus the `cheat`, `flood`, `econ`, `hphack`, `chat`
 - NPC emblems now centred behind the disc, 1.7x (OFF per design). Class Master = triangle of the 3 class emblems; Archivist = upright open book; Elder staff tilted 45°; Barkeep cards tight, red A/K; Merchant coins close.
 - Archivist rewards: a random blessing from all 8 BLESS (gold if one is carried), and materials (dust or a shard/bark).
 
+- Live emblem animations (npcAnim): Barkeep cards shuffle (every 6 s on the NPC clock), Elder crystal flashes, Class Master emblems orbit upright (small), Archivist page turns, Merchant coin flips, Smith blade gleam, Maiden petals. npcNear(): 0..1 eased within 160 px; the NPC clock n._ck runs up to 3x faster near you (cards ~2 s, more flashes, faster spin, wider Seraph wing beat).
+- Smith emblem: broad sword, shield 85%. Elder staff crosses the icon, 75%.
+- Pending (owner held it): Archivist replies + secret chats + Maiden unlocked by a riddle answer (scratchpad lore2.py ready).
+
 ## Not done / open
 
 - Host migration and reconnect: a hub dies when its host leaves.
