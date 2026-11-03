@@ -790,6 +790,9 @@ async function bankTests(){
    const k=(++n).toString(16).padStart(2,'0').repeat(16);t+=1500;b2.sync({tok:k,led:[['bjchart',-50,0]],seed:{gold:500}}); /* one rent: now x1.5 = 75 */
    t+=wait;const r=b2.sync({tok:k,led:[['bjchart',pay,0]]})[1];ok((r.dropped==0)==!!good,'bank assist: '+why+(good?' is accepted':' is refused'));}
   try{require('fs').unlinkSync(file+'2')}catch{}}
+ {const b3=createBank({file:file+'3',now:()=>t}),k='ab'.repeat(16);t+=1500;b3.sync({tok:k,led:[['bjchart',-50,0]],seed:{gold:900}});
+  t+=7*60000;const r=b3.sync({tok:k,led:[['bjchart',-68,0],['bjchart',-98,0]]})[1]; /* rents at +5 and +6 min, synced at +7 */
+  ok(r.dropped==0,'bank assist: two rents in one sync both get their own price window');try{require('fs').unlinkSync(file+'3')}catch{}}
  ok(b.assistPrice({bjm:999,bjmAt:t},t)==1000&&b.assistPrice({bjm:-5},t)==50,'bank assist: the multiplier is capped at x20 and never below x1');
  try{require('fs').unlinkSync(file)}catch{}
 }
@@ -797,9 +800,6 @@ async function takeoverTests(){
  const {server}=createDirectoryServer({allowedOrigins:[],hostStaleMs:50});await new Promise(r=>server.listen(0,'127.0.0.1',r));
  const base=`http://127.0.0.1:${server.address().port}`,post=(path,body)=>fetch(base+path,{method:'POST',headers:{'content-type':'application/json'},body:JSON.stringify(body)}).then(async r=>({status:r.status,body:await r.json()}));
  const prof=(n)=>({id:'player-tko'+n+'xxxx',name:'K'+n,cls:'tank',lv:1,ti:0,spd:1});
- {const b3=createBank({file:file+'3',now:()=>t}),k='ab'.repeat(16);t+=1500;b3.sync({tok:k,led:[['bjchart',-50,0]],seed:{gold:900}});
-  t+=7*60000;const r=b3.sync({tok:k,led:[['bjchart',-68,0],['bjchart',-98,0]]})[1]; /* rents at +5 and +6 min, synced at +7 */
-  ok(r.dropped==0,'bank assist: two rents in one sync both get their own price window');try{require('fs').unlinkSync(file+'3')}catch{}}
  const h=(await post('/api/join',{profile:prof(1)})).body,g=(await post('/api/join',{profile:prof(2)})).body;
  ok((await post('/api/join',{profile:prof(3),host:true,hubId:h.hubId})).body.role=='guest','directory takeover: a live host cannot be replaced');
  await new Promise(r=>setTimeout(r,80));
