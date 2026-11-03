@@ -691,6 +691,20 @@ async function hostLossTests(){
  ok(T.HUBV().some(v=>v.id=='host-player'&&v.name=='Next')&&!T.HUBV().some(v=>v.name=='Old'),'host migration: the successor stays on screen as the new host, the old host leaves');
  await T.netDisconnect?.();
 }
+async function bankTests(){
+ const {createBank,RULES}=require('./bank.js');let t=1e6;const file=require('path').join(require('os').tmpdir(),'rb-bank-test-'+process.pid+'.json');
+ const b=createBank({file,now:()=>t}),tok='ab'.repeat(16),sync=(led,seed)=>{t+=1500;return b.sync({tok,led,seed})};
+ const live=T.auditRules();ok(Object.keys(RULES).every(k=>RULES[k].g==live[k].g&&RULES[k].x==live[k].x&&RULES[k].gap==live[k].gap),'bank: server reward table matches the game');
+ ok(sync([],{gold:999999,xp:1e8})[1].gold==500,'bank: a new account keeps only a capped part of the offline save');
+ ok(sync([['raid',2048,0],['raid',0,2730]])[1].gold==2548,'bank: a legal raid reward (gold and XP) is applied');
+ const r=sync([['raid',2048,0]]);ok(r[1].gold==2548&&r[1].dropped==1,'bank: a second raid reward too soon is refused');
+ ok(sync([['raid',99999,0],['dev',5000,0],['hack',10,0]])[1].dropped==3,'bank: oversized, dev and unknown rewards are refused');
+ ok(sync([['bj',-100,0],['bj',300,0]])[1].gold==2748&&sync([['bj',500,0]])[1].dropped==1,'bank: blackjack pays at most 3x a real bet');
+ ok(sync([['smith',-1e6,0]])[1].dropped==1,'bank: no spending below zero');
+ ok(b.sync({tok,led:[]})[0]==429,'bank: syncs are rate-limited');
+ ok(b.sync({tok:'x',led:[]})[0]==400,'bank: bad tokens are refused');
+ try{require('fs').unlinkSync(file)}catch{}
+}
 async function takeoverTests(){
  const {server}=createDirectoryServer({allowedOrigins:[],hostStaleMs:50});await new Promise(r=>server.listen(0,'127.0.0.1',r));
  const base=`http://127.0.0.1:${server.address().port}`,post=(path,body)=>fetch(base+path,{method:'POST',headers:{'content-type':'application/json'},body:JSON.stringify(body)}).then(async r=>({status:r.status,body:await r.json()}));
@@ -898,4 +912,4 @@ async function benchTests(){
 }
 {T.V().mat={};T.setRaid('large');const d=T.raidDrops(true);ok(T.V().mat.dust>=3&&T.V().mat.bark>=1&&d.some(x=>x[0]=='bark'),'materials: a large raid win drops Rune Dust and Thornbark');const l=T.raidDrops(false);ok(l.length==1&&l[0][0]=='dust','materials: a loss still gives a little dust');
  T.V().eq={bag:[{id:'a1',t:'tank',k:'dr',r:1},{id:'a2',t:'tank',k:'dr',r:2}],on:{tank:'a1'}};T.invWear('a2');ok(T.V().eq.on.tank=='a2','inventory: wearing an item swaps it into its slot');T.invWear('a2');ok(!T.V().eq.on.tank,'inventory: clicking a worn item takes it off');T.invUI();ok(ctx.document.getElementById('dp').innerHTML.includes('Thornbark'),'inventory: shows materials');}
-(BENCH_ONLY?Promise.resolve():networkTests().then(signalingTests).then(hostLossTests).then(brainHttpTests).then(reportTests).then(takeoverTests).then(rateLimitTests).then(()=>marketHttpTests())).then(benchTests).then(()=>{console.log(f?f+' FAILED':'ALL PASSED');process.exit(f?1:0);}).catch(e=>{console.error(e);process.exit(1);});
+(BENCH_ONLY?Promise.resolve():networkTests().then(signalingTests).then(hostLossTests).then(brainHttpTests).then(reportTests).then(takeoverTests).then(bankTests).then(rateLimitTests).then(()=>marketHttpTests())).then(benchTests).then(()=>{console.log(f?f+' FAILED':'ALL PASSED');process.exit(f?1:0);}).catch(e=>{console.error(e);process.exit(1);});

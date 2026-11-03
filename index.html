@@ -2276,6 +2276,32 @@
       function ledger(kind, gold, xp, up) {
         LEDGER.push(up ? [kind, gold, xp, up] : [kind, gold, xp]);
         if (LEDGER.length > 300) { LEDGER.shift(); LEDGER_BASE++; }
+        bankSoon();
+      }
+      /* ---------- server bank (online mode only): the VPS owns gold and XP ----------
+         New ledger entries go to /api/bank/sync (at most once a second); the answer is the true balance, shown at once.
+         Rewards the server refuses (edited saves, faked or too-fast rewards) vanish on the next answer. */
+      let BANK_AT = 0, BANK_T = 0, BANK_BUSY = false;
+      const bankUrl = () => { const u = typeof NET_CONFIG != "undefined" && NET_CONFIG.signalingUrl; return u && u.startsWith("https://") ? u : ""; };
+      const bankTok = () => { let t = ""; try { t = localStorage.getItem("rb_btok") || ""; } catch (e) {} if (!/^[a-f0-9]{32}$/.test(t)) { t = [...crypto.getRandomValues(new Uint8Array(16))].map((b) => b.toString(16).padStart(2, "0")).join(""); try { localStorage.setItem("rb_btok", t); } catch (e) {} } return t; };
+      function bankSoon() { if (!BANK_T && bankUrl()) BANK_T = setTimeout(bankSync, 1100); }
+      async function bankSync() {
+        BANK_T = 0;
+        const url = bankUrl();
+        if (!url || BANK_BUSY) return;
+        BANK_BUSY = true;
+        const end = LEDGER_BASE + LEDGER.length, led = LEDGER.slice(Math.max(0, BANK_AT - LEDGER_BASE)).filter((e) => e[0] != "dev").slice(0, 150).map((e) => e.slice(0, 3));
+        try {
+          const r = await fetch(url + "/api/bank/sync", { method: "POST", headers: { "content-type": "application/json" }, cache: "no-store",
+            body: JSON.stringify({ tok: bankTok(), led, seed: { gold: V.gold | 0, xp: V.xp | 0 } }) }).then((r) => r.json());
+          if (!Number.isInteger(r.gold) || !Number.isInteger(r.xp)) return;
+          BANK_AT = end;
+          const later = LEDGER.slice(Math.max(0, end - LEDGER_BASE)); /* entries made while the request was out */
+          V.gold = Math.max(0, r.gold + later.reduce((n, e) => n + e[1], 0));
+          V.xp = r.xp + later.reduce((n, e) => n + e[2], 0);
+          if (r.dropped) chatSys("The server refused " + r.dropped + " gold/XP change" + (r.dropped > 1 ? "s" : "") + ".", "bye");
+          save();
+        } catch (e) {} finally { BANK_BUSY = false; if (LEDGER_BASE + LEDGER.length > BANK_AT) bankSoon(); }
       }
       /* goldHud(): the gold counter rolls to the new amount (about 0.6 s). Gaining: coins fly in, the counter pops gold, a green "+N" rises.
          Paying: the counter shakes red and a red "-N" drops. GOLD_SHOWN = the number on screen. */
