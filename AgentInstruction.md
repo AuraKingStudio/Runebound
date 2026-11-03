@@ -260,6 +260,8 @@ Built and tested (unit tests plus the `cheat`, `flood`, `econ`, `hphack`, `chat`
 
 - Arenas closer to the hub look: brighter per-boss palettes (ARENA_PAL), flora ring on the rim (thorn: grass, flowers, bushes; void: crystal clusters, glow-bells), floor-edge shade, hub-style light (top-right sun, rays, floor pool, cool shade bottom-left), lighter vignette. All baked into ARENAC.
 
+- Polish pass (headless playthrough desktop + phone, every menu, full raid, no errors): start() no longer resets body.className (it dropped "ph": phones got the desktop layout until a resize); compass rose star removed from the window background (looked like a "<" glitch); arena ambient life (thorn leaves/petals, void wisps).
+
 ## Not done / open
 
 - Host migration and reconnect: a hub dies when its host leaves.
