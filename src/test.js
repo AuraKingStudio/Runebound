@@ -13,7 +13,7 @@ const ctx={document:doc,window:{},innerWidth:900,innerHeight:600,performance:{no
 ctx.RBNet=fakeNet;
 ctx.window=ctx;vm.createContext(ctx);
 vm.runInContext(SRC+`
-;globalThis.devMin=devMin;globalThis.devFs=devFs;globalThis.T={V:()=>V,raidDrops,invUI,maidTrade:(i)=>maidTrade(i),maidenUI:()=>maidenUI(),seraphBuy,BLESS,qAct:(a)=>qAct(a),bless,dmF2:()=>dm(),cdmF2:()=>cdm(),TRIAL_SEL,enterRaidT:(k)=>enterRaid(k),craftRefine,hpmF:()=>hpm(),cdmF:()=>cdm(),wp,eqRoll,dmF:()=>dm(),craftCost,craftMake,craftTemper,craftSalvage,FORGE,smithUI,invWear,MATS,setRaid:(k)=>S.raid=k,CLASS_DMG:()=>CLASS_DMG,P:()=>P,S:()=>S,start,devAdd,devUp,devUI,devCls,devHeal,devWipe,devResetQ,devArena,devBoss,devHub,DEV,hurt,act,step,pauseGame,resumeGame,isPaused:()=>paused,QUESTS,UPG,toggleDev,buy,shopUI,qAct,togglePause,dailyCheck,saveName,lvlInfo,gainXP,lvlCol,loreReward,isUnl,tutNext,bjVal,bjDeal,bjHit,bjStand,bjDouble,bjSplit,BJ:()=>BJ,guildFound,guildRecruit,gBonus,bountyDay,bountyAdd,bountyClaim,guildJoin,guildTab,rankPool,rankRefresh,rankSort,dm,dash,dashStep,setIn,padPoll,inMode:()=>INMODE,KEYHINT,HUBV:()=>HUBV,BOT_STUCK:()=>BOT_STUCK,ENGINE,cdMul,discordUnlock,openDlg,TUT_DONE,ult,ultDmg,ULT,inter,hitB,DASH,ZONE_DMG,RAIDS,BOSSES,raidTeam,raidAI,partyMembers,partyAdd,partyRemove,raidUI,playerUI,partyMessage,bash,taunt,inTele,toArena,PARTY:()=>PARTY,netRelayFlush,raidNet,raidState,raidApply,raidNetStep,arena,toArena,HUB_NPCS,BOT_NPC_LV,BARKEEP,CLASSN,SKC,PEMB,hubJoin,hubLeave,hubCount,HUB_MAX,hubVisitStep,botName,botLook,chatSend,COS,cosOwn,cosV,cosBuyGold,cosEquip,shopPay,myEmote,streamPts,crossFrame,bridgeAt,riverNear,clampW,WF,STATUE,PORTAL,SET,keyLabel,EDGE,inIsle,netReceive,netPrepareHub,netStep,netPack,netUnpack,netAudit,auditRules,goldAdd,gainXP,netStats,LEDGER:()=>LEDGER,FX:()=>FX,FT:()=>FT,shk:()=>shk,els:null};`,ctx);
+;globalThis.devMin=devMin;globalThis.devFs=devFs;globalThis.T={V:()=>V,raidDrops,invUI,SMITH,setRaidTrial:(n)=>RAID_TRIAL=n,hpmF3:()=>hpm(),dashF:(p)=>dash(p),heal:(p,n,src)=>heal(p,n,src),PETS,npcHidden:(n)=>npcHidden(n),loreRewardT:(b)=>loreReward(b),clampWT:(p)=>clampW(p),maidTrade:(i)=>maidTrade(i),maidenUI:()=>maidenUI(),seraphBuy,BLESS,qAct:(a)=>qAct(a),bless,dmF2:()=>dm(),cdmF2:()=>cdm(),TRIAL_SEL,enterRaidT:(k)=>enterRaid(k),craftRefine,hpmF:()=>hpm(),cdmF:()=>cdm(),wp,eqRoll,dmF:()=>dm(),craftCost,craftMake,craftTemper,craftSalvage,FORGE,smithUI,invWear,MATS,setRaid:(k)=>S.raid=k,CLASS_DMG:()=>CLASS_DMG,P:()=>P,S:()=>S,start,devAdd,devUp,devUI,devCls,devHeal,devWipe,devResetQ,devArena,devBoss,devHub,DEV,hurt,act,step,pauseGame,resumeGame,isPaused:()=>paused,QUESTS,UPG,toggleDev,buy,shopUI,qAct,togglePause,dailyCheck,saveName,lvlInfo,gainXP,lvlCol,loreReward,isUnl,tutNext,bjVal,bjDeal,bjHit,bjStand,bjDouble,bjSplit,BJ:()=>BJ,guildFound,guildRecruit,gBonus,bountyDay,bountyAdd,bountyClaim,guildJoin,guildTab,rankPool,rankRefresh,rankSort,dm,dash,dashStep,setIn,padPoll,inMode:()=>INMODE,KEYHINT,HUBV:()=>HUBV,BOT_STUCK:()=>BOT_STUCK,ENGINE,cdMul,discordUnlock,openDlg,TUT_DONE,ult,ultDmg,ULT,inter,hitB,DASH,ZONE_DMG,RAIDS,BOSSES,raidTeam,raidAI,partyMembers,partyAdd,partyRemove,raidUI,playerUI,partyMessage,bash,taunt,inTele,toArena,PARTY:()=>PARTY,netRelayFlush,raidNet,raidState,raidApply,raidNetStep,arena,toArena,HUB_NPCS,BOT_NPC_LV,BARKEEP,CLASSN,SKC,PEMB,hubJoin,hubLeave,hubCount,HUB_MAX,hubVisitStep,botName,botLook,chatSend,COS,cosOwn,cosV,cosBuyGold,cosEquip,shopPay,myEmote,streamPts,crossFrame,bridgeAt,riverNear,clampW,WF,STATUE,PORTAL,SET,keyLabel,EDGE,inIsle,netReceive,netPrepareHub,netStep,netPack,netUnpack,netAudit,auditRules,goldAdd,gainXP,netStats,LEDGER:()=>LEDGER,FX:()=>FX,FT:()=>FT,shk:()=>shk,els:null};`,ctx);
 const T=ctx.T,BENCH_ONLY=process.argv.includes('--bench');let f=0;const ok=(c,m)=>{if(!c||!BENCH_ONLY)console.log((c?'PASS ':'FAIL ')+m);if(!c)f++};
 T.start();ok(T.S().sc=='hub','start -> hub');
 ctx.document.getElementById('dlg').hidden=true;const pausedAt=T.S().tm;T.pauseGame();T.step(.1);ok(T.isPaused()&&T.S().tm===pausedAt,'pause freezes the game');T.resumeGame();ok(!T.isPaused(),'resume re-enables play');
@@ -124,6 +124,17 @@ ok(T.hubCount()<=T.HUB_MAX,'hub: never more than HUB_MAX people');
 ok(T.HUBV().filter(v=>!v.bot).length>=1&&T.HUBV().some(v=>v.out||!v.bot),'hub: real players bump bots, who teleport out');
 ok(T.hubJoin('real0',{})===null,'hub: the same player cannot join twice');
 for(let i=0;i<12;i++)T.hubLeave('real'+i);ok(!T.HUBV().some(v=>!v.bot),'hub: leaving removes the player');
+{/* lobby run: ~10 simulated minutes; every second check where each bot is: never inside an NPC pedestal or the river,
+   and never pinned in one place for >3 s while it has somewhere to go */
+ const npcs=T.HUB_NPCS(),inPed=(v)=>npcs.some(n=>Math.hypot((v.x-n.x)/41,(v.y-n.y-8)/24.8)<0.9),inRiver=(v)=>{if(T.bridgeAt(v))return false;const r=T.riverNear(v.x,v.y);return r.d<r.bw;};
+ let bad=[],pinned=0,samples=0;const last=new Map();
+ for(let sec=0;sec<600;sec++){for(let i=0;i<60;i++)T.step(1/60);
+  for(const v of T.HUBV()){if(!v.bot||v.out)continue;samples++;
+   if(inPed(v)&&bad.length<5)bad.push(`${v.name} in a pedestal at ${v.x|0},${v.y|0}`);if(inRiver(v)&&bad.length<5)bad.push(`${v.name} in the river at ${v.x|0},${v.y|0}`);
+   const L=last.get(v)||{x:v.x,y:v.y,s:0};const moved=Math.hypot(v.x-L.x,v.y-L.y)>2;
+   L.s=v.goal&&!(v.wait>0)&&!moved?L.s+1:0;if(L.s==4)pinned++;L.x=v.x;L.y=v.y;last.set(v,L);}}
+ console.log('  lobby run: samples',samples,'pinned >3s:',pinned,'bad:',bad.join('; ')||'none');
+ ok(!bad.length,'hub: bots never stand inside a pedestal or the river (10 min)');ok(pinned<=2,'hub: bots are never pinned for long (10 min)');}
 {const s0=T.BOT_STUCK(),n0=T.HUBV().length;for(let i=0;i<60*240;i++)T.step(1/60);const g=T.BOT_STUCK()-s0;console.log('  bot give-ups in 240s:',g,'bots',n0);ok(g<=2,'hub: bots path around the river (rarely give up stuck)');}
 {const lo=T.HUB_NPCS({lv:1}),hi=T.HUB_NPCS({lv:60});ok(lo.every(n=>!n.lk||n.lk=='barkeep')&&hi.length==7,'hub: bots only visit NPCs their level has unlocked');}
 /* ---------- crafting at the Smith ---------- */
@@ -182,6 +193,28 @@ const M2=createMarket({file:f,now:()=>clock});ok(M2.browse({})[1].listings.lengt
 /* ---------- late quests: Smith and Market ---------- */
 {const V=T.V(),q0=V.q,qs0=V.qs;const qi=T.QUESTS.findIndex(q=>q.n=='Hammer and Anvil'),mi=T.QUESTS.findIndex(q=>q.n=='Market Day');ok(qi>2&&mi>qi,'quests: Smith and Market quests come late in the chain');
 V.q=qi;V.qs=1;V.fg=0;T.save&&T.save();V.fg=1;T.QUESTS[qi].ok()&&ok(true,'quests: forging an item completes Hammer and Anvil');V.mk=1;ok(T.QUESTS[mi].ok(),'quests: a market trade completes Market Day');V.q=q0;V.qs=qs0;}
+/* ---------- every Seraph blessing does what it says ---------- */
+{const V=T.V(),P=T.P(),c0=P.cls;V.up={dmg:0,vit:0,spd:0,cdr:0};V.eq={bag:[],on:{}};
+ const was=(k,f)=>{V.bl=null;const a=f();V.bl=k;const b=f();V.bl=null;return [a,b];};
+ let [a,b]=was('stone',()=>T.hpmF3());ok(b>a*1.29,'blessing Stone: +30% max health');
+ [a,b]=was('wrath',()=>T.dmF2());ok(b>a*1.19,'blessing Wrath: +20% damage');
+ [a,b]=was('haste',()=>T.cdmF2());ok(b<a*0.81,'blessing Haste: -20% cooldowns');
+ [a,b]=was('swift',()=>{P.dcd=0;P.ds=0;P.hp=P.mh;T.dashF(P);const d=P.dcd;P.dcd=0;P.ds=0;return d;});ok(b<a*0.6,'blessing Swift: dash cooldown halved');
+ [a,b]=was('aegis',()=>{T.DEV.god=0;P.inv=0;P.ar=0;P.sh=0;P.hp=1000;P.mh=1000;T.hurt(P,100);return 1000-P.hp;});ok(b<a*0.81,'blessing Aegis: -20% damage taken');
+ ok(T.BLESS.every(x=>x.length==5&&x[4]>0),'blessings: all 8 have a name, text, colour and price');P.cls=c0;V.bl=null;}
+/* ---------- NPC pedestals, pet placeholder, Archivist rewards ---------- */
+{const n=T.SMITH,p={x:n.x+2,y:n.y+10,hp:1};T.devHub();T.clampWT(p);ok(Math.hypot((p.x-n.x)/41,(p.y-n.y-8)/24.8)>=0.9,'pedestals: you cannot stand inside an NPC pedestal');
+ ok(T.npcHidden(T.PETS)&&!T.HUB_NPCS({lv:60}).includes(T.PETS),'pet NPC: shown locked, bots never visit it');
+ let errs=0;const V=T.V();for(let i=0;i<300;i++){try{const s=T.loreRewardT(i%3==0);if(typeof s!='string'||!s)errs++;}catch(e){errs++;}}V.bl=null;
+ ok(errs==0,'archivist: 300 rewards in a row, every one valid');}
+/* ---------- the market over real HTTP (hub service + escrow) ---------- */
+globalThis.marketHttpTests=(async()=>{const {createDirectoryServer}=require('./app.js'),os3=require('os'),path3=require('path'),fs3=require('fs');const f=path3.join(os3.tmpdir(),'rb_mkt_http_'+Date.now()+'.json');
+ const {server}=createDirectoryServer({marketFile:f});await new Promise(r=>server.listen(0,'127.0.0.1',r));const base='http://127.0.0.1:'+server.address().port;
+ const post=(a,b)=>fetch(base+'/api/market/'+a,{method:'POST',headers:{'content-type':'application/json'},body:JSON.stringify(b)}).then(async r=>({s:r.status,d:await r.json()}));
+ const A='c'.repeat(32),B='d'.repeat(32);let r=await post('sell',{tok:A,name:'Ann',item:{k:'gear',t:'dmg',g:'wd',r:2},price:300});
+ ok(r.s==200,'market http: list gear');r=await post('browse',{tok:B});ok(r.s==200&&r.d.listings.length==1&&!r.d.listings[0].mine,'market http: others see it');
+ r=await post('buy',{tok:B,id:r.d.listings[0].id});ok(r.s==200&&r.d.item.g=='wd','market http: buy delivers the item');r=await post('collect',{tok:A});ok(r.d.payouts[0].n==285,'market http: seller collects 285 of 300 gold');
+ r=await post('nope',{});ok(r.s>=400&&r.s<500,'market http: unknown routes are refused ('+r.s+')');server.close();await new Promise(r=>setTimeout(r,600));fs3.rmSync(f,{force:true});fs3.rmSync(f+'.tmp',{force:true});});
 /* ---------- class weapons ---------- */
 {const V=T.V(),P=T.P(),c0=P.cls;P.cls='dps';V.eq={bag:[{id:'w1',t:'dmg',k:'wd',r:0}],on:{dmg:'w1'}};const d0=T.dmF();
 ok(T.wp('dmg')==0&&d0>1,'weapon: a Common weapon only gives base damage');
@@ -249,14 +282,14 @@ fakePeers=[];T.netPrepareHub('');T.netDisconnect?.();
 ok(T.COS.filter(i=>i.t=='emote').every(i=>!i.eur&&!i.pass),'shop: no emote costs real money (gold, free or unlocked by playing)');
 /* ---------- raids: party, raid select, bosses, mechanics, role bots ----------
    raidSim(key, setup): you on autopilot (P.auto) with bots filling the rest; runs the fight at 30 fps for up to 6 min. */
-function raidSim(key,cls,setup){
+function raidSim(key,cls,setup,pre){
  T.devHub();T.V().cls=cls;T.P().cls=cls;T.P().auto=true;T.PARTY().m=[];T.PARTY().lead='me';
  T.V().up={dmg:0,vit:0,spd:0,cdr:0};T.V().sk={tank:[0,0,0],dps:[0,0,0],heal:[0,0,0]};T.V().xp=0;T.V().bl=null; /* a fresh level-1 raider */
- T.toArena(key);setup&&setup(T.S());const S=T.S();let ticks=0,minHp=1,rsN=0,rsB=0,rsMax=0;
+ pre&&pre();T.toArena(key);setup&&setup(T.S());const S=T.S();let ticks=0,minHp=1,rsN=0,rsB=0,rsMax=0;
  S.net={role:'lead',t:0}; /* measure what the leader would send its members (no real members here) */
  while(!S.end&&ticks<30*360){T.step(1/30);ticks++;if(S.ps.some(p=>p.hp<=0))minHp=0;if(ticks%3==0){const n=JSON.stringify(T.raidState()).length;rsN++;rsB+=n;rsMax=Math.max(rsMax,n);}}
  const r={rsAvg:Math.round(rsB/Math.max(1,rsN)),rsMax,key,cls,end:S.end,time:S.at,why:S.why,dead:S.ps.filter(p=>p.hp<=0).map(p=>p.cls).join(','),deaths:S.ps.filter(p=>p.hp<=0).length,size:S.ps.length,boss:S.b.def.n,brk:S.b.wk,doomed:S.b.doomed,share:(()=>{const d=S.b.dmg||{},t=Object.values(d).reduce((x,y)=>x+y,0)||1;return Object.fromEntries(Object.entries(d).map(([k,v])=>[k,Math.round(v/t*100)]))})()};
- T.P().auto=false;delete T.P().ai_ignoreDoom;T.S().res=0.01;T.step(0.02);return r;
+ T.P().auto=false;delete T.P().ai_ignoreDoom;T.V().eq={bag:[],on:{}};T.setRaidTrial(0);T.S().res=0.01;T.step(0.02);return r;
 }
 {
  T.devHub();T.P().cls='dps';
@@ -677,6 +710,10 @@ function raidBench(n){
  }
  const nt=Array.from({length:n},()=>raidSim('small','dps',S=>S.ps.forEach(p=>{if(p.cls=='tank')p.noTaunt=true;})));
  rows.push({raid:'small',you:'dps','note':'tank never taunts',runs:n,'win %':Math.round(nt.filter(r=>r.end=='win').length/n*100),'avg deaths':+(nt.reduce((a,r)=>a+r.deaths,0)/n).toFixed(1),'who died':[...new Set(nt.flatMap(r=>r.dead?r.dead.split(','):[]))].join(','),losses:nt.filter(r=>r.end!='win').map(r=>r.why).join('; ')});
+ /* Rune Trials: can a fresh raider climb, and how much does a full Legendary set help? */
+ const LEG=()=>{const on={},bag=[['dmg','wd'],['tank','dr'],['util','hl'],['helm','hp'],['glove','cdr'],['boots','ms']].map(([t,k],i)=>{const it={id:'L'+i,t,k,r:4};on[t]=it.id;return it;});T.V().eq={bag,on};T.V().xp=1e6;};
+ for(const [tr,gear] of [[2,0],[5,0],[5,1]]){const runs=Array.from({length:n},()=>raidSim('small','dps',null,()=>{T.setRaidTrial(tr);if(gear)LEG();})),wins=runs.filter(r=>r.end=='win');
+  rows.push({raid:'small',you:'dps',note:`Trial ${tr}${gear?' + Legendary set':''}`,runs:n,'win %':Math.round(wins.length/n*100),'avg win s':wins.length?Math.round(wins.reduce((a,r)=>a+r.time,0)/wins.length):0,'avg deaths':+(runs.reduce((a,r)=>a+r.deaths,0)/n).toFixed(1)});}
  console.table(rows);return rows;
 }
 async function benchTests(){
@@ -704,4 +741,4 @@ async function benchTests(){
 }
 {T.V().mat={};T.setRaid('large');const d=T.raidDrops(true);ok(T.V().mat.dust>=3&&T.V().mat.bark>=1&&d.some(x=>x[0]=='bark'),'materials: a large raid win drops Rune Dust and Thornbark');const l=T.raidDrops(false);ok(l.length==1&&l[0][0]=='dust','materials: a loss still gives a little dust');
  T.V().eq={bag:[{id:'a1',t:'tank',k:'dr',r:1},{id:'a2',t:'tank',k:'dr',r:2}],on:{tank:'a1'}};T.invWear('a2');ok(T.V().eq.on.tank=='a2','inventory: wearing an item swaps it into its slot');T.invWear('a2');ok(!T.V().eq.on.tank,'inventory: clicking a worn item takes it off');T.invUI();ok(ctx.document.getElementById('dp').innerHTML.includes('Thornbark'),'inventory: shows materials');}
-(BENCH_ONLY?Promise.resolve():networkTests().then(signalingTests).then(reportTests).then(rateLimitTests)).then(benchTests).then(()=>{console.log(f?f+' FAILED':'ALL PASSED');process.exit(f?1:0);}).catch(e=>{console.error(e);process.exit(1);});
+(BENCH_ONLY?Promise.resolve():networkTests().then(signalingTests).then(reportTests).then(rateLimitTests).then(()=>marketHttpTests())).then(benchTests).then(()=>{console.log(f?f+' FAILED':'ALL PASSED');process.exit(f?1:0);}).catch(e=>{console.error(e);process.exit(1);});

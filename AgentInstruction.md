@@ -293,6 +293,8 @@ Built and tested (unit tests plus the `cheat`, `flood`, `econ`, `hphack`, `chat`
 
 - Cleanup pass: removed the Class Master's 3-icon disc drawing (he is not in the hub), SMITH_COST (old Smith blessings), the stale class-NPC orbit test; README rewritten (NPCs, raids, gear, market, files).
 
+- Tests: 10-min lobby run (bots never in a pedestal/river, never pinned), all 8 blessings, pedestal collision, pet placeholder, 300 Archivist rewards, market over real HTTP. Bench (--raids=N) adds Rune Trial rows: Trial 2 ~50%, Trial 5 0% fresh, 100% with a Legendary set.
+
 ## Not done / open
 
 - Host migration and reconnect: a hub dies when its host leaves.
