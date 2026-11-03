@@ -180,6 +180,9 @@ ok(M.buy({tok:B,id})[0]==404,'market: a listing sells only once (no duplicates)'
 for(let i=0;i<6;i++)M.sell({tok:B,item:{k:'mat',m:'dust',n:1},price:1});ok(M.sell({tok:B,item:{k:'mat',m:'dust',n:1},price:1})[0]==409,'market: at most 6 open listings per player');
 M.flush();const raw=fs2.readFileSync(f,'utf8');ok(!raw.includes(A)&&!raw.includes(B),'market: the data file stores only hashed keys');
 const M2=createMarket({file:f,now:()=>clock});ok(M2.browse({})[1].listings.length==6,'market: listings survive a server restart');fs2.rmSync(f,{force:true});}
+/* ---------- late quests: Smith and Market ---------- */
+{const V=T.V(),q0=V.q,qs0=V.qs;const qi=T.QUESTS.findIndex(q=>q.n=='Hammer and Anvil'),mi=T.QUESTS.findIndex(q=>q.n=='Market Day');ok(qi>2&&mi>qi,'quests: Smith and Market quests come late in the chain');
+V.q=qi;V.qs=1;V.fg=0;T.save&&T.save();V.fg=1;T.QUESTS[qi].ok()&&ok(true,'quests: forging an item completes Hammer and Anvil');V.mk=1;ok(T.QUESTS[mi].ok(),'quests: a market trade completes Market Day');V.q=q0;V.qs=qs0;}
 /* ---------- class weapons ---------- */
 {const V=T.V(),P=T.P(),c0=P.cls;P.cls='dps';V.eq={bag:[{id:'w1',t:'dmg',k:'wd',r:0}],on:{dmg:'w1'}};const d0=T.dmF();
 ok(T.wp('dmg')==0&&d0>1,'weapon: a Common weapon only gives base damage');

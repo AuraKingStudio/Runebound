@@ -284,6 +284,8 @@ Built and tested (unit tests plus the `cheat`, `flood`, `econ`, `hphack`, `chat`
 - Class Master removed from the hub: class change is the top-bar "Class" button (classOpen), tutorial step 1 points there. The Maiden (trader) stands on the Class Master's old spot (662,476); 450,528 is free for the planned Pet NPC.
 - Audit: blessing check accepts all BLESS keys; "market" income rule added.
 
+- Late Elder quests after Colossus Slayer: "Hammer and Anvil" (forge any gear, V.fg) and "Market Day" (sell or buy on the Market, V.mk), 300 gold each. Tutorial unchanged.
+
 ## Not done / open
 
 - Host migration and reconnect: a hub dies when its host leaves.
