@@ -988,14 +988,14 @@
         background: rgba(0,0,0,.28) !important; border: 1px solid var(--ln) !important; color: #f3e6c8 !important; box-shadow: none !important;
         transition: transform 0.12s cubic-bezier(.3,1.8,.5,1), border-color 0.12s, box-shadow 0.12s; }
       .pn .gdrow .gdp:active { transform: scale(0.9); }
-      .pn .gdrow .gdp.g1.on { color: #d6ecff !important; border-color: #86c3ff !important; box-shadow: 0 0 12px #4da3ff99, inset 0 0 8px #4da3ff44 !important; }
-      .pn .gdrow .gdp.g2.on { color: #ffe0ef !important; border-color: #ff9acb !important; box-shadow: 0 0 12px #ff5fae99, inset 0 0 8px #ff5fae44 !important; }
-      .pn .gdrow .gdp.g3.on { color: #ece4ff !important; border-color: #bda2ff !important; box-shadow: 0 0 12px #9a7bff99, inset 0 0 8px #9a7bff44 !important; }
+      #dp .gdrow .gdp.g1.on { color: #d6ecff !important; border-color: #86c3ff !important; box-shadow: 0 0 12px #4da3ff99, inset 0 0 8px #4da3ff44 !important; }
+      #dp .gdrow .gdp.g2.on { color: #ffe0ef !important; border-color: #ff9acb !important; box-shadow: 0 0 12px #ff5fae99, inset 0 0 8px #ff5fae44 !important; }
+      #dp .gdrow .gdp.g3.on { color: #ece4ff !important; border-color: #bda2ff !important; box-shadow: 0 0 12px #9a7bff99, inset 0 0 8px #9a7bff44 !important; }
       .pn .gdrow .gdp.on { animation: gdPop 0.28s cubic-bezier(.3,1.8,.5,1); }
       @keyframes gdPop { 0% { transform: scale(0.85); } 60% { transform: scale(1.12); } 100% { transform: none; } }
-      input.nm.g1 { color: #cfe8ff; text-shadow: 0 0 8px #4da3ff; border-color: #86c3ff; }
-      input.nm.g2 { color: #ffd9ec; text-shadow: 0 0 8px #ff5fae; border-color: #ff9acb; }
-      input.nm.g3 { color: #e8deff; text-shadow: 0 0 8px #9a7bff; border-color: #bda2ff; }
+      #dp input.nm.g1 { color: #cfe8ff; text-shadow: 0 0 8px #4da3ff; border-color: #86c3ff; box-shadow: 0 0 14px #4da3ff88 !important; }
+      #dp input.nm.g2 { color: #ffd9ec; text-shadow: 0 0 8px #ff5fae; border-color: #ff9acb; box-shadow: 0 0 14px #ff5fae88 !important; }
+      #dp input.nm.g3 { color: #e8deff; text-shadow: 0 0 8px #9a7bff; border-color: #bda2ff; box-shadow: 0 0 14px #9a7bff88 !important; }
       input.nm { transition: color 0.15s, text-shadow 0.15s, border-color 0.15s; }
       /* HUD buttons */
       #btns .hb, #btns #bt {
@@ -2409,7 +2409,7 @@
       const gdPills = (cur, fn) => `<div class="gdrow">${[1, 2, 3].map((g) => `<button class="gdp g${g}${cur == g ? " on" : ""}" onclick="${fn}(${g})">${GDS[g].n}</button>`).join("")}</div>`;
       /* gdPick(g): choose in the name dialog: highlight the pill, tint the name field, a little ding */
       function gdPick(g) {
-        NAME_GD = NAME_GD == g ? 0 : g;
+        NAME_GD = g; /* set, not toggle: a preloaded pick stays on */
         for (const b of document.querySelectorAll ? document.querySelectorAll("#dp .gdp") : []) b.classList.toggle("on", b.classList.contains("g" + NAME_GD));
         const i = $("pn");
         if (i) i.className = "nm" + (NAME_GD ? " g" + NAME_GD : "");
@@ -7866,7 +7866,7 @@
         const gift = tutorialHand && !bjChartOn();
         if (gift) { V.bjc = Date.now() + BJ_TUT_ASSIST * 1e3; BJ_SIDE = true; save(); toast("🔮 Free Assist for your first hand!"); }
         bjUI();
-        if (gift) BJ_VFX.later(() => bjJackpot(6), 0.5);
+        if (gift) { BJ_VFX.later(() => bjJackpot(6), 0.5); const b = document.querySelector && document.querySelector("#dp .bjbest"); if (b && b.scrollIntoView) b.scrollIntoView({ block: "center" }); } /* short screens: bring the glowing move into view */
       }
       /* bjNext(): the current hand is done: move to the next one, or let the Barkeep play and settle */
       function bjNext() {
