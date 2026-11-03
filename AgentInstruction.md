@@ -6,7 +6,9 @@
 2. Update the benchmark (`SCENARIOS` in `src/test.js`) if needed, and run it (`npm run bench`).
 3. Update this file: what has been done, what is upcoming, what is a concern.
 4. Avoid explaining; be concise and precise.
-5. Always generate assets with code (canvas/SVG drawn in `index.html`): code-drawn art is what sells the game. The only image files allowed are `assets/icon.png` and the arena background (`IM.arena`, embedded in `index.html`).
+5. Always generate assets with code (canvas/SVG drawn in `index.html`): code-drawn art is what sells the game. The only image file allowed is `assets/icon.png` (arenas are code-drawn now).
+6. Compatibility is key: every change must work in all major browsers (Chrome, Firefox, Safari, Edge) and on tablets/phones (touch, portrait and landscape). Guard newer APIs (e.g. `roundRect`, canvas `filter` is missing on Safari), add `-webkit-` prefixes where Safari needs them, and audit UI at desktop, phone and tablet sizes.
+7. Performance is key: it's a browser game and must hold 60 fps on a potato PC. Bake static art into cached canvases, keep per-frame work small (no per-frame gradients/blur for static things), respect Low spec mode, and check frame cost after visual changes.
 
 
 ## Project

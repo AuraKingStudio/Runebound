@@ -415,6 +415,34 @@
       }
       .pn h2, .pn.raidpn h2 { text-shadow: 0 2px 0 #000, 0 0 18px #f0c35a55; }
       .pn.raidpn .rcard { background: radial-gradient(ellipse at 50% 0%, color-mix(in srgb, var(--b0) 18%, transparent), transparent 60%), linear-gradient(180deg, #1f150bd9, #110a05e0) !important; }
+      /* ---------- inventory (paper doll) ---------- */
+      .doll { position: relative; width: min(360px, 100%); aspect-ratio: 1; margin: 2px auto 26px; }
+      .dring { transform-origin: 150px 150px; animation: dSpin 60s linear infinite; }
+      @keyframes dSpin { to { transform: rotate(360deg); } }
+      .dvis { animation: dVis 2.4s ease-in-out infinite; }
+      @keyframes dVis { 50% { opacity: .45; } }
+      .dglow { animation: dVis 1.8s ease-in-out infinite; }
+      .dslot { position: absolute; transform: translate(-50%, -50%); width: 58px; height: 58px; border-radius: 10px; display: grid; place-items: center;
+        background: radial-gradient(circle at 50% 35%, color-mix(in srgb, var(--c) 18%, #2a1d10), #120b05 80%);
+        border: 1px solid color-mix(in srgb, var(--c) 70%, #000); box-shadow: inset 0 0 0 2px #0008, inset 0 0 0 3px color-mix(in srgb, var(--c) 25%, transparent), 0 4px 10px #000a;
+        animation: dPop .35s cubic-bezier(.2, 1.5, .4, 1) var(--d) both; transition: transform .15s, box-shadow .15s; }
+      .dslot.on { cursor: pointer; animation: dPop .35s cubic-bezier(.2, 1.5, .4, 1) var(--d) both, dPulse 2.2s ease-in-out .6s infinite; }
+      .dslot.on:hover { transform: translate(-50%, -50%) scale(1.1); }
+      @keyframes dPop { from { opacity: 0; transform: translate(-50%, -50%) scale(.4); } }
+      @keyframes dPulse { 50% { box-shadow: inset 0 0 0 2px #0008, inset 0 0 0 3px color-mix(in srgb, var(--c) 45%, transparent), 0 0 16px color-mix(in srgb, var(--c) 60%, transparent), 0 4px 10px #000a; } }
+      .dslot .st { position: absolute; width: 5px; height: 5px; border-radius: 50%; background: #e8c88a; box-shadow: 0 0 3px #000; }
+      .dslot .st.a { top: -2px; left: -2px; } .dslot .st.b { top: -2px; right: -2px; } .dslot .st.c { bottom: -2px; left: -2px; } .dslot .st.d { bottom: -2px; right: -2px; }
+      .dslot .dl { position: absolute; top: 100%; left: 50%; transform: translateX(-50%); margin-top: 4px; font: bold 10px Georgia; letter-spacing: .5px; white-space: nowrap; color: var(--c); text-shadow: 0 1px 2px #000; }
+      .ilist > div, .imat { animation: iIn .3s ease-out var(--d) both; }
+      @keyframes iIn { from { opacity: 0; transform: translateY(8px); } }
+      .ilist .up { transition: transform .15s, box-shadow .15s; }
+      .ilist .up:hover { transform: translateY(-2px); }
+      .imats { display: grid; grid-template-columns: repeat(auto-fill, minmax(140px, 1fr)); gap: 6px; }
+      .imat { display: flex; align-items: center; gap: 8px; padding: 7px 10px; border-radius: 8px; background: linear-gradient(90deg, color-mix(in srgb, var(--c) 16%, #1a1209), #120b05); border: 1px solid color-mix(in srgb, var(--c) 45%, transparent); transition: transform .15s; }
+      .imat:hover { transform: translateY(-2px); }
+      .imat .ie { font-size: 20px; } .imat .in { flex: 1; font: bold 12px Georgia; color: var(--c); } .imat b { font: bold 15px Georgia; color: #f3e6c8; }
+      .imat.none { filter: grayscale(.85); opacity: .5; }
+      @media (prefers-reduced-motion: reduce) { .dring, .dvis, .dglow, .dslot, .dslot.on, .ilist > div, .imat { animation: none !important; } }
       /* raid cards: boss banner on top, then name, difficulty, roles, team, rewards, enter */
       .pn .rcard { padding: 0 !important; display: flex; flex-direction: column; gap: 0; }
       .rban { position: relative; height: 112px; display: grid; place-items: center; overflow: hidden;
@@ -1051,7 +1079,7 @@
       #btns .hb:not(:disabled):hover, #btns #bt:not(:disabled):hover { filter: brightness(1.2); }
       #btns .hb:not(:disabled):active, #btns #bt:not(:disabled):active { transform: translateY(3px); }
       /* dim backdrop with a soft vignette */
-      #dlg { background: radial-gradient(ellipse at center, #1a0f0766 0%, #0a0603d9 70%); backdrop-filter: blur(2px); }
+      #dlg { background: radial-gradient(ellipse at center, #1a0f0766 0%, #0a0603d9 70%); -webkit-backdrop-filter: blur(2px); backdrop-filter: blur(2px); }
 
       /* ---------- phone layout (body.ph: the short side of the screen is under 560 px) ----------
          Controls use the whole screen (the side bars beside the game frame), not the frame; icon-only top plates; compact menus. */
@@ -2180,37 +2208,75 @@
         ["util", "Charm", '<circle r="7"/><path d="M0-7v-5"/>', 89, 50],
         ["boots", "Boots", '<path d="M-9-10h7v14h8l2 6h-17z"/>', 89, 82],
       ];
+      /* invUI(): paper doll. A lit, armoured hero (class-tinted visor/cape) inside a slowly turning rune ring; six ornate slots
+         joined to the body by gold lines; worn gear glows on its body part in its rarity colour. Then the bag and every material.
+         Everything pops in with a short stagger (CSS only, cheap). */
+      const DOLL_AT = { helm: [150, 46], tank: [150, 112], glove: [208, 176], dmg: [92, 176], util: [150, 86], boots: [166, 270] };
       function invUI() {
-        $("dp").className = "pn";
-        const bag = V.eq?.bag || [], on = V.eq?.on || {};
+        $("dp").className = "pn invpn";
+        const bag = V.eq?.bag || [], on = V.eq?.on || {}, cc = SKC[(P && P.cls) || "dps"] || "#ffd84a";
+        const worn = (k) => bag.find((b) => b.id == on[k]), tc = (k) => (worn(k) ? TIERS[worn(k).r][1] : null);
+        let n = 0;
         const sq = ([k, lab, ghost, lx, ty]) => {
-          const it = bag.find((b) => b.id == on[k]), col = it ? TIERS[it.r][1] : "#c9a45a";
-          const tip = it ? `${TIERS[it.r][0]} ${EQ_N[it.k]}: ${EQ_D[it.k](eqV(it), it)}. Click to take off.` : SLOT_N[k] ? `${lab}: empty` : `${lab}: coming soon`;
-          return `<div title="${tip}" ${it ? `onclick="invWear('${it.id}')"` : ""} style="position:absolute;left:${lx}%;top:${ty}%;transform:translate(-50%,-50%);width:58px;height:58px;border-radius:8px;
-            border:1px solid ${it ? col : "var(--ln)"};border-bottom:3px solid ${col};background:linear-gradient(180deg, color-mix(in srgb, ${col} ${it ? 22 : 8}%, transparent), rgba(0,0,0,.18));box-shadow:${it ? `0 0 10px ${col}55` : "none"};cursor:${it ? "pointer" : "default"}">
-            <svg viewBox="-20 -20 40 40" width="54" height="54"><g fill="none" stroke="${col}" stroke-width="2.4" stroke-linecap="round" stroke-linejoin="round" opacity="${it ? 1 : 0.45}">${it ? (EQ_GK[it.k] || EQ_G[it.t]) : ghost}</g></svg>
-            <div style="position:absolute;left:50%;top:100%;transform:translateX(-50%);font-size:10px;white-space:nowrap;color:${it ? col : "#b9a888"};margin-top:2px">${it ? EQ_N[it.k] : lab}</div></div>`;
+          const it = worn(k), col = it ? TIERS[it.r][1] : "#c9a45a";
+          const tip = it ? `${TIERS[it.r][0]} ${EQ_N[it.k]}: ${EQ_D[it.k](eqV(it), it)}. Click to take off.` : `${lab}: empty`;
+          return `<div class="dslot${it ? " on" : ""}" title="${tip}" ${it ? `onclick="invWear('${it.id}')"` : ""} style="left:${lx}%;top:${ty}%;--c:${col};--d:${n++ * 50}ms">
+            <i class="st a"></i><i class="st b"></i><i class="st c"></i><i class="st d"></i>
+            <svg viewBox="-20 -20 40 40" width="46" height="46"><g fill="none" stroke="${col}" stroke-width="2.4" stroke-linecap="round" stroke-linejoin="round" opacity="${it ? 1 : 0.4}">${it ? EQ_GK[it.k] || EQ_G[it.t] : ghost}</g></svg>
+            <span class="dl">${it ? EQ_N[it.k] : lab}</span></div>`;
         };
-        /* the silhouette: head, neck, torso, arms, legs, a soft rune glow behind */
-        const body = `<svg viewBox="0 0 300 300" width="100%" height="100%" style="position:absolute;inset:0">
-          <defs><radialGradient id="dg" cx="50%" cy="45%" r="45%"><stop offset="0" stop-color="#ffd98a" stop-opacity=".22"/><stop offset="1" stop-color="#ffd98a" stop-opacity="0"/></radialGradient>
-          <linearGradient id="db" x1="0" y1="0" x2="0" y2="1"><stop offset="0" stop-color="#5a4a34"/><stop offset="1" stop-color="#2c2418"/></linearGradient></defs>
-          <circle cx="150" cy="140" r="120" fill="url(#dg)"/>
-          <circle cx="150" cy="140" r="104" fill="none" stroke="#c9a45a" stroke-opacity=".25" stroke-dasharray="3 7"/>
-          <g fill="url(#db)" stroke="#c9a45a" stroke-opacity=".5" stroke-width="1.5">
-            <circle cx="150" cy="52" r="20"/>
-            <path d="M141 70h18v8h-18z"/>
-            <path d="M118 80q32-8 64 0l8 20 18 62q2 8-6 9l-6 1-16-52-2 40 6 84q0 8-9 8h-6l-9-80-9 80h-6q-9 0-9-8l6-84-2-40-16 52-6-1q-8-1-6-9l18-62z"/>
-          </g></svg>`;
-        let h = `<h2>🎒 Inventory</h2><div style="position:relative;width:min(340px,100%);aspect-ratio:1;margin:4px auto 22px">${body}${DOLL.map(sq).join("")}</div>`;
+        /* gold lines from each slot to its body part (lit in the rarity colour when worn) */
+        const lines = DOLL.map(([k, , , lx, ty]) => { const [bx, by] = DOLL_AT[k], x = lx * 3, y = ty * 3, c2 = tc(k); return `<path d="M${x} ${y}Q${(x + bx) / 2} ${y} ${bx} ${by}" stroke="${c2 || "#c9a45a"}" stroke-opacity="${c2 ? 0.75 : 0.28}" stroke-width="${c2 ? 1.6 : 1}" stroke-dasharray="${c2 ? "0" : "3 4"}" fill="none"/><circle cx="${bx}" cy="${by}" r="${c2 ? 3 : 2}" fill="${c2 || "#c9a45a"}" opacity="${c2 ? 0.9 : 0.4}"/>`; }).join("");
+        const glow = (k, d) => (tc(k) ? `<path d="${d}" fill="none" stroke="${tc(k)}" stroke-width="3" opacity=".85" class="dglow"/>` : "");
+        const body = `<svg viewBox="0 0 300 300" width="100%" height="100%" style="position:absolute;inset:0;overflow:visible">
+          <defs>
+            <radialGradient id="dg" cx="50%" cy="45%" r="48%"><stop offset="0" stop-color="#ffd98a" stop-opacity=".3"/><stop offset="1" stop-color="#ffd98a" stop-opacity="0"/></radialGradient>
+            <linearGradient id="dm" x1="0" y1="0" x2="1" y2="0"><stop offset="0" stop-color="#b9a47a"/><stop offset=".45" stop-color="#7a6646"/><stop offset="1" stop-color="#2e2416"/></linearGradient>
+            <linearGradient id="dk" x1="0" y1="0" x2="1" y2="0"><stop offset="0" stop-color="#4a3c2a"/><stop offset="1" stop-color="#1c150d"/></linearGradient>
+            <linearGradient id="dc" x1="0" y1="0" x2="0" y2="1"><stop offset="0" stop-color="${cc}" stop-opacity=".55"/><stop offset="1" stop-color="#1a0f08" stop-opacity=".9"/></linearGradient>
+          </defs>
+          <circle cx="150" cy="150" r="128" fill="url(#dg)"/>
+          <g class="dring"><circle cx="150" cy="150" r="112" fill="none" stroke="#c9a45a" stroke-opacity=".35" stroke-dasharray="2 9"/><circle cx="150" cy="150" r="100" fill="none" stroke="#c9a45a" stroke-opacity=".18"/>
+            ${[0, 1, 2, 3, 4, 5, 6, 7].map((q) => `<text x="${150 + Math.cos(q * 0.785) * 106}" y="${153 + Math.sin(q * 0.785) * 106}" font-size="10" text-anchor="middle" fill="#e8c88a" fill-opacity=".35">${"ᚠᚱᚦᛟᚨᛉᛊᛏ"[q]}</text>`).join("")}</g>
+          <ellipse cx="150" cy="284" rx="62" ry="9" fill="#000" opacity=".35"/>
+          ${lines}
+          <!-- cape -->
+          <path d="M118 84 Q96 170 102 262 Q150 276 198 262 Q204 170 182 84 Z" fill="url(#dc)" stroke="#1a0f08" stroke-width="1.5"/>
+          <!-- legs + greaves -->
+          <path d="M131 182 L126 262 L146 262 L149 186 Z" fill="url(#dk)"/><path d="M151 186 L154 262 L174 262 L169 182 Z" fill="url(#dk)"/>
+          <path d="M124 214 L147 214 L146 260 L125 260 Z" fill="url(#dm)" stroke="#1c150d"/><path d="M153 214 L176 214 L175 260 L154 260 Z" fill="url(#dm)" stroke="#1c150d"/>
+          <path d="M123 258 L148 258 L150 272 L118 272 Q118 262 123 258Z" fill="#2a2016"/><path d="M152 258 L177 258 L182 272 L150 272Z" fill="#2a2016"/>
+          ${glow("boots", "M118 272 L150 272 M150 272 L182 272")}
+          <!-- arms -->
+          <path d="M112 92 L96 140 L90 176 L104 178 L112 142 L124 104Z" fill="url(#dk)"/><path d="M188 92 L204 140 L210 176 L196 178 L188 142 L176 104Z" fill="url(#dk)"/>
+          <path d="M94 142 L110 144 L106 172 L90 170Z" fill="url(#dm)" stroke="#1c150d"/><path d="M190 144 L206 142 L210 170 L194 172Z" fill="url(#dm)" stroke="#1c150d"/>
+          <circle cx="97" cy="181" r="7" fill="#3a2c1c" stroke="#1c150d"/><circle cx="203" cy="181" r="7" fill="#3a2c1c" stroke="#1c150d"/>
+          ${glow("glove", "M90 170 L106 172 M194 172 L210 170")}${glow("dmg", "M92 176 L60 214")}
+          <!-- torso: chest plate, ab bands, belt -->
+          <path d="M120 86 Q150 76 180 86 L184 140 Q150 152 116 140Z" fill="url(#dm)" stroke="#1c150d" stroke-width="1.5"/>
+          <path d="M150 82 L150 146" stroke="#2e2416" stroke-width="1.5"/><path d="M126 96 Q150 90 174 96" stroke="#e8d4a6" stroke-opacity=".5" fill="none"/>
+          <path d="M118 140 Q150 152 182 140 L182 150 Q150 162 118 150Z" fill="#5a4a32" stroke="#1c150d"/><path d="M120 152 Q150 164 180 152 L178 164 Q150 174 122 164Z" fill="#4a3c28" stroke="#1c150d"/>
+          <path d="M120 166 Q150 178 180 166 L180 176 Q150 188 120 176Z" fill="#3a2a18" stroke="#1c150d"/><rect x="143" y="168" width="14" height="12" rx="2" fill="#d8b45a" stroke="#6a4e1a"/>
+          ${glow("tank", "M120 86 Q150 76 180 86 L184 140 Q150 152 116 140Z")}
+          <!-- pauldrons -->
+          <path d="M104 98 Q104 78 126 80 L132 98 Q118 104 104 98Z" fill="url(#dm)" stroke="#1c150d" stroke-width="1.5"/><path d="M196 98 Q196 78 174 80 L168 98 Q182 104 196 98Z" fill="url(#dm)" stroke="#1c150d" stroke-width="1.5"/>
+          <path d="M108 86 Q114 80 124 82" stroke="#f0e0b8" stroke-opacity=".6" fill="none"/>
+          <!-- amulet (charm) -->
+          <circle cx="150" cy="90" r="4" fill="${tc("util") || "#8a7a5a"}" stroke="#1c150d"/>
+          <!-- head: hood + helm with a glowing visor -->
+          <path d="M126 70 Q124 26 150 22 Q176 26 174 70 Q162 78 150 78 Q138 78 126 70Z" fill="url(#dk)" stroke="#1c150d" stroke-width="1.5"/>
+          <path d="M134 62 Q133 38 150 34 Q167 38 166 62 Q150 70 134 62Z" fill="url(#dm)" stroke="#1c150d"/>
+          <path d="M138 50 L162 50" stroke="${cc}" stroke-width="3" stroke-linecap="round" class="dvis"/>
+          <path d="M136 42 Q142 36 150 35" stroke="#f0e0b8" stroke-opacity=".6" fill="none"/>
+          ${glow("helm", "M134 62 Q133 38 150 34 Q167 38 166 62")}
+        </svg>`;
+        let h = `<h2>🎒 Inventory</h2><div class="doll">${body}${DOLL.map(sq).join("")}</div>`;
         const rest = bag.filter((b) => eqOk(b) && on[b.t] != b.id);
         h += `<div class="mast"><span class="sm">Bag (${rest.length})</span></div>`;
-        h += rest.length ? rest.map((it) => eqCard(it, `<button onclick="invWear('${it.id}')">Wear</button>`)).join("") : `<div class="sm" style="opacity:.7;padding:4px 2px">No spare gear. The Merchant sells equipment; the Smith forges it from raid materials.</div>`;
-        const mats = Object.keys(MATS).filter((k) => (V.mat || {})[k] > 0);
-        h += `<div class="mast"><span class="sm">Materials · forge gear at the Smith</span></div>`;
-        h += mats.length
-          ? `<div style="display:grid;grid-template-columns:repeat(auto-fill,minmax(120px,1fr));gap:6px">` + mats.map((k) => `<div class="up" title="${MATS[k].d}" style="--uc:${MATS[k].col};padding:6px 8px"><span style="font-size:18px">${MATS[k].e}</span><span style="flex:1"><span class="nm" style="font-size:12px">${MATS[k].n}</span></span><b>${V.mat[k]}</b></div>`).join("") + `</div>`
-          : `<div class="sm" style="opacity:.7;padding:4px 2px">Win raids to collect materials.</div>`;
+        h += rest.length ? `<div class="ilist">` + rest.map((it, q) => `<div style="--d:${300 + q * 40}ms">${eqCard(it, `<button onclick="invWear('${it.id}')">Wear</button>`)}</div>`).join("") + `</div>` : `<div class="sm" style="opacity:.7;padding:4px 2px">No spare gear. The Merchant sells equipment; the Smith forges it from raid materials.</div>`;
+        h += `<div class="mast"><span class="sm">Resources · forge gear at the Smith</span></div><div class="imats">`;
+        h += Object.keys(MATS).map((k, q) => { const c0 = (V.mat || {})[k] || 0, M = MATS[k]; return `<div class="imat${c0 ? "" : " none"}" title="${M.d}" style="--c:${M.col};--d:${400 + q * 40}ms"><span class="ie">${M.e}</span><span class="in">${M.n}</span><b>${c0}</b></div>`; }).join("");
+        h += `</div>`;
         $("dp").innerHTML = h + `<button class="alt x" onclick="closeDlg()" title="Close">Close</button>`;
       }
       function invWear(id) {
@@ -7504,7 +7570,7 @@
         c.strokeStyle = "#2c3b48";
         c.lineWidth = 1;
         c.beginPath();
-        c.roundRect(x, y, w, 52, 8);
+        c.roundRect ? c.roundRect(x, y, w, 52, 8) : c.rect(x, y, w, 52); /* older Safari / Firefox */
         c.fill();
         c.stroke();
         c.fillStyle = k.c;
