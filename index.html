@@ -1118,6 +1118,11 @@
       #mlbar { position: absolute; left: 1.4%; top: 50%; transform: translateY(-50%); display: flex; flex-direction: column; gap: 10px; pointer-events: none; }
       #btns #mlbar button { position: static; pointer-events: auto; height: 32px; padding: 0 10px; width: auto; font-size: 12px; }
       body.ph #topc { left: auto; right: 8px; transform: none; gap: 8px; top: 8px; }
+      /* in a raid only Settings is left up there: a small gear in the top-right corner, clear of the boss bar and raid title */
+      body:not(.hub) #topc { left: auto; right: 10px; transform: none; top: 10px; }
+      body:not(.hub) #btns #topc button { width: 40px !important; height: 40px !important; padding: 0 !important; font-size: 0 !important; }
+      body:not(.hub) #btns #topc button::before { display: none; }
+      body:not(.hub) #btns #topc [data-ic]::after { content: attr(data-ic); display: block; font-size: 18px; line-height: 36px; }
       body.ph #btns #topc button { width: 46px !important; height: 46px !important; }
       body.ph #btns #topc [data-ic]::after { font-size: 20px; line-height: 42px; }
       body.ph #mlbar { left: 8px; gap: 8px; }
