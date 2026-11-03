@@ -11470,8 +11470,8 @@
       const ARENAC = {};
       const ARENA_KIND = () => (RAIDS[S.raid] || RAIDS.small).boss == "thornmaw" ? "thorn" : "void";
       const ARENA_PAL = {
-        void: { bg0: "#0d0820", bg1: "#2a1650", neb: [[120, 70, 200], [60, 90, 200]], floor0: "#3a3550", floor1: "#1c1830", rim0: "#5c5674", rim1: "#2a2640", crack: "#b77dff", rune: "#8fa8ff", orb: [120, 170, 255], deco: "#4a4560" },
-        thorn: { bg0: "#0d140c", bg1: "#2a2a18", neb: [[90, 120, 50], [150, 90, 40]], floor0: "#58604a", floor1: "#2c3226", rim0: "#6f7356", rim1: "#363a2a", crack: "#9dff6a", rune: "#c9ff8a", orb: [180, 255, 120], deco: "#3c4a2c" },
+        void: { bg0: "#1a1238", bg1: "#4a3a8a", neb: [[170, 120, 255], [110, 150, 255]], floor0: "#8e88b6", floor1: "#4c4672", rim0: "#aaa2d0", rim1: "#5a5482", crack: "#b77dff", rune: "#8fa8ff", orb: [120, 170, 255], deco: "#4a4560" },
+        thorn: { bg0: "#1c2e1a", bg1: "#55703a", neb: [[150, 200, 90], [230, 170, 90]], floor0: "#a39c7c", floor1: "#666248", rim0: "#cfc7a0", rim1: "#6e6a4e", crack: "#9dff6a", rune: "#c9ff8a", orb: [180, 255, 120], deco: "#3c4a2c" },
       };
       function arenaPaint(kind) {
         const K = 2, cv6 = document.createElement("canvas");
@@ -11680,13 +11680,52 @@
           c.beginPath(); c.ellipse(x, y, 13, 5, 0, 0, Math.PI); c.fill();
           if (kind == "thorn") { c.strokeStyle = "#3a5a22"; c.lineWidth = 2.5; c.beginPath(); for (let q = 0; q <= hgt; q += 3) c.lineTo(x + Math.sin(q * 0.35 + k) * 11, y - q); c.stroke(); c.fillStyle = "#5c8a34"; c.beginPath(); c.ellipse(x - 2, y - hgt - 1, 9, 3.5, 0, 0, 6.3); c.fill(); }
           }
-        /* light: warm from the top-right, shade toward the bottom-left, vignette */
-        const lt = c.createLinearGradient(W, 0, 0, H);
-        lt.addColorStop(0, kind == "void" ? "rgba(170,150,255,.08)" : "rgba(255,210,140,.1)");
-        lt.addColorStop(1, "rgba(0,0,10,.18)");
-        c.fillStyle = lt; c.fillRect(0, 0, W, H);
-        const vg = c.createRadialGradient(A.x, A.y, A.r * 0.9, A.x, A.y, 640);
-        vg.addColorStop(0, "rgba(0,0,0,0)"); vg.addColorStop(1, "rgba(0,0,0,.55)");
+        /* flora ring on the rim, like the hub's edges: grass tufts, flowers and bushes (thorn) / crystal clusters and glow-bells (void) */
+        const rimOut = A.r + 30;
+        for (let i = 0; i < 90; i++) {
+          const a = r() * 6.28, d = rimOut + r() * 26, x = A.x + Math.cos(a) * d, y = A.y + Math.sin(a) * d * 0.98;
+          if (kind == "thorn") {
+            if (r() < 0.22) { /* bush */
+              const br = 9 + r() * 9;
+              for (let q = 0; q < 4; q++) { const bx = x + (r() - 0.5) * br, by = y + (r() - 0.5) * br * 0.6, bb = br * (0.6 + r() * 0.4), bg2 = c.createRadialGradient(bx + bb * 0.3, by - bb * 0.4, 1, bx, by, bb); bg2.addColorStop(0, "#9fd36a"); bg2.addColorStop(0.6, "#4f8a36"); bg2.addColorStop(1, "#2a5222"); c.fillStyle = bg2; c.beginPath(); c.arc(bx, by, bb, 0, 6.3); c.fill(); }
+            }
+            c.strokeStyle = r() < 0.5 ? "#7fbf4a" : "#5f9a3a"; c.lineWidth = 1.6; c.lineCap = "round";
+            for (let q = 0; q < 5; q++) { const gx = x + (r() - 0.5) * 10, h = 6 + r() * 8; c.beginPath(); c.moveTo(gx, y); c.quadraticCurveTo(gx + (r() - 0.5) * 6, y - h * 0.6, gx + (r() - 0.5) * 7, y - h); c.stroke(); }
+            if (r() < 0.55) { const fc = ["#ffd3e2", "#fff3b0", "#ffffff", "#f6b8cf", "#d9b8ff"][(r() * 5) | 0]; for (let q = 0; q < 3; q++) { const fx = x + (r() - 0.5) * 12, fy = y - 4 - r() * 6; c.fillStyle = fc; c.beginPath(); c.arc(fx, fy, 2.2, 0, 6.3); c.fill(); c.fillStyle = "#ffd84a"; c.beginPath(); c.arc(fx, fy, 0.8, 0, 6.3); c.fill(); } }
+          } else {
+            if (r() < 0.3) { /* crystal cluster */
+              for (let q = 0; q < 4; q++) { const cx2 = x + (r() - 0.5) * 12, h = 7 + r() * 13, ca = (r() - 0.5) * 0.9; c.save(); c.translate(cx2, y); c.rotate(ca); const cg = c.createLinearGradient(-3, 0, 3, 0); cg.addColorStop(0, "#6a56c8"); cg.addColorStop(1, "#e6dcff"); c.fillStyle = cg; c.beginPath(); c.moveTo(-3, 0); c.lineTo(0, -h); c.lineTo(3, 0); c.closePath(); c.fill(); c.restore(); }
+            } else {
+              c.strokeStyle = "#6a5aa8"; c.lineWidth = 1.4; c.lineCap = "round";
+              for (let q = 0; q < 3; q++) { const gx = x + (r() - 0.5) * 9, h = 5 + r() * 7; c.beginPath(); c.moveTo(gx, y); c.quadraticCurveTo(gx + 2, y - h * 0.6, gx + (r() - 0.5) * 6, y - h); c.stroke(); }
+              if (r() < 0.5) { c.fillStyle = r() < 0.5 ? "#9ad8ff" : "#d0b8ff"; c.beginPath(); c.arc(x, y - 7, 2.2, 0, 6.3); c.fill(); }
+            }
+          }
+        }
+        /* soft shade where the floor meets the rim (gives the floor depth) */
+        { const ao = c.createRadialGradient(A.x, A.y, A.r * 0.72, A.x, A.y, A.r); ao.addColorStop(0, "rgba(0,0,0,0)"); ao.addColorStop(1, "rgba(20,10,30,.28)"); c.fillStyle = ao; c.beginPath(); c.arc(A.x, A.y, A.r, 0, 6.3); c.fill(); }
+        /* light, hub style: warm sun from the top-right, soft rays, a bright pool on the floor, cool shade bottom-left */
+        c.save();
+        c.globalCompositeOperation = "lighter";
+        const sun = kind == "void" ? "200,180,255" : "255,226,170";
+        const sp = c.createRadialGradient(W * 0.86, -40, 20, W * 0.86, -40, 620);
+        sp.addColorStop(0, `rgba(${sun},.32)`); sp.addColorStop(1, `rgba(${sun},0)`);
+        c.fillStyle = sp; c.fillRect(0, 0, W, H);
+        for (let k = 0; k < 5; k++) { /* light rays */
+          const x0 = W * (0.62 + k * 0.09), w0 = 26 + r() * 40, rg2 = c.createLinearGradient(x0, 0, x0 - 260, H);
+          rg2.addColorStop(0, `rgba(${sun},${0.1 + r() * 0.06})`); rg2.addColorStop(1, `rgba(${sun},0)`);
+          c.fillStyle = rg2;
+          c.beginPath(); c.moveTo(x0, -10); c.lineTo(x0 + w0, -10); c.lineTo(x0 + w0 - 300, H + 10); c.lineTo(x0 - 300 - w0 * 0.4, H + 10); c.closePath(); c.fill();
+        }
+        const pool = c.createRadialGradient(A.x + 40, A.y - 40, 10, A.x + 40, A.y - 40, A.r * 0.95);
+        pool.addColorStop(0, `rgba(${sun},${kind == "void" ? 0.16 : 0.08})`); pool.addColorStop(1, `rgba(${sun},0)`);
+        c.fillStyle = pool; c.beginPath(); c.arc(A.x, A.y, A.r, 0, 6.3); c.fill();
+        c.restore();
+        const sh = c.createLinearGradient(W, 0, 0, H);
+        sh.addColorStop(0, "rgba(0,0,10,0)"); sh.addColorStop(1, kind == "void" ? "rgba(30,10,60,.22)" : "rgba(20,30,40,.2)");
+        c.fillStyle = sh; c.fillRect(0, 0, W, H);
+        const vg = c.createRadialGradient(A.x, A.y, A.r * 1.05, A.x, A.y, 680);
+        vg.addColorStop(0, "rgba(0,0,0,0)"); vg.addColorStop(1, "rgba(0,0,0,.3)");
         c.fillStyle = vg; c.fillRect(0, 0, W, H);
         }
         return cv6;

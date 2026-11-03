@@ -258,6 +258,8 @@ Built and tested (unit tests plus the `cheat`, `flood`, `econ`, `hphack`, `chat`
 
 - Economy fast start: start gold 200; fresh() newcomer boost x2 raid gold/XP/dust at level 1 fading to x1 at FRESH_LV 10; Smith (Forge) at level 5. Sim: level 5 after 3 raids (was 6), level 10 after 13 (was 18); late game unchanged. Audit raid cap x2 for the boost.
 
+- Arenas closer to the hub look: brighter per-boss palettes (ARENA_PAL), flora ring on the rim (thorn: grass, flowers, bushes; void: crystal clusters, glow-bells), floor-edge shade, hub-style light (top-right sun, rays, floor pool, cool shade bottom-left), lighter vignette. All baked into ARENAC.
+
 ## Not done / open
 
 - Host migration and reconnect: a hub dies when its host leaves.
