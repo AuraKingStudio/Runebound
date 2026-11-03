@@ -1815,9 +1815,9 @@
         /* Merchant: round coin bag with a tied neck and a coin mark */
         SHOP = { tu: 3, fx: "coins", x: 450, y: 172, ic: "💰", nm: "The Merchant", col: "#ffcf4d",
           g: "M-3-8q-6 3-10 10q-3 10 7 11h12q10-1 7-11q-4-7-10-10zM-3-9l-4-5q7 2 14 0l-4 5zM-1 0h4a2 2 0 0 1 0 4h-2a2 2 0 0 0 0 4h4" },
-        LORE = { tu: 4, fx: "book", fa: 0.5, x: 662, y: 224, ic: "📜", nm: "The Archivist", col: "#5ad7ff", gs: 1,
+        LORE = { tu: 4, fx: "book", fa: 0.5, x: 662, y: 224, ic: "📜", nm: "The Archivist", col: "#5ad7ff", 
           /* Archivist: rolled scroll with text lines */
-          g: "M-10-13h20a3 3 0 0 1 0 6h-20a3 3 0 0 1 0-6M-8-7v13M8-7v13M-10 6h20a3 3 0 0 1 0 6h-20a3 3 0 0 1 0-6M-4-3h8M-4 1h6" },
+          g: "M-9-13h18a3 3 0 0 1 0 6h-1v13h1a3 3 0 0 1 0 6h-18a3 3 0 0 1 0-6h1v-13h-1a3 3 0 0 1 0-6zM-4.5-4h9v1.8h-9zM-4.5 0h7v1.8h-7z" },
         /* the 4 NPCs standing where the old torches were */
         /* Class Master (green): the three class emblems */
         /* the Class Master no longer stands in the hub (class change = top-bar Class button); kept as data for the class
@@ -1833,8 +1833,8 @@
         HERALD = { lk: "herald", x: 150, y: 350, ic: "📯", nm: "The Herald", col: "#cfe6ff",
           g: "M-8-12v24h2.5v-10h12l-3-5 3-5h-12v-4z" },
         /* The Seraph (radiant gold): halo over a pair of wings. Sells one-raid blessings; unlocked by the quest "First Raid"; stands on the Herald's old spot. wings: drawn behind */
-        SERAPH = { lk: "seraph", x: 150, y: 350, ic: "👼", nm: "The Seraph", col: "#d8eeff", gs: 1, wings: 1, /* holy silver-white, pale blue glow */
-          g: "M-4-12.5a4 1.4 0 1 0 8 0a4 1.4 0 1 0-8 0M2.2-8a2.2 2.2 0 1 0-4.4 0a2.2 2.2 0 1 0 4.4 0M-2.2-5Q-3.6 2-5.6 10.5H5.6Q3.6 2 2.2-5M0-3v4.5M-1.4-1.4L0 1.5L1.4-1.4M-2.8-4C-7-6.5-10-11.5-12.5-12.5C-12.2-8.5-11.2-5.5-9-3.4C-11.2-3.2-12.2-1.2-12.6 1.2C-9.6 0.2-6.6-0.8-3.4-0.4M2.8-4C7-6.5 10-11.5 12.5-12.5C12.2-8.5 11.2-5.5 9-3.4C11.2-3.2 12.2-1.2 12.6 1.2C9.6 0.2 6.6-0.8 3.4-0.4M-9-3.4L-5.4-2.8M9-3.4L5.4-2.8M-10.6-8.4L-6.6-5.2M10.6-8.4L6.6-5.2" }; /* praying angel: halo, head, bell robe, joined hands, raised wings with feather lines */ /* centred: spans y -11..10 */
+        SERAPH = { lk: "seraph", x: 150, y: 350, ic: "👼", nm: "The Seraph", col: "#d8eeff", wings: 1, /* holy silver-white, pale blue glow */
+          g: "M-4.5-9.5a4.5 1.6 0 1 0 9 0a4.5 1.6 0 1 0-9 0M-4-9.5a4 1.1 0 1 0 8 0a4 1.1 0 1 0-8 0M-1.5 0Q-6-2-11.5-7.5Q-11.8-3.6-10.2-1.2L-8.6-1.4Q-9.2 1.4-7.2 3.1L-5.7 2.5Q-5.6 5.2-1.5 7ZM1.5 0Q6-2 11.5-7.5Q11.8-3.6 10.2-1.2L8.6-1.4Q9.2 1.4 7.2 3.1L5.7 2.5Q5.6 5.2 1.5 7Z" }; /* halo ring over two raised wings with feathered edges */
       /* ---------- progress (saved) ---------- */
       /* upgrades. k = save key, b = base cost (cost = b * next level), pl = % per level, ic = SVG icon, col = card color */
       const UPG = [
@@ -6349,7 +6349,7 @@
       /* ---------- The Barkeep (bar, right wall) + the two wall boards ---------- */
       /* Barkeep: an orange playing-card emblem. Shown after the tutorial; opens for players who join the Discord (lk: "barkeep"). */
       const DISCORD_URL = "https://discord.gg/jdGGGJBFSS";
-      const BARKEEP = { lk: "barkeep", fx: "cards", fa: 1, tu: 5, x: 750, y: 350, ic: "🃏", nm: "The Barkeep", col: "#ff5a78", /* ruby: unique from the Smith */ gs: 1,
+      const BARKEEP = { lk: "barkeep", fx: "cards", fa: 1, tu: 5, x: 750, y: 350, ic: "🃏", nm: "The Barkeep", col: "#ff5a78", /* ruby: unique from the Smith */ 
           g: "M-5-10h10q2 0 2 2v16q0 2-2 2h-10q-2 0-2-2v-16q0-2 2-2zM0-4l3 4-3 4-3-4z" };
       /* ---------- Quest Board: main quest + 3 daily bounties ---------- */
       /* bounty: id, text, n = amount needed, g = gold, x = XP */
@@ -8112,7 +8112,7 @@
         c.scale(n.gz || 1, n.gz || 1); /* gz = emblem zoom */
         n.p2 = n.p2 || new Path2D(n.g); /* (the Class Master's 3-icon disc is gone with him: class change is the top-bar button) */
         c.fillStyle = c.strokeStyle = n.col;
-        n.gs ? c.stroke(n.p2) : c.fill(n.p2);
+        c.fill(n.p2, "evenodd"); /* every NPC icon is solid; even-odd cuts the details out (card diamond, scroll lines) */
         if (n._lock) {
           /* padlock badge on the lower-right of the disc */
           c.save();

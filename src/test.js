@@ -66,7 +66,7 @@ const xq=T.V().xp;T.devResetQ();T.qAct(1);T.V().qs=2;T.qAct(2);ok(T.V().xp==xq+1
 /* ---- hub skills ---- */
 T.DEV.nocd=0;T.devHub();T.P().cd=[0,0,0];T.act(T.P(),1);ok(T.S().sc=='hub'&&T.P().cd[1]>0,'hub: skills play and start their cooldown');T.P().cd=[0,0,0];
 /* ---- blackjack, guild, bounties ---- */
-ok(T.BARKEEP.ic=='🃏'&&T.BARKEEP.col=='#ff5a78'&&T.BARKEEP.gs==1&&/M-5-10h10q.*zM0-4l3 4-3 4-3-4z/.test(T.BARKEEP.g),'blackjack NPC: ruby colour, unique from the Smith');
+ok(T.BARKEEP.ic=='🃏'&&T.BARKEEP.col=='#ff5a78'&&/M-5-10h10q.*zM0-4l3 4-3 4-3-4z/.test(T.BARKEEP.g),'blackjack NPC: ruby colour, unique from the Smith');
 ok(T.bjVal([1,13])==21&&T.bjVal([1,1,9])==21&&T.bjVal([10,10,5])==25,'blackjack: hand values (aces 11 or 1)');
 T.V().gold=100;T.V().bj1=1;T.bjDeal(50);ok([50,100,200].includes(T.V().gold),'blackjack: betting takes the stake (or settles a natural 21)');
 T.V().gold=100;T.V().bj1=0;T.bjDeal(10);ok(T.V().bj1==1&&T.V().gold==90&&ctx.document.getElementById('dp').innerHTML.includes('<b class="bjv">11</b><small>5 | 6</small>'),'blackjack: your very first hand starts at 11');
