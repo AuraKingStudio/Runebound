@@ -982,6 +982,21 @@
       .tt { border-top-color: var(--seam); }
       input.nm { background: var(--wood3); border-color: var(--seam); color: var(--parch); }
       input.nm:focus { border-color: var(--gild); outline: none; }
+      /* gender pills (name dialog + Settings) and the tinted name field: pale-to-tint text with a soft glow, a snappy pop on pick */
+      .gdrow { display: flex; gap: 6px; justify-content: center; flex-wrap: wrap; }
+      .pn .gdrow .gdp { width: auto; margin: 0; min-height: 36px; padding: 5px 14px; border-radius: 999px; font: bold 13px Georgia, serif; letter-spacing: 0.5px;
+        background: rgba(0,0,0,.28) !important; border: 1px solid var(--ln) !important; color: #f3e6c8 !important; box-shadow: none !important;
+        transition: transform 0.12s cubic-bezier(.3,1.8,.5,1), border-color 0.12s, box-shadow 0.12s; }
+      .pn .gdrow .gdp:active { transform: scale(0.9); }
+      .pn .gdrow .gdp.g1.on { color: #d6ecff !important; border-color: #86c3ff !important; box-shadow: 0 0 12px #4da3ff99, inset 0 0 8px #4da3ff44 !important; }
+      .pn .gdrow .gdp.g2.on { color: #ffe0ef !important; border-color: #ff9acb !important; box-shadow: 0 0 12px #ff5fae99, inset 0 0 8px #ff5fae44 !important; }
+      .pn .gdrow .gdp.g3.on { color: #ece4ff !important; border-color: #bda2ff !important; box-shadow: 0 0 12px #9a7bff99, inset 0 0 8px #9a7bff44 !important; }
+      .pn .gdrow .gdp.on { animation: gdPop 0.28s cubic-bezier(.3,1.8,.5,1); }
+      @keyframes gdPop { 0% { transform: scale(0.85); } 60% { transform: scale(1.12); } 100% { transform: none; } }
+      input.nm.g1 { color: #cfe8ff; text-shadow: 0 0 8px #4da3ff; border-color: #86c3ff; }
+      input.nm.g2 { color: #ffd9ec; text-shadow: 0 0 8px #ff5fae; border-color: #ff9acb; }
+      input.nm.g3 { color: #e8deff; text-shadow: 0 0 8px #9a7bff; border-color: #bda2ff; }
+      input.nm { transition: color 0.15s, text-shadow 0.15s, border-color 0.15s; }
       /* HUD buttons */
       #btns .hb, #btns #bt {
         background: linear-gradient(180deg, #3a2817f2, #24170df2);
@@ -1569,6 +1584,45 @@
       .bjassist .bjclock .bjsec { font-size: 20px; }
       .bjassist .bjclock .bjspin { display: none; }
       .bjcool { font-size: 11px; opacity: 0.75; margin-top: 3px; }
+      /* the Assist's best move: a pulsing gold outline and lift on its button */
+      .pn .row button.bjbest { outline: 2px solid #fff3a0; outline-offset: 2px; animation: bjBest 0.9s ease-in-out infinite; position: relative; z-index: 1; }
+      @keyframes bjBest { 50% { transform: translateY(-2px) scale(1.06); outline-color: #ffd84a; filter: brightness(1.25); } }
+      .bjtut { text-align: center; color: #e4d4ff; margin: 4px 0 6px; }
+      /* Assist marquee: bulb strips that chase along the top and bottom of the box. --bjrate (s per step) and --bjaura (clock pulse)
+         come from bjTempo(): calm above 20 s, then faster and faster as the Assist runs out. .bjjack = the jackpot moment. */
+      .bjassist .bjbulbs { position: absolute; left: 6px; right: 6px; height: 6px; z-index: -1; pointer-events: none;
+        background: radial-gradient(circle at 6px 3px, #fff6b8 0 2px, #ffcf3a99 2.6px, transparent 3.6px) 0 0 / 24px 6px repeat-x,
+          radial-gradient(circle at 18px 3px, #7a5a22 0 2px, transparent 2.6px) 0 0 / 24px 6px repeat-x; }
+      .bjassist .bjbulbs.t { top: 2px; }
+      .bjassist .bjbulbs.b { bottom: 2px; animation-direction: reverse !important; }
+      .bjassist.on .bjbulbs { animation: bjBulbs var(--bjrate, 0.5s) steps(2) infinite; }
+      .bjassist.lo .bjbulbs { animation: none; }
+      @keyframes bjBulbs { to { background-position: 24px 0, 24px 0; } }
+      .bjclock[style*="--bjrate"] { animation-duration: calc(var(--bjrate) * 3.2); }
+      .bjclock .bjsec.ba { animation: bjBounceA 0.35s ease-out; }
+      .bjclock .bjsec.bb { animation: bjBounceB 0.35s ease-out; }
+      .bjclock.q .bjsec.ba { animation: bjBounceA 0.35s ease-out, bjQuake 0.08s linear 4; }
+      .bjclock.q .bjsec.bb { animation: bjBounceB 0.35s ease-out, bjQuake 0.08s linear 4; }
+      .bjclock.lo .bjsec { animation: none; }
+      @keyframes bjBounceA { 0% { transform: scale(1.45) translateY(-3px); } 60% { transform: scale(0.94); } 100% { transform: none; } }
+      @keyframes bjBounceB { 0% { transform: scale(1.45) translateY(-3px); } 60% { transform: scale(0.94); } 100% { transform: none; } }
+      @keyframes bjQuake { 25% { translate: calc(var(--bjq, 0) * -1px) 0; } 75% { translate: calc(var(--bjq, 0) * 1px) 0; } }
+      .bjassist.on.bjjack { animation: bjJack 0.42s ease-out 3; }
+      .bjassist.bjjack .bjbulbs { filter: brightness(1.7); }
+      .bjassist.lo.bjjack { animation: none; }
+      /* jackpot ring of bulbs around the table edge (top, right, bottom, left strips chase clockwise), and hands that hop to its beat */
+      .bjmarq { position: absolute; inset: 3px; z-index: 4; pointer-events: none; border-radius: inherit;
+        background: linear-gradient(90deg, #fff3a0 0 6px, transparent 6px 12px, #6a4a1a 12px 18px, transparent 18px) 0 0 / 24px 4px repeat-x,
+          linear-gradient(180deg, #fff3a0 0 6px, transparent 6px 12px, #6a4a1a 12px 18px, transparent 18px) 100% 0 / 4px 24px repeat-y,
+          linear-gradient(270deg, #fff3a0 0 6px, transparent 6px 12px, #6a4a1a 12px 18px, transparent 18px) 0 100% / 24px 4px repeat-x,
+          linear-gradient(0deg, #fff3a0 0 6px, transparent 6px 12px, #6a4a1a 12px 18px, transparent 18px) 0 0 / 4px 24px repeat-y;
+        animation: bjMarq var(--bjrate, 0.2s) steps(2) infinite; }
+      .bjmarq.lo { animation: none; }
+      @keyframes bjMarq { to { background-position: 24px 0, 100% 24px, -24px 100%, 0 -24px; } }
+      .bjtable.bjjp .bjhand { animation: bjHop calc(var(--bjrate, 0.2s) * 2) ease-in-out infinite; }
+      @keyframes bjHop { 40% { translate: 0 -5px; } }
+      .bjassist.bjjack, .bjtable:has(.bjmarq) { box-shadow: 0 0 22px #ffd84a99, inset 0 0 12px #ffd84a44; }
+      @keyframes bjJack { 30% { transform: scale(1.05) translateY(-3px); filter: brightness(1.45); box-shadow: 0 0 26px #ffe680, inset 0 0 14px #fff6; } 100% { transform: none; } }
       @media (prefers-reduced-motion: reduce) {
         .bjtable .bjc, .bjtable .bjc.bjglow, .bjtable .bjrow, .bjtable.bjshake { animation: none !important; }
         .bjclock, .bjclock.hot { box-shadow: none; }
@@ -2194,6 +2248,16 @@
           push() { t(440, 440, "sine", 0.035, 0.18); t(440, 440, "sine", 0.03, 0.18, 0.16); },
           blackjack() { arp([523, 659, 784, 1046, 1318, 1568], "triangle", 0.055, 0.07, 0.3); arp([1046, 1318, 1568, 2093], "sine", 0.025, 0.07, 0.35); for (let i = 0; i < 5; i++) t(1800 + i * 160, 2600, "sine", 0.02, 0.1, 0.45 + i * 0.06); },
           streak(n = 1) { const k = Math.min(Math.max(1, n | 0), 8), base = 523 * Math.pow(2, (k - 1) / 12); arp([base, base * 1.26, base * 1.5], "sine", 0.04, 0.06, 0.18); },
+          /* ding(i): one bright bell; i raises it a semitone per step (the Assist countdown climbs with it) */
+          ding(i = 0) { const f = 1046 * Math.pow(2, Math.min(Math.max(0, i | 0), 14) / 12); t(f, f * 1.003, "sine", 0.04, 0.22); t(f * 2.01, f * 2, "sine", 0.014, 0.12); },
+          /* jackpot(n): a slot-machine ding run that speeds up (each gap x0.8) and climbs, then a winning chord. Returns when the chord lands (s). */
+          jackpot(n = 9) {
+            const k = Math.min(Math.max(1, n | 0), 14);
+            let d = 0, gap = 0.16;
+            for (let i = 0; i < k; i++) { const f = 1046 * Math.pow(2, i / 12); t(f, f * 1.003, "sine", 0.04, 0.2, d); t(f * 2.01, f * 2, "sine", 0.014, 0.1, d); d += gap; gap = Math.max(0.045, gap * 0.8); }
+            [523, 659, 784, 1046].forEach((f, i) => t(f, f * 1.002, "triangle", 0.045, 0.55, d + i * 0.025));
+            return d;
+          },
         };
       })();
       /* ---------- vfx: particles, floating numbers, screen shake ---------- */
@@ -2295,6 +2359,7 @@
           V.ds = cl(+s.ds | 0, 0, 999); /* daily streak */
           V.title = Math.max(0, +s.title | 0); /* equipped title index */
           V.name = typeof s.name == "string" ? s.name.slice(0, 16) : "";
+          V.gd = [1, 2, 3].includes(s.gd) ? s.gd : 0; /* name colour: 0 none, 1 he, 2 she, 3 they (GDS) */
           V.xp = Math.max(0, +s.xp | 0);
           /* Archivist state: pool (lp, lpt), last tale time (lta), bonus window (lbx, lbn), blessing (bl), title flag (af) */
           for (const k of ["lp", "lpt", "lta", "lbx", "lbn", "cr", "bj1", "rc", "eqs", "bjc", "fg", "mk"]) if (typeof s[k] == "number") V[k] = s[k];
@@ -2334,11 +2399,37 @@
       const myTitle = () => (TITLES[V.title || 0].ok() ? TITLES[V.title || 0] : TITLES[0]);
       /* ---------- player name ---------- */
       const pname = () => V.name || "Tester";
+      /* gender -> name colour and a soft aura: [index] = { n label, hi/lo name gradient (top pale, bottom tint), glow, aura motes }.
+         0 = not chosen (gold name for you, plain for others, no aura). Purely cosmetic; peers send it as a 0-3 number. */
+      const GDS = [null,
+        { n: "♂ He", hi: "#eaf5ff", lo: "#86c3ff", glow: "#4da3ff", mote: "#bfe0ff" },
+        { n: "♀ She", hi: "#fff0f7", lo: "#ff9acb", glow: "#ff5fae", mote: "#ffd0e8" },
+        { n: "✦ They", hi: "#f5efff", lo: "#bda2ff", glow: "#9a7bff", mote: "#e2d6ff" }];
+      let NAME_GD = 0; /* the choice in the name dialog, saved with the name */
+      const gdPills = (cur, fn) => `<div class="gdrow">${[1, 2, 3].map((g) => `<button class="gdp g${g}${cur == g ? " on" : ""}" onclick="${fn}(${g})">${GDS[g].n}</button>`).join("")}</div>`;
+      /* gdPick(g): choose in the name dialog: highlight the pill, tint the name field, a little ding */
+      function gdPick(g) {
+        NAME_GD = NAME_GD == g ? 0 : g;
+        for (const b of document.querySelectorAll ? document.querySelectorAll("#dp .gdp") : []) b.classList.toggle("on", b.classList.contains("g" + NAME_GD));
+        const i = $("pn");
+        if (i) i.className = "nm" + (NAME_GD ? " g" + NAME_GD : "");
+        if (NAME_GD && typeof BJ_SFX != "undefined") BJ_SFX.ding(NAME_GD * 3);
+      }
+      /* gdSet(g): change it later (Settings) */
+      function gdSet(g) {
+        V.gd = V.gd == g ? 0 : g;
+        save();
+        if (V.gd && typeof BJ_SFX != "undefined") BJ_SFX.ding(V.gd * 3);
+        if (V.gd && P) burst(P.x, P.y, GDS[V.gd].glow, 24, 150);
+        settingsUI(); /* other players see the new colour from your next hub join */
+      }
       function nameUI() {
         $("dlg").hidden = false;
         const def = V.name || "Tester" + Math.floor(1000 + Math.random() * 9000);
+        NAME_GD = V.gd || 0;
         $("dp").innerHTML = `<h2>⚔ Who goes there?</h2><p>The runes ask your name, traveller. It shall be carved in the Archivist's ledger.</p>
-          <input id="pn" class="nm" maxlength="16" value="${def}" autocomplete="off">
+          <input id="pn" class="nm${NAME_GD ? " g" + NAME_GD : ""}" maxlength="16" value="${def}" autocomplete="off">
+          <p class="sm" style="margin:8px 0 2px">Your name's colour <span style="opacity:.7">(optional)</span></p>${gdPills(NAME_GD, "gdPick")}
           <button class="claim" onclick="saveName()">THIS IS MY NAME</button>`;
         const i = $("pn");
         if (i.focus) { i.focus(); i.select && i.select(); }
@@ -2350,10 +2441,11 @@
         const v = String(raw).replace(/[^\p{L}\p{N} _-]/gu, "").trim().slice(0, 16);
         if (v.length < 2) { toast("Your name needs at least 2 letters"); return; }
         V.name = v;
+        V.gd = GDS[NAME_GD] ? NAME_GD : 0;
         save();
         closeDlg();
         sfx("win");
-        if (P) burst(P.x, P.y, "#ffd84a", 30, 180);
+        if (P) burst(P.x, P.y, V.gd ? GDS[V.gd].glow : "#ffd84a", 30, 180);
         popMsg("Welcome, " + v + "!");
         dailyCheck();
         networkAutoJoin();
@@ -2893,7 +2985,7 @@
         }
         const [sx, sy] = spawnSpot(),
           v = { id, name: o.name || "Wanderer", cls: CL[o.cls] ? o.cls : "tank", x: o.x ?? sx, y: o.y ?? sy, dx: 0, dy: 0, f: "d", hp: 1, mh: 1, bot: bot ? 1 : 0,
-            lv: o.lv || 1, ti: TITLES[o.ti] || TITLES[0], via: [] };
+            lv: o.lv || 1, ti: TITLES[o.ti] || TITLES[0], gd: [1, 2, 3].includes(o.gd) ? o.gd : 0, via: [] };
         v.tx = v.x;
         v.ty = v.y;
         v.born = HUB_T;
@@ -3021,7 +3113,7 @@
       }
       function netProfile() {
         return { id: NET_LOCAL_ID, name: String(pname()).replace(/[^A-Za-z0-9 _-]/g, "").slice(0, 16) || "Wanderer",
-          cls: CL[P.cls] ? P.cls : "tank", lv: cl(lvlInfo().L | 0, 1, 60), ti: cl(V.title | 0, 0, TITLES.length - 1), spd: cl(spm(), 1, 1.3) };
+          cls: CL[P.cls] ? P.cls : "tank", lv: cl(lvlInfo().L | 0, 1, 60), ti: cl(V.title | 0, 0, TITLES.length - 1), spd: cl(spm(), 1, 1.3), gd: [1, 2, 3].includes(V.gd) ? V.gd : 0 };
       }
       async function networkAutoJoin() {
         if (NET_AUTO_STARTED || !NET || !P || !V.name) return;
@@ -3179,7 +3271,7 @@
             !Number.isInteger(value.ti) || value.ti < 0 || value.ti >= TITLES.length ||
             !Number.isFinite(value.spd) || value.spd < 1 || value.spd > 1.3) return null;
         return { id: value.id, name: value.name.replace(/[^A-Za-z0-9 _-]/g, "").slice(0, 16) || "Wanderer",
-          cls: value.cls, lv: value.lv, ti: value.ti, spd: value.spd };
+          cls: value.cls, lv: value.lv, ti: value.ti, spd: value.spd, gd: [1, 2, 3].includes(value.gd) ? value.gd : 0 }; /* gd: cosmetic name colour, optional */
       }
       /* ---------- fair play: the master audits every slave and every slave audits the master ----------
          Each side keeps its own progress (gold, XP, upgrades, HP) and a LEDGER of why it changed. At random moments the
@@ -3303,12 +3395,12 @@
       const newAudit = (now) => ({ prev: null, n: 0, askedAt: 0, nextAt: now + 1500 + Math.random() * 3000, lastAt: now });
       /* Player details travel once per receiver. A newcomer gets the whole list ("r") once; everyone else gets only the
          newcomer's entry ("j"). Leaving is a slot number ("l"); a level or speed change is slot + level + speed ("u").
-         Entry: [slot, id, name, class, level, title, speed]. Slot 0 is the master. */
+         Entry: [slot, id, name, class, level, title, speed, gender colour (optional, 0-3)]. Slot 0 is the master. */
       let NET_HOST_INFO = "";
-      const netEntry = (v) => [v.netSlot, v.netClientId, v.name, v.cls, v.lv, Math.max(0, TITLES.indexOf(v.ti)), v.netSpd || 1];
+      const netEntry = (v) => [v.netSlot, v.netClientId, v.name, v.cls, v.lv, Math.max(0, TITLES.indexOf(v.ti)), v.netSpd || 1, v.gd || 0];
       function netHostEntry() {
         const host = netProfile();
-        return [0, "host-player", host.name, P.cls, host.lv, host.ti, host.spd];
+        return [0, "host-player", host.name, P.cls, host.lv, host.ti, host.spd, host.gd];
       }
       /* netRoster(to): the whole list, to one newcomer */
       function netRoster(to) {
@@ -3375,17 +3467,17 @@
         }
       }
       /* netGoodEntry(e) / netAddEntry(e): check one roster entry from the master, then show that player */
-      const netGoodEntry = (e) => Array.isArray(e) && e.length == 7 && Number.isInteger(e[0]) && e[0] >= 0 && e[0] < HUB_MAX &&
+      const netGoodEntry = (e) => Array.isArray(e) && (e.length == 7 || (e.length == 8 && [0, 1, 2, 3].includes(e[7]))) && Number.isInteger(e[0]) && e[0] >= 0 && e[0] < HUB_MAX &&
         typeof e[1] == "string" && e[1].length <= 56 && typeof e[2] == "string" && e[2].length <= 16 && CL[e[3]] &&
         Number.isInteger(e[4]) && e[4] >= 1 && e[4] <= 60 && Number.isInteger(e[5]) && e[5] >= 0 && e[5] < TITLES.length &&
         Number.isFinite(e[6]) && e[6] >= 1 && e[6] <= 1.3;
-      function netAddEntry([slot, pid, name, cls, lv, ti, spd]) {
+      function netAddEntry([slot, pid, name, cls, lv, ti, spd, gd]) {
         if (NET_SLOT_IDS.get(slot) != pid) { NET_SLOT_LAST.delete(slot); NET_SLOT_POS.delete(slot); } /* slot now holds someone else */
         NET_SLOT_IDS.set(slot, pid);
         NET_SLOT_INFO.set(slot, { cls, spd });
         if (pid == NET_LOCAL_ID) return;
-        const v = HUBV.find((other) => other.id == pid) || hubJoin(pid, { name: name.replace(/[^A-Za-z0-9 _-]/g, "") || "Wanderer", cls, lv, ti }, 0);
-        if (v) { v.netClientId = pid; v.lv = lv; v.ti = TITLES[ti]; v.netSpd = spd; }
+        const v = HUBV.find((other) => other.id == pid) || hubJoin(pid, { name: name.replace(/[^A-Za-z0-9 _-]/g, "") || "Wanderer", cls, lv, ti, gd }, 0);
+        if (v) { v.netClientId = pid; v.lv = lv; v.ti = TITLES[ti]; v.netSpd = spd; v.gd = gd || 0; }
       }
       function netReceive(id, message) {
         if (NET_ROLE == "host") {
@@ -7476,7 +7568,42 @@
          bjClockTick() updates only the number, once a second. Low spec: static glow; effects off: softer glow; reduced motion: number only. */
       function bjClock() {
         const t = bjSecLeft();
-        return `<span class="bjclock${t <= 10 ? " hot" : ""}${SET.low ? " lo" : ""}${SET.fx ? "" : " nofx"}" title="Assist time left"><i class="bjrays"></i><i class="coin bjspin"></i><b class="bjsec">${t}</b><small>s</small><i class="coin bjspin r"></i></span>`;
+        return `<span class="bjclock${t <= 10 ? " hot" : ""}${SET.low ? " lo" : ""}${SET.fx ? "" : " nofx"}" style="--bjrate:${bjTempo(t)}s" title="Assist time left"><i class="bjrays"></i><i class="coin bjspin"></i><b class="bjsec">${bjClockTxt(t)}</b><small>${t >= 60 ? "min" : "s"}</small><i class="coin bjspin r"></i></span>`;
+      }
+      /* bjClockTxt(t): "2:30" from a minute up, else whole seconds ("45") */
+      const bjClockTxt = (t) => (t >= 60 ? Math.floor(t / 60) + ":" + String(t % 60).padStart(2, "0") : String(t));
+      /* bjTempo(t): seconds per Assist light step for t seconds left: calm (0.5 s) above 20 s, then faster and faster down to 0.07 s */
+      const bjTempo = (t) => +Math.max(0.07, Math.min(0.5, 0.07 + (0.43 * Math.max(0, t)) / 20)).toFixed(3);
+      /* bjJackpot(n, table): the jackpot moment (Assist rent; natural blackjack or a 3+ win streak with table = true). A ding run that
+         speeds up into a chord (BJ_SFX.jackpot), and in step with it: the Assist marquee and a ring of bulbs around the table chase
+         faster each ding, the box and the hands bounce, sparks fly off the clock, and a shake lands on the chord.
+         Reduced motion: one ding and a static glow. Low spec: static bulbs, no bounce or sparks. Effects off: a shorter run.
+         Every step goes through BJ_VFX.later, so BJ_VFX.stop() (closing the window) cancels it. */
+      function bjJackpot(n = 9, table = false) {
+        const q = (s) => (document.querySelector ? document.querySelector(s) : null), box = q("#dp .bjassist.on"), clk = box && box.querySelector(".bjclock"), tb = table ? q("#dp .bjtable") : null;
+        const calm = BJ_VFX.reduced();
+        if (!SET.fx) n = Math.max(4, n - 4);
+        const end = typeof BJ_SFX == "undefined" ? 1 : calm ? (BJ_SFX.ding(4), 0) : BJ_SFX.jackpot(n);
+        const lo = SET.low || calm, mq = tb && tb.insertAdjacentHTML ? (tb.insertAdjacentHTML("beforeend", `<i class="bjmarq${lo ? " lo" : ""}"></i>`), tb.lastElementChild) : null;
+        if (box) box.classList.add("bjjack");
+        if (tb && !lo) tb.classList.add("bjjp");
+        const set = (r) => { for (const el of [box, clk, mq, tb]) if (el && el.style) el.style.setProperty("--bjrate", r + "s"); };
+        if (!calm) {
+          let d = 0, gap = 0.16;
+          for (let i = 0; i < n; i++) {
+            const r = Math.max(0.04, 0.22 * Math.pow(0.8, i));
+            BJ_VFX.later(() => { set(r); if (!SET.low && clk) BJ_VFX.fire(clk, Math.min(i, 4), 0); }, d);
+            d += gap;
+            gap = Math.max(0.045, gap * 0.8);
+          }
+          BJ_VFX.quake(tb || q("#dp .bjtable"), table ? 1.2 : 0.6, end);
+        }
+        BJ_VFX.later(() => {
+          if (box) box.classList.remove("bjjack");
+          if (tb) tb.classList.remove("bjjp");
+          if (mq && mq.remove) mq.remove();
+          set(bjTempo(bjSecLeft()));
+        }, end + 0.7);
       }
       let BJ_TICK = 0, BJ_TICKING = false, BJ_VIEW = ""; /* the 1 s Assist clock timer (stopped on close and when the Assist runs out); BJ_VIEW: "chart" | "table" */
       function bjClockStop() { if (BJ_TICK) clearTimeout(BJ_TICK); BJ_TICK = 0; BJ_TICKING = false; }
@@ -7487,13 +7614,20 @@
         const els = document.querySelectorAll ? document.querySelectorAll("#dp .bjclock") : [];
         if (!els.length || $("dlg").hidden) return bjClockStop();
         if (!bjChartOn()) { bjClockStop(); return BJ_VIEW == "chart" ? bjChartUI() : bjUI(); } /* the Assist ran out: redraw without it */
-        const t = bjSecLeft();
+        const t = bjSecLeft(), r = bjTempo(t), q = t <= 10 && !BJ_VFX.reduced() ? +(((10 - t) / 10) * 3 * (+SET.shake || 0)).toFixed(2) : 0;
         for (const el of els) {
           const b = el.querySelector(".bjsec");
-          if (b) b.textContent = t;
+          const u = el.querySelector("small");
+          if (u) u.textContent = t >= 60 ? "min" : "s";
+          if (b) { b.textContent = bjClockTxt(t); b.className = "bjsec " + (t % 2 ? "ba" : "bb"); } /* bounce on every second (two names restart it) */
           if (t <= 10) el.classList.add("hot");
+          el.classList.toggle("q", q > 0); /* under 10 s the number jolts, harder as time runs out */
+          el.style.setProperty("--bjq", q);
+          el.style.setProperty("--bjrate", r + "s");
         }
-        if (!SET.low) BJ_VFX.fire(els[0], t <= 10 ? 3 : 1, 0); /* a few gold sparks off the clock each second */
+        for (const bx of document.querySelectorAll("#dp .bjassist.on")) if (!bx.classList.contains("bjjack")) bx.style.setProperty("--bjrate", r + "s"); /* the marquee chases faster and faster */
+        if (!SET.low) BJ_VFX.fire(els[0], Math.round((20 - Math.min(20, t)) / 4) + 1, 0); /* sparks off the clock, more as time runs out */
+        if (t > 0 && t <= 10) { const k = t <= 3 ? 3 : t <= 5 ? 2 : 1; for (let i = 0; i < k; i++) bjSnd("ding", i / k, 10 - t + i); } /* ding, then ding-ding, then ding-ding-ding */
         BJ_TICK = setTimeout(bjClockTick, 1000 - (Date.now() % 1000) + 20);
       }
       /* bjAssistBox(): the Assist box inside the chart: the offer, or the time left with a button to add more.
@@ -7503,7 +7637,7 @@
           btn = `<button class="bjchb" ${V.gold < price ? "disabled" : ""} onclick="bjChartBuy()">${on ? "+" + BJ_CHART.sec + " s · " : ""}<i class="coin"></i>${price} <small class="bjnext">→ ${next} · ×${BJ_PRICE.mul}</small></button>`,
           cool = `<div class="bja-d bjcool">Price ×${BJ_PRICE.mul} per rent · cools down over time${price > BJ_CHART.cost ? ` (now ×${bjMul().toFixed(1)})` : ""}</div>`;
         return on
-          ? `<div class="bjassist on"><div class="bja-t">🔮 <b>Assist</b>${bjClock()}</div><div class="bja-d">Blackjack: +${BJ_CHART.bonus} s</div>${btn}${cool}</div>`
+          ? `<div class="bjassist on${SET.low ? " lo" : ""}" style="--bjrate:${bjTempo(bjSecLeft())}s"><i class="bjbulbs t"></i><i class="bjbulbs b"></i><div class="bja-t">🔮 <b>Assist</b>${bjClock()}</div><div class="bja-d">Blackjack: +${BJ_CHART.bonus} s</div>${btn}${cool}</div>`
           : `<div class="bjassist"><div class="bja-t">🔮 <b>Assist</b></div><div class="bja-d">Shows your best play · ${BJ_CHART.sec} s<br>Blackjack: +${BJ_CHART.bonus} s</div>${btn}${cool}</div>`;
       }
       /* bjChartBuy(): rent the Assist at the live price. It only ever spends gold. */
@@ -7518,8 +7652,8 @@
         save();
         toast(`🔮 Assist rented for ${BJ_CHART.sec} seconds`);
         bjSnd("chip");
-        bjSnd("streak", 0.1, 3);
         bjUI();
+        bjJackpot(7); /* rent = jackpot: ding run, marquee rush, box bounce, sparks, a shake */
       }
       /* bjMini(): the chart table for the current hand, shown beside the cards while playing */
       function bjMini() {
@@ -7680,6 +7814,7 @@
           }
           bjSnd("streak", T + 0.45, st);
         }
+        if (BJ.win > 0 && (nat || st >= 3)) BJ_VFX.later(() => bjJackpot(nat ? 10 : 6 + Math.min(st, 6), true), T + 0.7); /* jackpot: lights chase the table edge */
       }
       function bjUI() {
         if (BJ && BJ.end && BJ.wasHidden) { BJ.wasHidden = 0; BJ.reveal = 1; }
@@ -7711,8 +7846,9 @@
           <div class="bjtip"><div class="purse"><span class="coin"></span><b>${V.gold}</b></div>${bjChartOn()
             ? `🔮 Best play: <b class="${BJ_ACT[bjAdvice(bjCur().c, BJ.d[0], bjCanDouble(), bjCanSplit())][1]}">${BJ_ACT[bjAdvice(bjCur().c, BJ.d[0], bjCanDouble(), bjCanSplit())][0]}</b>${bjClock()}`
             : ""}<button class="bjchb ${BJ_SIDE ? "on" : ""}" aria-expanded="${BJ_SIDE}" title="${BJ_SIDE ? "Hide strategy chart" : "Show strategy chart"}" onclick="BJ_SIDE=!BJ_SIDE;bjUI()">📖 ${BJ_SIDE ? "Hide" : "Show"} chart</button></div>
-          <div class="row">${BJ.tutorial ? `<p class="sm">You hold 11: always double here!</p>` : `<button onclick="bjHit()">HIT</button><button class="bjst" onclick="bjStand()">STAND</button>`}${bjCanDouble() ? `<button class="bjdb" onclick="bjDouble()">DOUBLE</button>` : ""}${bjCanSplit() ? `<button class="bjsp" onclick="bjSplit()">SPLIT</button>` : ""}</div></div>${BJ_SIDE ? bjMini() : ""}</div>`;
+          ${BJ.tutorial ? `<p class="sm bjtut">🔮 Free Assist: you hold 11 against a 10. The glowing move is the best play!</p>` : ""}<div class="row">${((best) => `<button class="${best == "H" ? "bjbest" : ""}" onclick="bjHit()">HIT</button><button class="bjst${best == "S" ? " bjbest" : ""}" onclick="bjStand()">STAND</button>${bjCanDouble() ? `<button class="bjdb${best == "D" ? " bjbest" : ""}" onclick="bjDouble()">DOUBLE</button>` : ""}${bjCanSplit() ? `<button class="bjsp${best == "P" ? " bjbest" : ""}" onclick="bjSplit()">SPLIT</button>` : ""}`)(bjChartOn() ? bjAdvice(bjCur().c, BJ.d[0], bjCanDouble(), bjCanSplit()) : "")}</div></div>${BJ_SIDE ? bjMini() : ""}</div>`;
       }
+      const BJ_TUT_ASSIST = 150; /* seconds of free Assist on the very first hand (2:30) */
       function bjDeal(bet) {
         if (V.gold < bet) return;
         const tutorialHand = !V.bj1; /* your very first hand is dealt to win */
@@ -7724,7 +7860,11 @@
         BJ_VFX.cancel(); /* drop the last round's pending beats */
         BJ.fx = { k: "deal" };
         if (bjVal(p) == 21) return bjFinish(); /* natural blackjack */
+        /* first hand: a free Assist (no gold, the price is untouched) so the best play glows, with its countdown and jackpot entrance */
+        const gift = tutorialHand && !bjChartOn();
+        if (gift) { V.bjc = Date.now() + BJ_TUT_ASSIST * 1e3; BJ_SIDE = true; save(); toast("🔮 Free Assist for your first hand!"); }
         bjUI();
+        if (gift) BJ_VFX.later(() => bjJackpot(6), 0.5);
       }
       /* bjNext(): the current hand is done: move to the next one, or let the Barkeep play and settle */
       function bjNext() {
@@ -8445,7 +8585,7 @@
         const tg = (k, lab) => `<label class="row" style="justify-content:space-between"><span>${lab}</span><input type="checkbox" style="accent-color:#d9a94a" ${SET[k] ? "checked" : ""} onchange="SET.${k}=this.checked?1:0;saveSet()"></label>`;
         const binds = `<div style="display:grid;grid-template-columns:1fr 1fr;gap:4px 14px">` + Object.keys(BIND_N).map((k) => `<div style="display:flex;align-items:center;justify-content:space-between;gap:6px"><span class="sm">${BIND_N[k]}</span><span ${k == "s0" ? "title='Mouse button'" : `onclick="REBIND='${k}';settingsUI()"`} style="cursor:${k == "s0" ? "default" : "pointer"};min-width:54px;text-align:center;padding:3px 8px;border:1px solid ${REBIND == k ? "#ffe08a" : "var(--ln)"};border-bottom-width:2px;border-radius:6px;font:bold 12px Georgia;color:${REBIND == k ? "#ffe08a" : "#f3e6c8"};background:rgba(0,0,0,.25)">${REBIND == k ? "…" : keyLabel(SET.bind[k])}</span></div>`).join("") + `</div>`;
         $("dp").innerHTML = `<h2>⚙️ Settings</h2>
-          <div class="mast"><span class="sm">Sound &amp; screen</span></div>${sl("vol", "Volume", 1, 0.05)}${sl("shake", "Screen shake", 1.5, 0.1)}${tg("fx", "Full particle effects")}<label class="row" style="justify-content:space-between"><span>Low spec mode <span class="sm">(older PCs / phones)</span></span><input type="checkbox" style="accent-color:#d9a94a" ${SET.low ? "checked" : ""} onchange="SET.low=this.checked?1:0;saveSet();rs()"></label>${tg("dmg", "Damage numbers")}${tg("showFps", "Show FPS")}<div class="row" style="justify-content:space-between"><span>Frame rate</span><span style="display:flex;gap:4px">${[30, 60, 144, 0].map((f) => `<span onclick="SET.fps=${f};saveSet();settingsUI()" style="cursor:pointer;padding:3px 9px;border-radius:6px;border:1px solid ${(+SET.fps || 0) == f ? "#ffe08a" : "var(--ln)"};color:${(+SET.fps || 0) == f ? "#ffe08a" : "#f3e6c8"};background:rgba(0,0,0,.25);font:bold 12px Georgia">${f || "Max"}</span>`).join("")}</span></div><div class="row" style="justify-content:space-between"><span>Dash aim <span class="sm">(keyboard)</span></span><span style="display:flex;gap:4px">${[[0, "🖱 Cursor"], [1, "⌨ Movement"]].map(([v, lab]) => `<span onclick="SET.dashMove=${v};saveSet();settingsUI()" style="cursor:pointer;padding:3px 9px;border-radius:6px;border:1px solid ${(+SET.dashMove || 0) == v ? "#ffe08a" : "var(--ln)"};color:${(+SET.dashMove || 0) == v ? "#ffe08a" : "#f3e6c8"};background:rgba(0,0,0,.25);font:bold 12px Georgia">${lab}</span>`).join("")}</span></div>
+          <div class="row" style="justify-content:space-between;flex-wrap:wrap;gap:6px"><span>Name colour</span>${gdPills(V.gd, "gdSet")}</div><div class="mast"><span class="sm">Sound &amp; screen</span></div>${sl("vol", "Volume", 1, 0.05)}${sl("shake", "Screen shake", 1.5, 0.1)}${tg("fx", "Full particle effects")}<label class="row" style="justify-content:space-between"><span>Low spec mode <span class="sm">(older PCs / phones)</span></span><input type="checkbox" style="accent-color:#d9a94a" ${SET.low ? "checked" : ""} onchange="SET.low=this.checked?1:0;saveSet();rs()"></label>${tg("dmg", "Damage numbers")}${tg("showFps", "Show FPS")}<div class="row" style="justify-content:space-between"><span>Frame rate</span><span style="display:flex;gap:4px">${[30, 60, 144, 0].map((f) => `<span onclick="SET.fps=${f};saveSet();settingsUI()" style="cursor:pointer;padding:3px 9px;border-radius:6px;border:1px solid ${(+SET.fps || 0) == f ? "#ffe08a" : "var(--ln)"};color:${(+SET.fps || 0) == f ? "#ffe08a" : "#f3e6c8"};background:rgba(0,0,0,.25);font:bold 12px Georgia">${f || "Max"}</span>`).join("")}</span></div><div class="row" style="justify-content:space-between"><span>Dash aim <span class="sm">(keyboard)</span></span><span style="display:flex;gap:4px">${[[0, "🖱 Cursor"], [1, "⌨ Movement"]].map(([v, lab]) => `<span onclick="SET.dashMove=${v};saveSet();settingsUI()" style="cursor:pointer;padding:3px 9px;border-radius:6px;border:1px solid ${(+SET.dashMove || 0) == v ? "#ffe08a" : "var(--ln)"};color:${(+SET.dashMove || 0) == v ? "#ffe08a" : "#f3e6c8"};background:rgba(0,0,0,.25);font:bold 12px Georgia">${lab}</span>`).join("")}</span></div>
           <div class="mast"><span class="sm">Keys (keyboard)</span></div>${binds}<div class="row"><button class="alt" onclick="SET.bind={...BIND_DEF};saveSet();refreshHints();settingsUI()">Reset keys</button></div>
           <div class="mast"><span class="sm">More</span></div><div class="row" style="flex-wrap:wrap;gap:6px">
             <button onclick="closeDlg();$('dlg').hidden=false;titleUI()">🎖️ Titles</button>
@@ -9235,6 +9375,7 @@
         c.beginPath();
         c.ellipse(0, PR + 2, PR * 0.6, 2.6, 0, 0, 6.3);
         c.fill();
+        gdAura(p === P ? V.gd : p.gd, p);
         c.save();
         c.translate(0, bob);
         if (da) {
@@ -9333,7 +9474,7 @@
         if (p.name && p !== P && !p.ally) {
           /* hub visitor: just a name tag, no health bar (a party member gets a gold marker) */
           if (inParty(p)) { c.fillStyle = "#ffd84a"; c.beginPath(); c.moveTo(0, -PR - 30); c.lineTo(4, -PR - 25); c.lineTo(0, -PR - 20); c.lineTo(-4, -PR - 25); c.fill(); }
-          nameplate(p.lv, p.name, p.ti, 1 + (p.lvp || 0) * 1.2, p.bot ? "#63a8ff" : "#dfe8f0", p.badge);
+          nameplate(p.lv, p.name, p.ti, 1 + (p.lvp || 0) * 1.2, p.bot ? "#63a8ff" : "#dfe8f0", p.badge, p.gd);
           drawEmote(p, -PR - 22);
           if (!sayBubble(p, -PR - 6) && (p.talk || p.typing)) {
             /* chat bubble with three bouncing dots */
@@ -9364,9 +9505,9 @@
           c.fillRect(-14, -PR - 15, 28 * cl(p.ar / DASH.tank.ar, 0, 1), 2);
           c.shadowBlur = 0;
         }
-        if (p.ally) nameplate(p.lv, p.name, p.ti, 1, p.filler ? "#63a8ff" : "#dfe8f0", p.badge); /* raid ally */
+        if (p.ally) nameplate(p.lv, p.name, p.ti, 1, p.filler ? "#63a8ff" : "#dfe8f0", p.badge, p.gd); /* raid ally */
         if (p === P) {
-          nameplate(lvlInfo().L, pname(), myTitle(), 1 + p.lvp * 1.2, "#ffd84a", cosV().badge);
+          nameplate(lvlInfo().L, pname(), myTitle(), 1 + p.lvp * 1.2, "#ffd84a", cosV().badge, V.gd);
           sayBubble(p, -PR - 17);
           drawEmote(p, -PR - 32);
         }
@@ -9374,7 +9515,55 @@
       }
       /* nameplate(L, name, tl, pop, col): level badge on the left (grows with level, tier color, pop = level-up bounce),
          name below the body and the equipped title under it. Drawn in the player's local space. */
-      function nameplate(L, name, tl, pop, col, frame) {
+      /* gdAura(g, p): the soft gender aura at the feet: a breathing pool of light and a few motes drifting up and fading.
+         Motes are pure functions of time (no particles, no allocation). Low spec: the pool only; reduced motion: a still pool. */
+      let GD_POOL = null;
+      function gdAura(g, p) {
+        const G = GDS[g];
+        if (!G || p.hp <= 0 || !c.createRadialGradient) return;
+        const t = S.tm, still = BJ_VFX.reduced(), a0 = c.globalAlpha;
+        if (!GD_POOL || GD_POOL.c !== c) GD_POOL = { c, g: [] };
+        let rg = GD_POOL.g[g];
+        if (!rg) {
+          rg = GD_POOL.g[g] = c.createRadialGradient(0, 0, 0, 0, 0, PR + 12);
+          rg.addColorStop(0, G.glow + "88");
+          rg.addColorStop(0.55, G.glow + "33");
+          rg.addColorStop(1, G.glow + "00");
+        }
+        c.save();
+        c.globalCompositeOperation = "lighter";
+        c.translate(0, PR - 1);
+        c.scale(1, 0.4);
+        c.globalAlpha = a0 * (still ? 0.7 : 0.6 + 0.2 * Math.sin(t * 2.2 + g));
+        c.fillStyle = rg;
+        c.beginPath();
+        c.arc(0, 0, PR + 12, 0, 6.3);
+        c.fill();
+        c.restore();
+        if (still || SET.low) return;
+        c.save();
+        c.globalCompositeOperation = "lighter";
+        c.fillStyle = G.mote;
+        const n = SET.fx ? 6 : 3, off = (p.x || 0) * 0.013;
+        for (let i = 0; i < n; i++) {
+          const ph = (t * 0.32 + i / n + off) % 1, an = i * 2.4 + t * 0.7 + off;
+          c.globalAlpha = a0 * Math.sin(ph * Math.PI) * 0.75;
+          c.beginPath();
+          c.arc(Math.cos(an) * (PR + 3) * (1 - ph * 0.35), PR - ph * (PR * 2 + 16), i % 2 ? 1.3 : 2, 0, 6.3);
+          c.fill();
+        }
+        c.restore();
+      }
+      /* gdName(g): cached top-pale -> bottom-tint fill for a gendered name (local coordinates are fixed, so one gradient per colour) */
+      let GD_NAME = null;
+      function gdName(g) {
+        if (!GD_NAME || GD_NAME.c !== c) GD_NAME = { c, g: [] };
+        if (!c.createLinearGradient) return GDS[g].lo;
+        let gr = GD_NAME.g[g];
+        if (!gr) { gr = GD_NAME.g[g] = c.createLinearGradient(0, PR + 6, 0, PR + 18); gr.addColorStop(0, GDS[g].hi); gr.addColorStop(1, GDS[g].lo); }
+        return gr;
+      }
+      function nameplate(L, name, tl, pop, col, frame, gd) {
         const lc = lvlCol(L),
           fs = L >= 50 ? 11 : 10,
           t = S.tm;
@@ -9470,9 +9659,12 @@
         c.lineWidth = 3;
         c.strokeStyle = "#000";
         c.font = "bold 12px Georgia";
-        c.fillStyle = col;
+        const G = GDS[gd];
+        c.fillStyle = G ? gdName(gd) : col;
         c.strokeText(name, 0, PR + 17);
+        if (G && !SET.low && !BJ_VFX.reduced()) { c.shadowColor = G.glow; c.shadowBlur = 5 + 2.5 * Math.sin(S.tm * 3 + gd); } /* soft breathing glow */
         c.fillText(name, 0, PR + 17);
+        c.shadowBlur = 0;
         c.font = "italic 10px Georgia";
         c.fillStyle = tl.col;
         c.strokeText(tl.n, 0, PR + 29);
