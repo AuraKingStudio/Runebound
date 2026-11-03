@@ -21,7 +21,7 @@ ok(!T.V().name&&T.V().ds===undefined,'first start asks for a name before the dai
 T.saveName('<b>x</b>');ok(T.V().name=='bxb','name: strips markup characters');
 ok(ctx.document.getElementById('netBadge').textContent.includes('ONLINE · HUB UNAVAILABLE')&&ctx.document.getElementById('netBadge').textContent.includes('index.html'),'network: reports the hub service as unavailable instead of implying a connection');
 T.saveName('Tester1');ok(T.V().name=='Tester1','name: saved');
-ok(T.V().ds==1&&T.V().dl.length==10&&T.V().gold==125,'daily bonus: day 1 pays 25 on first start');
+ok(T.V().ds==1&&T.V().dl.length==10&&T.V().gold==225,'daily bonus: day 1 pays 25 on first start');
 const gd=T.V().gold;T.dailyCheck();ok(T.V().gold==gd,'daily bonus: only once per day');
 T.devAdd(1000);ok(T.V().gold==gd+1000,'gold +1000');
 T.devAdd(-T.V().gold);ok(T.V().gold==0,'gold -> 0');

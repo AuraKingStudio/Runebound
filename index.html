@@ -1946,7 +1946,7 @@
           large: 1,
         },
       ];
-      let V = { gold: 100, up: { dmg: 0, vit: 0, spd: 0, cdr: 0 }, q: 0, qs: 0, sk: { tank: [0, 0, 0], dps: [0, 0, 0], heal: [0, 0, 0] } };
+      let V = { gold: 200, up: { dmg: 0, vit: 0, spd: 0, cdr: 0 }, q: 0, qs: 0, sk: { tank: [0, 0, 0], dps: [0, 0, 0], heal: [0, 0, 0] } };
       try {
         const s = JSON.parse(localStorage.getItem(SAVE_KEY) || "null");
         if (s && typeof s === "object") {
@@ -2024,6 +2024,9 @@
       /* ---------- level / XP (prestige colors) ----------
          XP to go from level L to L+1 = 100 + 40*L. Sources: raid win 120 (+40 fast), raid loss 30, quest 100, daily 20. */
       const xpNeed = (L) => 100 + 40 * L;
+      /* fresh(): newcomer boost for the fast start. Raid gold, XP and Rune Dust x(1 + fresh()): x2 at level 1, fading
+         linearly to x1 at level FRESH_LV. Later levels keep the normal grind. */
+      const FRESH_LV = 10, fresh = () => Math.max(0, (FRESH_LV - lvlInfo().L) / (FRESH_LV - 1));
       function lvlInfo(xp = V.xp || 0) {
         let L = 1;
         while (xp >= xpNeed(L)) { xp -= xpNeed(L); L++; }
@@ -2135,7 +2138,7 @@
       function raidDrops(win) {
         const out = [], rw = (RAIDS[S.raid] || RAIDS.small).reward * trialRew(S.trial), add = (k, n) => { if (n > 0) { matAdd(k, n); out.push([k, n]); } };
         if (!win) { add("dust", 1); return out; }
-        add("dust", Math.round((2 + Math.floor(Math.random() * 2)) * rw)); /* 2-3 dust (large raid 3-5) */
+        add("dust", Math.round((2 + Math.floor(Math.random() * 2)) * rw * (1 + fresh()))); /* 2-3 dust (large raid 3-5), x2 for newcomers */
         for (const [k, a, b] of MAT_DROP[(RAIDS[S.raid] || RAIDS.small).boss] || []) add(k, b == null ? (Math.random() < Math.min(0.6, a * trialRew(S.trial)) ? 1 : 0) : Math.round((a + Math.floor(Math.random() * (b - a + 1))) * trialRew(S.trial)));
         return out;
       }
@@ -2699,7 +2702,7 @@
       function auditRules() {
         const bonus = (1 + GUILD_MAX * 0.03) * (1 + PASS.bonus);
         return {
-          raid: { g: Math.round(80 * 1.5 * 1.5 * bonus * trialRew(TRIAL.rewCap)), x: Math.round(160 * 1.5 * bonus * trialRew(TRIAL.rewCap)), gap: 15000 }, /* large raid pays 1.5x, Rune Trials up to +250% */
+          raid: { g: Math.round(80 * 1.5 * 1.5 * bonus * trialRew(TRIAL.rewCap) * 2), x: Math.round(160 * 1.5 * bonus * trialRew(TRIAL.rewCap) * 2), gap: 15000 }, /* x2: newcomer boost */ /* large raid pays 1.5x, Rune Trials up to +250% */
           daily: { g: Math.max(...DAILY), x: 0, gap: 72e6 },
           lore: { g: Math.max(150, ...Object.values(TALE_MS).map((m) => m[0])), x: 150, gap: 700 },
           bounty: { g: Math.max(...BOUNTIES.map((b) => b.g)), x: Math.max(...BOUNTIES.map((b) => b.x)), gap: 1000 },
@@ -3339,7 +3342,7 @@
         [/circle|heal/i, ["stand in the healer circle, +25% dmg", "healer circle on the most hurt guy"]],
         [/engine|dps|build/i, ["dps: engine stacks the longer u live, dont die", "dash then volley, overdrive at x4"]],
         [/gold|money|rich/i, ["raids pay best", "quests from the elder pay well", "barkeep blackjack if u feel lucky", "daily blessing from the maiden"]],
-        [/smith|gear|equip|craft|forge/i, ["smith unlocks at lvl 10", "smith forges gear from raid mats", "merchant stock rerolls every 2 raids", "temper ur gear at the smith, cheaper than a new one"]],
+        [/smith|gear|equip|craft|forge/i, ["smith unlocks at lvl 5", "smith forges gear from raid mats", "merchant stock rerolls every 2 raids", "temper ur gear at the smith, cheaper than a new one"]],
         [/level|xp/i, ["raids give the most xp", "levels give +1% raid gold each"]],
         [/blackjack|barkeep|bj/i, ["natural pays 3x", "the chart next to the table is free", "never hit on 17 lol"]],
         [/quest|elder/i, ["elder has the quests, the ! over his head", "do the elder quests first, free gold"]],
@@ -4715,11 +4718,11 @@
         S.res = 5;
         V.trial = V.trial || {};
         if ((S.trial || 0) >= (V.trial[S.raid] || 0) && (S.trial || 0) < TRIAL.max) { V.trial[S.raid] = (S.trial || 0) + 1; setTimeout(() => toast(`Rune Trial ${V.trial[S.raid]} unlocked for the ${RAIDS[S.raid].n}!`), 1800); }
-        const rw = (RAIDS[S.raid] || RAIDS.small).reward * trialRew(S.trial), g = Math.round((60 + (S.at < 150 ? 20 : 0)) * rw * (1 + gBonus()) * passMul() * (1 + Math.min(0.5, lvlInfo().L * 0.01))); /* +1% per level, up to +50% */ /* raid size, guild bonus, Rune Pass */
+        const rw = (RAIDS[S.raid] || RAIDS.small).reward * trialRew(S.trial), g = Math.round((60 + (S.at < 150 ? 20 : 0)) * rw * (1 + gBonus()) * passMul() * (1 + Math.min(0.5, lvlInfo().L * 0.01)) * (1 + fresh())); /* +1% per level, up to +50%; newcomer boost */ /* raid size, guild bonus, Rune Pass */
         bountyAdd("raid");
         goldAdd(g, "raid");
         coin = g;
-        gainXP(Math.round((S.at < 150 ? 160 : 120) * rw * (1 + gBonus()) * passMul()), "raid");
+        gainXP(Math.round((S.at < 150 ? 160 : 120) * rw * (1 + gBonus()) * passMul() * (1 + fresh())), "raid");
         burst(S.b.x, S.b.y, "#ffd84a", 40, 260);
         burst(S.b.x, S.b.y, "#a78bff", 30, 200);
         shake(0.6);
@@ -5322,9 +5325,9 @@
         S.end = "lose";
         S.why = why;
         S.res = 5;
-        gainXP(30, "raid");
+        gainXP(Math.round(30 * (1 + fresh())), "raid");
         V.rc = (V.rc || 0) + 1;
-        goldAdd(15, "raid"); /* a little gold even for a loss */
+        goldAdd(Math.round(15 * (1 + fresh())), "raid"); /* a little gold even for a loss */
         V.bl = null; /* blessings last one raid */
         V.loss = (V.loss || 0) + 1;
         DROPS = raidDrops(false);
@@ -5961,7 +5964,7 @@
       /* how each hidden NPC is found: class and maiden through the Archivist's tales, smith by reaching SMITH_LV,
          herald is a mystery for later (never unlocks yet) */
       const UNLOCK_AT = { class: 0, maiden: 100, smith: Infinity, herald: Infinity }; /* class: luck-based in loreUI, not here */
-      const SMITH_LV = 10;
+      const SMITH_LV = 5; /* crafting early: the Forge is the main gear path */
       const isUnl = (k) => !!(V.ul && V.ul[k]);
       /* unlockNpc(k): reveals NPC k with a burst. Out: text for the Archivist dialog. */
       function unlockNpc(k) {
@@ -6101,7 +6104,9 @@
         V.eq = V.eq || { bag: [], on: {} };
         if (V.eq.bag.length >= 40) return toast("Your bag is full (40). Salvage something first.");
         craftPay(c);
-        const it = { id: "c" + Date.now().toString(36).slice(-7) + ((Math.random() * 99) | 0), t, k, r };
+        let id;
+        do id = "c" + Date.now().toString(36).slice(-6) + ((Math.random() * 1296) | 0).toString(36); while (V.eq.bag.some((b) => b.id == id)); /* ids stay unique */
+        const it = { id, t, k, r };
         V.eq.bag.push(it);
         if (!V.eq.on[t]) V.eq.on[t] = it.id;
         save();

@@ -256,6 +256,8 @@ Built and tested (unit tests plus the `cheat`, `flood`, `econ`, `hphack`, `chat`
 - Rune Trials (TRIAL): per raid, Trial t = boss +20% HP / +12% dmg per level, rewards x(1 + 0.25 t) capped at t=10; win unlocks t+1 (V.trial[raid]); picker on the raid card (TRIAL_SEL); leader sends trial in the "pg" message; audit raid gold cap allows the Trial bonus.
 - Damage text: pop/arc/gradient/glow, own vs ally sizing, crit numbers; FT capped at 70. Healer Circle re-maps the last mouse screen point at cast.
 
+- Economy fast start: start gold 200; fresh() newcomer boost x2 raid gold/XP/dust at level 1 fading to x1 at FRESH_LV 10; Smith (Forge) at level 5. Sim: level 5 after 3 raids (was 6), level 10 after 13 (was 18); late game unchanged. Audit raid cap x2 for the boost.
+
 ## Not done / open
 
 - Host migration and reconnect: a hub dies when its host leaves.
