@@ -7688,7 +7688,8 @@
             g.fillStyle = "#c9a14a"; g.fillRect(-9, 6, 18, 3.4); g.fillStyle = "#5a3a1a"; g.fillRect(-1.8, 9.4, 3.6, 11); g.fillStyle = "#c9a14a"; g.beginPath(); g.arc(0, 22, 2.8, 0, 6.3); g.fill();
             g.restore();
             break; }
-          case "book": { /* an open tome standing upright, facing you: cover behind, two pages fanned from the spine */
+          case "book": { /* an open tome standing upright, facing you: cover behind, two pages fanned from the spine (70% size) */
+            g.translate(0, -36); g.scale(0.7, 0.7); g.translate(0, 36);
             glow("#5ad7ff", 12);
             g.fillStyle = "#1e4a66";
             g.beginPath(); g.moveTo(0, -60); g.lineTo(-31, -54); g.lineTo(-31, -12); g.lineTo(0, -16); g.lineTo(31, -12); g.lineTo(31, -54); g.closePath(); g.fill();
