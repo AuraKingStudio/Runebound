@@ -59,6 +59,7 @@ function createBank(options = {}) {
       a = accts[id] = { gold: int(s.gold, 0, 1e9) ? Math.min(s.gold, SEED_GOLD) : 0, xp: int(s.xp, 0, 1e9) ? Math.min(s.xp, SEED_XP) : 0, last: {}, bet: 0, at: 0 };
     }
     if (t - a.at < SYNC_GAP_MS) return [429, { error: "Too many syncs.", gold: a.gold, xp: a.xp }];
+    const prevAt = a.at || t; /* the client may have rented any time since the last sync, when the price was higher */
     a.at = t;
     let dropped = 0;
     for (const e of body.led) {
@@ -74,8 +75,8 @@ function createBank(options = {}) {
         if (g < 0) { if (a.gold + g < 0) { dropped++; continue; } a.gold += g; a.bet += -g; }
         else if (g > 0) { if (g > a.bet * 3) { dropped++; a.bet = 0; continue; } a.gold += g; a.bet = 0; }
       } else if (kind == "bjchart") {
-        const price = assistPrice(a, t);
-        if (x || Math.abs(-g - price) > 1 || a.gold + g < 0) { dropped++; continue; }
+        const lo = assistPrice(a, t), hi = assistPrice(a, prevAt); /* price only decays: anything from now's price up to the price at the last sync is honest */
+        if (x || -g < lo - 1 || -g > hi + 1 || a.gold + g < 0) { dropped++; continue; }
         a.gold += g;
         a.bjm = Math.min(ASSIST.max, assistMul(a, t) * ASSIST.mul); a.bjmAt = t;
       } else if (SPENDS.includes(kind)) {

@@ -768,6 +768,11 @@ async function bankTests(){
  for(const bad of [-10,-200,30,0])ok(rent(bad).dropped==1&&rent(0).gold==g0,'bank assist: rent of '+bad+' is refused, balance unchanged');
  ok(rent(-75).dropped==0,'bank assist: the next rent costs x1.5 (75)');
  t+=10*60000;ok(rent(-Math.round(50*(1+(2.25-1)*0.5))).dropped==0,'bank assist: the extra halves after 10 minutes');
+ {const b2=createBank({file:file+'2',now:()=>t});let n=0;
+  for(const [wait,pay,good,why] of [[10000,-75,1,'paid at the earlier price, synced 10 s later'],[300000,-75,1,'paid at the earlier price, synced 5 min later'],[300000,-66,0,'paid below the current price'],[300000,-77,0,'paid above the price at the last sync']]){
+   const k=(++n).toString(16).padStart(2,'0').repeat(16);t+=1500;b2.sync({tok:k,led:[['bjchart',-50,0]],seed:{gold:500}}); /* one rent: now x1.5 = 75 */
+   t+=wait;const r=b2.sync({tok:k,led:[['bjchart',pay,0]]})[1];ok((r.dropped==0)==!!good,'bank assist: '+why+(good?' is accepted':' is refused'));}
+  try{require('fs').unlinkSync(file+'2')}catch{}}
  ok(b.assistPrice({bjm:999,bjmAt:t},t)==1000&&b.assistPrice({bjm:-5},t)==50,'bank assist: the multiplier is capped at x20 and never below x1');
  try{require('fs').unlinkSync(file)}catch{}
 }
