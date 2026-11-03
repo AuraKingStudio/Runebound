@@ -9523,7 +9523,7 @@
       function gdAura(g, p) {
         const G = GDS[g];
         if (!G || p.hp <= 0 || SET.low || !c.createRadialGradient) return; /* Low spec: no aura (additive blending is slow on weak GPUs); the tinted name stays */
-        const t = S.tm, still = BJ_VFX.reduced(), a0 = c.globalAlpha;
+        const t = S.tm, still = BJ_VFX.reduced(), a0 = c.globalAlpha, me = p === P; /* me: your own player gets a bigger, brighter pulse and a thin ring so you find yourself in a full hub */
         if (!GD_POOL || GD_POOL.c !== c) GD_POOL = { c, g: [] };
         let rg = GD_POOL.g[g];
         if (!rg) {
@@ -9535,12 +9535,21 @@
         c.save();
         c.globalCompositeOperation = "lighter";
         c.translate(0, PR - 1);
-        c.scale(1, 0.4);
-        c.globalAlpha = a0 * (still ? 0.7 : 0.6 + 0.2 * Math.sin(t * 2.2 + g));
+        const pu = still ? 0.5 : 0.5 + 0.5 * Math.sin(t * 2.2 + g), k = me ? 1.2 + 0.08 * pu : 1;
+        c.scale(k, 0.4 * k);
+        c.globalAlpha = a0 * (me ? 0.8 + 0.2 * pu : still ? 0.7 : 0.4 + 0.4 * pu);
         c.fillStyle = rg;
         c.beginPath();
         c.arc(0, 0, PR + 12, 0, 6.3);
         c.fill();
+        if (me) {
+          c.globalAlpha = a0 * (0.45 + 0.4 * pu);
+          c.strokeStyle = G.glow;
+          c.lineWidth = 2.2;
+          c.beginPath();
+          c.arc(0, 0, PR + 9 + 3 * pu, 0, 6.3);
+          c.stroke();
+        }
         c.restore();
         if (still || SET.low) return;
         c.save();
