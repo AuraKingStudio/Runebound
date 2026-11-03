@@ -11793,6 +11793,29 @@
           if (kind == "thorn") c.fillStyle = "#e8ffb0";
           c.beginPath(); c.arc(x, oy, kind == "void" ? 6 : 3.5, 0, 6.3); c.fill();
         }
+        /* ambient life: leaves and petals falling through the sunlight (thorn) / big slow void wisps drifting (seer) */
+        if (!SET.low) {
+          if (kind == "thorn") {
+            for (let i = 0; i < 16; i++) {
+              const sp = 22 + (i % 4) * 6, y = ((i * 97 + t * sp) % (H + 40)) - 20, x = ((i * 233 + t * 14 + Math.sin(t * 0.8 + i) * 30) % (W + 40) + W + 40) % (W + 40) - 20, rot = t * (1.2 + (i % 3) * 0.5) + i;
+              c.save(); c.translate(x, y); c.rotate(rot); c.scale(1, 0.4 + 0.6 * Math.abs(Math.sin(t * 2 + i)));
+              c.fillStyle = i % 5 == 0 ? "#f6b8cf" : i % 3 ? "#8fc45a" : "#d8a84a";
+              c.globalAlpha = 0.85;
+              c.beginPath(); c.ellipse(0, 0, i % 5 == 0 ? 3 : 5, i % 5 == 0 ? 2.4 : 2.2, 0, 0, 6.3); c.fill();
+              c.restore();
+            }
+            c.globalAlpha = 1;
+          } else {
+            c.globalCompositeOperation = "lighter";
+            for (let i = 0; i < 7; i++) {
+              const x = ((i * 271 + t * (8 + i * 2)) % (W + 300)) - 150, y = (i * 151) % H + Math.sin(t * 0.3 + i) * 40, rr = 70 + (i % 3) * 30;
+              c.globalAlpha = 0.35 + 0.15 * Math.sin(t * 0.7 + i * 2);
+              c.drawImage(softBlob(i % 2 ? "170,120,255" : "110,150,255", 0.3), x - rr, y - rr * 0.6, rr * 2, rr * 1.2);
+            }
+            c.globalAlpha = 1;
+            c.globalCompositeOperation = "source-over";
+          }
+        }
         /* motes: void sparks rising (seer) / fireflies drifting (thorn) */
         c.globalCompositeOperation = "lighter";
         for (let i = 0; i < (SET.low ? 0 : 40); i++) {
