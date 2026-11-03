@@ -268,6 +268,9 @@ Built and tested (unit tests plus the `cheat`, `flood`, `econ`, `hphack`, `chat`
 - NPC unlocks: Seraph = quest "First Raid" turn-in, Smith = "Raid Veteran" (QUESTS[].unlock, old saves past the quest get them silently in start()); Archivist reveals Class Master + Maiden.
 - Statue skirt redrawn (A-line, folds and front opening grow from the waist: no mid-hip cut).
 
+- NPC emblems (n.fx, npcFlair): baked per NPC, tinted to the NPC colour with the "color" blend (masked back to the shape), faded outward, dark halo; drawn behind the disc with a slow float. coins (Merchant), book (Archivist), elder staff, banners (Class Master), roses (Maiden), arms (Smith: shield + diagonal sword), cards (Barkeep: outline A/K). Seraph keeps live wings.
+- Statue: round shoulders, moss/ivy removed, carved glowing rune panel on the plinth.
+
 ## Not done / open
 
 - Host migration and reconnect: a hub dies when its host leaves.
