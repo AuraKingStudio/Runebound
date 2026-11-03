@@ -351,6 +351,9 @@
       }
       #chat.op #chlog div.old { opacity: 1; }
       #chrow { display: flex; gap: 6px; margin-top: 6px; align-items: center; }
+      #chping { pointer-events: auto; height: 30px; min-width: 32px; padding: 0 7px; border: 1px solid #d9a40066; border-radius: 8px; background: #1b2a33b3; }
+      #chat.raid #emo { display: none; }
+      #chat.raid #chping { border-color: #ffd84a99; color: #ffe08a; }
       #emo { display: flex; gap: 3px; pointer-events: auto; }
       #emo button {
         width: 28px;
@@ -1115,6 +1118,7 @@
       body.ph #chat, body.ph.tch #chat { left: 8px; bottom: 8px; width: min(260px, 34vw); font-size: 11px; }
       body.ph #chlog { max-height: 54px; }
       body.ph #chin { font-size: 12px; padding: 4px 8px; }
+      body.ph #chping { min-width: 30px; height: 28px; padding: 0 5px; font-size: 12px; }
       body.ph #emo button { width: 26px; height: 26px; font-size: 13px; padding: 0; }
       /* menus: nearly full screen, tighter spacing, smaller type */
       body.ph .pn, body.ph .pn.shop { width: min(620px, 96vw); max-height: 92vh; padding: 10px 14px 10px; font-size: 13px; background-size: 20px 20px, 20px 20px, 20px 20px, 20px 20px, auto, auto, auto; }
@@ -1146,17 +1150,27 @@
         text-shadow: 0 2px 0 #000, 0 0 3px #000, 0 0 12px #f0c35a88; }
       #gp .coin { width: 24px; height: 24px; }
       #topc { position: absolute; top: 1.5%; left: 50%; transform: translateX(-50%); display: flex; gap: 12px; pointer-events: none; }
-      #netBadge { position: absolute; top: 1.5%; right: 1.4%; max-width: 220px; padding: 5px 8px; border: 1px solid #c9a14a88; border-radius: 7px;
+      #netBadge { position: absolute; top: 64px; right: 1.4%; max-width: 220px; padding: 5px 8px; border: 1px solid #c9a14a88; border-radius: 7px;
         background: #100d0acc; color: #f3e6c8; font: 10px/1.35 Georgia, serif; text-align: right; white-space: pre-line; pointer-events: none; }
       #netBadge:empty { display: none; }
+      .class-card { align-items: flex-start; gap: 12px; padding: 12px; }
+      .class-info { display: grid; flex: 1; min-width: 0; gap: 4px; }
+      .class-info .class-stats { color: #e7d8b8; font-size: 12px; }
+      .class-info .class-role, .class-info .class-how { font-size: 13px; line-height: 1.4; }
+      .class-info .class-role b, .class-info .class-how b { color: #f0c35a; }
+      .class-card button { align-self: center; }
       #btns #topc button { position: static; pointer-events: auto; height: 50px; padding: 0 18px 0 28px; font-size: 15px; }
       #btns #topc .hb::before { left: 11px; width: 8px; height: 8px; }
       #mlbar { position: absolute; left: 1.4%; top: 50%; transform: translateY(-50%); display: flex; flex-direction: column; gap: 10px; pointer-events: none; }
       #btns #mlbar button { position: static; pointer-events: auto; height: 32px; padding: 0 10px; width: auto; font-size: 12px; }
       body.ph #topc { left: auto; right: 8px; transform: none; gap: 8px; top: 8px; }
+      body.ph.tut-on #topc { right: 8px; }
       body.ph #netBadge { top: 64px; right: 8px; max-width: 154px; font-size: 9px; }
+      @media (max-height: 180px) { #netBadge { top: auto; bottom: 4px; max-width: 32vw; } }
       /* in a raid only Settings is left up there: a small gear in the top-right corner, clear of the boss bar and raid title */
       body:not(.hub) #topc { left: auto; right: 10px; transform: none; top: 10px; }
+      /* During the tutorial Settings is the only visible top-bar control; keep it clear of the centered tutorial text. */
+      body.tut-on #topc { left: auto; right: 10px; transform: none; }
       body:not(.hub) #btns #topc button { width: 40px !important; height: 40px !important; padding: 0 !important; font-size: 0 !important; }
       body:not(.hub) #btns #topc button::before { display: none; }
       body:not(.hub) #btns #topc [data-ic]::after { content: attr(data-ic); display: block; font-size: 18px; line-height: 36px; }
@@ -1371,6 +1385,111 @@
       #btns #bi small { font-size: 0.7em; opacity: 0.8; margin-left: 4px; }
       body.ph #btns #bil { left: calc(50% - 100px - 48px); bottom: 10px; width: 40px; height: 40px; }
       body.ph #btns #bir { left: calc(50% + 100px + 8px); bottom: 10px; width: 40px; height: 40px; }
+      /* blackjack: open the strategy panel beside the table by default, including compact screens */
+      .pn.bjwide { width: min(940px, 96vw); }
+      .bjmini { overflow-x: auto; }
+      .bjmini table.bjchart { min-width: 290px; }
+      .bjassist {
+        position: relative; isolation: isolate; overflow: hidden;
+        background: linear-gradient(115deg, #33234f 0%, #58458b 45%, #2c2046 100%);
+        border-color: #c1a2ff99;
+        box-shadow: inset 0 1px 0 #ffffff35, 0 0 12px #9b75ff33;
+        animation: bjAssistGlow 2.4s ease-in-out infinite;
+      }
+      .bjassist.on {
+        background: linear-gradient(115deg, #123f3c, #236c5d 48%, #153e3a);
+        border-color: #7dffcf;
+        box-shadow: inset 0 1px 0 #ffffff35, 0 0 16px #57e0c866;
+      }
+      .bjassist::after {
+        content: ""; position: absolute; z-index: -1; top: -50%; bottom: -50%; left: -45%; width: 32%;
+        background: linear-gradient(100deg, transparent, #fff7, transparent); transform: rotate(18deg);
+        animation: bjAssistSweep 3.4s ease-in-out infinite;
+      }
+      .bjassist .bja-t b { color: #fff0ae; text-shadow: 0 0 10px #d8b7ff; }
+      .bjassist.on .bja-t b { color: #c6ffe8; text-shadow: 0 0 10px #57e0c8; }
+      .pn .bjassist .bjchb {
+        position: relative; overflow: hidden; border: 1px solid #fff0a8 !important;
+        background: linear-gradient(180deg, #ffe98b, #d99a22 58%, #8d5b13) !important;
+        color: #261805 !important; text-shadow: 0 1px #fff8;
+        box-shadow: inset 0 1px 0 #fff9, 0 0 12px #ffd84a99, 0 3px 0 #51320b !important;
+        animation: bjAssistButton 1.8s ease-in-out infinite;
+      }
+      .pn .bjassist .bjchb::after {
+        content: ""; position: absolute; inset: 0 auto 0 -70%; width: 42%;
+        background: linear-gradient(100deg, transparent, #fff9, transparent); transform: skewX(-20deg);
+        animation: bjAssistSweep 2.5s ease-in-out infinite;
+      }
+      .pn .bjassist .bjchb:disabled { animation: none; filter: grayscale(.8); }
+      .pn .bjassist .bjchb:hover:not(:disabled) { filter: brightness(1.2); transform: translateY(-1px) scale(1.03); }
+      @keyframes bjAssistGlow { 50% { filter: brightness(1.12); box-shadow: inset 0 1px 0 #ffffff35, 0 0 19px #b58aff77; } }
+      @keyframes bjAssistButton { 50% { filter: brightness(1.13); box-shadow: inset 0 1px 0 #fff9, 0 0 19px #ffd84acc, 0 3px 0 #51320b !important; } }
+      @keyframes bjAssistSweep { 0%, 15% { left: -50%; } 75%, 100% { left: 130%; } }
+      .pn .bjchart td { cursor: help; transition: transform .16s, filter .16s, box-shadow .16s; }
+      .pn .bjchart td:hover { position: relative; z-index: 1; transform: scale(1.18); filter: brightness(1.25); box-shadow: 0 0 10px #ffe68099; }
+      @media (max-width: 760px) {
+        .bjwrap { grid-template-columns: minmax(0, 1fr); }
+        .bjmini { display: block; }
+        .pn.bjwide { width: 96vw; }
+        body.ph .bjwrap { grid-template-columns: minmax(0, 1fr); }
+      }
+      /* raid selection: illustrated arena stage and living boss portraits on every card */
+      .pn.raidpn { width: min(1120px, 96vw); max-height: 94vh; }
+      .pn.raidpn .raids { grid-template-columns: repeat(3, minmax(0, 1fr)); align-items: stretch; }
+      .pn.raidpn .rcard:not(.locked) { min-width: 0; transition: transform .25s, box-shadow .25s, border-color .25s; }
+      .pn.raidpn .rcard:not(.locked):hover,
+      .pn.raidpn .rcard:not(.locked):focus-within { transform: translateY(-4px); border-color: var(--b0) !important; }
+      .pn.raidpn .rban {
+        height: 200px; isolation: isolate;
+        background:
+          radial-gradient(ellipse at 50% 85%, color-mix(in srgb, var(--b0) 62%, transparent), transparent 48%),
+          linear-gradient(180deg, color-mix(in srgb, var(--b1) 72%, #100b10), #0c0a10 78%, #050508);
+      }
+      .pn.raidpn .rban::before {
+        content: ""; position: absolute; z-index: -1; inset: -35%;
+        background:
+          repeating-radial-gradient(ellipse at 50% 88%, transparent 0 20px, color-mix(in srgb, var(--b0) 35%, transparent) 21px 22px, transparent 23px 42px),
+          linear-gradient(155deg, transparent 35%, color-mix(in srgb, var(--b0) 25%, transparent) 50%, transparent 66%);
+        animation: raidArenaDrift 24s linear infinite;
+      }
+      .pn.raidpn .rban::after {
+        content: ""; position: absolute; z-index: 0; inset: 0; pointer-events: none;
+        background: linear-gradient(110deg, transparent 34%, #fff2 48%, transparent 62%);
+        transform: translateX(-100%); animation: raidArenaShine 5.5s ease-in-out infinite;
+      }
+      .pn.raidpn .rban img {
+        position: relative; z-index: 1; width: min(230px, 88%); height: 210px; object-fit: contain; margin: 0;
+        filter: drop-shadow(0 9px 14px #000d) drop-shadow(0 0 13px color-mix(in srgb, var(--b0) 70%, transparent));
+        transform-origin: 50% 78%; animation: raidBossIdle 3.1s ease-in-out infinite;
+      }
+      .pn.raidpn .rcard:nth-child(2) .rban img { animation-delay: -.8s; }
+      .pn.raidpn .rcard:nth-child(3) .rban img { animation-delay: -1.6s; }
+      .pn.raidpn .rcard:not(.locked):hover .rban img,
+      .pn.raidpn .rcard:not(.locked):focus-within .rban img {
+        animation-duration: 1.6s; filter: drop-shadow(0 9px 14px #000d) drop-shadow(0 0 22px var(--b0));
+      }
+      .pn.raidpn .rban .rsize { z-index: 2; padding: 4px 10px; box-shadow: 0 0 10px #0008; }
+      .pn.raidpn .rcard.locked .rban img { filter: grayscale(.85) brightness(.6) drop-shadow(0 9px 14px #000d); }
+      .pn.raidpn .rcard.locked .rban .rlock { position: absolute; z-index: 2; right: 12px; bottom: 10px; color: #eee; text-shadow: 0 2px 6px #000; }
+      .pn.raidpn .rcard .claim { align-self: stretch; }
+      @keyframes raidArenaDrift { to { transform: rotate(360deg); } }
+      @keyframes raidArenaShine { 0%, 30% { transform: translateX(-100%); } 70%, 100% { transform: translateX(100%); } }
+      @keyframes raidBossIdle { 0%, 100% { transform: translateY(3px) scale(.98); } 50% { transform: translateY(-7px) scale(1.025); } }
+      @media (max-width: 900px) {
+        .pn.raidpn { width: min(760px, 96vw); }
+        .pn.raidpn .raids { grid-template-columns: repeat(2, minmax(0, 1fr)); }
+        .pn.raidpn .rcard:last-child:nth-child(odd) { grid-column: 1 / -1; }
+      }
+      @media (max-width: 600px) {
+        .pn.raidpn { width: 96vw; max-height: 94vh; padding: 14px 14px 12px; }
+        .pn.raidpn .raids { grid-template-columns: minmax(0, 1fr); }
+        .pn.raidpn .rcard:last-child:nth-child(odd) { grid-column: auto; }
+        .pn.raidpn .rban { height: 170px; }
+      }
+      @media (prefers-reduced-motion: reduce) {
+        .bjassist, .bjassist::after, .bjassist .bjchb, .bjassist .bjchb::after,
+        .pn.raidpn .rban::before, .pn.raidpn .rban::after, .pn.raidpn .rban img { animation: none !important; }
+      }
     </style>
   </head>
   <body>
@@ -1381,7 +1500,7 @@
     <div id="rot"><div><b>📱</b>Turn your phone sideways to play</div></div>
     <div id="jz"></div>
     <div id="jb"><div id="jk"></div></div>
-    <div id="chat" hidden><div id="chlog"></div><div id="chrow"><input id="chin" maxlength="80" autocomplete="off" placeholder="Press Enter to chat" /><div id="emo"></div></div></div>
+    <div id="chat" hidden><div id="chlog"></div><div id="chrow"><input id="chin" maxlength="80" autocomplete="off" placeholder="Press Enter to chat" /><div id="emo"></div><button id="chping" type="button" title="Ping the boss for your party" aria-label="Ping boss" onclick="pingBoss()" hidden>⚑</button></div></div>
     <div id="btns">
       <button id="bd" class="sk"></button><button id="bu" class="sk"></button><button id="b0"></button><button id="b1"></button><button id="b2"></button
       ><button id="bi" hidden>Enter arena</button><button id="bil" class="bic" hidden onclick="invCycle(-1)">◀</button><button id="bir" class="bic" hidden onclick="invCycle(1)">▶</button><div id="tlbar"><span id="gp"><i class="coin"></i><b id="gn">0</b></span></div><div id="mlbar"><button id="bt" data-ic="🎖️">🎖️ Titles</button><button id="bfb" data-ic="💬" onclick="fbOpen()" title="Tell us what you think, or report a bug">💬 Feedback</button><button id="blk" data-ic="🔗" class="hb" title="Copy the lobby link: friends who open it join you" hidden>🔗 Copy ID</button></div><div id="topc"><button id="bq" data-ic="📜" class="hb">📜 Quests</button><button id="bg" class="hb">🛡 Guild</button><button id="bs" data-ic="✨" class="hb">✨ Shop</button><button id="bp" data-ic="👥" class="hb">👥 Party</button><button id="bcls" data-ic="⚔️" class="hb" onclick="classOpen()">⚔️ Class</button><button id="binv" data-ic="🎒" class="hb" onclick="invOpen()">🎒 Inventory</button><button id="bset" data-ic="⚙️" class="hb" onclick="setOpen()" title="Settings">⚙️ Settings</button></div><div id="netBadge" role="status" aria-live="polite"></div><div id="ptl" hidden></div>
@@ -3125,7 +3244,7 @@
           } else if (NET_RELAY_T.includes(message.type) && (typeof message.to == "string" || (Array.isArray(message.to) && message.to.length <= 11))) {
             /* party and raid traffic between players: the master stamps the sender, checks size and rate, then forwards it
                (bundled per receiver, see netRelay) or handles it when it is the receiver */
-            const v = HUBV.find((o) => o.id == id && !o.bot), raid = ["rm", "ra", "rs"].includes(message.type);
+            const v = HUBV.find((o) => o.id == id && !o.bot), raid = ["rm", "ra", "rs", "rc", "rp"].includes(message.type);
             if (!v || JSON.stringify(message).length > (message.type == "rs" ? 3500 : 1500)) return;
             const now = performance.now(), k = raid ? "netRaid" : "netParty";
             if (now - (v[k + "At"] || 0) > 1000) { v[k + "At"] = now; v[k + "N"] = 0; } /* a fixed 1 s window per sender */
@@ -3465,6 +3584,12 @@
         sp.textContent = "✦ " + t;
         chatLine([sp]);
       }
+      function raidChatLine(name, cls, text) {
+        const b = document.createElement("b");
+        b.style.color = SKC[CL[cls] ? cls : "dps"];
+        b.textContent = String(name).replace(/[^A-Za-z0-9 _-]/g, "").slice(0, 16) + ": ";
+        chatLine([b, document.createTextNode(String(text).replace(/[<>]/g, "").slice(0, 80))]);
+      }
       /* say(p, t): speech bubble over p (and a chat line) */
       function say(p, t) {
         p.say = { t, at: S.tm };
@@ -3481,7 +3606,8 @@
         t = t.trim().slice(0, 80);
         if (!t || !P) return;
         const cmd = /^\/(\w+)$/.exec(t);
-        if (cmd && EMOTES[cmd[1].toLowerCase()]) return myEmote(EMOTES[cmd[1].toLowerCase()]);
+        if (cmd && EMOTES[cmd[1].toLowerCase()] && S.sc == "hub") return myEmote(EMOTES[cmd[1].toLowerCase()]);
+        if (S.sc == "arena") return raidChatSend(t);
         say(P, t);
         if (NET?.peerIds().length && S.sc == "hub") {
           if (NET_ROLE == "guest") { const shown = P.say; netQuery({ type: "chat", text: t }, () => { if (P.say === shown) P.say = null; }); }
@@ -4613,7 +4739,7 @@
       }
       /* netRelay(peer, message): the master queues forwarded messages per receiver and sends them as one "rb" bundle every
          50 ms, so a player getting moves from 5 raid members still receives only ~20 messages a second */
-      const NET_RELAY_T = ["pi", "pa", "pp", "pl", "pg", "rm", "ra", "rs"], NET_RELAY_Q = new Map();
+      const NET_RELAY_T = ["pi", "pa", "pp", "pl", "pg", "rm", "ra", "rs", "rc", "rp"], NET_RELAY_Q = new Map();
       function netRelay(peer, message) {
         const size = JSON.stringify(message).length;
         if (NET_RELAY_Q.has(peer) && JSON.stringify(NET_RELAY_Q.get(peer)).length + size > 3500) netRelayFlush(peer); /* stay under the 4 KB message cap */
@@ -4651,7 +4777,23 @@
           if (!message.m.includes(mine)) { if (PARTY.lead == from) { PARTY = { lead: "me", m: [] }; chatSys("You are no longer in a party", "bye"); } return; }
           PARTY = { lead: from, m: message.m.filter((k) => k != mine && k != from) };
         } else if (message.type == "pl" && isLeader() && PARTY.m.includes(from)) partyRemove(from);
-        else if (["rm", "ra", "rs"].includes(message.type)) raidNet(from, message);
+        else if (message.type == "rc" || message.type == "rp") {
+          const a = S.sc == "arena" && S.net?.role == "lead" ? S.ps.find((p) => p.remote == from) : null;
+          if (!a) return;
+          const now = performance.now();
+          if (message.type == "rc") {
+            const text = typeof message.text == "string" ? message.text.replace(/[<>]/g, "").trim().slice(0, 80) : "";
+            if (!text || typeof message.text != "string" || message.text.length > 80 || now - (a.raidChatAt ?? -1e9) < 1000) return;
+            a.raidChatAt = now;
+            raidChatLine(a.name, a.cls, text);
+            raidEvent(["chat", from, a.name, a.cls, text]);
+          } else {
+            if (now - (a.raidPingAt ?? -1e9) < 1500) return;
+            a.raidPingAt = now;
+            raidMarkBoss(a.name, a.cls, from);
+            raidEvent(["ping", from, String(a.name).slice(0, 16), a.cls]);
+          }
+        } else if (["rm", "ra", "rs"].includes(message.type)) raidNet(from, message);
         else if (message.type == "pg" && PARTY.lead == from && RAIDS[message.raid] && Array.isArray(message.team) && message.team.length <= PARTY_MAX * 2) {
           /* the leader started a raid: everyone in the party goes; the leader's screen runs the fight, ours mirrors it */
           const mine = netMyId(), team = message.team.filter((m) => m && CL[m.cls] && typeof m.name == "string").slice(0, RAIDS[message.raid].size)
@@ -4730,15 +4872,16 @@
           const R = RAIDS[k], D = BOSSES[R.boss], [stars, blurb] = RAID_DIFF[k] || [1, ""];
           const diff = `<span class="rdiff" title="Difficulty">${"◆".repeat(stars)}<span style="opacity:.25">${"◆".repeat(3 - stars)}</span> <span class="sm">${blurb}</span></span>`;
           const roles = `<div class="rroles">${["tank", "heal", "dps"].map((c2) => roleChip(c2, R.comp[c2])).join("")}</div>`;
+          const pic = bossPortrait(R.boss);
           if (R.locked)
-            return `<div class="rcard locked" style="--b0:#777"><div class="rban" style="--b0:#2a2a33;--b1:#111"></div><div class="rbody"><b>${R.n}</b><span class="boss">Sealed · coming later</span>${diff}${roles}</div>${raidChains()}</div>`;
+            return `<div class="rcard locked" style="--b0:#777"><div class="rban" style="--b0:#2a2a33;--b1:#111">${pic ? `<img src="${pic}" alt="${D.n} boss portrait">` : ""}<span class="rlock" aria-hidden="true">🔒</span></div><div class="rbody"><b>${R.n}</b><span class="boss">Sealed · coming later</span>${diff}${roles}</div>${raidChains()}</div>`;
           const t = raidTeam(k);
           const team = t.err ? `<span class="sm need">${esc(t.err)}</span>` : `<div class="rteam">${t.team.map((m) => `<span class="rmem" style="--rc:${SKC[m.cls]}" title="${m.filler ? "Bot fills this role" : ""}">${m.me ? "You" : esc(m.name)}${m.filler ? " <i>bot</i>" : ""}</span>`).join("")}</div>`;
           const drops = (MAT_DROP[R.boss] || []).map(([mk, a, b]) => `<span title="${MATS[mk].n}${b == null ? " (rare)" : ""}" class="rdrop${b == null ? " rare" : ""}">${MATS[mk].e}${b == null ? "" : ` ${a}-${b}`}</span>`).join("");
-          const pic = bossPortrait(R.boss), tmax = (V.trial || {})[k] || 0, tsel = (TRIAL_SEL[k] = Math.min(TRIAL_SEL[k] || 0, tmax));
+          const tmax = (V.trial || {})[k] || 0, tsel = (TRIAL_SEL[k] = Math.min(TRIAL_SEL[k] || 0, tmax));
           const trialRow = `<div class="rtrial"><span class="sm">Rune Trial</span><button class="alt" ${tsel > 0 && lead ? "" : "disabled"} onclick="TRIAL_SEL['${k}']=${tsel - 1};raidUI()">◀</button><b>${tsel ? "Trial " + tsel : "Normal"}</b><button class="alt" ${tsel < tmax && lead ? "" : "disabled"} onclick="TRIAL_SEL['${k}']=${tsel + 1};raidUI()">▶</button>
             <span class="sm">${tsel ? `boss +${Math.round(TRIAL.hp * tsel * 100)}% HP · rewards ×${trialRew(tsel).toFixed(2).replace(/\.?0+$/, "")}` : tmax ? `best: Trial ${tmax}` : "win to unlock Trial 1"}</span></div>`;
-          return `<div class="rcard" style="--b0:${D.ring[0]}"><div class="rban" style="--b0:${D.ring[0]};--b1:${D.body}">${pic ? `<img src="${pic}" alt="">` : ""}<span class="rsize">${R.size}</span></div>
+          return `<div class="rcard" style="--b0:${D.ring[0]}"><div class="rban" style="--b0:${D.ring[0]};--b1:${D.body}">${pic ? `<img src="${pic}" alt="${D.n} boss portrait">` : ""}<span class="rsize">${R.size}</span></div>
             <div class="rbody"><b>${R.n}</b><span class="boss" style="color:${D.ring[0]}">${D.n}</span>${diff}${roles}${team}
             <div class="rrew"><span class="sm">Rewards</span><span class="rdrop">✨</span>${drops}<span class="rdrop"><span class="coin"></span>×${+(R.reward * trialRew(tsel)).toFixed(2)}</span></div>${trialRow}
             <button class="claim" onclick="enterRaid('${k}')" ${lead && !t.err ? "" : "disabled"}>${lead ? "⚔ ENTER" : "Leader starts"}</button></div></div>`;
@@ -5275,12 +5418,38 @@
       }
       /* ---------- networked raids ----------
          The party leader's screen runs the fight (S.net.role "lead"); members mirror it (S.net.role "member").
-         Member -> leader: "rm" {x, y, f, d, s} moves (15/s while moving), "ra" {a, s} skill presses. The leader checks moves with a
+         Member -> leader: "rm" moves (15/s while moving), "ra" skill presses, "rc" chat and "rp" boss pings. The leader checks moves with a
          refilling speed budget and plays skills through act(), so cooldowns and damage are the leader's.
          Leader -> members: "rs" 10/s: t, boss [x, y, hp, phase, target, taunt, weak, broken, enraged, stun, phase-flash] (tenths),
          players [[id, x, y, hp, maxHp, engine*10, facing]], doom [id, t*10, x, y, got, ...], new telegraphs and circles, events
-         (fx: someone used a skill; msg: banner; end: win/lose). Everything goes through the hub master, which bundles it. */
+         (fx: someone used a skill; msg: banner; chat; ping; end: win/lose). Everything goes through the hub master, which bundles it. */
       const RAID_SILENT_MS = 5000;
+      function raidChatSend(t) {
+        t = String(t).trim().replace(/[<>]/g, "").slice(0, 80);
+        if (!P || S.sc != "arena" || !t) return;
+        const now = performance.now();
+        if (now - (P.raidChatAt ?? -1e9) < 1000) return chatSys("Wait a moment before sending another raid message.", "bye");
+        P.raidChatAt = now;
+        const from = netMyId(), name = pname();
+        raidChatLine(name, P.cls, t);
+        if (S.net?.role == "member") netParty(S.net.lead, { type: "rc", text: t });
+        else if (S.net?.role == "lead" && S.ps.some((a) => a.remote)) raidEvent(["chat", from, name, P.cls, t]);
+      }
+      function raidMarkBoss(name, cls, from) {
+        if (!S.b) return;
+        S.b.ping = { name: String(name).replace(/[^A-Za-z0-9 _-]/g, "").slice(0, 16), cls: CL[cls] ? cls : "dps", until: S.tm + 3 };
+        if (from != netMyId()) chatSys(S.b.ping.name + " pinged the boss.", "out");
+      }
+      function pingBoss() {
+        if (!P || S.sc != "arena" || S.end || !S.b) return;
+        const now = performance.now();
+        if (now - (P.raidPingAt ?? -1e9) < 1500) return;
+        P.raidPingAt = now;
+        const from = netMyId(), name = pname();
+        raidMarkBoss(name, P.cls, from);
+        if (S.net?.role == "member") netParty(S.net.lead, { type: "rp" });
+        else if (S.net?.role == "lead" && S.ps.some((a) => a.remote)) raidEvent(["ping", from, name, P.cls]);
+      }
       function raidNet(from, m) {
         const N = S.net;
         if (!N || S.sc != "arena") return;
@@ -5365,7 +5534,11 @@
         for (const e of m.ev || []) {
           if (e[0] == "fx") { const a = S.ps.find((o) => o.id == e[1]); if (a && a !== P) raidFx(a, e[2], e[3], e[4]); else if (a && e[2] == 3 && a.cls == "dps") ultFx(a, null, e[4] / 10); }
           else if (e[0] == "msg") popMsg(String(e[1]).slice(0, 80), 1.1, 2500);
-          else if (e[0] == "end" && !S.end) e[1] == "win" ? win() : raidEnd(String(e[2] || "Your party fell.").slice(0, 80));
+          else if (e[0] == "chat" && typeof e[1] == "string" && e[1].length <= 56 && typeof e[2] == "string" && e[2].length <= 16 && CL[e[3]] && typeof e[4] == "string" && e[4].length <= 80) {
+            if (e[1] != netMyId()) raidChatLine(e[2], e[3], e[4]);
+          } else if (e[0] == "ping" && typeof e[1] == "string" && e[1].length <= 56 && typeof e[2] == "string" && e[2].length <= 16 && CL[e[3]]) {
+            raidMarkBoss(e[2], e[3], e[1]);
+          } else if (e[0] == "end" && !S.end) e[1] == "win" ? win() : raidEnd(String(e[2] || "Your party fell.").slice(0, 80));
         }
       }
       /* raidFx(a, skill): what a skill looks like, without its effect (members draw others' and their own presses) */
@@ -6162,9 +6335,12 @@
       }
       function loreUI() {
         if (tut() == 4) {
+          matAdd("eye", 1);
+          save();
           tutNext(4);
           $("dp").innerHTML = `<h2>📜 The Archivist</h2><p>"Ah, a new face. I keep the tales of this place."</p>
-            <p class="sm">Every tale you hear may carry a reward: gold, experience, a blessing for your next raid… and sometimes a <b>name</b>. Hidden figures wander the mist around the hub, and my tales are how you find them. My voice tires: tales come back over time, so visit often.</p>
+            <p class="sm">A first gift for a new listener: the Archivist gives you a rare <b>Seer's Eye</b>. Every tale may also bring gold, experience, a blessing… and sometimes a <b>name</b>. Hidden figures wander the mist around the hub. My voice tires: tales come back over time, so visit often.</p>
+            <div class="qo done">${MATS.eye.e} Rare item received: ${MATS.eye.n} ×1</div>
             <button onclick="loreUI()">Hear a tale</button><button class="alt x" onclick="closeDlg()" title="Farewell">Farewell</button>`;
           return;
         }
@@ -6274,9 +6450,9 @@
       }
       /* ---------- The Class Master: switch class in the hub ---------- */
       const ROLE = {
-        tank: "Holds the boss. Taunt keeps it on you (press it every 8 s); Shield Bash breaks its poise when it is weakened. Takes half damage from boss blows.",
-        dps: "The win condition. Engine: attack speed and cooldowns grow forever, and your skills scale with it. Survive long enough and you delete the boss.",
-        heal: "Keeps the party alive: heal the lowest ally, drop a healing circle (allies inside also hit 25% harder), dodge the boss's spells. The boss's Doom lands on you: touch its 3 runes.",
+        tank: ["Keep the boss focused on you; take half damage from its attacks.", "Taunt lasts 6 s and recharges in 10 s. Strike between Taunts to hold threat; Shield Bash the boss during its weak moments."],
+        dps: ["Deal damage and stay alive until your Engine grows.", "Keep attacking to build Engine: it makes attacks faster and skills stronger. Use your skills when ready and dodge boss spells."],
+        heal: ["Keep your party alive and help them deal more damage.", "Heal the lowest-health ally; your circle gives allies inside +25% damage. Dodge boss spells and, when marked by Doom, touch all 3 runes within 12 s."],
       };
       /* classUI(): three class cards with stats and a CHOOSE button. */
       /* classOpen(): the class window from the top bar (it used to be the Class Master NPC) */
@@ -6288,7 +6464,7 @@
         const cards = Object.keys(CL).map((k) => {
           const c0 = CL[k], on = P && P.cls == k;
           return `<div class="up" style="--uc:${SKC[k]}"><svg viewBox="-20 -20 40 40" width="46" height="46"><circle r="18" fill="#0b1218" stroke="${SKC[k]}" stroke-width="2"/><g fill="${SKC[k]}" stroke="${SKC[k]}" stroke-linecap="round" stroke-linejoin="round">${SKI[k][0]}</g></svg>
-            <div style="min-width:0"><span class="nm">${c0.n}</span><div class="sm">❤ ${c0.hp} · 👟 ${c0.sp}</div><div class="sm">${ROLE[k]}</div></div>
+            <div class="class-info"><span class="nm">${c0.n}</span><div class="class-stats">❤ ${c0.hp} · 👟 ${c0.sp}</div><div class="class-role"><b>Role:</b> ${ROLE[k][0]}</div><div class="class-how"><b>How to play:</b> ${ROLE[k][1]}</div></div>
             <button ${on || locked ? "disabled" : ""} onclick="pickClass('${k}')">${on ? "YOURS" : locked ? "🔒 " + wait : "CHOOSE"}</button></div>`;
         }).join("");
         const intro = tut() == 1 ? "Choose your starting class. You can change it here later." : "Every raid needs a shield, a blade and a blessing. Which are you?";
@@ -6750,7 +6926,7 @@
       }
       const BJ_LAB = { hard: (r) => (r == 8 ? "8-" : r == 17 ? "17+" : r), soft: (r) => `A+${r - 11}`, pair: (r) => (r == 1 ? "A A" : r + " " + r) };
       let BJ_MINI_TAB = "hard"; /* side chart table shown without the assist */
-      let BJ_SIDE = false; /* the side chart is open (toggled with the Chart button while playing) */
+      let BJ_SIDE = true; /* the strategy chart starts open and can be hidden from the table button */
       /* the chart is free; the Assist (best-play hint + your cell highlighted) is rented: BJ_CHART.cost gold for BJ_CHART.sec seconds (V.bjc = end, ms) */
       const BJ_CHART = { cost: 50, sec: 30, bonus: 10 }; /* sec: Assist seconds per rent; bonus: seconds added by a natural blackjack */
       const bjChartOn = () => (V.bjc || 0) > Date.now();
@@ -6885,7 +7061,7 @@
           <div class="bjtable">${bjHand(BJ.d, "d", "", true)}${BJ.hs.map((h, k) => bjHand(h.c, "p" + k, many && k == BJ.i ? "now" : "", false, many || h.bet != BJ.bet ? h.bet : 0)).join("")}</div>
           <div class="bjtip"><div class="purse"><span class="coin"></span><b>${V.gold}</b></div>${bjChartOn()
             ? `🔮 Best play: <b class="${BJ_ACT[bjAdvice(bjCur().c, BJ.d[0], bjCanDouble(), bjCanSplit())][1]}">${BJ_ACT[bjAdvice(bjCur().c, BJ.d[0], bjCanDouble(), bjCanSplit())][0]}</b><span class="bjleft">${bjChartLeft()}</span>`
-            : ""}<button class="bjchb ${BJ_SIDE ? "" : "on"}" onclick="BJ_SIDE=!BJ_SIDE;bjUI()">📖 Chart ${BJ_SIDE ? "◂" : "▸"}</button></div>
+            : ""}<button class="bjchb ${BJ_SIDE ? "on" : ""}" aria-expanded="${BJ_SIDE}" title="${BJ_SIDE ? "Hide strategy chart" : "Show strategy chart"}" onclick="BJ_SIDE=!BJ_SIDE;bjUI()">📖 ${BJ_SIDE ? "Hide" : "Show"} chart</button></div>
           <div class="row"><button onclick="bjHit()">HIT</button><button class="bjst" onclick="bjStand()">STAND</button>${bjCanDouble() ? `<button class="bjdb" onclick="bjDouble()">DOUBLE</button>` : ""}${bjCanSplit() ? `<button class="bjsp" onclick="bjSplit()">SPLIT</button>` : ""}</div></div>${BJ_SIDE ? bjMini() : ""}</div>`;
       }
       function bjDeal(bet) {
@@ -7674,7 +7850,7 @@
           e.preventDefault();
           return;
         }
-        if (k == "enter" && S.sc == "hub" && P && !dlgOpen() && !paused) {
+        if (k == "enter" && (S.sc == "hub" || S.sc == "arena") && P && !dlgOpen() && !paused) {
           e.preventDefault();
           $("chin").focus();
           return;
@@ -7737,8 +7913,14 @@
       };
       function uiUpd() {
         document.body.classList.toggle("hub", S.sc == "hub"); /* hub: skill buttons shrink and fade */
+        document.body.classList.toggle("arena", S.sc == "arena");
+        document.body.classList.toggle("tut-on", S.sc == "hub" && tut() < TUT_DONE);
         document.body.classList.toggle("tch", INMODE == "touch"); /* touch: chat sits above the joystick */
-        $("chat").hidden = S.sc != "hub" || !P;
+        $("chat").hidden = (S.sc != "hub" && S.sc != "arena") || !P;
+        $("chat").classList.toggle("raid", S.sc == "arena");
+        $("chping").hidden = S.sc != "arena" || !P || !!S.end;
+        const chatPlaceholder = S.sc == "arena" ? "Raid party chat · Enter to send" : "Press Enter to chat";
+        if ($("chin").placeholder != chatPlaceholder) $("chin").placeholder = chatPlaceholder;
         $("bt").hidden = true; /* Titles, Feedback and Copy ID moved into Settings (cleaner HUD) */
         $("binv").hidden = tut() < TUT_DONE || S.sc != "hub";
         $("bcls").hidden = tut() < 1 || S.sc != "hub"; /* class change (the Class Master left the hub): from tutorial step 2 on */
@@ -12995,6 +13177,18 @@
             c.beginPath();
             c.arc(0, 0, b.r + 8, 0, 6.3);
             c.stroke();
+          }
+          if (b.ping && b.ping.until > S.tm) {
+            const col = SKC[b.ping.cls] || "#ffd84a", pulse = Math.sin(S.tm * 9) * 3, label = "⚑ " + b.ping.name;
+            c.save();
+            c.strokeStyle = col; c.globalAlpha = 0.75 + 0.25 * Math.sin(S.tm * 9); c.lineWidth = 3;
+            c.beginPath(); c.arc(0, 0, b.r + 16 + pulse, 0, 6.3); c.stroke();
+            c.font = "bold 13px Georgia"; c.textAlign = "center"; c.textBaseline = "middle";
+            const w = c.measureText(label).width + 16, y = -b.r - 43;
+            c.globalAlpha = 0.9; c.fillStyle = "#100d0a"; c.fillRect(-w / 2, y - 11, w, 22);
+            c.strokeStyle = col; c.lineWidth = 1.5; c.strokeRect(-w / 2, y - 11, w, 22);
+            c.fillStyle = "#fff1bd"; c.fillText(label, 0, y);
+            c.restore();
           }
           c.restore();
         }

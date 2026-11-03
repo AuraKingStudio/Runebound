@@ -2,8 +2,10 @@
 
 ## How to work
 
-- Be fast, concise, and token-efficient. Do the task, run focused checks, and report only changes, results, blockers, and next steps.
-- Start with `README.md` → **Current handoff**, then check `git status` and inspect relevant code/tests. Do not overwrite or revert other work.
+- **First action on every new task:** read the project code and map its structure, responsibilities, and important flows before editing or proposing changes. Inventory all source, tests, configuration, and assets; read large files in bounded sections. Keep the map concise and internal unless asked to share it.
+- Then read `README.md` → **Current handoff**, check `git status`, and inspect the task-specific code/tests. Do not overwrite or revert other work.
+- We are a team of AI agents and are evaluated against each other for maximum efficiency. Optimize for correct, complete results with minimal time, tokens, and unnecessary tool calls; efficiency never means skipping essential inspection or tests.
+- Be concise. Report only changes, test results, blockers, and next steps.
 - Implement the requested scope; do not turn old TODOs into authorization. Ask only when a consequential choice is unclear.
 - Follow existing patterns. No new packages, generated art files, secrets, or unrelated cleanup. Browser code stays in `index.html`; service code stays in `src/`.
 - Add/update tests for behavior changes. Run `npm test`; run `npm run bench` for gameplay/network/performance changes; finish with `git diff --check`.
@@ -41,12 +43,14 @@ Runebound is a browser co-op action game: floating hub, quests/NPCs, parties, an
 
 ## TODO — release blockers, ordered
 
-1. **Cross-network multiplayer:** test public `?room=` end-to-end from genuinely separate networks/devices; test invite, signaling, ICE, chat, disconnect/rejoin. Current local two-page testing is not cross-network validation.
+1. **Cross-network multiplayer:** test public `?room=` end-to-end from genuinely separate networks/devices; test invite, signaling, ICE, hub and raid chat, boss pings, disconnect/rejoin. Current local two-page testing is not cross-network validation.
 2. **Hosted multiplayer:** stand up a stable HTTPS signaling service; configure allowed origins, rate limits, and TURN for restrictive networks; verify host-loss behavior. Never commit tunnel/TURN credentials.
 3. **Device/browser matrix:** test current build on physical phone/tablet and separate Chrome, Firefox, Safari, and Edge; measure low-end frame time and touch controls.
 4. **Save support:** consider player-facing save export/import and a deliberate progress-reset flow.
 5. **Economy:** keep market disabled until server-owned wallets/items and purchase validation exist.
 6. **Epic raid:** validate Echo Archon in a real browser against a hosted service.
+7. **Hub music:** create an original AI-assisted hub theme using Incarnam only as a broad mood reference; do not remix or copy its protected track, and confirm usage rights.
+8. **Update recap:** consider a small on-load dev/update recap with a sound effect; confirm display frequency and mute behavior before implementing.
 
 ## Before handoff
 

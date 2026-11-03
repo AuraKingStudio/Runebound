@@ -21,6 +21,8 @@ ctx.RBNet=fakeNet;
 ctx.window=ctx;vm.createContext(ctx);
 vm.runInContext(SRC+`
 ;globalThis.devMin=devMin;globalThis.devFs=devFs;globalThis.T={V:()=>V,raidDrops,invUI,SMITH,setRaidTrial:(n)=>RAID_TRIAL=n,hpmF3:()=>hpm(),dashF:(p)=>dash(p),heal:(p,n,src)=>heal(p,n,src),PETS,npcHidden:(n)=>npcHidden(n),loreRewardT:(b)=>loreReward(b),clampWT:(p)=>clampW(p),maidTrade:(i)=>maidTrade(i),maidenUI:()=>maidenUI(),seraphBuy,BLESS,qAct:(a)=>qAct(a),bless,dmF2:()=>dm(),cdmF2:()=>cdm(),TRIAL_SEL,enterRaidT:(k)=>enterRaid(k),craftRefine,hpmF:()=>hpm(),cdmF:()=>cdm(),wp,eqRoll,dmF:()=>dm(),craftCost,craftMake,craftTemper,craftSalvage,FORGE,smithUI,invWear,MATS,setRaid:(k)=>S.raid=k,CLASS_DMG:()=>CLASS_DMG,P:()=>P,S:()=>S,start,devAdd,devUp,devUI,devCls,devHeal,devWipe,devResetQ,devArena,devBoss,devHub,DEV,hurt,act,step,pauseGame,resumeGame,isPaused:()=>paused,QUESTS,UPG,toggleDev,buy,shopUI,qAct,togglePause,dailyCheck,saveName,lvlInfo,gainXP,lvlCol,loreReward,isUnl,tutNext,bjVal,bjDeal,bjHit,bjStand,bjDouble,bjSplit,BJ:()=>BJ,guildFound,guildRecruit,gBonus,bountyDay,bountyAdd,bountyClaim,guildJoin,guildTab,rankPool,rankRefresh,rankSort,dm,dash,dashStep,setIn,padPoll,inMode:()=>INMODE,KEYHINT,HUBV:()=>HUBV,BOT_STUCK:()=>BOT_STUCK,ENGINE,cdMul,discordUnlock,openDlg,TUT_DONE,ult,ultDmg,ULT,inter,hitB,DASH,ZONE_DMG,RAIDS,BOSSES,raidTeam,raidAI,partyMembers,partyAdd,partyRemove,raidUI,playerUI,partyMessage,bash,taunt,inTele,toArena,toHub,raidPuppet,PARTY:()=>PARTY,netRelayFlush,raidNet,raidState,raidApply,raidNetStep,arena,HUB_NPCS,BOT_NPC_LV,BARKEEP,CLASSN,SKC,PEMB,hubJoin,hubLeave,hubCount,HUB_MAX,hubVisitStep,botName,botLook,chatSend,COS,cosOwn,cosV,cosBuyGold,cosEquip,shopPay,myEmote,streamPts,crossFrame,bridgeAt,riverNear,clampW,WF,STATUE,PORTAL,SET,keyLabel,EDGE,inIsle,netReceive,netPrepareHub,netStep,netPack,netUnpack,netAudit,auditRules,goldAdd,gainXP,netStats,LEDGER:()=>LEDGER,FX:()=>FX,FT:()=>FT,shk:()=>shk,marketUI,setNetTestSession:(role,session)=>{NET_ROLE=role;NET_SESSION=session;NET_CONNECTED=!!session;NET_AUTO_STARTED=!!session;},netTestState:()=>({role:NET_ROLE,session:NET_SESSION,connected:NET_CONNECTED}),els:null};`,ctx);
+vm.runInContext('T.raidChatSend=raidChatSend;T.pingBoss=pingBoss;',ctx);
+vm.runInContext('T.bjSide=()=>BJ_SIDE;',ctx);
 const T=ctx.T,BENCH_ONLY=process.argv.includes('--bench');let f=0;const ok=(c,m)=>{if(!c||!BENCH_ONLY)console.log((c?'PASS ':'FAIL ')+m);if(!c)f++};
 Object.assign(T,{brainLoad:ctx.brainLoad,brainStep:ctx.brainStep,brainSend:ctx.brainSend,brainLog:()=>vm.runInContext('BRAIN_LOG',ctx)});
 function brainUnitTests(){
@@ -113,9 +115,11 @@ const xq=T.V().xp;T.devResetQ();T.qAct(1);T.V().qs=2;T.qAct(2);ok(T.V().xp==xq+1
 T.DEV.nocd=0;T.devHub();T.P().cd=[0,0,0];T.act(T.P(),1);ok(T.S().sc=='hub'&&T.P().cd[1]>0,'hub: skills play and start their cooldown');T.P().cd=[0,0,0];
 /* ---- blackjack, guild, bounties ---- */
 ok(T.BARKEEP.ic=='🃏'&&T.BARKEEP.col=='#ff5a78'&&/M-5-10h10q.*zM0-4l3 4-3 4-3-4z/.test(T.BARKEEP.g),'blackjack NPC: ruby colour, unique from the Smith');
+ok(T.bjSide(),'blackjack: strategy chart defaults open');
 ok(T.bjVal([1,13])==21&&T.bjVal([1,1,9])==21&&T.bjVal([10,10,5])==25,'blackjack: hand values (aces 11 or 1)');
 T.V().gold=100;T.V().bj1=1;T.bjDeal(50);ok([50,100,200].includes(T.V().gold),'blackjack: betting takes the stake (or settles a natural 21)');
 T.V().gold=100;T.V().bj1=0;T.bjDeal(10);ok(T.V().bj1==1&&T.V().gold==90&&ctx.document.getElementById('dp').innerHTML.includes('<b class="bjv">11</b><small>5 | 6</small>'),'blackjack: your very first hand starts at 11');
+ok(ctx.document.getElementById('dp').innerHTML.includes('class="bjmini"')&&ctx.document.getElementById('dp').innerHTML.includes('aria-expanded="true"'),'blackjack: active table shows the strategy chart by default');
 T.bjHit();ok(T.V().gold==110&&ctx.document.getElementById('dp').innerHTML.includes('You win! +20'),'blackjack: the first hand\'s hit guarantees 21 and a win');
 {const originalMath=ctx.Math;let rolls=[.1,.1,.7,.62];ctx.Math=Object.create(Math);ctx.Math.random=()=>rolls.shift()??.1;T.V().gold=100;T.V().tut=6;T.bjDeal(10);T.bjStand();ctx.Math=originalMath;ok(T.V().gold==90&&ctx.document.getElementById('dp').innerHTML.includes('house wins'),'blackjack: normal hands remain random');}
 {const M=ctx.Math;const seq=(a)=>{ctx.Math=Object.create(Math);ctx.Math.random=()=>a.length?a.shift():.1;};
@@ -134,6 +138,7 @@ T.V().gd=null;T.guildJoin('Dawn Lanterns');ok(T.V().gd&&T.V().gd.name=='Dawn Lan
 ok(T.rankPool().length>=100,'ranks: top-100 pool is 100 guilds');T.rankRefresh();ok(true,'ranks: refresh moves to the next page');
 /* ---- tutorial ---- */
 T.V().tut=0;T.tutNext(0);ok(T.V().tut==1&&T.V().ul.class,'tutorial: walking reveals the Class Master (step 2)');T.tutNext(2);ok(T.V().tut==1,'tutorial: steps cannot be skipped');for(let i=1;i<5;i++)T.tutNext(i);ok(T.V().tut==5&&T.TUT_DONE==5,'tutorial: class -> Elder -> Merchant -> Archivist -> raid open (no blackjack)');
+{const V=T.V(),oldTut=V.tut,oldMat=V.mat,eye=(V.mat||{}).eye||0;V.tut=4;T.openDlg('lore');ok(V.tut==5&&(V.mat.eye||0)==eye+1&&ctx.document.getElementById('dp').innerHTML.includes('Rare item received'),'tutorial: first Archivist visit always grants a rare Seer\'s Eye');V.tut=oldTut;V.mat=oldMat;}
 /* ---- NPC unlocks ---- */
 {T.V().ul.barkeep=false;T.openDlg('barkeep');ok(ctx.document.getElementById('dp').innerHTML.includes('Copy Discord link'),'barkeep: locked until you copy the Discord link');
  let copied='';const nav=ctx.navigator||(ctx.navigator={});nav.clipboard={writeText:(t)=>{copied=t;return Promise.resolve();}};T.discordUnlock(0);ok(copied.startsWith('https://discord.gg/')&&T.isUnl('barkeep'),'barkeep: copying the Discord link unlocks him (after the countdown)');
@@ -344,7 +349,10 @@ function raidSim(key,cls,setup,pre){
  const tm=T.raidTeam('small').team;ok(tm.length==3&&['tank','heal','dps'].every(k=>tm.filter(m=>m.cls==k).length==1)&&tm[0].me,'raid: a small raid is you plus bots for the 2 missing roles');
  const lg=T.raidTeam('large').team;ok(lg.length==6&&['tank','heal','dps'].every(k=>lg.filter(m=>m.cls==k).length==2),'raid: a large raid is 2 tanks, 2 healers, 2 DPS');
  ok(!T.raidTeam('epic').err&&T.raidTeam('epic').team.length==12&&T.RAIDS.epic.boss=='synapse','raid: the epic raid is open: 12 raiders vs the Echo Archon');
+ const oldPortrait=ctx.bossPortrait,epicLocked=T.RAIDS.epic.locked;ctx.bossPortrait=()=>'data:image/png;base64,test';
  T.raidUI();const html=ctx.document.getElementById('dp').innerHTML;ok(html.includes('Hollow Seer')&&html.includes('Thornmaw')&&html.includes('Echo Archon'),'raid select: small, large and epic bosses');
+ T.RAIDS.epic.locked=true;T.raidUI();const sealed=ctx.document.getElementById('dp').innerHTML;T.RAIDS.epic.locked=epicLocked;ctx.bossPortrait=oldPortrait;T.raidUI();
+ ok((html.match(/alt="[^"]+ boss portrait"/g)||[]).length==3&&(sealed.match(/alt="[^"]+ boss portrait"/g)||[]).length==3&&sealed.includes('class="rcard locked"'),'raid select: every card, including sealed raids, shows its boss portrait');
  const tanks=[1,2].map(i=>T.hubJoin('rbt'+i,{name:'RbTank'+i,cls:'tank',quiet:1},1));tanks.forEach(v=>T.partyAdd(v.id));
  ok(T.raidTeam('small').err&&!T.raidTeam('large').err,'party: 2 extra tanks are too many for a small raid, fine for a large one');
  tanks.forEach(v=>T.partyRemove(v.id));ok(T.PARTY().m.length==0,'party: members can be removed');
@@ -427,6 +435,9 @@ function raidSim(key,cls,setup,pre){
  T.netReceive('peer-m1',{type:'rm',to:'player-raidlxx',x:400,y:400,f:0,d:0,s:1});T.netReceive('peer-m2',{type:'rm',to:'player-raidlxx',x:410,y:400,f:0,d:0,s:1});
  T.netRelayFlush();const toL=fakeBroadcast.filter(x=>x.id=='peer-l');
  ok(toL.length==1&&toL[0].msg.type=='rb'&&toL[0].msg.m.length==2&&toL[0].msg.m[0].from=='player-raidm1xx','raid net: the master bundles members\' moves for the leader into one message');
+ fakeBroadcast=[];T.netReceive('peer-m1',{type:'rc',to:'player-raidlxx',text:'boss left'});T.netReceive('peer-m2',{type:'rp',to:'player-raidlxx'});T.netRelayFlush();
+ const comm=fakeBroadcast.find(x=>x.id=='peer-l'&&x.msg.type=='rb');
+ ok(comm&&comm.msg.m.some(m=>m.type=='rc'&&m.from=='player-raidm1xx')&&comm.msg.m.some(m=>m.type=='rp'&&m.from=='player-raidm2xx'),'raid comms: host relays party chat and boss pings with verified sender IDs');
  let got=0;for(let i=1;i<=150;i++){netClock+=66;fakeBroadcast=[];T.netReceive('peer-m1',{type:'rm',to:'player-raidlxx',x:400,y:400,f:0,d:0,s:i});T.netRelayFlush();got+=fakeBroadcast.filter(x=>x.id=='peer-l').length;}
  ok(got==150,`raid net: a member's steady 15/s moves keep flowing for 10 s (${got}/150 forwarded)`);
  fakeBroadcast=[];T.netReceive('peer-l',{type:'rs',to:['player-raidm1xx','player-raidm2xx'],t:1,b:[],p:[]});T.netRelayFlush();
@@ -437,6 +448,14 @@ function raidSim(key,cls,setup,pre){
  const team=[{me:1,cls:'tank'},{cls:'heal',name:'Mem',lv:3,real:1,key:'player-mem1'},{cls:'dps',name:'Botty',lv:3,filler:1}];
  T.toArena('small',team);const S=T.S(),mem=S.ps.find(p=>p.remote=='player-mem1');
  ok(S.net&&S.net.role=='lead'&&mem&&mem.id==1&&S.ps.find(p=>p.cls=='dps').id==2,'raid net: the leader marks real members; ids follow the team order');
+ T.hubJoin('player-mem1',{name:'Mem',cls:'heal',quiet:1},1);T.PARTY().m=['player-mem1'];
+ T.partyMessage('player-mem1',{type:'rc',text:'boss left'});
+ ok(S.net.ev.some(e=>e[0]=='chat'&&e[2]=='Mem'&&e[4]=='boss left'),'raid chat: a party member message is relayed to the raid');
+ const evN=S.net.ev.length;T.partyMessage('player-mem1',{type:'rc',text:'x'.repeat(81)});
+ ok(S.net.ev.length==evN,'raid chat: oversized messages are discarded');
+ T.partyMessage('unknown-player',{type:'rp'});ok(!S.b.ping,'raid ping: non-party senders cannot ping the boss');
+ T.partyMessage('player-mem1',{type:'rp'});ok(S.b.ping&&S.b.ping.name=='Mem','raid ping: a party member marks the boss');
+ T.PARTY().m=[];
  netClock+=100;T.raidNet('player-mem1',{type:'rm',x:mem.x+10,y:mem.y,f:3,d:0,s:1});ok(Math.abs(mem.tx-(mem.x+10))<0.01,'raid net: a member\'s legal move is accepted');
  netClock+=100;T.raidNet('player-mem1',{type:'rm',x:mem.tx+400,y:mem.y,f:3,d:0,s:2});ok(mem.tx-mem.x<150,'raid net: a member\'s speed hack is clamped by the leader');
  T.raidNet('player-mem1',{type:'rm',x:0,y:0,f:3,d:0,s:2});ok(mem.tx>100,'raid net: replayed moves are ignored');
@@ -451,10 +470,13 @@ function raidSim(key,cls,setup,pre){
  T.toArena('small',mteam,{role:'member',lead:'host-player',heard:netClock,seq:0,key:'',at:0});
  const M=T.S();ok(M.net.role=='member'&&T.P().id==1,'raid net: a member\'s own id matches the leader\'s order');
  const bossHp=M.b.hp;M.b.hp=bossHp;
- T.raidApply({type:'rs',t:123,b:[460,230,M.b.mh-500,1,1,0,30,0,0,0,0],p:[[0,440,300,180,200,10,1],[1,T.P().x,T.P().y,80,120,10,0],[2,500,330,90,100,25,3]],ao:[[0,450,220,110,16,16],[1,450,220,1570,340,46,14,14]],ev:[['msg','test banner']]});
+ T.raidApply({type:'rs',t:123,b:[460,230,M.b.mh-500,1,1,0,30,0,0,0,0],p:[[0,440,300,180,200,10,1],[1,T.P().x,T.P().y,80,120,10,0],[2,500,330,90,100,25,3]],ao:[[0,450,220,110,16,16],[1,450,220,1570,340,46,14,14]],ev:[['msg','test banner'],['chat','player-tank1','Tank','tank','focus boss'],['ping','player-tank1','Tank','tank']]});
  ok(M.b.hp==M.b.mh-500&&M.b.weak==3&&T.P().hp==80&&M.ao.length==2&&M.ao[1].ln&&M.ps[2].eng==2.5,'raid net: the member applies boss, health, telegraphs and Engine from the leader');
+ ok(M.b.ping&&M.b.ping.name=='Tank','raid ping: boss mark is applied from the leader snapshot');
  T.DEV.nocd=0;T.P().cd=[0,0,0];fakePeers=['host-peer'];T.netPrepareHub('guest');M.sc='arena';
  T.act(T.P(),1);ok(T.P().cd[1]>0&&M.b.hp==M.b.mh-500,'raid net: a member\'s press starts its cooldown but does no damage locally');
+ T.setNetTestSession('guest',{peerId:'host-peer'});fakeBroadcast=[];T.raidChatSend('boss left');T.pingBoss();
+ ok(fakeBroadcast.some(x=>x.id=='host-peer'&&x.msg.type=='rc'&&x.msg.to=='host-player')&&fakeBroadcast.some(x=>x.id=='host-peer'&&x.msg.type=='rp'&&x.msg.to=='host-player'),'raid comms: members send chat and boss pings through their party leader');
  fakePeers=[];T.netPrepareHub('');M.res=0.01;T.step(0.02);
 }
 /* ---------- player details travel once: full list to a newcomer, small join/leave/update messages to the rest ---------- */
