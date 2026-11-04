@@ -45,7 +45,7 @@ Before handing work to another agent, update this section with enough detail for
 
 - **Updated:** 2026-11-04 (Happy, for PM Bob; security by Zulu, reviews by Hawk)
 - **Task and goal:** More grinding, resources and trading (round 3), then a UI rework that fits the rune isle ("Dusk Aether"). Push after Zulu's and Hawk's reviews.
-- **Status:** Everything below is committed locally on `main` up to 5b7b3e0 and **not pushed**. On a clean checkout of 5b7b3e0, `npm test` passes ALL (678 checks, up from 581 at 0ee50c4) and `npm run bench` passes ALL (33 scenarios).
+- **Status:** Everything below is committed locally on `main` up to 829395b and **not pushed**. On a clean checkout of 829395b, `npm test` passes ALL (678 checks, up from 581 at 0ee50c4) and `npm run bench` passes ALL (33 scenarios).
 - **Changes, round 3 (grinding, resources, trading):**
   - Materials on the server (b89a70d, edc6ba9, 318d819; Zulu): every material change is a ledger entry `["mat", 0, 0, src, key, n]` with per-source caps, gaps and daily caps, plus the server recipe table (cb33d73). Contract payouts can't mint rare materials. Migration writes the refund and the migrated flag in one atomic write.
   - F4 Gathering (2ed76c2): 6 nodes on the hub island (Rune Ore, Moonherb, Echo Shard), a 1.2 s channel (moving cancels it), and each node regrows after 60 s. The daily curve is full yield for 40 gathers, half to 80, then a fifth. Mastery runs from level 1 to 10 at +4% each, with a fractional carry and no dice. `matAdd(k, n, src)` is the only way materials change; the hub's gold/XP audit skips `"mat"` entries. Smith recipes: refine ore (5 ore + 2 echo → 3 dust) and Moon Tonic (4 herb + 1 echo: +8% damage for the next raid).
@@ -56,14 +56,15 @@ Before handing work to another agent, update this section with enough detail for
   - P1 (6f141de): `--ae-*` tokens, twilight glass panels with a violet mist top, teal glyph edges and code-drawn rune corner notches, small-caps titles and teal focus rings. Panels stay dark, so all ~195 inline light text colours keep ≥4.5:1 contrast.
   - P2 (42fc2d1): chamfered runestone HUD plates, a rune-coin gold pill, and teal-glass chat and action banner. The net badge moved under the gold (fixes the overlap with the quest tracker at 844×390). `body.lo` follows `SET.low` (no glows on Low spec). Colours are baked hex because `color-mix` is missing on older tablets.
   - P3 (5b7b3e0): twilight rows tinted by their accent (`color-mix` only inside `@supports`), teal runestone buttons, a slate disabled state, glass raid cards, and teal close buttons and tabs. HUD tap targets are ≥44 px on touch and phones; hover glows apply only under `(hover: hover)`.
-- **Validation (clean checkout of 5b7b3e0):** `npm test` ALL PASSED (678 checks). `npm run bench` ALL PASSED (33 scenarios). 12-player phone host: CPU 36.5 of 50 ms/s when everyone walks and 17.6 when idle; upload 0.100 and 0.021 of 0.5 Mbit/s. Headless Chrome at 1280×720, 1024×768 and 844×390: hub, Maiden, Quest Board and Settings render with no console errors, and gathering works end to end (channel, yield, ledger entry).
+  - P3 fixes (829395b): white text on the red/violet blackjack STAND and SPLIT, 44 px dialog buttons on touch, and on short screens (≤480 px tall) the blackjack moves stay pinned to the window bottom via `:has()` (older browsers just scroll).
+- **Validation (clean checkout of 829395b):** `npm test` ALL PASSED (678 checks). `npm run bench` ALL PASSED (33 scenarios). 12-player phone host: CPU 36.5 of 50 ms/s when everyone walks and 17.6 when idle; upload 0.100 and 0.021 of 0.5 Mbit/s. Headless Chrome at 1280×720, 1024×768 and 844×390: hub, Maiden, Quest Board and Settings render with no console errors, and gathering works end to end (channel, yield, ledger entry).
 - **Not tested:** real phones and tablets (touch, iOS Safari, older Android WebView) for the new UI, the gathering nodes, the Contract Board and the Exchange; two-browser trading; Low spec mode on a real weak GPU.
 - **Known issues and risks:**
   - The phone-CPU bench checks are timing-sensitive: under heavy machine load they read 50-89 of 50 ms/s at any commit. Run the pre-push bench on a quiet machine.
   - Several agents share one working tree: build each commit from the HEAD blob plus your own edits, written through a temp file and a rename, and check `git show --stat`.
   - The panel scrollbar is still gold (cosmetic, for a P4).
   - Gathering nodes sit at fixed island spots: if the river or NPCs move, re-check them with `riverNear` and `bridgeAt`.
-- **Next step:** Zulu reviews P3 and Hawk passes round 3, then Bob pushes. After that: real-device QA at 1024×768, 820×1180 and 844×390, and the P4 scrollbar.
+- **Next step:** Hawk passes round 3, then Bob pushes. After that: real-device QA at 1024×768, 820×1180 and 844×390, and the P4 scrollbar.
 
 ## Player market (paused for release)
 
