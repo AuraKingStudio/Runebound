@@ -2116,6 +2116,8 @@
           directoryLeave,
           directoryConfig,
           roomInviteLink,
+          roomTrustAdd,
+          _room: { got: roomGot, key: roomKeyGet, sign: roomSign, verify: roomVerify, offerText, answerText, trust: ROOM_TRUST, set: (r) => (room = r), get: () => room }, /* test hooks */
           /* public site (or any ?room= link) uses room mode; localhost keeps the hub service (npm run signaling) for tests */
           defaultConfig: () => ({ signalingUrl: NETWORK_CONFIG.signalingUrl || hubFromLink() ||
             (!roomFromLink() && NETWORK_CONFIG.onlineHubUrl && !["localhost", "127.0.0.1"].includes(location.hostname) && !/^(192\.168|10|172\.(1[6-9]|2\d|3[01]))\./.test(location.hostname) ? NETWORK_CONFIG.onlineHubUrl : "") ||
@@ -3773,7 +3775,7 @@
             netAck(id, message.seq, true);
           }
         } else if (NET_ROLE == "guest") {
-          if (NET_SESSION && id != NET_SESSION.peerId) return; /* a guest takes hub news from its host only: another peer cannot fake rosters, colours or classes */
+          if (!NET_SESSION || id !== NET_SESSION.peerId) return; /* a guest takes hub news from its host only (fails closed with no session): another peer cannot fake rosters, colours or classes */
           if (message.type == "r" && Array.isArray(message.p) && message.p.length <= HUB_MAX) {
             const roster = message.p.filter(netGoodEntry);
             const ids = new Set(roster.map((e) => e[1]));
@@ -3790,6 +3792,7 @@
             const now = performance.now();
             NET_HQ_AT = now;
             NET_SUCC = message.l;
+            if (Array.isArray(message.h) && message.h.length <= 3) NET.roomTrustAdd?.(message.h); /* room mode: the successors' key hashes, so the next host is verified too */
             NET.send(id, { type: "hr", t: message.t, up: Math.round((now - (NET_JOINED_AT || now)) / 1000), fm: Math.round(NET_FRAME * 10) / 10, b: Math.round(netBench() * 10) / 10, mob: netIsMobile() ? 1 : 0 });
           } else if (message.type == "rz" && Array.isArray(message.e) && message.e.length == 2) {
             const v = HUBV.find((o) => o.id == NET_SLOT_IDS.get(message.e[0]));
@@ -3922,7 +3925,7 @@
           if (was >= 0 || NET_NC) { if (NET_ROLE == "host") netTell({ type: "nc", e: [0, NET_NC] }); else NET.send(NET_SESSION?.peerId, { type: "nc", c: NET_NC }); }
         }
         if (NET && NET_ROLE != "host" && NET_CONNECTED && P) { const lv = lvlInfo().L; if (NET_MY_LV && lv != NET_MY_LV) NET.send(NET_SESSION?.peerId, { type: "ql" }); NET_MY_LV = lv; } /* level-up: ask for an early check */
-        if (NET && NET.peerIds().length && NET_ROLE == "host" && now - NET_HQ_SENT >= 2000) { NET_HQ_SENT = now; NET_SUCC = netRank(); netTell({ type: "hq", t: now, l: NET_SUCC }); }
+        if (NET && NET.peerIds().length && NET_ROLE == "host" && now - NET_HQ_SENT >= 2000) { NET_HQ_SENT = now; NET_SUCC = netRank(); netTell({ type: "hq", t: now, l: NET_SUCC, h: NET_SUCC.map((k) => { const v = HUBV.find((o) => !o.bot && o.netClientId == k); return v && /^[a-f0-9]{48}$/.test(v.id) ? v.id.slice(0, 32) : ""; }) }); } /* h: room-mode key hash of each successor (its peerId prefix) */
         if (NET && NET_ROLE == "guest" && NET_CONNECTED && NET_HQ_AT && now - NET_HQ_AT > 6000) { NET_HQ_AT = 0; NET.disconnect(NET_SESSION?.peerId); } /* host silent (frozen tab, crash): treat as gone */
         if (!NET || !NET.peerIds().length || !P || S.sc != "hub") return;
         if (NET_ROLE == "host") for (const v of HUBV) { if (!v.bot && v.netAud && !v.netKicked) netAuditTick(v.id, v.netAud, now, (n, why) => netStrike(v, n, why)); }

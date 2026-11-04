@@ -494,7 +494,7 @@ function raidSim(key,cls,setup,pre){
  const fw=fakeBroadcast.find(x=>x.id=='peer-b'&&x.msg.type=='pi');ok(fw&&fw.msg.from=='player-party1x'&&!('to' in fw.msg),'party: the master forwards an invite and stamps who sent it');
  fakeBroadcast=[];for(let i=0;i<10;i++)T.netReceive('peer-a',{type:'pi',to:'player-party2x'});T.netRelayFlush();ok(fakeBroadcast.filter(x=>x.msg.type=='rb').flatMap(x=>x.msg.m).filter(m=>m.type=='pi').length<=6,'party: invite spam is capped');
  /* guest side: an invite opens a prompt; the leader's list makes you a member; an empty list removes you */
- fakePeers=['host-peer'];T.netPrepareHub('guest');T.PARTY().m=[];T.PARTY().lead='me';
+ fakePeers=['host-peer'];T.netPrepareHub('guest');T.setNetTestSession('guest',{peerId:'host-peer'});T.PARTY().m=[];T.PARTY().lead='me';
  T.netReceive('host-peer',{type:'r',p:[[0,'host-player','Boss','tank',9,0,1],[1,'player-party3x','Pb3','heal',4,0,1]]});
  T.partyMessage('player-party3x',{type:'pi'});ok(!ctx.document.getElementById('pinv').hidden&&ctx.document.getElementById('pinv').innerHTML.includes('Yes'),'party: an invite from a real player shows a small Yes/No popup');
  fakeBroadcast=[];T.partyMessage('host-player',{type:'pi'});T.netRelayFlush&&T.netRelayFlush();
@@ -641,6 +641,29 @@ async function networkTests(){
  ok(linkHub('','localhost')=='http://localhost:8787','network: localhost uses the local hub directory');
 {const {gamePath}=require('./playtest.js');ok(gamePath('/')&&gamePath('/assets/icon.png')&&['/bank.json','/market.json','/feedback.log','/package.json','/AgentInstruction.md','/deploy/setup-vps.sh','/src/bank.js','/assets/.env.png','/assets%5C.x.png','/..%2Fbank.json','/assets/../bank.json'].every((u)=>gamePath(u)===0),'dev server: serves only the game (index.html, assets), never data files, source, docs or dotfiles');
  ok(gamePath('/%')===-1&&gamePath('/a%00.png')===-1,'dev server: a malformed URL is a 400, not a crash');}
+ {const H=createContext().RBNet._room,gc=createContext(),G=gc.RBNet._room,E=createContext().RBNet._room;
+  const hk=await H.key(),gk=await G.key(),ek=await E.key(),code='abcdef123456';
+  ok(/^[a-f0-9]{48}$/.test(gk.peerId)&&/^[a-f0-9]{32}$/.test(hk.hk)&&gk.peerId.startsWith(gk.hk)&&hk.hk!=ek.hk,'room trust: each tab has its own key; peerId and hk are its hash');
+  const wrap=(m)=>JSON.stringify({message:JSON.stringify(m)}),offD={t:'offer',s:'v=0 offer'},oJ=JSON.stringify(offD);
+  H.set({code,role:'host',events:[],offers:new Map()});
+  await H.got(wrap({k:'offer',peerId:gk.peerId,d:offD,pk:ek.pk,sig:await E.sign(E.offerText(code,gk.peerId,oJ))}));
+  ok(H.get().events.length==0,'room trust: an offer for another peerId is refused');
+  await H.got(wrap({k:'offer',peerId:gk.peerId,d:offD,pk:gk.pk,sig:await G.sign(G.offerText(code,gk.peerId,oJ))}));
+  ok(H.get().events.length==1&&H.get().events[0].type=='offer','room trust: a guest-signed offer reaches the host');
+  const ansD={t:'answer',s:'v=0 answer'},aJ=JSON.stringify(ansD),groom=()=>({code,role:'guest',peerId:gk.peerId,events:[],offers:new Map(),offerD:oJ,answered:false});
+  G.set(groom());G.trust.clear();G.trust.add(hk.hk);
+  const good=wrap({k:'answer',peerId:gk.peerId,d:ansD,pk:hk.pk,sig:await H.sign(await H.answerText(code,gk.peerId,oJ,aJ))});
+  await G.got(wrap({k:'answer',peerId:gk.peerId,d:ansD,pk:ek.pk,sig:await E.sign(await E.answerText(code,gk.peerId,oJ,aJ))}));
+  ok(G.get().events.length==0,'room trust: a forged answer from a key not in the link is refused');
+  await G.got(wrap({k:'answer',peerId:gk.peerId,d:ansD,pk:hk.pk,sig:await H.sign(await H.answerText(code,gk.peerId,JSON.stringify({t:'offer',s:'an older offer'}),aJ))}));
+  ok(G.get().events.length==0,'room trust: a replayed answer to an older offer is refused');
+  await G.got(wrap({k:'answer',peerId:gk.peerId,d:{t:'answer',s:'swapped sdp'},pk:hk.pk,sig:await H.sign(await H.answerText(code,gk.peerId,oJ,aJ))}));
+  ok(G.get().events.length==0,'room trust: a signed answer with a swapped SDP is refused');
+  await G.got(good);await G.got(good);
+  ok(G.get().events.length==1&&G.get().events[0].type=='answer'&&G.get().answered,'room trust: the real host answer is accepted once, a replay of it is ignored');
+  G.set(groom());gc.RBNet.roomTrustAdd([ek.hk,'zz','x'.repeat(40)]);
+  await G.got(wrap({k:'answer',peerId:gk.peerId,d:ansD,pk:ek.pk,sig:await E.sign(await E.answerText(code,gk.peerId,oJ,aJ))}));
+  ok(G.get().events.length==1&&G.trust.size==2,'room trust: a successor announced by the host (hq) is trusted after a host switch; junk hashes are ignored');}
  const host=createContext(),h=host.RBNet;let received=0,errors=0;
  h.setHandlers({onMessage:(_id,m)=>{if(m.type=='test')received++;},onError:()=>errors++});
  h.setIceServers([{urls:'stun:example.invalid:3478'}]);
@@ -778,6 +801,10 @@ async function hostLossTests(){
  {const nx=T.HUBV().find(v=>v.netClientId=='player-mig-cccc'||v.id=='player-mig-cccc'),c0=nx&&nx.cls;T.netReceive('evil-peer',{type:'cls',e:[1,'dps']});T.netReceive('evil-peer',{type:'r',p:[[0,'host-player','Fake','tank',9,0,1]]});ok(nx&&nx.cls==c0&&!T.HUBV().some(v=>v.name=='Fake'),'network hub: a guest ignores hub news from anyone but its host');}
  const hr=fakeBroadcast.reverse().find(x=>x.msg.type=='hr');
  ok(hr&&Number.isFinite(hr.msg.b)&&Number.isFinite(hr.msg.fm),'host migration: guest answers with frame time and benchmark');
+ {fakeBroadcast=[];T.netReceive('evil-peer',{type:'hq',t:1,l:['player-evil1'],h:['ab'.repeat(16)]});T.netReceive('evil-peer',{type:'k',reason:'fake kick'});T.netReceive('evil-peer',{type:'reject',reason:'fake'});
+  ok(!fakeBroadcast.some(x=>x.msg.type=='hr')&&T.netTestState().role=='guest'&&T.netTestState().session,'network hub: a guest ignores successor lists, kicks and rejects from anyone but its host');
+  const ss=T.netTestState().session;T.setNetTestSession('guest',null);T.netReceive('host-player',{type:'r',p:[[0,'host-player','Ghost','tank',9,0,1]]});
+  ok(!T.HUBV().some(v=>v.name=='Ghost'),'network hub: with no session a guest trusts nobody (fails closed)');T.setNetTestSession('guest',ss);}
  fakePeers=[];fakeHandlers.onClose('host-peer');
  await new Promise(resolve=>setImmediate(resolve));
  ok(T.HUBV().some(v=>v.id=='host-player'&&v.name=='Next')&&!T.HUBV().some(v=>v.name=='Old'),'host migration: the successor stays on screen as the new host, the old host leaves');
