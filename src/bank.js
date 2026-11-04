@@ -75,15 +75,17 @@ const int = (n, lo, hi) => Number.isInteger(n) && n >= lo && n <= hi;
 function createBank(options = {}) {
   const file = options.file || path.join(__dirname, "..", "bank.json");
   const now = options.now || Date.now;
-  /* one file, written atomically: { v: 2, accts, trades } (older files held only the accounts) */
-  let accts = {}, trades = {};
+  /* one file, written atomically: { v: 2, accts, trades, migrated } (older files held only the accounts) */
+  let accts = {}, trades = {}, migrated = false;
   try {
     const j = JSON.parse(fs.readFileSync(file, "utf8")) || {};
-    if (j.v === 2) { accts = j.accts || {}; trades = j.trades || {}; } else accts = j;
+    if (j.v === 2) { accts = j.accts || {}; trades = j.trades || {}; migrated = j.migrated === true; } else accts = j;
   } catch {}
-  /* migration: an older build kept trades in <bank>-trades.json. Refund its open escrow once, then retire the file. */
+  const state = () => JSON.stringify({ v: 2, accts, trades, migrated });
+  /* migration: an older build kept trades in <bank>-trades.json. Refund its open escrow once: the refunds and the
+     migrated flag land in the same atomic write, so a failed rename or a crash can never pay them twice. */
   const oldTrades = file.replace(/\.json$/, "") + "-trades.json";
-  try {
+  if (!migrated) try {
     const old = JSON.parse(fs.readFileSync(oldTrades, "utf8")) || {};
     for (const tr of Object.values(old)) if (tr && tr.st == "open" && accts[tr.from] && tr.give) {
       const a = accts[tr.from];
@@ -91,8 +93,9 @@ function createBank(options = {}) {
       a.gold += int(tr.give.gold, 0, 1e6) ? tr.give.gold : 0;
       for (const [k, n] of Object.entries(tr.give.mat || {})) if (MATS.includes(k) && int(n, 1, 9999)) a.mat[k] = Math.min(MAT_MAX, (a.mat[k] || 0) + n);
     }
-    fs.writeFileSync(file + ".tmp", JSON.stringify({ v: 2, accts, trades })); fs.renameSync(file + ".tmp", file);
-    fs.renameSync(oldTrades, oldTrades + ".migrated");
+    migrated = true;
+    fs.writeFileSync(file + ".tmp", state()); fs.renameSync(file + ".tmp", file);
+    try { fs.renameSync(oldTrades, oldTrades + ".migrated"); } catch {} /* only tidying: the flag already guards the refund */
   } catch {}
   const tradeLog = options.tradeLog || file.replace(/\.json$/, "") + "-trades.log";
   const byCode = new Map(); /* public trade code -> account id */
@@ -103,7 +106,7 @@ function createBank(options = {}) {
   function flush() {
     if (timer) { clearTimeout(timer); timer = null; }
     dirty = false;
-    try { fs.writeFileSync(file + ".tmp", JSON.stringify({ v: 2, accts, trades })); fs.renameSync(file + ".tmp", file); }
+    try { fs.writeFileSync(file + ".tmp", state()); fs.renameSync(file + ".tmp", file); }
     catch (e) { console.error("bank: save failed", e.message); }
   }
   function persist() {
@@ -114,7 +117,7 @@ function createBank(options = {}) {
       if (!dirty) return;
       dirty = false;
       try {
-        fs.writeFileSync(file + ".tmp", JSON.stringify({ v: 2, accts, trades })); fs.renameSync(file + ".tmp", file);
+        fs.writeFileSync(file + ".tmp", state()); fs.renameSync(file + ".tmp", file);
       }
       catch (e) { console.error("bank: save failed", e.message); }
     }, 500);

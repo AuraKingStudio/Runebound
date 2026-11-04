@@ -983,7 +983,13 @@ async function bankTests(){
    const mb=createBank({file:f3,tradeLog:lg,now:()=>tt}),l=mb.tradeList({tok:X});
    ok(l[1].gold==50&&l[1].mat.ore==6&&!fs.existsSync(old3)&&fs.existsSync(old3+'.migrated'),'trade: moving to the one-file bank refunds open escrow from the old trades file, once');
    const mb2=createBank({file:f3,tradeLog:lg,now:()=>tt});ok(mb2.tradeList({tok:X})[1].gold==50,'trade: the refund is not paid twice');
-   for(const x of [f3,old3+'.migrated'])try{fs.unlinkSync(x)}catch{}}
+   for(const x of [f3,old3+'.migrated'])try{fs.unlinkSync(x)}catch{}
+   /* the rename fails (a folder is in the way): the next boot must not refund again */
+   fs.writeFileSync(f3,JSON.stringify({[h(X)]:{gold:10,xp:0,mat:{},born:0,ns:99,last:{},at:0}}));fs.writeFileSync(old3,JSON.stringify({t1:{id:'t1',from:h(X),to:'x',give:{gold:40},want:{},st:'open',at:0}}));fs.mkdirSync(old3+'.migrated',{recursive:true});
+   const m1=createBank({file:f3,tradeLog:lg,now:()=>tt});const g1=m1.tradeList({tok:X})[1].gold;m1.flush();
+   const m2=createBank({file:f3,tradeLog:lg,now:()=>tt});const g2=m2.tradeList({tok:X})[1].gold;
+   ok(g1==50&&g2==50&&fs.existsSync(old3)&&JSON.parse(fs.readFileSync(f3,'utf8')).migrated===true,'trade: if retiring the old file fails, the next boot does not refund again (flag in the same atomic write)');
+   for(const x of [f3,old3])try{fs.unlinkSync(x)}catch{}try{fs.rmdirSync(old3+'.migrated')}catch{}}
   for(const x of [f,lg,lg+'.1'])try{fs.unlinkSync(x)}catch{}}
  for(const x of [file,file+'2',file+'3',file+'4',file+'.tmp'])try{require('fs').unlinkSync(x)}catch{}
 }
