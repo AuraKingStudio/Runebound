@@ -31,7 +31,7 @@ const MAT_SRC = {
   bounty: { m: all(5), gap: 1000, day: 50 },
   contract: { m: { echo: 3 }, gap: 0, day: 0 }, /* Contract Board reward: echo only (never a rare), at most 3 and never more than delivered; 3 a day via contractOk */
 };
-const MAT_SPEND = ["craft", "maiden", "smith", "contract"]; /* n < 0 only, never below 0 */
+const MAT_SPEND = ["craft", "maiden", "smith", "contract", "pet"]; /* n < 0 only, never below 0 */
 /* Contract Board: a payout (gold, XP or a material reward, each its own entry) needs a delivery of at least CONTRACT.min
    materials ("contract" spends) earlier in the same sync, one payout of each kind per delivery, at most CONTRACT.day a day. */
 const CONTRACT = { min: 6, day: 3 };
@@ -50,6 +50,15 @@ const MAIDEN = [
   ["shard", "bark", 5, 4, "r"], ["bark", "shard", 5, 4, "r"], ["dust", "eye", 30, 1, "r"], ["dust", "heart", 30, 1, "r"],
 ];
 const MAIDEN_DAY = { x: 10, r: 3 };
+/* pets: the bank owns which pets an account has, their level (1-5) and the active one, and applies the bonus itself.
+   Ledger ["pet", 0, 0, op, k, 0], op buy / feed / set, each paid by "pet" material spends earlier in the same sync.
+   Bonus = p x mult(lv), mult = 1 + (lv-1)/4 (2x at 5); fox: gather gains, owl: RULES XP, sprite: recipe gains; wolf: client raid damage inside raid caps. */
+const PET = {
+  kinds: { fox: { b: "gather", p: 0.05 }, owl: { b: "xp", p: 0.05 }, wolf: { b: "dmg", p: 0.03 }, sprite: { b: "refine", p: 0.05 } },
+  price: { fox: { ore: 15, herb: 10 }, owl: { herb: 15, echo: 4 }, wolf: { shard: 6, bark: 6 }, sprite: { dust: 30, echo: 3 } },
+  food: { fox: "herb", owl: "echo", wolf: "bark", sprite: "dust" }, max: 5, setGap: 2000,
+};
+const petMult = (lv) => 1 + (lv - 1) / 4;
 const MAT_MAX = 99999, SEED_MAT = 50;
 /* trades (online only): A offers { give, want } to B's public trade code. A's give is escrowed at once (A's confirm, the offer can't change);
    B accepts (B's confirm): the bank re-checks B, swaps both sides in one step and burns TAX of the gold each side receives.
@@ -154,6 +163,7 @@ function createBank(options = {}) {
       if (src == "craft") cr.sp[k] = (cr.sp[k] || 0) - n;
       if (src == "maiden") cr.ms[k] = (cr.ms[k] || 0) - n;
       if (src == "contract") cr.c -= n;
+      if (src == "pet") cr.pt[k] = (cr.pt[k] || 0) - n;
       return true;
     }
     if (src == "maiden") {
@@ -167,7 +177,7 @@ function createBank(options = {}) {
       const rc = RECIPE[k];
       if (!rc || n != rc.n || Object.entries(rc.need).some(([m, q]) => (cr.sp[m] || 0) < q) || !dayOk(a, kind, n, rc.day, t)) return false;
       for (const [m, q] of Object.entries(rc.need)) cr.sp[m] -= q; /* this recipe's spends are used up */
-      a.mat[k] = Math.min(MAT_MAX, (a.mat[k] || 0) + n);
+      a.mat[k] = Math.min(MAT_MAX, (a.mat[k] || 0) + n + petBonus(a, "refine", "fr", n));
       return true;
     }
     const r = MAT_SRC[src];
@@ -175,8 +185,34 @@ function createBank(options = {}) {
     if (src == "contract" && (n > cr.c || !contractOk(a, cr, "contractm", t))) return false; /* last: a refused reward never uses a day slot */
     if (!dayOk(a, kind, n, typeof r.day == "object" ? r.day[k] : r.day, t)) return false;
     a.last[kind] = t;
-    a.mat[k] = Math.min(MAT_MAX, (a.mat[k] || 0) + n);
+    a.mat[k] = Math.min(MAT_MAX, (a.mat[k] || 0) + n + (src == "gather" ? petBonus(a, "gather", "fg", n) : 0));
     return true;
+  }
+  /* petBonus(a, b, carry, n): whole extra units from the active pet if its bonus is b; the fraction carries to the next gain. */
+  function petBonus(a, b, c, n) {
+    const k = a.pet && a.pet.on, d = k && PET.kinds[k];
+    if (!d || d.b != b || !a.pet.own[k]) return 0;
+    const v = (a.pet[c] || 0) + n * d.p * petMult(a.pet.own[k]), w = Math.floor(v);
+    a.pet[c] = v - w;
+    return w;
+  }
+  /* petEntry(a, op, k, g, x, n, t, cr): buy / feed / set. Out: true if applied. */
+  function petEntry(a, op, k, g, x, n, t, cr) {
+    if (g || x || n || typeof k != "string") return false;
+    if (!a.pet) a.pet = { own: {}, on: "" };
+    const own = a.pet.own, pay = (need) => {
+      if (Object.entries(need).some(([m, q]) => (cr.pt[m] || 0) < q)) return false;
+      for (const [m, q] of Object.entries(need)) cr.pt[m] -= q;
+      return true;
+    };
+    if (op == "set") {
+      if ((k && !(Object.hasOwn(PET.kinds, k) && own[k])) || t - (a.pet.at || 0) < PET.setGap) return false;
+      a.pet.on = k; a.pet.at = t; return true;
+    }
+    if (!Object.hasOwn(PET.kinds, k)) return false;
+    if (op == "buy") { if (own[k] || !pay(PET.price[k])) return false; own[k] = 1; return true; }
+    if (op == "feed") { const lv = own[k]; if (!lv || lv >= PET.max || !pay({ [PET.food[k]]: 5 * lv })) return false; own[k] = lv + 1; return true; }
+    return false;
   }
   /* sync({ tok, led, seed }, ip): In: token, new ledger entries, offline balance (first sync only). Out: [status, { gold, xp, dropped }] */
   const seeded = new Map(); /* ip -> times a new account got a seed (in memory, last SEED_WINDOW_MS) */
@@ -205,7 +241,7 @@ function createBank(options = {}) {
     const prevAt = a.at || t; /* the client may have rented any time since the last sync, when the price was higher */
     a.at = t;
     let dropped = 0, earned = false;
-    const cr = { sp: {}, ms: {}, c: 0, used: {} }; /* craft spends in this sync per material (for recipes); contract units delivered (for payouts) */
+    const cr = { sp: {}, ms: {}, c: 0, used: {}, pt: {} }; /* craft spends in this sync per material (for recipes); contract units delivered (for payouts) */
     for (const e of body.led) {
       if (!Array.isArray(e) || typeof e[0] != "string" || !int(e[1], -1e6, 1e6) || !int(e[2], 0, 1e5)) { dropped++; continue; }
       const [kind, g, x] = e, rule = RULES[kind];
@@ -214,7 +250,7 @@ function createBank(options = {}) {
         if (g < 0 || g > rule.g || x > rule.x || t - (a.last[k] || 0) < rule.gap) { dropped++; continue; }
         if (kind == "contract" && !contractOk(a, cr, k, t)) { dropped++; continue; } /* last: a refused payout never uses a day slot */
         a.last[k] = t;
-        a.gold += g; a.xp += x;
+        a.gold += g; a.xp += x + (x > 0 ? petBonus(a, "xp", "fx", x) : 0);
         if (g > 0 || x > 0) earned = true;
       } else if (kind == "bj") {
         if (x) { dropped++; continue; }
@@ -228,6 +264,8 @@ function createBank(options = {}) {
       } else if (kind == "mat") {
         if (!matEntry(a, e[3], e[4], g, x, e[5], t, cr)) dropped++;
         else if (e[5] > 0) earned = true;
+      } else if (kind == "pet") {
+        if (!petEntry(a, e[3], e[4], g, x, e[5], t, cr)) dropped++;
       } else if (SPENDS.includes(kind)) {
         if (g > 0 || x || a.gold + g < 0) { dropped++; continue; }
         a.gold += g;
@@ -235,7 +273,7 @@ function createBank(options = {}) {
     }
     if (earned && t - (a.nsAt || 0) >= NS_GAP) { a.ns = (a.ns || 0) + 1; a.nsAt = t; } /* a real sync (trade unlock): a real earn, at most one per 5 minutes */
     persist();
-    return [200, { gold: a.gold, xp: a.xp, mat: { ...a.mat }, tc: codeOf(id), dropped, bjm: a.bjm || 1, bjmAge: a.bjmAt ? t - a.bjmAt : 1e12 }]; /* bjmAge: ms since the last rent (no clock skew) */
+    return [200, { gold: a.gold, xp: a.xp, mat: { ...a.mat }, tc: codeOf(id), dropped, pet: a.pet ? { own: { ...a.pet.own }, on: a.pet.on } : { own: {}, on: "" }, bjm: a.bjm || 1, bjmAge: a.bjmAt ? t - a.bjmAt : 1e12 }]; /* bjmAge: ms since the last rent (no clock skew) */
   }
 
   /* ---------- trades ---------- */
@@ -373,4 +411,4 @@ function createBank(options = {}) {
   return { sync, flush, tradeOffer, tradeAccept, tradeCancel, tradeList, TRADE, RULES, MAT_SRC, ASSIST, assistPrice, size: () => Object.keys(accts).length };
 }
 
-module.exports = { createBank, RULES, ASSIST, SEEDS_PER_IP, MATS, MAT_SRC, TRADE };
+module.exports = { createBank, PET, RULES, ASSIST, SEEDS_PER_IP, MATS, MAT_SRC, TRADE };
