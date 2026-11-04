@@ -43,22 +43,27 @@ Before handing work to another agent, update this section with enough detail for
 
 ### Current handoff
 
-- **Updated:** 2026-11-04 (Happy, for PM Bob; security review by Zulu/Hawk)
-- **Task and goal:** Ship and harden everything since ba0b406: save codes, What's new, the guest/room trust fixes and the bank seed limit. Push after Zulu's two-browser room test.
-- **Status:** All items below are committed on `main` up to 0ee50c4. On a clean checkout of 0ee50c4, `npm test` passes ALL (581 checks) and `npm run bench` passes ALL (33 scenarios).
-- **Changes:**
-  - Guest gate (fedc1ab): a guest takes hub messages (roster, joins, leaves, classes, colours, positions) only from its host, `NET_SESSION.peerId`.
-  - Room signing (4de180e): hosts sign answers and guests sign offers, and invite links carry the host key hash (`hk`). **Old `?room=` links without `hk` are refused**, so players need a fresh invite link.
-  - Bank (de9f0b4, `src/bank.js`, `src/app.js`): at most 3 seeded new accounts per IP per day (Cloudflare-aware IP), so a shared save code can't farm starting gold or XP.
-  - Dev server (efd094b, `src/playtest.js`): an allow-list serves only `index.html` and assets, never bank/market/brain data, logs, docs, source or dotfiles. A malformed URL gets 400, and `npm run dev` binds to 127.0.0.1.
-  - F2 save codes (f136b56): Settings › 💾 Save exports an `RB1.<base64>.<checksum>` code. Import goes through the normal load sanitizer, and no autosave can overwrite it before the reload. Reset needs RESET typed. The bank syncs once at load, so online gold and XP always come from the server, and the code never contains `rb_btok`.
-  - Load hardening (21f4e0b): `up` takes only dmg/vit/spd/cdr, classes are checked with `Object.hasOwn(CL, …)`, raw numbers must be finite and are range-clamped, `tut` is 0-4, and gold that isn't finite becomes 0. The reset dialog says that online the bank restores gold and XP.
-  - Blackjack Stats clamps (ca8d135): each part is clamped to the hands played, bars are capped at 100%, and net gold uses trunc.
-  - F3 What's new (f0a76ce, 0ee50c4): a corner card (`#news`) once per `BUILD` (stored in `rb_news`), with a soft `sfx("coin")` at the player's volume. Close it with ×, or it fades after 14 s. It is never a dialog, and players who haven't finished the tutorial skip it. NEWS includes the fresh-invite-link notice. **To announce an update, bump `BUILD` and edit `NEWS`** (index.html, above `sfx`).
-- **Validation (clean checkout of 0ee50c4):** `npm test` ALL PASSED, 581 checks (539 at b3a8cea). `npm run bench` ALL PASSED, 33 scenarios. 12-player phone host: CPU 34.0 of 50 ms/s when everyone walks and 15.1 when idle; upload 0.022 of 0.5 Mbit/s when idle. `git diff --check` is clean, and `npm audit` reports 0 vulnerabilities.
-- **Not tested:** a real two-browser room with signing (Zulu is running it before the push); phones and tablets for F2's Save dialog, the F3 card and the Stats tab; the bank IP limit behind the live Cloudflare tunnel.
-- **Known issues and risks:** The phone-CPU bench checks are timing-sensitive. Under heavy machine load (other agents' browsers) walk/dash 12p read 51-77 of 50 ms/s, and they pass on a quiet run (f0a76ce and 0ee50c4 measure the same, 7.3 ms CPU). Several agents share one working tree: build each commit from the HEAD blob plus your own edits, and check `git show --stat` (21f4e0b swept in early room-signing code; Bob kept it). Old invite links stop working when this is pushed.
-- **Next step:** Zulu finishes the two-browser E2E, then Bob pushes. After that: tablet QA at 1024×768, 820×1180 and 844×390 for the Save dialog, the What's new card and the Stats tab.
+- **Updated:** 2026-11-04 (Happy, for PM Bob; security by Zulu, reviews by Hawk)
+- **Task and goal:** More grinding, resources and trading (round 3), then a UI rework that fits the rune isle ("Dusk Aether"). Push after Zulu's and Hawk's reviews.
+- **Status:** Everything below is committed locally on `main` up to 5b7b3e0 and **not pushed**. On a clean checkout of 5b7b3e0, `npm test` passes ALL (678 checks, up from 581 at 0ee50c4) and `npm run bench` passes ALL (33 scenarios).
+- **Changes, round 3 (grinding, resources, trading):**
+  - Materials on the server (b89a70d, edc6ba9, 318d819; Zulu): every material change is a ledger entry `["mat", 0, 0, src, key, n]` with per-source caps, gaps and daily caps, plus the server recipe table (cb33d73). Contract payouts can't mint rare materials. Migration writes the refund and the migrated flag in one atomic write.
+  - F4 Gathering (2ed76c2): 6 nodes on the hub island (Rune Ore, Moonherb, Echo Shard), a 1.2 s channel (moving cancels it), and each node regrows after 60 s. The daily curve is full yield for 40 gathers, half to 80, then a fifth. Mastery runs from level 1 to 10 at +4% each, with a fractional carry and no dice. `matAdd(k, n, src)` is the only way materials change; the hub's gold/XP audit skips `"mat"` entries. Smith recipes: refine ore (5 ore + 2 echo → 3 dust) and Moon Tonic (4 herb + 1 echo: +8% damage for the next raid).
+  - Trading (8719076, Zulu): online only, through bank escrow and a 🤝 Trade window.
+  - F5 Contract Board (637f2a1): the Quest Board shows 3 orders a day picked from the date, so everyone sees the same board. A delivery logs its `"contract"` spends before the gold, XP and Echo payout (within `RULES.contract`), with 30 s between deliveries.
+  - F6 Maiden's Exchange (cf7998a): ore, herb and echo barter for each other, never gold. Each material's daily demand (×0.8/1/1.25) comes from the date, and every trade of a material that day adds +25% to its price. 10 trades a day; no A→B→A loop pays.
+- **Changes, UI "Dusk Aether" (`index.html` CSS, plus `loCls()`):**
+  - P1 (6f141de): `--ae-*` tokens, twilight glass panels with a violet mist top, teal glyph edges and code-drawn rune corner notches, small-caps titles and teal focus rings. Panels stay dark, so all ~195 inline light text colours keep ≥4.5:1 contrast.
+  - P2 (42fc2d1): chamfered runestone HUD plates, a rune-coin gold pill, and teal-glass chat and action banner. The net badge moved under the gold (fixes the overlap with the quest tracker at 844×390). `body.lo` follows `SET.low` (no glows on Low spec). Colours are baked hex because `color-mix` is missing on older tablets.
+  - P3 (5b7b3e0): twilight rows tinted by their accent (`color-mix` only inside `@supports`), teal runestone buttons, a slate disabled state, glass raid cards, and teal close buttons and tabs. HUD tap targets are ≥44 px on touch and phones; hover glows apply only under `(hover: hover)`.
+- **Validation (clean checkout of 5b7b3e0):** `npm test` ALL PASSED (678 checks). `npm run bench` ALL PASSED (33 scenarios). 12-player phone host: CPU 36.5 of 50 ms/s when everyone walks and 17.6 when idle; upload 0.100 and 0.021 of 0.5 Mbit/s. Headless Chrome at 1280×720, 1024×768 and 844×390: hub, Maiden, Quest Board and Settings render with no console errors, and gathering works end to end (channel, yield, ledger entry).
+- **Not tested:** real phones and tablets (touch, iOS Safari, older Android WebView) for the new UI, the gathering nodes, the Contract Board and the Exchange; two-browser trading; Low spec mode on a real weak GPU.
+- **Known issues and risks:**
+  - The phone-CPU bench checks are timing-sensitive: under heavy machine load they read 50-89 of 50 ms/s at any commit. Run the pre-push bench on a quiet machine.
+  - Several agents share one working tree: build each commit from the HEAD blob plus your own edits, written through a temp file and a rename, and check `git show --stat`.
+  - The panel scrollbar is still gold (cosmetic, for a P4).
+  - Gathering nodes sit at fixed island spots: if the river or NPCs move, re-check them with `riverNear` and `bridgeAt`.
+- **Next step:** Zulu reviews P3 and Hawk passes round 3, then Bob pushes. After that: real-device QA at 1024×768, 820×1180 and 844×390, and the P4 scrollbar.
 
 ## Player market (paused for release)
 
