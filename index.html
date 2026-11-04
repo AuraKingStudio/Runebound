@@ -2506,6 +2506,7 @@
           V.bo = s.bo && typeof s.bo.day == "string" && Array.isArray(s.bo.ids) ? { day: s.bo.day, ids: s.bo.ids, prog: s.bo.prog || {}, done: s.bo.done || {} } : null;
           if (s.ct && typeof s.ct.day == "string" && Array.isArray(s.ct.ids)) V.ct = { day: s.ct.day.slice(0, 10), ids: s.ct.ids.filter((i) => typeof i == "string" && i.length < 12).slice(0, 3), done: Object.fromEntries(Object.keys(s.ct.done || {}).filter((i) => s.ct.ids.includes(i)).map((i) => [i, 1])) }; /* Contract Board */
           V.ctAt = Number.isFinite(s.ctAt) ? cl(s.ctAt, 0, Date.now()) : 0;
+          if (s.mx && typeof s.mx.d == "string" && Number.isFinite(s.mx.n)) { V.mx = { d: s.mx.d.slice(0, 10), n: cl(Math.trunc(s.mx.n), 0, 99), s: {} }; for (const k of ["ore", "herb", "echo"]) if (Number.isFinite((s.mx.s || {})[k])) V.mx.s[k] = cl(Math.trunc(s.mx.s[k]), 0, 99); } /* Maiden's Exchange today */
           V.ul = s.ul && typeof s.ul == "object" ? { class: !!s.ul.class, maiden: !!s.ul.maiden, smith: !!s.ul.smith, herald: !!s.ul.herald, barkeep: !!s.ul.barkeep, seraph: !!s.ul.seraph } : {};
           for (const k of ["wins", "loss", "best"]) if (Number.isFinite(s[k])) V[k] = cl(Math.trunc(s[k]), 0, 1e9);
           if (s.bjs && typeof s.bjs == "object") { V.bjs = {}; for (const k of ["h", "w", "l", "p", "n", "s", "b", "g"]) V.bjs[k] = Math.max(k == "g" ? -1e9 : 0, Math.min(1e9, Math.trunc(+s.bjs[k] || 0))); for (const k of ["w", "l", "p", "n", "b"]) V.bjs[k] = Math.min(V.bjs[k], V.bjs.h); } /* blackjack stats (display only); no part exceeds the hands played */
@@ -7257,6 +7258,39 @@
         toast(`${MATS[got].e} +${tr[3]} ${MATS[got].n}`);
         maidenUI();
       }
+      /* ---------- The Maiden's Exchange: island materials bartered among themselves (never gold) ----------
+         XCH: [from, to, base give, get]. Rates drift: each dawn every material is wanted (x0.8), normal or flooded (x1.25), the same
+         for everyone (from the date), and each trade of a material today raises its price +25% ("you flood her"). XCH_DAY trades a day.
+         No loop pays: going A -> B -> A always returns less than you gave, even at the best rates. */
+      const XCH = [["ore", "herb", 3, 2], ["herb", "ore", 3, 2], ["ore", "echo", 6, 1], ["herb", "echo", 6, 1], ["echo", "ore", 1, 2], ["echo", "herb", 1, 2]];
+      const XCH_DAY = 10, XCH_MUL = [0.8, 1, 1.25];
+      function xchDay() { const d = dayKey(new Date()); if (!V.mx || V.mx.d != d) V.mx = { d, n: 0, s: {} }; return V.mx; }
+      function xchMul(k) { let h = 7; for (const ch of dayKey(new Date()) + k) h = (Math.imul(h, 31) + ch.charCodeAt(0)) >>> 0; return XCH_MUL[h % 3]; }
+      const xchGive = (x) => Math.max(1, Math.round(x[2] * xchMul(x[0]) * (1 + 0.25 * (xchDay().s[x[0]] || 0))));
+      /* xchTrade(i): give today's price of XCH[i]'s material, get its fixed amount. Out: true when traded. */
+      function xchTrade(i) {
+        const x = XCH[i], day = xchDay();
+        if (!x || day.n >= XCH_DAY) return false;
+        const give = xchGive(x);
+        if (((V.mat || {})[x[0]] || 0) < give) return false;
+        matAdd(x[0], -give, "maiden");
+        matAdd(x[1], x[3], "maiden");
+        day.n++;
+        day.s[x[0]] = (day.s[x[0]] || 0) + 1;
+        save();
+        if (P) burst(P.x, P.y, MATS[x[1]].col, 18, 140);
+        sfx("coin", 1.1);
+        toast(`${MATS[x[0]].e}-${give} → ${MATS[x[1]].e}+${x[3]}`);
+        if ($("dlg") && !$("dlg").hidden && CUR_DLG == "maiden") maidenUI();
+        return true;
+      }
+      function xchRows() {
+        const day = xchDay(), left = XCH_DAY - day.n, tag = (m) => (m < 1 ? `<span style="color:#7dff9a">wanted</span>` : m > 1 ? `<span style="color:#ff9a7a">flooded</span>` : "");
+        return `<div class="mast"><span class="sm">🔁 Exchange · island materials, prices shift each dawn and with every trade · ${left}/${XCH_DAY} left today</span></div>` +
+          XCH.map((x, i) => { const g = xchGive(x), ok = left > 0 && ((V.mat || {})[x[0]] || 0) >= g;
+            return `<div class="row" style="justify-content:space-between;gap:6px"><span>${MATS[x[0]].e}${g} → ${MATS[x[1]].e}${x[3]} <small class="sm">${tag(xchMul(x[0]))}</small></span><button ${ok ? "" : "disabled"} onclick="xchTrade(${i})">Trade</button></div>`;
+          }).join("");
+      }
       function maidenUI() {
         const ready = V.mb != dayKey(new Date()), left = maidLeft();
         const cost = (g) => Object.entries(g).map(([k, n]) => k == "gold" ? `<span class="coin"></span>${n}` : `${MATS[k].e}${n}`).join(" ");
@@ -7265,7 +7299,7 @@
         const mats = Object.keys(MATS).map((k) => `<span title="${MATS[k].n}">${MATS[k].e}${(V.mat || {})[k] || 0}</span>`).join(" &nbsp;");
         const opts = BLESS.slice(0, 2).map((b) => `<button class="${ready ? "" : "alt"}" ${ready ? "" : "disabled"} onclick="maidenPick('${b[0]}')">${b[1]}</button>`).join("");
         $("dp").innerHTML = `<h2>🌹 The Maiden</h2><p>"Rare things bloom where others see only thorns. Bring me what you have, raider."</p>
-          <div class="sm" style="margin:2px 0 6px">Your materials: ${mats} · trades left today: <b>${left}/${MAID_DAY}</b></div>${trades}
+          <div class="sm" style="margin:2px 0 6px">Your materials: ${mats} · trades left today: <b>${left}/${MAID_DAY}</b></div>${trades}${xchRows()}
           <div class="mast"><span class="sm">Her daily grace (free, one raid)</span></div><div class="row" style="gap:6px">${ready ? opts : '<span class="sm">"Return with the dawn."</span>'}</div>
           <button class="alt x" onclick="closeDlg()" title="Farewell">Farewell</button>`;
       }
