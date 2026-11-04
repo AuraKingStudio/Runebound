@@ -52,6 +52,16 @@
       #pinv { position: fixed; top: 64px; left: 50%; transform: translateX(-50%); z-index: 30; display: flex; gap: 8px; align-items: center;
         padding: 6px 8px 6px 12px; border-radius: 10px; background: #0b1218e6; border: 1px solid #c9a14a; color: #f3e6c4; font-size: 13px; }
       #pinv[hidden] { display: none; }
+      /* What's new card: a corner note, never a dialog (play and the tutorial go on under it) */
+      #news { position: fixed; right: 12px; bottom: 76px; z-index: 29; width: min(300px, calc(100vw - 24px)); padding: 10px 12px 10px 14px; border-radius: 10px;
+        background: linear-gradient(160deg, rgba(43, 30, 16, 0.96), rgba(22, 15, 9, 0.96)); border: 1px solid #d9a94a; color: #f3e6c8; font: 13px/1.35 Georgia, serif;
+        box-shadow: 0 0 18px rgba(255, 216, 74, 0.25); animation: newsIn 0.45s ease-out; }
+      #news[hidden] { display: none; }
+      #news b { color: #ffd84a; }
+      #news ul { margin: 6px 0 0; padding-left: 18px; }
+      #news .x { position: absolute; top: 4px; right: 6px; background: none; border: 0; color: #f3e6c8; font-size: 18px; cursor: pointer; padding: 2px 6px; }
+      @keyframes newsIn { from { transform: translateY(16px); opacity: 0; } }
+      @media (prefers-reduced-motion: reduce) { #news { animation: none; } }
       #pinv button { padding: 4px 12px; border-radius: 6px; border: 0; font: inherit; font-weight: 700; cursor: pointer; }
       #pinv .y { background: #3fbf6a; color: #06140a; } #pinv .n { background: #5a2a2a; color: #f3e6c4; }
       #dlg {
@@ -1636,6 +1646,7 @@
     <canvas id="cv"></canvas>
     <div id="dlg" hidden><div class="pn" id="dp"></div></div>
     <div id="pinv" hidden></div>
+    <div id="news" hidden role="status"></div>
     <div id="dev" hidden></div>
     <div id="rot"><div><b>📱</b>Turn your phone sideways to play</div></div>
     <div id="jz"></div>
@@ -2263,6 +2274,22 @@
         if (b && b !== UI_HOV) sfx("ui", 1.6);
         UI_HOV = b;
       }, true);
+      /* ---------- What's new: a small corner card once per build (BUILD), a soft chime at the player's volume ----------
+         Brand-new players (tutorial not done) skip it: everything is new to them. Dismiss with x, or it fades after 14 s. */
+      const BUILD = "2026.11.04";
+      const NEWS = ["Your name colour now reaches other players at once", "💾 Save codes: export, import or reset in Settings", "📊 Blackjack Stats tab at the Barkeep's chart", "Your own aura pulses brighter so you spot yourself in a crowd"];
+      let NEWS_T = 0;
+      function newsShow() {
+        let seen = "";
+        try { seen = localStorage.getItem("rb_news") || ""; localStorage.setItem("rb_news", BUILD); } catch (e) { return; }
+        const el = $("news");
+        if (seen == BUILD || !el || (V.tut || 0) < 4) return;
+        el.innerHTML = `<button class="x" onclick="newsHide()" title="Close">×</button><b>✨ What's new</b><ul>${NEWS.map((n) => `<li>${n}</li>`).join("")}</ul>`;
+        el.hidden = false;
+        sfx("coin", 1.5);
+        NEWS_T = setTimeout(newsHide, 14000);
+      }
+      function newsHide() { const el = $("news"); if (el) el.hidden = true; if (NEWS_T) clearTimeout(NEWS_T); NEWS_T = 0; }
       function sfx(t, m = 1) {
         const p = SFX[t];
         if (!p) return;
@@ -2667,6 +2694,7 @@
       const bankUrl = () => { const u = typeof NET_CONFIG != "undefined" && NET_CONFIG.signalingUrl; return u && u.startsWith("https://") ? u : ""; };
       const bankTok = () => { let t = ""; try { t = localStorage.getItem("rb_btok") || ""; } catch (e) {} if (!/^[a-f0-9]{32}$/.test(t)) { t = [...crypto.getRandomValues(new Uint8Array(16))].map((b) => b.toString(16).padStart(2, "0")).join(""); try { localStorage.setItem("rb_btok", t); } catch (e) {} } return t; };
       function bankSoon() { if (!BANK_T && bankUrl()) BANK_T = setTimeout(bankSync, 1100); }
+      setTimeout(newsShow, 2500); /* after the first frames, so it never competes with the load */
       setTimeout(bankSoon, 0); /* once at load (after the script, when NET_CONFIG exists): an imported or edited save shows the server's gold and XP right away */
       async function bankSync() {
         BANK_T = 0;
