@@ -175,6 +175,13 @@ function createDirectoryServer(options = {}) {
       const [status, value] = bank.sync(body || {}, ip); /* ip: Cloudflare-aware (above); caps seeded new accounts per IP */
       return send(res, status, value);
     }
+    /* trades between online players (bank escrow): /api/trade/offer | accept | cancel | list */
+    const tm = /^\/api\/trade\/(offer|accept|cancel|list)$/.exec(url.pathname);
+    if (tm) {
+      if (!bank) return send(res, 503, { error: "Trading needs the online server." });
+      const [status, value] = bank["trade" + tm[1][0].toUpperCase() + tm[1].slice(1)](body || {});
+      return send(res, status, value);
+    }
     if (url.pathname === "/api/feedback") {
       /* playtest notes: one JSON line per note in feedback.log (no session needed; size-capped, rate-limited above) */
       if (typeof body.text !== "string" || !body.text.trim() || body.text.length > 1500) return send(res, 400, { error: "Feedback is invalid." });

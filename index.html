@@ -2728,6 +2728,82 @@
           save();
         } catch (e) {} finally { BANK_BUSY = false; if (LEDGER_BASE + LEDGER.length > BANK_AT) bankSoon(); }
       }
+      /* ---------- trading (online mode only): the server bank escrows both sides; this window only asks it ----------
+         Your trade code is public (share it in chat); an offer escrows what you give at once, the other player accepts or declines.
+         Amounts shown here always come from the server's answer. LAN, room and local play: no trading. */
+      const TRADE_UI = { busy: false, msg: "", tc: "", offers: [] };
+      async function tradeApi(path, data) {
+        const url = bankUrl();
+        if (!url) throw new Error("Trading needs the online server.");
+        const r = await fetch(url + "/api/trade/" + path, { method: "POST", headers: { "content-type": "application/json" }, cache: "no-store",
+          body: JSON.stringify({ tok: bankTok(), ...data }) });
+        const j = await r.json().catch(() => ({}));
+        if (!r.ok) throw new Error(typeof j.error == "string" ? j.error.slice(0, 120) : "Trade failed (" + r.status + ").");
+        /* the server's balance wins, plus anything not synced yet */
+        if (Number.isInteger(j.gold)) {
+          const later = LEDGER.slice(Math.max(0, BANK_AT - LEDGER_BASE));
+          V.gold = Math.max(0, j.gold + later.reduce((n, e) => n + e[1], 0));
+          if (j.mat && typeof j.mat == "object") { const m = {}; for (const k in MATS) m[k] = Math.max(0, (Number.isInteger(j.mat[k]) ? j.mat[k] : 0) + later.reduce((n, e) => n + (e[0] == "mat" && e[4] == k ? e[5] | 0 : 0), 0)); V.mat = m; }
+          save();
+        }
+        return j;
+      }
+      const tradeSide = (sd) => [sd && sd.gold ? `<span class="gold"><span class="coin"></span>${sd.gold | 0}</span>` : "", ...Object.entries((sd && sd.mat) || {}).filter(([k]) => MATS[k]).map(([k, n]) => `${MATS[k].e} ${n | 0} ${MATS[k].n}`)].filter(Boolean).join(" + ") || "nothing";
+      async function tradeOpen() {
+        CUR_DLG = "trade";
+        $("dlg").hidden = false;
+        if (!bankUrl()) { TRADE_UI.msg = "Trading needs the online server: it keeps both sides safe. It is off in LAN, room and local play."; return tradeUI(); }
+        TRADE_UI.msg = "Loading…"; tradeUI();
+        try { const j = await tradeApi("list", {}); TRADE_UI.tc = /^[a-f0-9]{10}$/.test(j.tc) ? j.tc : ""; TRADE_UI.offers = Array.isArray(j.offers) ? j.offers.filter((o) => /^[a-f0-9]{16}$/.test(o.id)).slice(0, 20) : []; TRADE_UI.msg = ""; }
+        catch (e) { TRADE_UI.msg = e.message; }
+        tradeUI();
+      }
+      function tradeUI() {
+        if (CUR_DLG != "trade") return;
+        $("dp").className = "pn";
+        const on = !!bankUrl() && TRADE_UI.tc;
+        const num = (id, max) => `<input id="${id}" type="number" min="0" max="${max}" step="1" value="0" style="width:64px;background:rgba(0,0,0,.3);color:inherit;border:1px solid var(--ln);border-radius:6px;padding:3px">`;
+        const pick = (pre) => Object.keys(MATS).map((k) => `<label class="sm" style="white-space:nowrap">${MATS[k].e} ${num(pre + k, 9999)}</label>`).join(" ");
+        const rows = TRADE_UI.offers.map((o) => `<div class="row" style="justify-content:space-between;gap:6px;flex-wrap:wrap;border-top:1px solid var(--ln);padding-top:6px">
+            <span class="sm">${o.out ? "You give" : "They give"} ${tradeSide(o.out ? o.give : o.give)} · ${o.out ? "you get" : "for your"} ${tradeSide(o.want)} · ${Math.ceil((o.left | 0) / 60000)} min</span>
+            <span>${o.out ? `<button class="alt" onclick="tradeAct('cancel','${o.id}')">Cancel</button>` : `<button class="claim" onclick="tradeAct('accept','${o.id}')">Accept</button> <button class="alt" onclick="tradeAct('cancel','${o.id}')">Decline</button>`}</span></div>`).join("");
+        $("dp").innerHTML = `<h2>🤝 Trade</h2>
+          ${on ? `<p class="sm">Your trade code: <b style="user-select:all;color:#ffe08a">${TRADE_UI.tc}</b> <button class="alt" onclick="navigator.clipboard?.writeText('${TRADE_UI.tc}');toast('Trade code copied')">Copy</button><br>Give it to a friend. Gold received pays a 5% tax. Offers last 10 minutes.</p>
+          <div class="mast"><span class="sm">New offer</span></div>
+          <div class="row" style="gap:6px;flex-wrap:wrap"><span class="sm">To code</span><input id="tto" maxlength="10" autocomplete="off" style="width:110px;background:rgba(0,0,0,.3);color:inherit;border:1px solid var(--ln);border-radius:6px;padding:3px"></div>
+          <div class="sm" style="margin:4px 0">You give: <span class="coin"></span> ${num("tgg", 1e6)} ${pick("tg_")}</div>
+          <div class="sm" style="margin:4px 0">You want: <span class="coin"></span> ${num("twg", 1e6)} ${pick("tw_")}</div>
+          <div class="row"><button class="claim" onclick="tradeSend()" ${TRADE_UI.busy ? "disabled" : ""}>OFFER</button></div>
+          <div class="mast"><span class="sm">Open offers</span></div>${rows || `<p class="sm">No open offers.</p>`}` : ""}
+          <p class="sm" style="color:#ffb37a">${String(TRADE_UI.msg).replace(/[<>&"]/g, "")}</p>
+          <button class="alt x" onclick="closeDlg()" title="Close">Close</button>`;
+      }
+      function tradeRead(pre, gid) {
+        const v = (id) => { const el = $(id); const n = el ? Math.floor(+el.value || 0) : 0; return n > 0 ? n : 0; };
+        const mat = {};
+        for (const k in MATS) { const n = v(pre + k); if (n) mat[k] = Math.min(9999, n); }
+        return { gold: Math.min(1e6, v(gid)), mat };
+      }
+      async function tradeSend() {
+        const to = String(($("tto") && $("tto").value) || "").trim().toLowerCase();
+        if (!/^[a-f0-9]{10}$/.test(to)) { TRADE_UI.msg = "A trade code is 10 letters and digits (0-9, a-f)."; return tradeUI(); }
+        return tradeRun(() => tradeApi("offer", { to, give: tradeRead("tg_", "tgg"), want: tradeRead("tw_", "twg") }), "Offer sent: what you give is held safely until they answer.");
+      }
+      function tradeAct(kind, id) {
+        if (!/^[a-f0-9]{16}$/.test(id) || !["accept", "cancel"].includes(kind)) return;
+        return tradeRun(() => tradeApi(kind, { id }), kind == "accept" ? "Trade done!" : "Offer closed: the escrow went back.");
+      }
+      async function tradeRun(fn, ok) {
+        if (TRADE_UI.busy) return;
+        TRADE_UI.busy = true;
+        try { const j = await fn(); sfx(ok == "Trade done!" ? "win" : "coin"); TRADE_UI.msg = ok + (j.tax ? " Tax: " + (j.tax | 0) + " gold." : ""); }
+        catch (e) { TRADE_UI.msg = e.message; sfx("ui"); }
+        finally { TRADE_UI.busy = false; }
+        const keep = TRADE_UI.msg;
+        await tradeOpen();
+        TRADE_UI.msg = TRADE_UI.msg || keep;
+        tradeUI();
+      }
       /* goldHud(): the gold counter rolls to the new amount (about 0.6 s). Gaining: coins fly in, the counter pops gold, a green "+N" rises.
          Paying: the counter shakes red and a red "-N" drops. GOLD_SHOWN = the number on screen. */
       let GOLD_SHOWN = null, GOLD_FROM = 0, GOLD_AT = 0;
@@ -8943,6 +9019,7 @@
             <button onclick="closeDlg();$('dlg').hidden=false;titleUI()">🎖️ Titles</button>
             <button onclick="setInvite()" title="Copy the invite link">🔗 Invite</button>
             <button onclick="saveUI()">💾 Save</button>
+            <button onclick="closeDlg();tradeOpen()" title="Trade gold and materials with a friend (online server only)">🤝 Trade</button>
             <button onclick="closeDlg();fbOpen()">💬 Feedback</button>
             ${DEV_OK ? `<button onclick="closeDlg();toggleDev()">🛠 Dev tools</button>` : ""}</div>
           <button class="alt x" onclick="REBIND=null;closeDlg()" title="Close">Close</button>`;

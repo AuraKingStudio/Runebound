@@ -20,7 +20,7 @@ ctx.Math=testMath;
 ctx.RBNet=fakeNet;
 ctx.window=ctx;vm.createContext(ctx);
 vm.runInContext(SRC+`
-;globalThis.devMin=devMin;globalThis.devFs=devFs;globalThis.T={V:()=>V,raidDrops,invUI,SMITH,setRaidTrial:(n)=>RAID_TRIAL=n,hpmF3:()=>hpm(),dashF:(p)=>dash(p),heal:(p,n,src)=>heal(p,n,src),PETS,npcHidden:(n)=>npcHidden(n),loreRewardT:(b)=>loreReward(b),clampWT:(p)=>clampW(p),maidTrade:(i)=>maidTrade(i),maidenUI:()=>maidenUI(),seraphBuy,BLESS,qAct:(a)=>qAct(a),bless,dmF2:()=>dm(),cdmF2:()=>cdm(),TRIAL_SEL,enterRaidT:(k)=>enterRaid(k),craftRefine,hpmF:()=>hpm(),cdmF:()=>cdm(),wp,eqRoll,dmF:()=>dm(),craftCost,craftMake,craftTemper,craftSalvage,FORGE,smithUI,invWear,MATS,setRaid:(k)=>S.raid=k,CLASS_DMG:()=>CLASS_DMG,P:()=>P,S:()=>S,start,devAdd,devUp,devUI,devCls,devHeal,devWipe,devResetQ,devArena,devBoss,devHub,DEV,hurt,act,step,pauseGame,resumeGame,isPaused:()=>paused,QUESTS,UPG,toggleDev,buy,shopUI,qAct,togglePause,dailyCheck,saveName,lvlInfo,gainXP,lvlCol,loreReward,isUnl,tutNext,bjVal,bjDeal,bjHit,bjStand,bjDouble,bjSplit,BJ:()=>BJ,guildFound,guildRecruit,gBonus,bountyDay,bountyAdd,bountyClaim,guildJoin,guildTab,rankPool,rankRefresh,rankSort,dm,dash,dashStep,setIn,padPoll,inMode:()=>INMODE,KEYHINT,HUBV:()=>HUBV,BOT_STUCK:()=>BOT_STUCK,ENGINE,cdMul,discordUnlock,openDlg,TUT_DONE,ult,ultDmg,ULT,inter,hitB,DASH,ZONE_DMG,RAIDS,BOSSES,raidTeam,raidAI,partyMembers,partyAdd,partyRemove,raidUI,playerUI,partyMessage,bash,taunt,inTele,toArena,toHub,raidPuppet,PARTY:()=>PARTY,netRelayFlush,raidNet,raidState,raidApply,raidNetStep,arena,HUB_NPCS,BOT_NPC_LV,BARKEEP,CLASSN,SKC,PEMB,hubJoin,hubLeave,hubCount,HUB_MAX,hubVisitStep,botName,botLook,chatSend,COS,cosOwn,cosV,cosBuyGold,cosEquip,shopPay,myEmote,streamPts,crossFrame,bridgeAt,riverNear,clampW,WF,STATUE,PORTAL,SET,keyLabel,EDGE,inIsle,netReceive,netPrepareHub,netStep,netPack,netUnpack,netAudit,auditRules,goldAdd,gainXP,netStats,LEDGER:()=>LEDGER,FX:()=>FX,FT:()=>FT,shk:()=>shk,marketUI,BJ_SFX,setNetTestSession:(role,session)=>{NET_ROLE=role;NET_SESSION=session;NET_CONNECTED=!!session;NET_AUTO_STARTED=!!session;},netTestState:()=>({role:NET_ROLE,session:NET_SESSION,connected:NET_CONNECTED}),bjChartOn,bjSecLeft,bjTempo,bjJackpot,bjClockTxt,bjStatAdd,bjStatsHTML,bjChartUI,BJS0,GDS,gdPick,gdSet,netSafeProfile,netGoodEntry,nameUI,saveCode,saveRead,saveImport,saveReset,saveUI,saveUnlock:()=>SAVE_LOCK=false,newsShow,newsHide,BUILD,matAdd,GNODES,GATHER,gatherStart,gatherStep,gatherDone,gLv,craftOre,craftTonic,dmG:()=>dm(),SAVE_KEY,els:null};`,ctx);
+;globalThis.devMin=devMin;globalThis.devFs=devFs;globalThis.T={V:()=>V,raidDrops,invUI,SMITH,setRaidTrial:(n)=>RAID_TRIAL=n,hpmF3:()=>hpm(),dashF:(p)=>dash(p),heal:(p,n,src)=>heal(p,n,src),PETS,npcHidden:(n)=>npcHidden(n),loreRewardT:(b)=>loreReward(b),clampWT:(p)=>clampW(p),maidTrade:(i)=>maidTrade(i),maidenUI:()=>maidenUI(),seraphBuy,BLESS,qAct:(a)=>qAct(a),bless,dmF2:()=>dm(),cdmF2:()=>cdm(),TRIAL_SEL,enterRaidT:(k)=>enterRaid(k),craftRefine,hpmF:()=>hpm(),cdmF:()=>cdm(),wp,eqRoll,dmF:()=>dm(),craftCost,craftMake,craftTemper,craftSalvage,FORGE,smithUI,invWear,MATS,setRaid:(k)=>S.raid=k,CLASS_DMG:()=>CLASS_DMG,P:()=>P,S:()=>S,start,devAdd,devUp,devUI,devCls,devHeal,devWipe,devResetQ,devArena,devBoss,devHub,DEV,hurt,act,step,pauseGame,resumeGame,isPaused:()=>paused,QUESTS,UPG,toggleDev,buy,shopUI,qAct,togglePause,dailyCheck,saveName,lvlInfo,gainXP,lvlCol,loreReward,isUnl,tutNext,bjVal,bjDeal,bjHit,bjStand,bjDouble,bjSplit,BJ:()=>BJ,guildFound,guildRecruit,gBonus,bountyDay,bountyAdd,bountyClaim,guildJoin,guildTab,rankPool,rankRefresh,rankSort,dm,dash,dashStep,setIn,padPoll,inMode:()=>INMODE,KEYHINT,HUBV:()=>HUBV,BOT_STUCK:()=>BOT_STUCK,ENGINE,cdMul,discordUnlock,openDlg,TUT_DONE,ult,ultDmg,ULT,inter,hitB,DASH,ZONE_DMG,RAIDS,BOSSES,raidTeam,raidAI,partyMembers,partyAdd,partyRemove,raidUI,playerUI,partyMessage,bash,taunt,inTele,toArena,toHub,raidPuppet,PARTY:()=>PARTY,netRelayFlush,raidNet,raidState,raidApply,raidNetStep,arena,HUB_NPCS,BOT_NPC_LV,BARKEEP,CLASSN,SKC,PEMB,hubJoin,hubLeave,hubCount,HUB_MAX,hubVisitStep,botName,botLook,chatSend,COS,cosOwn,cosV,cosBuyGold,cosEquip,shopPay,myEmote,streamPts,crossFrame,bridgeAt,riverNear,clampW,WF,STATUE,PORTAL,SET,keyLabel,EDGE,inIsle,netReceive,netPrepareHub,netStep,netPack,netUnpack,netAudit,auditRules,goldAdd,gainXP,netStats,LEDGER:()=>LEDGER,FX:()=>FX,FT:()=>FT,shk:()=>shk,marketUI,BJ_SFX,setNetTestSession:(role,session)=>{NET_ROLE=role;NET_SESSION=session;NET_CONNECTED=!!session;NET_AUTO_STARTED=!!session;},netTestState:()=>({role:NET_ROLE,session:NET_SESSION,connected:NET_CONNECTED}),bjChartOn,bjSecLeft,bjTempo,bjJackpot,bjClockTxt,bjStatAdd,bjStatsHTML,bjChartUI,BJS0,GDS,gdPick,gdSet,netSafeProfile,netGoodEntry,nameUI,tradeOpen,tradeAct,saveCode,saveRead,saveImport,saveReset,saveUI,saveUnlock:()=>SAVE_LOCK=false,newsShow,newsHide,BUILD,matAdd,GNODES,GATHER,gatherStart,gatherStep,gatherDone,gLv,craftOre,craftTonic,dmG:()=>dm(),SAVE_KEY,els:null};`,ctx);
 vm.runInContext('T.raidChatSend=raidChatSend;T.pingBoss=pingBoss;',ctx);
 vm.runInContext('T.bjSide=()=>BJ_SIDE;',ctx);
 const T=ctx.T,BENCH_ONLY=process.argv.includes('--bench');let f=0;const ok=(c,m)=>{if(!c||!BENCH_ONLY)console.log((c?'PASS ':'FAIL ')+m);if(!c)f++};
@@ -838,6 +838,7 @@ async function bankTests(){
  ok(sync([['smith',-1e6,0]])[1].dropped==1,'bank: no spending below zero');
  ok(b.sync({tok,led:[]})[0]==429,'bank: syncs are rate-limited');
  ok(b.sync({tok:'x',led:[]})[0]==400,'bank: bad tokens are refused');
+ {T.tradeOpen();const h=ctx.document.getElementById('dp').innerHTML;ok(h.includes('Trading needs the online server')&&!h.includes('OFFER'),'trade window: offline (LAN, room, local) shows why and offers nothing');T.tradeAct('accept','<img src=x>');ok(!ctx.document.getElementById('dp').innerHTML.includes('<img'),'trade window: a bad offer id is ignored');}
  /* Assist rent: only at the server's own price, which multiplies per rent, cools down and caps */
  const {ASSIST}=require('./bank.js'),rent=(g)=>sync([['bjchart',g,0]])[1];
  ok(ASSIST.mul==1.5&&ASSIST.max==20&&ASSIST.half==10&&ASSIST.cost==50,'bank assist: same price rule as the game (x1.5, cap x20, 10 min half-life, 50)');
@@ -867,10 +868,45 @@ async function bankTests(){
   r=s2([M('gather','ore',6),M('gather','herb',2),M('gather','herb',2)]);ok(r[1].dropped==2&&r[1].mat.herb==2,'bank mats: an over-cap gather and a too-fast second gather are refused');
   r=s2([M('gather','gold',5),M('hack','ore',1),M('gather','ore',1.5),M('gather','ore',NaN),['mat',5,0,'gather','ore',1],M('gather','ore',0)]);ok(r[1].dropped==6&&r[1].mat.ore==8,'bank mats: unknown materials or sources, fractions, NaN, gold-carrying and zero entries are refused');
   r=s2([M('craft','ore',-3)]);ok(r[1].mat.ore==5&&!r[1].dropped,'bank mats: crafting spends on the server');
-  r=s2([M('craft','ore',-99),M('gather','ore',-1)]);ok(r[1].dropped==2&&r[1].mat.ore==5,'bank mats: no spending below zero, and gains cannot be negative');
+  r=s2([M('craft','dust',3)]);ok(r[1].dropped==1,'bank mats: a craft gain with no craft spend is refused (no minting)');
+  r=s2([M('craft','ore',-5),M('craft','dust',3)]);ok(!r[1].dropped&&r[1].mat.ore==0&&r[1].mat.dust==53,'bank mats: a refine turns spent materials into others');
+  r=s2([M('gather','ore',5)]);r=s2([M('craft','ore',-1),M('craft','dust',2)]);ok(r[1].dropped==1,'bank mats: a refine never makes more than it used');
+  r=s2([M('craft','ore',-99),M('gather','ore',-1)]);ok(r[1].dropped==2&&r[1].mat.ore==4,'bank mats: no spending below zero, and gains cannot be negative');
   let got=0;for(let i=0;i<200;i++){r=s2([M('gather','echo',5)]);got=r[1].mat.echo;}ok(got==350,'bank mats: the daily gather cap holds ('+got+' of 350)');
   t+=86400e3;r=s2([M('gather','echo',5)]);ok(r[1].mat.echo==355,'bank mats: the daily cap resets the next day');
   r=s2([['quest',0,0,'x'],['mystery',0,0,'a','b',1]]);ok(r[0]==200,'bank mats: old or unknown ledger shapes never crash the sync');}
+ {/* trades: bank escrow between two online accounts */
+  const os=require('os'),pth=require('path'),fs=require('fs');let tt=5e6;const f=pth.join(os.tmpdir(),'rb-trade-test-'+process.pid+'.json'),lg=f+'.log';
+  const tb=createBank({file:f,tradeLog:lg,now:()=>tt}),A='a1'.repeat(16),B='b2'.repeat(16),C='c3'.repeat(16),M=(src,k,n)=>['mat',0,0,src,k,n];
+  const sy=(tok,led,seed)=>{tt+=2500;return tb.sync({tok,led:led||[],seed})};
+  const ca=sy(A,[],{gold:500,mat:{ore:20}})[1].tc,cb=sy(B,[],{gold:300,mat:{herb:10}})[1].tc;sy(C,[],{gold:0});
+  ok(/^[a-f0-9]{10}$/.test(ca)&&ca!=cb,'trade: each account gets a public trade code (not its token)');
+  const off=(tok,to,give,want)=>{tt+=10;return tb.tradeOffer({tok,to,give,want})},acc=(tok,id)=>{tt+=10;return tb.tradeAccept({tok,id})};
+  ok(off(A,ca,{gold:10},{})[0]==400,'trade: you cannot trade with yourself');
+  ok([{gold:-5},{gold:1.5},{gold:2e6},{mat:{ore:0}},{mat:{ore:-3}},{mat:{gold:5}},{mat:{ore:'5'}},{mat:{a:1,b:1,c:1,d:1,e:1,f:1}},[1]].every(g=>off(A,cb,g,{})[0]==400),'trade: negative, fractional, oversized, unknown and malformed amounts are refused');
+  tt+=60e3;ok(off(A,cb,{},{})[0]==400&&off(A,'nobody0000',{gold:1},{})[0]==404,'trade: empty trades and unknown codes are refused');
+  ok(off(A,cb,{gold:9999},{})[0]==409,'trade: you cannot offer more than you have');
+  tt+=60e3;let r=off(A,cb,{gold:200,mat:{ore:5}},{mat:{herb:4}});const id1=r[1].id;
+  ok(r[0]==200&&r[1].gold==300&&r[1].mat.ore==15,'trade: the offer escrows the proposer side at once');
+  r=acc(A,id1);ok(r[0]==404,'trade: the proposer cannot accept its own offer');
+  r=acc(B,id1);ok(r[0]==200&&r[1].gold==300+190&&r[1].mat.ore==5&&r[1].mat.herb==6&&r[1].tax==10,'trade: accept swaps both sides and burns 5% of the gold received ('+r[1].tax+')');
+  ok(sy(A)[1].mat.herb==4&&sy(A)[1].gold==300,'trade: the proposer receives the materials');
+  r=acc(B,id1);ok(r[0]==409,'trade: a replayed accept is refused (no dupe)');
+  ok(tb.tradeCancel({tok:A,id:id1})[0]==409,'trade: a settled offer cannot be cancelled for a refund');
+  /* race: two offers both want B's 6 herbs; only one can settle */
+  tt+=60e3;const x1=off(A,cb,{gold:10},{mat:{herb:6}})[1].id,x2=off(A,cb,{gold:10},{mat:{herb:6}})[1].id;
+  const r1=acc(B,x1),r2=acc(B,x2);ok(r1[0]==200&&r2[0]==409&&sy(B)[1].mat.herb==0,'trade: two trades racing for the same materials settle only once');
+  ok(tb.tradeCancel({tok:A,id:x2})[0]==200&&sy(A)[1].gold==290,'trade: cancelling refunds the escrow');
+  /* expiry refunds */
+  tt+=60e3;const g0=sy(A)[1].gold,ex=off(A,cb,{gold:50},{gold:1})[1].id;tt+=601e3;
+  ok(tb.tradeList({tok:B})[1].offers.length==0&&sy(A)[1].gold==g0&&acc(B,ex)[0]==409,'trade: an offer expires after 10 minutes and its escrow comes back');
+  ok(acc(C,'nope')[0]==404&&tb.tradeAccept({tok:'zz'})[0]==400,'trade: bad ids and bad tokens are refused');
+  /* limits */
+  tt+=60e3;let n=0;for(let i=0;i<6;i++)if(off(A,cb,{gold:1},{})[0]==200)n++;ok(n==5,'trade: at most 5 open offers per player');
+  tt+=60e3;let rl=0;for(let i=0;i<12;i++)if(tb.tradeList({tok:C})[0]==429)rl++;ok(rl==2,'trade: actions are rate-limited (10 a minute)');
+  const lines=fs.readFileSync(lg,'utf8').trim().split('\n').map(JSON.parse);ok(lines.some(l=>l.ev=='done'&&l.tax==10)&&!fs.readFileSync(lg,'utf8').includes(A),'trade: every trade is logged, never with a token');
+  ok(sy(A,[['trade',500,0],M('trade','ore',5)])[1].dropped==2,'trade: a forged ledger trade never moves the bank');
+  for(const x of [f,f.replace(/\.json$/,'')+'-trades.json',lg])try{fs.unlinkSync(x)}catch{}}
 }
 async function takeoverTests(){
  const {server}=createDirectoryServer({allowedOrigins:[],hostStaleMs:50});await new Promise(r=>server.listen(0,'127.0.0.1',r));

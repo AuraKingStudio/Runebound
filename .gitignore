@@ -11,4 +11,7 @@ brain.json.tmp
 
 bank.json
 bank.json.tmp
+bank-trades.json
+bank-trades.json.tmp
+bank-trades.log
 .claude/worktrees/
