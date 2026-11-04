@@ -889,13 +889,13 @@ async function bankTests(){
   r=P([E('buy','fox')]);ok(r.dropped==1&&!r.pet.own.fox,'bank pets: a pet cannot be bought without its material spends');
   r=P([M('pet','ore',-15),M('pet','herb',-9),E('buy','fox')]);ok(r.dropped==1&&!r.pet.own.fox,'bank pets: a short payment buys nothing');
   r=P([M('pet','ore',-15),M('pet','herb',-10),E('buy','fox'),E('buy','fox')]);ok(r.dropped==1&&r.pet.own.fox==1,'bank pets: the exact price buys the fox once (one payment, one pet)');
-  r=P([E('set','owl'),E('set','__proto__'),E('set','fox'),E('set','fox')]);ok(r.dropped==3&&r.pet.on=='fox','bank pets: only an owned pet can be active, at most once per 2 s');
-  r=P([M('gather','ore',5)]);ok(r.mat.ore==25,'bank pets: fox level 1 adds +5% (5 ore -> 5, 0.25 carried; spends of refused buys stay spent)');
-  for(let i=0;i<3;i++)r=P([M('gather','ore',5)]);ok(r.mat.ore==41,'bank pets: the fox fraction carries over (4 gathers of 5 -> 21)');
+  r=P([E('set','owl'),E('set','__proto__'),E('set','fox'),E('set','fox')]);ok(r.dropped==3&&r.pet.on=='fox','bank pets: only an owned pet can be active, at most one switch per 10 min');t+=600e3;
+  r=P([M('gather','ore',5)]);ok(r.mat.ore==40,'bank pets: fox level 1 adds +5% (5 ore -> 5, 0.25 carried; refused buys are refunded)');
+  for(let i=0;i<3;i++)r=P([M('gather','ore',5)]);ok(r.mat.ore==56,'bank pets: the fox fraction carries over (4 gathers of 5 -> 21)');
   r=P([M('pet','herb',-5),E('feed','fox'),E('feed','fox')]);ok(r.dropped==1&&r.pet.own.fox==2,'bank pets: feeding level 1 costs 5 herb and raises one level');
   r=P([['pet',5,0,'feed','fox',0],E('feed','wolf'),E('dance','fox'),['pet',0,0,'feed','fox',3]]);ok(r.dropped==4&&r.pet.own.fox==2,'bank pets: gold, unowned pets, unknown ops and extra numbers are refused');
   r=P([['raid',0,1000]]);ok(r.xp==1000,'bank pets: an active fox gives no XP bonus');
-  r=P([M('pet','herb',-15),M('pet','echo',-4),E('buy','owl'),E('set','owl')]);t+=20000;r=P([['raid',0,1000]]);ok(r.xp==2050,'bank pets: owl level 1 adds +5% XP to a capped reward');
+  r=P([M('pet','herb',-15),M('pet','echo',-4),E('buy','owl'),E('set','owl'),M('pet','dust',-7)]);ok(r.mat.dust==50,'bank pets: unused pet spends are refunded');t+=20000;r=P([['raid',0,1000]]);ok(r.xp==2050,'bank pets: owl level 1 adds +5% XP to a capped reward');
   t+=20000;r=P([['raid',0,2730]]);ok(r.xp==2050+2730+136,'bank pets: the owl bonus is added after the cap check');
   try{require('fs').unlinkSync(file+'p')}catch{}}
  ok(b.assistPrice({bjm:999,bjmAt:t},t)==1000&&b.assistPrice({bjm:-5},t)==50,'bank assist: the multiplier is capped at x20 and never below x1');

@@ -52,11 +52,12 @@ const MAIDEN = [
 const MAIDEN_DAY = { x: 10, r: 3 };
 /* pets: the bank owns which pets an account has, their level (1-5) and the active one, and applies the bonus itself.
    Ledger ["pet", 0, 0, op, k, 0], op buy / feed / set, each paid by "pet" material spends earlier in the same sync.
-   Bonus = p x mult(lv), mult = 1 + (lv-1)/4 (2x at 5); fox: gather gains, owl: RULES XP, sprite: recipe gains; wolf: client raid damage inside raid caps. */
+   Bonus = p x mult(lv), mult = 1 + (lv-1)/4 (2x at 5); fox: gather gains, owl: RULES XP, sprite: recipe gains; wolf: client raid damage inside raid caps.
+   The bonus comes on top of the day caps (they count base gains). Pet spends a sync does not use are refunded at its end. */
 const PET = {
   kinds: { fox: { b: "gather", p: 0.05 }, owl: { b: "xp", p: 0.05 }, wolf: { b: "dmg", p: 0.03 }, sprite: { b: "refine", p: 0.05 } },
   price: { fox: { ore: 15, herb: 10 }, owl: { herb: 15, echo: 4 }, wolf: { shard: 6, bark: 6 }, sprite: { dust: 30, echo: 3 } },
-  food: { fox: "herb", owl: "echo", wolf: "bark", sprite: "dust" }, max: 5, setGap: 2000,
+  food: { fox: "herb", owl: "echo", wolf: "bark", sprite: "dust" }, max: 5, setGap: 600e3, /* one switch per 10 min: no swapping pets per gain type */
 };
 const petMult = (lv) => 1 + (lv - 1) / 4;
 const MAT_MAX = 99999, SEED_MAT = 50;
@@ -271,6 +272,7 @@ function createBank(options = {}) {
         a.gold += g;
       } else dropped++; /* dev tools, market (escrow pays itself) and unknown kinds never move the bank */
     }
+    for (const [m, q] of Object.entries(cr.pt)) if (q > 0) a.mat[m] = Math.min(MAT_MAX, (a.mat[m] || 0) + q); /* unused pet spends come back */
     if (earned && t - (a.nsAt || 0) >= NS_GAP) { a.ns = (a.ns || 0) + 1; a.nsAt = t; } /* a real sync (trade unlock): a real earn, at most one per 5 minutes */
     persist();
     return [200, { gold: a.gold, xp: a.xp, mat: { ...a.mat }, tc: codeOf(id), dropped, pet: a.pet ? { own: { ...a.pet.own }, on: a.pet.on } : { own: {}, on: "" }, bjm: a.bjm || 1, bjmAge: a.bjmAt ? t - a.bjmAt : 1e12 }]; /* bjmAge: ms since the last rent (no clock skew) */
