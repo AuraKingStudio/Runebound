@@ -16,7 +16,24 @@ const RULES = {
   lore: { g: 1000, x: 150, gap: 700 },
   bounty: { g: 80, x: 60, gap: 1000 },
   quest: { g: 350, x: 100, gap: 2000 },
+  contract: { g: 400, x: 300, gap: 30000 },
 };
+/* materials: the server owns each account's counts. A ledger entry ["mat", 0, 0, src, mat, n] adds n (n < 0 spends).
+   MAT_SRC[src] = { m: { mat: biggest n per entry }, gap: ms between two entries of that src+mat, day: most per mat per day (0 = no day cap) }.
+   Gather: at most 3 x mastery 1.36 per gather (5); day cap = the client's soft curve (full to 40 gathers, x0.5 to 80, x0.2 after) with a hard stop. */
+const MATS = ["dust", "shard", "eye", "bark", "heart", "ore", "herb", "echo"];
+const all = (n) => Object.fromEntries(MATS.map((k) => [k, n]));
+const MAT_SRC = {
+  gather: { m: { ore: 5, herb: 5, echo: 5 }, gap: 2000, day: 350 },
+  raid: { m: { dust: 12, shard: 6, bark: 6, eye: 2, heart: 2 }, gap: 15000, day: 0 },
+  lore: { m: { dust: 5, shard: 2, bark: 2, eye: 1 }, gap: 700, day: 0 },
+  salvage: { m: { dust: 8 }, gap: 1000, day: 200 },
+  bounty: { m: all(5), gap: 1000, day: 50 },
+  contract: { m: all(10), gap: 30000, day: 100 },
+  maiden: { m: all(5), gap: 1000, day: 40 },
+};
+const MAT_SPEND = ["craft", "maiden", "smith"]; /* n < 0 only, never below 0 */
+const MAT_MAX = 99999, SEED_MAT = 50;
 const SPENDS = ["cosmetic", "smith", "seraph", "maiden", "guild", "skill", "upgrade", "equip"];
 /* blackjack Assist rent: the server keeps each player's price multiplier (same rule as BJ_PRICE in index.html): x1.5 per rent,
    capped at x20, the extra halving every 10 minutes since the last rent. A rent is accepted only at that price (+-1 rounding). */
@@ -49,6 +66,25 @@ function createBank(options = {}) {
     timer.unref?.();
   }
 
+  /* matEntry(a, src, mat, g, x, n, t): apply one material entry if the rules allow it. Out: true if applied. */
+  function matEntry(a, src, k, g, x, n, t) {
+    if (g || x || typeof src != "string" || !MATS.includes(k) || !int(n, -MAT_MAX, MAT_MAX) || !n) return false;
+    const kind = src + ":" + k;
+    if (n < 0) {
+      if (!MAT_SPEND.includes(src) || (a.mat[k] || 0) + n < 0) return false;
+      a.mat[k] += n;
+      return true;
+    }
+    const r = MAT_SRC[src];
+    if (!r || !r.m[k] || n > r.m[k] || t - (a.last[kind] || 0) < r.gap) return false;
+    const day = Math.floor(t / 86400e3);
+    if (!a.md || a.md.d != day) a.md = { d: day, n: {} };
+    if (r.day && (a.md.n[kind] || 0) + n > r.day) return false;
+    a.md.n[kind] = (a.md.n[kind] || 0) + n;
+    a.last[kind] = t;
+    a.mat[k] = Math.min(MAT_MAX, (a.mat[k] || 0) + n);
+    return true;
+  }
   /* sync({ tok, led, seed }, ip): In: token, new ledger entries, offline balance (first sync only). Out: [status, { gold, xp, dropped }] */
   const seeded = new Map(); /* ip -> times a new account got a seed (in memory, last SEED_WINDOW_MS) */
   /* seedOk(ip, t): may this IP seed one more new account? Records it if so. No IP (tests, local) = no limit. */
@@ -68,7 +104,9 @@ function createBank(options = {}) {
     if (!a) {
       const s = body.seed && seedOk(ip, t) ? body.seed : {}; /* over the per-IP limit: the account opens empty */
       a = accts[id] = { gold: int(s.gold, 0, 1e9) ? Math.min(s.gold, SEED_GOLD) : 0, xp: int(s.xp, 0, 1e9) ? Math.min(s.xp, SEED_XP) : 0, last: {}, bet: 0, at: 0 };
+      a.mat = {}; if (s.mat && typeof s.mat == "object") for (const k of MATS) if (int(s.mat[k], 1, MAT_MAX)) a.mat[k] = Math.min(s.mat[k], SEED_MAT);
     }
+    if (!a.mat) a.mat = {}; /* accounts from before materials */
     if (t - a.at < SYNC_GAP_MS) return [429, { error: "Too many syncs.", gold: a.gold, xp: a.xp }];
     const prevAt = a.at || t; /* the client may have rented any time since the last sync, when the price was higher */
     a.at = t;
@@ -90,16 +128,18 @@ function createBank(options = {}) {
         if (x || -g < lo - 1 || -g > hi + 1 || a.gold + g < 0) { dropped++; continue; }
         a.gold += g;
         a.bjm = Math.min(ASSIST.max, assistMul(a, t) * ASSIST.mul); a.bjmAt = prevAt; /* the rent happened somewhere since the last sync: anchor there, so a 2nd rent in the same sync still has its window */
+      } else if (kind == "mat") {
+        if (!matEntry(a, e[3], e[4], g, x, e[5], t)) dropped++;
       } else if (SPENDS.includes(kind)) {
         if (g > 0 || x || a.gold + g < 0) { dropped++; continue; }
         a.gold += g;
       } else dropped++; /* dev tools, market (escrow pays itself) and unknown kinds never move the bank */
     }
     persist();
-    return [200, { gold: a.gold, xp: a.xp, dropped, bjm: a.bjm || 1, bjmAge: a.bjmAt ? t - a.bjmAt : 1e12 }]; /* bjmAge: ms since the last rent (no clock skew) */
+    return [200, { gold: a.gold, xp: a.xp, mat: { ...a.mat }, dropped, bjm: a.bjm || 1, bjmAge: a.bjmAt ? t - a.bjmAt : 1e12 }]; /* bjmAge: ms since the last rent (no clock skew) */
   }
 
-  return { sync, RULES, ASSIST, assistPrice, size: () => Object.keys(accts).length };
+  return { sync, RULES, MAT_SRC, ASSIST, assistPrice, size: () => Object.keys(accts).length };
 }
 
-module.exports = { createBank, RULES, ASSIST, SEEDS_PER_IP };
+module.exports = { createBank, RULES, ASSIST, SEEDS_PER_IP, MATS, MAT_SRC };

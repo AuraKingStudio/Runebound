@@ -2703,15 +2703,20 @@
         const url = bankUrl();
         if (!url || BANK_BUSY) return;
         BANK_BUSY = true;
-        const end = LEDGER_BASE + LEDGER.length, led = LEDGER.slice(Math.max(0, BANK_AT - LEDGER_BASE)).filter((e) => e[0] != "dev").slice(0, 150).map((e) => e.slice(0, 3));
+        const end = LEDGER_BASE + LEDGER.length, led = LEDGER.slice(Math.max(0, BANK_AT - LEDGER_BASE)).filter((e) => e[0] != "dev").slice(0, 150).map((e) => e.slice(0, e[0] == "mat" ? 6 : 3)); /* mat: ["mat", 0, 0, src, key, n] */
         try {
           const r = await fetch(url + "/api/bank/sync", { method: "POST", headers: { "content-type": "application/json" }, cache: "no-store",
-            body: JSON.stringify({ tok: bankTok(), led, seed: { gold: V.gold | 0, xp: V.xp | 0 } }) }).then((r) => r.json());
+            body: JSON.stringify({ tok: bankTok(), led, seed: { gold: V.gold | 0, xp: V.xp | 0, mat: V.mat || {} } }) }).then((r) => r.json());
           if (!Number.isInteger(r.gold) || !Number.isInteger(r.xp)) return;
           BANK_AT = end;
           const later = LEDGER.slice(Math.max(0, end - LEDGER_BASE)); /* entries made while the request was out */
           V.gold = Math.max(0, r.gold + later.reduce((n, e) => n + e[1], 0));
           V.xp = r.xp + later.reduce((n, e) => n + e[2], 0);
+          if (r.mat && typeof r.mat == "object") { /* the server owns materials: its counts win, plus what was gathered while the request was out */
+            const m = {};
+            for (const k in MATS) m[k] = Math.max(0, (Number.isInteger(r.mat[k]) ? r.mat[k] : 0) + later.reduce((n, e) => n + (e[0] == "mat" && e[4] == k ? e[5] | 0 : 0), 0));
+            V.mat = m;
+          }
           if (Number.isFinite(r.bjm) && Number.isFinite(r.bjmAge)) { V.bjm = r.bjm; V.bjmAt = Date.now() - r.bjmAge; } /* the server's Assist price wins */
           if (r.dropped) chatSys("The server refused " + r.dropped + " gold/XP change" + (r.dropped > 1 ? "s" : "") + ".", "bye");
           save();
@@ -3468,6 +3473,7 @@
           lore: { g: Math.max(150, ...Object.values(TALE_MS).map((m) => m[0])), x: 150, gap: 700 },
           bounty: { g: Math.max(...BOUNTIES.map((b) => b.g)), x: Math.max(...BOUNTIES.map((b) => b.x)), gap: 1000 },
           quest: { g: Math.max(...QUESTS.map((q) => q.r)), x: 100, gap: 2000 },
+          contract: { g: 400, x: 300, gap: 30000 }, /* Contract Board payouts (same as RULES.contract in src/bank.js) */
           market: { g: 950000, x: 0, gap: 0 }, /* sale payouts (server escrow, capped by the market's max price minus tax) */
         };
       }

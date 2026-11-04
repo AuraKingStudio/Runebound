@@ -845,6 +845,16 @@ async function bankTests(){
   t+=25*3600e3;ok(b4.sync({tok:'cd'.repeat(16),led:[],seed:{gold:500}},ip)[1].gold==500,'bank: the per-IP seed limit resets after a day');try{require('fs').unlinkSync(file+'4')}catch{}}
  ok(b.assistPrice({bjm:999,bjmAt:t},t)==1000&&b.assistPrice({bjm:-5},t)==50,'bank assist: the multiplier is capped at x20 and never below x1');
  try{require('fs').unlinkSync(file)}catch{}
+ {const tk2='cd'.repeat(16),s2=(led,seed)=>{t+=2500;return b.sync({tok:tk2,led,seed})},M=(src,k,n)=>['mat',0,0,src,k,n];
+  let r=s2([],{gold:0,xp:0,mat:{dust:9999,ore:3,bogus:5}});ok(r[1].mat.dust==50&&r[1].mat.ore==3&&!('bogus' in r[1].mat),'bank mats: a new account keeps only a capped part of its offline materials');
+  r=s2([M('gather','ore',5)]);ok(r[1].mat.ore==8&&!r[1].dropped,'bank mats: a legal gather is applied and returned');
+  r=s2([M('gather','ore',6),M('gather','herb',2),M('gather','herb',2)]);ok(r[1].dropped==2&&r[1].mat.herb==2,'bank mats: an over-cap gather and a too-fast second gather are refused');
+  r=s2([M('gather','gold',5),M('hack','ore',1),M('gather','ore',1.5),M('gather','ore',NaN),['mat',5,0,'gather','ore',1],M('gather','ore',0)]);ok(r[1].dropped==6&&r[1].mat.ore==8,'bank mats: unknown materials or sources, fractions, NaN, gold-carrying and zero entries are refused');
+  r=s2([M('craft','ore',-3)]);ok(r[1].mat.ore==5&&!r[1].dropped,'bank mats: crafting spends on the server');
+  r=s2([M('craft','ore',-99),M('gather','ore',-1)]);ok(r[1].dropped==2&&r[1].mat.ore==5,'bank mats: no spending below zero, and gains cannot be negative');
+  let got=0;for(let i=0;i<200;i++){r=s2([M('gather','echo',5)]);got=r[1].mat.echo;}ok(got==350,'bank mats: the daily gather cap holds ('+got+' of 350)');
+  t+=86400e3;r=s2([M('gather','echo',5)]);ok(r[1].mat.echo==355,'bank mats: the daily cap resets the next day');
+  r=s2([['quest',0,0,'x'],['mystery',0,0,'a','b',1]]);ok(r[0]==200,'bank mats: old or unknown ledger shapes never crash the sync');}
 }
 async function takeoverTests(){
  const {server}=createDirectoryServer({allowedOrigins:[],hostStaleMs:50});await new Promise(r=>server.listen(0,'127.0.0.1',r));
