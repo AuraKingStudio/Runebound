@@ -29,8 +29,7 @@ const MAT_SRC = {
   lore: { m: { dust: 5, shard: 2, bark: 2, eye: 1 }, gap: 700, day: { dust: 100, shard: 30, bark: 30, eye: 5 } },
   salvage: { m: { dust: 8 }, gap: 1000, day: 200 },
   bounty: { m: all(5), gap: 1000, day: 50 },
-  contract: { m: all(10), gap: 30000, day: 100 },
-  maiden: { m: all(5), gap: 1000, day: 40 },
+  contract: { m: { echo: 3 }, gap: 0, day: 0 }, /* Contract Board reward: echo only (never a rare), at most 3 and never more than delivered; 3 a day via contractOk */
 };
 const MAT_SPEND = ["craft", "maiden", "smith", "contract"]; /* n < 0 only, never below 0 */
 /* Contract Board: a payout (gold, XP or a material reward, each its own entry) needs a delivery of at least CONTRACT.min
@@ -43,6 +42,14 @@ const RECIPE = {
   shard: { n: 1, need: { dust: 5 }, day: 60 }, /* refine-k */
   bark: { n: 1, need: { dust: 5 }, day: 60 },
 };
+/* The Maiden: every gain must match one of her trades, paid by its spend earlier in the same sync (src "maiden").
+   [from, to, least spent, got, pool]. Pool x: the island exchange (prices drift down to these floors), 10 a day; pool r: her rare trades, 3 a day. */
+const MAIDEN = [
+  ["ore", "herb", 2, 2, "x"], ["herb", "ore", 2, 2, "x"], ["ore", "echo", 5, 1, "x"], ["herb", "echo", 5, 1, "x"], ["echo", "ore", 1, 2, "x"], ["echo", "herb", 1, 2, "x"],
+  ["eye", "heart", 1, 1, "r"], ["heart", "eye", 1, 1, "r"], ["shard", "eye", 12, 1, "r"], ["bark", "heart", 12, 1, "r"],
+  ["shard", "bark", 5, 4, "r"], ["bark", "shard", 5, 4, "r"], ["dust", "eye", 30, 1, "r"], ["dust", "heart", 30, 1, "r"],
+];
+const MAIDEN_DAY = { x: 10, r: 3 };
 const MAT_MAX = 99999, SEED_MAT = 50;
 /* trades (online only): A offers { give, want } to B's public trade code. A's give is escrowed at once (A's confirm, the offer can't change);
    B accepts (B's confirm): the bank re-checks B, swaps both sides in one step and burns TAX of the gold each side receives.
@@ -59,7 +66,7 @@ const ASSIST = { cost: 50, mul: 1.5, max: 20, half: 10 };
 const assistMul = (a, t) => 1 + (Math.min(ASSIST.max, Math.max(1, a.bjm || 1)) - 1) * Math.pow(0.5, Math.max(0, t - (a.bjmAt || 0)) / 60000 / ASSIST.half);
 const assistPrice = (a, t) => Math.max(ASSIST.cost, Math.round(ASSIST.cost * assistMul(a, t)));
 const SEED_GOLD = 500, SEED_XP = 2000; /* a new online account keeps at most this much of its old offline save */
-const MAX_ENTRIES = 150, SYNC_GAP_MS = 1000;
+const MAX_ENTRIES = 150, SYNC_GAP_MS = 1000, NS_GAP = 5 * 60e3;
 const SEEDS_PER_IP = 3, SEED_WINDOW_MS = 24 * 3600e3; /* seeded new accounts per IP per day: a shared save code can't farm the seed with fresh tokens */
 
 const hash = (t) => createHash("sha256").update(t).digest("hex");
@@ -73,6 +80,19 @@ function createBank(options = {}) {
   try {
     const j = JSON.parse(fs.readFileSync(file, "utf8")) || {};
     if (j.v === 2) { accts = j.accts || {}; trades = j.trades || {}; } else accts = j;
+  } catch {}
+  /* migration: an older build kept trades in <bank>-trades.json. Refund its open escrow once, then retire the file. */
+  const oldTrades = file.replace(/\.json$/, "") + "-trades.json";
+  try {
+    const old = JSON.parse(fs.readFileSync(oldTrades, "utf8")) || {};
+    for (const tr of Object.values(old)) if (tr && tr.st == "open" && accts[tr.from] && tr.give) {
+      const a = accts[tr.from];
+      if (!a.mat) a.mat = {};
+      a.gold += int(tr.give.gold, 0, 1e6) ? tr.give.gold : 0;
+      for (const [k, n] of Object.entries(tr.give.mat || {})) if (MATS.includes(k) && int(n, 1, 9999)) a.mat[k] = Math.min(MAT_MAX, (a.mat[k] || 0) + n);
+    }
+    fs.writeFileSync(file + ".tmp", JSON.stringify({ v: 2, accts, trades })); fs.renameSync(file + ".tmp", file);
+    fs.renameSync(oldTrades, oldTrades + ".migrated");
   } catch {}
   const tradeLog = options.tradeLog || file.replace(/\.json$/, "") + "-trades.log";
   const byCode = new Map(); /* public trade code -> account id */
@@ -129,10 +149,17 @@ function createBank(options = {}) {
       if (!MAT_SPEND.includes(src) || (a.mat[k] || 0) + n < 0) return false;
       a.mat[k] += n;
       if (src == "craft") cr.sp[k] = (cr.sp[k] || 0) - n;
+      if (src == "maiden") cr.ms[k] = (cr.ms[k] || 0) - n;
       if (src == "contract") cr.c -= n;
       return true;
     }
-    if (src == "contract" && !contractOk(a, cr, "contractm", t)) return false;
+    if (src == "maiden") {
+      const m = MAIDEN.find((x) => x[1] == k && x[3] == n && (cr.ms[x[0]] || 0) >= x[2]);
+      if (!m || !dayOk(a, "maiden:" + m[4], 1, MAIDEN_DAY[m[4]], t)) return false;
+      cr.ms[m[0]] -= m[2]; /* that trade's payment is used up */
+      a.mat[k] = Math.min(MAT_MAX, (a.mat[k] || 0) + n);
+      return true;
+    }
     if (src == "craft") {
       const rc = RECIPE[k];
       if (!rc || n != rc.n || Object.entries(rc.need).some(([m, q]) => (cr.sp[m] || 0) < q) || !dayOk(a, kind, n, rc.day, t)) return false;
@@ -142,6 +169,7 @@ function createBank(options = {}) {
     }
     const r = MAT_SRC[src];
     if (!r || !r.m[k] || n > r.m[k] || t - (a.last[kind] || 0) < r.gap) return false;
+    if (src == "contract" && (n > cr.c || !contractOk(a, cr, "contractm", t))) return false; /* last: a refused reward never uses a day slot */
     if (!dayOk(a, kind, n, typeof r.day == "object" ? r.day[k] : r.day, t)) return false;
     a.last[kind] = t;
     a.mat[k] = Math.min(MAT_MAX, (a.mat[k] || 0) + n);
@@ -173,17 +201,18 @@ function createBank(options = {}) {
     if (t - a.at < SYNC_GAP_MS) return [429, { error: "Too many syncs.", gold: a.gold, xp: a.xp }];
     const prevAt = a.at || t; /* the client may have rented any time since the last sync, when the price was higher */
     a.at = t;
-    let dropped = 0;
-    const cr = { sp: {}, c: 0, used: {} }; /* craft spends in this sync per material (for recipes); contract units delivered (for payouts) */
+    let dropped = 0, earned = false;
+    const cr = { sp: {}, ms: {}, c: 0, used: {} }; /* craft spends in this sync per material (for recipes); contract units delivered (for payouts) */
     for (const e of body.led) {
       if (!Array.isArray(e) || typeof e[0] != "string" || !int(e[1], -1e6, 1e6) || !int(e[2], 0, 1e5)) { dropped++; continue; }
       const [kind, g, x] = e, rule = RULES[kind];
       if (rule) {
         const k = kind + (g ? "g" : "x"); /* a raid's gold and its XP arrive as two entries: timed separately */
-        if (kind == "contract" && !contractOk(a, cr, k, t)) { dropped++; continue; }
         if (g < 0 || g > rule.g || x > rule.x || t - (a.last[k] || 0) < rule.gap) { dropped++; continue; }
+        if (kind == "contract" && !contractOk(a, cr, k, t)) { dropped++; continue; } /* last: a refused payout never uses a day slot */
         a.last[k] = t;
         a.gold += g; a.xp += x;
+        if (g > 0 || x > 0) earned = true;
       } else if (kind == "bj") {
         if (x) { dropped++; continue; }
         if (g < 0) { if (a.gold + g < 0) { dropped++; continue; } a.gold += g; a.bet += -g; }
@@ -195,12 +224,13 @@ function createBank(options = {}) {
         a.bjm = Math.min(ASSIST.max, assistMul(a, t) * ASSIST.mul); a.bjmAt = prevAt; /* the rent happened somewhere since the last sync: anchor there, so a 2nd rent in the same sync still has its window */
       } else if (kind == "mat") {
         if (!matEntry(a, e[3], e[4], g, x, e[5], t, cr)) dropped++;
+        else if (e[5] > 0) earned = true;
       } else if (SPENDS.includes(kind)) {
         if (g > 0 || x || a.gold + g < 0) { dropped++; continue; }
         a.gold += g;
       } else dropped++; /* dev tools, market (escrow pays itself) and unknown kinds never move the bank */
     }
-    if (body.led.length > dropped) a.ns = (a.ns || 0) + 1; /* a real sync: something was accepted */
+    if (earned && t - (a.nsAt || 0) >= NS_GAP) { a.ns = (a.ns || 0) + 1; a.nsAt = t; } /* a real sync (trade unlock): a real earn, at most one per 5 minutes */
     persist();
     return [200, { gold: a.gold, xp: a.xp, mat: { ...a.mat }, tc: codeOf(id), dropped, bjm: a.bjm || 1, bjmAge: a.bjmAt ? t - a.bjmAt : 1e12 }]; /* bjmAge: ms since the last rent (no clock skew) */
   }

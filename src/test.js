@@ -850,7 +850,8 @@ async function hostLossTests(){
  await T.netDisconnect?.();
 }
 async function bankTests(){
- const {createBank,RULES}=require('./bank.js');let t=1e6;const file=require('path').join(require('os').tmpdir(),'rb-bank-test-'+process.pid+'.json');
+ const {createBank,RULES}=require('./bank.js');let t=1e6;const file=require('path').join(require('os').tmpdir(),'rb-bank-test-'+process.pid+'.json');for(const x of [file,file+'2',file+'3',file+'4'])try{require('fs').unlinkSync(x)}catch{} /* a reused PID must not load an old run's bank */
+ process.on('exit',()=>{const fs=require('fs'),os=require('os'),pth=require('path');for(const n of fs.readdirSync(os.tmpdir()))if(/^rb-(bank|trade|contract)-test-/.test(n)&&n.includes(String(process.pid)))try{fs.unlinkSync(pth.join(os.tmpdir(),n))}catch{}}); /* debounced bank writes land after the tests: clean them at exit */
  const b=createBank({file,now:()=>t}),tok='ab'.repeat(16),sync=(led,seed)=>{t+=1500;return b.sync({tok,led,seed})};
  const live=T.auditRules();ok(Object.keys(RULES).every(k=>RULES[k].g==live[k].g&&RULES[k].x==live[k].x&&RULES[k].gap==live[k].gap),'bank: server reward table matches the game');
  ok(sync([],{gold:999999,xp:1e8})[1].gold==500,'bank: a new account keeps only a capped part of the offline save');
@@ -901,6 +902,14 @@ async function bankTests(){
   {const L=[];for(let i=0;i<120;i++)L.push(M('lore','dust',5));let tot=0;for(let i=0;i<60;i++){t+=1100;const q=b.sync({tok:tk2,led:[M('lore','dust',5)]});if(q[0]==200&&!q[1].dropped)tot+=5;}ok(tot<=100,'bank mats: lore dust has a real daily cap ('+tot+' of 100)');}
   let got=0;for(let i=0;i<200;i++){r=s2([M('gather','echo',5)]);got=r[1].mat.echo;}ok(got==348,'bank mats: the daily gather cap holds ('+got+' = 350 gathered today - 2 spent)');
   t+=86400e3;r=s2([M('gather','echo',5)]);ok(r[1].mat.echo==353,'bank mats: the daily cap resets the next day');
+  {const tk3='9d'.repeat(16),s3=(led,seed)=>{t+=2500;return b.sync({tok:tk3,led,seed})};s3([],{gold:0,mat:{ore:50,echo:10,shard:20,dust:50}});
+   let q=s3([M('maiden','ore',-2),M('maiden','herb',2)]);ok(!q[1].dropped&&q[1].mat.herb==2&&q[1].mat.ore==48,'maiden: an island trade at a fair price is accepted');
+   q=s3([M('maiden','herb',2)]);ok(q[1].dropped==1,'maiden: a gain with no payment is refused');
+   q=s3([M('maiden','ore',-5),M('maiden','echo',1),M('maiden','echo',1)]);ok(q[1].dropped==1&&q[1].mat.echo==11,'maiden: echo costs at least 5 ore each');
+   q=s3([M('maiden','echo',-1),M('maiden','heart',2)]);ok(q[1].dropped==1&&!q[1].mat.heart,'maiden: no trade turns echo into a rare');
+   q=s3([M('maiden','shard',-12),M('maiden','eye',1)]);ok(!q[1].dropped&&q[1].mat.eye==1,'maiden: her rare trades still work (12 shards -> eye)');
+   q=s3([M('maiden','dust',-30),M('maiden','heart',1)]);q=s3([M('maiden','dust',-10),M('maiden','eye',1)]);ok(q[1].dropped==1,'maiden: the rose gamble needs its full 30 dust');
+   let n=0;for(let i=0;i<12;i++){q=s3([M('maiden','echo',-1),M('maiden','ore',2)]);if(!q[1].dropped)n++;}ok(n==8,'maiden: at most 10 island trades a day ('+(n+2)+')');}
   r=s2([['quest',0,0,'x'],['mystery',0,0,'a','b',1]]);ok(r[0]==200,'bank mats: old or unknown ledger shapes never crash the sync');}
  {/* Contract Board: payouts only for a real delivery, 3 a day */
   let tc=9e6;const f=require('path').join(require('os').tmpdir(),'rb-contract-test-'+process.pid+'.json'),cb=createBank({file:f,now:()=>tc}),K='e5'.repeat(16),M=(src,k,n)=>['mat',0,0,src,k,n];
@@ -912,6 +921,11 @@ async function bankTests(){
   r=sy([M('contract','ore',-6),['contract',400,0]]);ok(r[1].dropped==1&&r[1].gold==1200,'contract: a 4th payout in a day is refused');
   r=sy([M('contract','herb',-6)]);ok(r[1].dropped==1,'contract: you cannot deliver materials you do not have');
   tc+=86400e3;r=sy([M('contract','ore',-6),['contract',400,0]]);ok(r[1].gold==1600,'contract: the daily cap resets the next day');
+  tc+=86400e3;for(let i=0;i<9;i++)sy([M('gather','ore',5)]);
+  r=sy([M('contract','ore',-6),M('contract','heart',2),M('contract','eye',1),M('contract','echo',4)]);ok(r[1].dropped==3&&!r[1].mat.heart&&!r[1].mat.eye&&!r[1].mat.echo,'contract: material rewards never mint rares and are capped at 3 echo');
+  r=sy([M('contract','ore',-6),M('contract','echo',3)]);ok(!r[1].dropped&&r[1].mat.echo==3,'contract: a delivery can pay up to 3 echo');
+  tc+=86400e3;r=sy([M('contract','ore',-6),['contract',99999,0]]);ok(r[1].dropped==1,'contract: an oversized payout is refused');
+  let paid=0;for(let i=0;i<3;i++){r=sy([M('contract','ore',-6),['contract',400,0]]);if(!r[1].dropped)paid++;}ok(paid==3,'contract: a refused payout never uses up a day slot (3 real payouts still allowed)');
   for(const x of [f,f.replace(/\.json$/,'')+'-trades.json'])try{require('fs').unlinkSync(x)}catch{}}
  {/* trades: bank escrow between two online accounts */
   const os=require('os'),pth=require('path'),fs=require('fs');let tt=5e6;const f=pth.join(os.tmpdir(),'rb-trade-test-'+process.pid+'.json'),lg=f+'.log';
@@ -919,7 +933,7 @@ async function bankTests(){
   const sy=(tok,led,seed)=>{tt+=2500;return tb.sync({tok,led:led||[],seed})};
   const ca=sy(A,[],{gold:500,mat:{ore:20}})[1].tc,cb=sy(B,[],{gold:300,mat:{herb:10}})[1].tc;sy(C,[],{gold:0});
   ok(tb.tradeOffer({tok:A,to:cb,give:{gold:1}})[0]==403,'trade: a brand-new account cannot trade (Sybil guard)');
-  const season=(tok)=>{for(let i=0;i<20;i++)sy(tok,[M('gather','echo',1)]);};season(A);season(B);
+  const season=(tok)=>{for(let i=0;i<20;i++){tt+=300e3;sy(tok,[M('gather','echo',1)]);}};{for(let i=0;i<25;i++)sy(A,[['bj',0,0],['quest',0,0]]);}ok(tb.tradeList({tok:A})[1].unlock.syncs==0,'trade: syncs with no real earn never count toward the unlock (no 20-second farm)');{for(let i=0;i<5;i++)sy(A,[M('gather','echo',1)]);}ok(tb.tradeList({tok:A})[1].unlock.syncs==1,'trade: real earns count at most once per 5 minutes');season(A);season(B);
   ok(tb.tradeOffer({tok:A,to:cb,give:{gold:1}})[0]==403,'trade: 20 real syncs alone are not enough: the account must be a day old');
   tt+=86400e3;sy(A);sy(B);
   ok(/^[a-f0-9]{10}$/.test(ca)&&ca!=cb,'trade: each account gets a public trade code (not its token)');
@@ -963,7 +977,15 @@ async function bankTests(){
    const ob=createBank({file:f2,tradeLog:lg,now:()=>tt}),cx=ob.tradeList({tok:X})[1].tc;ok(ob.tradeList({tok:Y})[0]==200,'trade: an old one-file bank (accounts only) still loads');
    const o=ob.tradeOffer({tok:Y,to:cx,give:{mat:{ore:5}}});const q=ob.tradeAccept({tok:X,id:o[1].id});ok(o[0]==200&&q[0]==409&&/full/.test(q[1].error),'trade: an accept that would overflow a bag is refused');
    ob.flush();try{fs.unlinkSync(f2)}catch{}}
+  {const h=(x)=>require('crypto').createHash('sha256').update(x).digest('hex'),X='3c'.repeat(16),f3=f+'.mig.json',old3=f3.replace(/\.json$/,'')+'-trades.json';
+   fs.writeFileSync(f3,JSON.stringify({[h(X)]:{gold:10,xp:0,mat:{ore:1},born:0,ns:99,last:{},at:0}}));
+   fs.writeFileSync(old3,JSON.stringify({t1:{id:'t1',from:h(X),to:'x',give:{gold:40,mat:{ore:5}},want:{},st:'open',at:0},t2:{id:'t2',from:h(X),to:'x',give:{gold:999},want:{},st:'done',at:0}}));
+   const mb=createBank({file:f3,tradeLog:lg,now:()=>tt}),l=mb.tradeList({tok:X});
+   ok(l[1].gold==50&&l[1].mat.ore==6&&!fs.existsSync(old3)&&fs.existsSync(old3+'.migrated'),'trade: moving to the one-file bank refunds open escrow from the old trades file, once');
+   const mb2=createBank({file:f3,tradeLog:lg,now:()=>tt});ok(mb2.tradeList({tok:X})[1].gold==50,'trade: the refund is not paid twice');
+   for(const x of [f3,old3+'.migrated'])try{fs.unlinkSync(x)}catch{}}
   for(const x of [f,lg,lg+'.1'])try{fs.unlinkSync(x)}catch{}}
+ for(const x of [file,file+'2',file+'3',file+'4',file+'.tmp'])try{require('fs').unlinkSync(x)}catch{}
 }
 async function takeoverTests(){
  const {server}=createDirectoryServer({allowedOrigins:[],hostStaleMs:50});await new Promise(r=>server.listen(0,'127.0.0.1',r));
