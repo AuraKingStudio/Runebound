@@ -45,6 +45,7 @@ function createDirectoryServer(options = {}) {
   const market = options.market === true ? createMarket({ file: options.marketFile }) : null;
   const brain = options.brain === false ? null : createBrain({ file: options.brainFile });
   const bank = options.bank === true ? createBank({ file: options.bankFile }) : null; /* online mode: the server owns gold and XP */
+  const tradeHits = new Map(); /* ip -> trade call times (last minute) */
   /* local playtests: any page served from this network (192.168.x.x, 10.x.x.x, 172.16-31.x.x) may use the service */
   const lanOrigin = (o) => options.allowLan !== false && /^http:\/\/(192\.168\.\d+\.\d+|10\.\d+\.\d+\.\d+|172\.(1[6-9]|2\d|3[01])\.\d+\.\d+)(:\d+)?$/.test(o);
   const hubs = new Map();
@@ -179,7 +180,11 @@ function createDirectoryServer(options = {}) {
     const tm = /^\/api\/trade\/(offer|accept|cancel|list)$/.exec(url.pathname);
     if (tm) {
       if (!bank) return send(res, 503, { error: "Trading needs the online server." });
-      const [status, value] = bank["trade" + tm[1][0].toUpperCase() + tm[1].slice(1)](body || {});
+      const now = Date.now(), hits = (tradeHits.get(ip) || []).filter((x) => now - x < 60e3); /* per IP: 30 trade calls a minute */
+      if (hits.length >= 30) return send(res, 429, { error: "Too many trade requests." });
+      hits.push(now); tradeHits.set(ip, hits);
+      if (tradeHits.size > 20000) for (const [k, v] of tradeHits) if (now - v[v.length - 1] > 60e3) tradeHits.delete(k);
+      const [status, value] = bank["trade" + tm[1][0].toUpperCase() + tm[1].slice(1)](body || {}, ip);
       return send(res, status, value);
     }
     if (url.pathname === "/api/feedback") {

@@ -19,28 +19,39 @@ const RULES = {
   contract: { g: 400, x: 300, gap: 30000 },
 };
 /* materials: the server owns each account's counts. A ledger entry ["mat", 0, 0, src, mat, n] adds n (n < 0 spends).
-   MAT_SRC[src] = { m: { mat: biggest n per entry }, gap: ms between two entries of that src+mat, day: most per mat per day (0 = no day cap) }.
+   MAT_SRC[src] = { m: { mat: biggest n per entry }, gap: ms between two entries of that src+mat, day: most per mat per day (a number, or per mat) }.
    Gather: at most 3 x mastery 1.36 per gather (5); day cap = the client's soft curve (full to 40 gathers, x0.5 to 80, x0.2 after) with a hard stop. */
 const MATS = ["dust", "shard", "eye", "bark", "heart", "ore", "herb", "echo"];
 const all = (n) => Object.fromEntries(MATS.map((k) => [k, n]));
 const MAT_SRC = {
   gather: { m: { ore: 5, herb: 5, echo: 5 }, gap: 2000, day: 350 },
-  raid: { m: { dust: 12, shard: 6, bark: 6, eye: 2, heart: 2 }, gap: 15000, day: 0 },
-  lore: { m: { dust: 5, shard: 2, bark: 2, eye: 1 }, gap: 700, day: 0 },
+  raid: { m: { dust: 12, shard: 6, bark: 6, eye: 2, heart: 2 }, gap: 15000, day: { dust: 400, shard: 200, bark: 200, eye: 30, heart: 30 } },
+  lore: { m: { dust: 5, shard: 2, bark: 2, eye: 1 }, gap: 700, day: { dust: 100, shard: 30, bark: 30, eye: 5 } },
   salvage: { m: { dust: 8 }, gap: 1000, day: 200 },
   bounty: { m: all(5), gap: 1000, day: 50 },
   contract: { m: all(10), gap: 30000, day: 100 },
   maiden: { m: all(5), gap: 1000, day: 40 },
 };
-const MAT_SPEND = ["craft", "maiden", "smith"]; /* n < 0 only, never below 0 */
-/* craft gains (refines) need craft spends earlier in the same sync: gained units <= spent units, at most 3 per entry.
-   Every recipe uses more units than it makes, so crafting can turn materials into others but never mint them. */
-const CRAFT_GAIN = 3;
+const MAT_SPEND = ["craft", "maiden", "smith", "contract"]; /* n < 0 only, never below 0 */
+/* Contract Board: a payout (gold, XP or a material reward, each its own entry) needs a delivery of at least CONTRACT.min
+   materials ("contract" spends) earlier in the same sync, one payout of each kind per delivery, at most CONTRACT.day a day. */
+const CONTRACT = { min: 6, day: 3 };
+/* craft gains: only the client's own recipes, each paired with its exact spends logged earlier in the same sync
+   (eye and heart have no recipe: rares can't be crafted). Every other craft gain is dropped; each recipe has a day cap. */
+const RECIPE = {
+  dust: { n: 3, need: { ore: 5, echo: 2 }, day: 300 }, /* refine-ore */
+  shard: { n: 1, need: { dust: 5 }, day: 60 }, /* refine-k */
+  bark: { n: 1, need: { dust: 5 }, day: 60 },
+};
 const MAT_MAX = 99999, SEED_MAT = 50;
 /* trades (online only): A offers { give, want } to B's public trade code. A's give is escrowed at once (A's confirm, the offer can't change);
    B accepts (B's confirm): the bank re-checks B, swaps both sides in one step and burns TAX of the gold each side receives.
    Each side: { gold?: 0..1e6, mat?: { key: 1..9999 } }, at most 5 materials. Offers expire after 10 minutes (escrow refunded). */
-const TRADE = { tax: 0.05, ttl: 600e3, open: 5, perMin: 10, gold: 1e6, n: 9999, lines: 5 };
+const TRADE = { tax: 0.05, ttl: 600e3, open: 5, inbox: 20, perMin: 10, gold: 1e6, n: 9999, lines: 5,
+  ageMs: 24 * 3600e3, syncs: 20, /* Sybil guard: trading unlocks for accounts at least a day old with 20 real syncs */
+  ipAccts: 3, /* different accounts trading from one IP per day */
+  inMat: 300, inGold: 20000, /* most materials / gold one account may RECEIVE by trade per day */
+  keepMs: 86400e3, logMax: 5e6 };
 const SPENDS = ["cosmetic", "smith", "seraph", "maiden", "guild", "skill", "upgrade", "equip"];
 /* blackjack Assist rent: the server keeps each player's price multiplier (same rule as BJ_PRICE in index.html): x1.5 per rent,
    capped at x20, the extra halving every 10 minutes since the last rent. A rent is accepted only at that price (+-1 rounding). */
@@ -57,15 +68,24 @@ const int = (n, lo, hi) => Number.isInteger(n) && n >= lo && n <= hi;
 function createBank(options = {}) {
   const file = options.file || path.join(__dirname, "..", "bank.json");
   const now = options.now || Date.now;
-  let accts = {};
-  try { accts = JSON.parse(fs.readFileSync(file, "utf8")) || {}; } catch {}
-  const tradeFile = file.replace(/\.json$/, "") + "-trades.json", tradeLog = options.tradeLog || file.replace(/\.json$/, "") + "-trades.log";
-  let trades = {};
-  try { trades = JSON.parse(fs.readFileSync(tradeFile, "utf8")) || {}; } catch {}
+  /* one file, written atomically: { v: 2, accts, trades } (older files held only the accounts) */
+  let accts = {}, trades = {};
+  try {
+    const j = JSON.parse(fs.readFileSync(file, "utf8")) || {};
+    if (j.v === 2) { accts = j.accts || {}; trades = j.trades || {}; } else accts = j;
+  } catch {}
+  const tradeLog = options.tradeLog || file.replace(/\.json$/, "") + "-trades.log";
   const byCode = new Map(); /* public trade code -> account id */
   const codeOf = (id) => hash("trade:" + id).slice(0, 10);
   for (const id of Object.keys(accts)) byCode.set(codeOf(id), id);
   let dirty = false, timer = null;
+  /* flush(): write now (shutdown, tests); persist() batches writes to at most one every 500 ms */
+  function flush() {
+    if (timer) { clearTimeout(timer); timer = null; }
+    dirty = false;
+    try { fs.writeFileSync(file + ".tmp", JSON.stringify({ v: 2, accts, trades })); fs.renameSync(file + ".tmp", file); }
+    catch (e) { console.error("bank: save failed", e.message); }
+  }
   function persist() {
     dirty = true;
     if (timer) return;
@@ -74,14 +94,33 @@ function createBank(options = {}) {
       if (!dirty) return;
       dirty = false;
       try {
-        fs.writeFileSync(file + ".tmp", JSON.stringify(accts)); fs.renameSync(file + ".tmp", file);
-        fs.writeFileSync(tradeFile + ".tmp", JSON.stringify(trades)); fs.renameSync(tradeFile + ".tmp", tradeFile);
+        fs.writeFileSync(file + ".tmp", JSON.stringify({ v: 2, accts, trades })); fs.renameSync(file + ".tmp", file);
       }
       catch (e) { console.error("bank: save failed", e.message); }
     }, 500);
     timer.unref?.();
   }
 
+  /* contractOk(a, cr, k, t): may this sync claim one more contract payout of kind k (contractg / contractx / contractm)?
+     Needs CONTRACT.min delivered units per payout of that kind, and at most CONTRACT.day payouts of that kind a day. Records it if so. */
+  function contractOk(a, cr, k, t) {
+    const used = cr.used[k] || 0;
+    if (cr.c < CONTRACT.min * (used + 1)) return false;
+    const day = Math.floor(t / 86400e3);
+    if (!a.cd || a.cd.d != day) a.cd = { d: day, n: {} };
+    if ((a.cd.n[k] || 0) >= CONTRACT.day) return false;
+    a.cd.n[k] = (a.cd.n[k] || 0) + 1;
+    cr.used[k] = used + 1;
+    return true;
+  }
+  /* dayOk(a, kind, n, cap, t): room for n more of kind today (cap 0/undefined = none)? Counts it if so. */
+  function dayOk(a, kind, n, cap, t) {
+    const day = Math.floor(t / 86400e3);
+    if (!a.md || a.md.d != day) a.md = { d: day, n: {} };
+    if (cap && (a.md.n[kind] || 0) + n > cap) return false;
+    a.md.n[kind] = (a.md.n[kind] || 0) + n;
+    return true;
+  }
   /* matEntry(a, src, mat, g, x, n, t): apply one material entry if the rules allow it. Out: true if applied. */
   function matEntry(a, src, k, g, x, n, t, cr) {
     if (g || x || typeof src != "string" || !MATS.includes(k) || !int(n, -MAT_MAX, MAT_MAX) || !n) return false;
@@ -89,21 +128,21 @@ function createBank(options = {}) {
     if (n < 0) {
       if (!MAT_SPEND.includes(src) || (a.mat[k] || 0) + n < 0) return false;
       a.mat[k] += n;
-      if (src == "craft") cr.u -= n;
+      if (src == "craft") cr.sp[k] = (cr.sp[k] || 0) - n;
+      if (src == "contract") cr.c -= n;
       return true;
     }
+    if (src == "contract" && !contractOk(a, cr, "contractm", t)) return false;
     if (src == "craft") {
-      if (n > CRAFT_GAIN || n > cr.u) return false;
-      cr.u -= n;
+      const rc = RECIPE[k];
+      if (!rc || n != rc.n || Object.entries(rc.need).some(([m, q]) => (cr.sp[m] || 0) < q) || !dayOk(a, kind, n, rc.day, t)) return false;
+      for (const [m, q] of Object.entries(rc.need)) cr.sp[m] -= q; /* this recipe's spends are used up */
       a.mat[k] = Math.min(MAT_MAX, (a.mat[k] || 0) + n);
       return true;
     }
     const r = MAT_SRC[src];
     if (!r || !r.m[k] || n > r.m[k] || t - (a.last[kind] || 0) < r.gap) return false;
-    const day = Math.floor(t / 86400e3);
-    if (!a.md || a.md.d != day) a.md = { d: day, n: {} };
-    if (r.day && (a.md.n[kind] || 0) + n > r.day) return false;
-    a.md.n[kind] = (a.md.n[kind] || 0) + n;
+    if (!dayOk(a, kind, n, typeof r.day == "object" ? r.day[k] : r.day, t)) return false;
     a.last[kind] = t;
     a.mat[k] = Math.min(MAT_MAX, (a.mat[k] || 0) + n);
     return true;
@@ -127,7 +166,7 @@ function createBank(options = {}) {
     if (!a) {
       const s = body.seed && seedOk(ip, t) ? body.seed : {}; /* over the per-IP limit: the account opens empty */
       byCode.set(codeOf(id), id);
-      a = accts[id] = { gold: int(s.gold, 0, 1e9) ? Math.min(s.gold, SEED_GOLD) : 0, xp: int(s.xp, 0, 1e9) ? Math.min(s.xp, SEED_XP) : 0, last: {}, bet: 0, at: 0 };
+      a = accts[id] = { gold: int(s.gold, 0, 1e9) ? Math.min(s.gold, SEED_GOLD) : 0, xp: int(s.xp, 0, 1e9) ? Math.min(s.xp, SEED_XP) : 0, last: {}, bet: 0, at: 0, born: t, ns: 0 };
       a.mat = {}; if (s.mat && typeof s.mat == "object") for (const k of MATS) if (int(s.mat[k], 1, MAT_MAX)) a.mat[k] = Math.min(s.mat[k], SEED_MAT);
     }
     if (!a.mat) a.mat = {}; /* accounts from before materials */
@@ -135,12 +174,13 @@ function createBank(options = {}) {
     const prevAt = a.at || t; /* the client may have rented any time since the last sync, when the price was higher */
     a.at = t;
     let dropped = 0;
-    const cr = { u: 0 }; /* craft units spent in this sync, available to craft gains */
+    const cr = { sp: {}, c: 0, used: {} }; /* craft spends in this sync per material (for recipes); contract units delivered (for payouts) */
     for (const e of body.led) {
       if (!Array.isArray(e) || typeof e[0] != "string" || !int(e[1], -1e6, 1e6) || !int(e[2], 0, 1e5)) { dropped++; continue; }
       const [kind, g, x] = e, rule = RULES[kind];
       if (rule) {
         const k = kind + (g ? "g" : "x"); /* a raid's gold and its XP arrive as two entries: timed separately */
+        if (kind == "contract" && !contractOk(a, cr, k, t)) { dropped++; continue; }
         if (g < 0 || g > rule.g || x > rule.x || t - (a.last[k] || 0) < rule.gap) { dropped++; continue; }
         a.last[k] = t;
         a.gold += g; a.xp += x;
@@ -160,11 +200,19 @@ function createBank(options = {}) {
         a.gold += g;
       } else dropped++; /* dev tools, market (escrow pays itself) and unknown kinds never move the bank */
     }
+    if (body.led.length > dropped) a.ns = (a.ns || 0) + 1; /* a real sync: something was accepted */
     persist();
     return [200, { gold: a.gold, xp: a.xp, mat: { ...a.mat }, tc: codeOf(id), dropped, bjm: a.bjm || 1, bjmAge: a.bjmAt ? t - a.bjmAt : 1e12 }]; /* bjmAge: ms since the last rent (no clock skew) */
   }
 
   /* ---------- trades ---------- */
+  /* indexes: open offers by player (from and to), and two queues in time order so expiry and clean-up never walk every offer */
+  const openBy = new Map(), openQ = [], doneQ = [];
+  const idx = (pid) => { let s = openBy.get(pid); if (!s) openBy.set(pid, (s = new Set())); return s; };
+  for (const tr of Object.values(trades).sort((x, y) => x.at - y.at)) {
+    if (tr.st == "open") { openQ.push(tr.id); idx(tr.from).add(tr.id); idx(tr.to).add(tr.id); } else doneQ.push(tr.id);
+  }
+  function closeTr(tr, st, t) { tr.st = st; tr.end = t; openBy.get(tr.from)?.delete(tr.id); openBy.get(tr.to)?.delete(tr.id); doneQ.push(tr.id); }
   /* side(v): a clean { gold, mat } or null */
   function side(v) {
     if (v == null) return { gold: 0, mat: {} };
@@ -175,12 +223,21 @@ function createBank(options = {}) {
     if (keys.length > TRADE.lines || keys.some((k) => !MATS.includes(k) || !int(m[k], 1, TRADE.n))) return null;
     return { gold, mat: Object.fromEntries(keys.map((k) => [k, m[k]])) };
   }
+  const units = (sd) => Object.values(sd.mat).reduce((n, q) => n + q, 0);
   const has = (a, sd) => a.gold >= sd.gold && Object.entries(sd.mat).every(([k, n]) => (a.mat[k] || 0) >= n);
+  const room = (a, sd) => Object.entries(sd.mat).every(([k, n]) => (a.mat[k] || 0) + n <= MAT_MAX);
   function take(a, sd) { a.gold -= sd.gold; for (const [k, n] of Object.entries(sd.mat)) a.mat[k] -= n; }
   function put(a, sd, tax) { a.gold += sd.gold - tax; for (const [k, n] of Object.entries(sd.mat)) a.mat[k] = Math.min(MAT_MAX, (a.mat[k] || 0) + n); }
-  const taxOf = (g) => Math.floor(g * TRADE.tax);
+  const taxOf = (g) => (g > 0 ? Math.max(1, Math.ceil(g * TRADE.tax)) : 0); /* rounds up, at least 1 gold */
+  /* received today by trade (Sybil guard: alt accounts can't funnel without limit) */
+  function inbound(a, t) { const d = Math.floor(t / 86400e3); if (!a.ti || a.ti.d != d) a.ti = { d, m: 0, g: 0 }; return a.ti; }
+  const inboundOk = (a, sd, tax, t) => { const r = inbound(a, t); return r.m + units(sd) <= TRADE.inMat && r.g + sd.gold - tax <= TRADE.inGold; };
+  function inboundAdd(a, sd, tax, t) { const r = inbound(a, t); r.m += units(sd); r.g += sd.gold - tax; }
   function log(ev, tr, extra) {
-    try { fs.appendFileSync(tradeLog, JSON.stringify({ at: new Date(now()).toISOString(), ev, id: tr.id, from: tr.from.slice(0, 12), to: tr.to.slice(0, 12), give: tr.give, want: tr.want, ...extra }) + "\n"); } catch {}
+    try {
+      if (fs.existsSync(tradeLog) && fs.statSync(tradeLog).size > TRADE.logMax) fs.renameSync(tradeLog, tradeLog + ".1"); /* rotate: at most ~2 x logMax on disk */
+      fs.appendFileSync(tradeLog, JSON.stringify({ at: new Date(now()).toISOString(), ev, id: tr.id, from: tr.from.slice(0, 12), to: tr.to.slice(0, 12), give: tr.give, want: tr.want, ...extra }) + "\n");
+    } catch {}
   }
   /* who(body, t): [0, { id, a }] for the caller (rate-limited), or an error reply */
   function who(body, t) {
@@ -193,16 +250,35 @@ function createBank(options = {}) {
     a.tr.push(t);
     return [0, { id, a }];
   }
-  /* expire(t): escrow back for offers older than TRADE.ttl; settled offers are forgotten after a week */
-  function expire(t) {
-    for (const tr of Object.values(trades)) if (tr.st == "open" && t - tr.at >= TRADE.ttl) {
-      tr.st = "expired";
-      if (accts[tr.from]) put(accts[tr.from], tr.give, 0);
-      log("expire", tr);
-    }
-    for (const [k, tr] of Object.entries(trades)) if (tr.st != "open" && t - tr.at > 7 * 86400e3) delete trades[k];
+  /* canTrade(w, ip, t): the Sybil guard for offers and accepts. Old accounts (from before birth dates) count as old. */
+  const ipDay = new Map(); /* ip -> { d, ids } accounts that traded from it today */
+  function canTrade(w, ip, t) {
+    if (t - (w.a.born || 0) < TRADE.ageMs || (w.a.ns || 0) < TRADE.syncs) return [403, { error: "Trading unlocks after a day of play (" + Math.min(w.a.ns || 0, TRADE.syncs) + "/" + TRADE.syncs + " syncs)." }];
+    if (!ip) return [0];
+    const d = Math.floor(t / 86400e3);
+    let e = ipDay.get(ip);
+    if (!e || e.d != d) ipDay.set(ip, (e = { d, ids: new Set() }));
+    if (!e.ids.has(w.id) && e.ids.size >= TRADE.ipAccts) return [429, { error: "Too many accounts trading from this network today." }];
+    e.ids.add(w.id);
+    if (ipDay.size > 50000) for (const [k, v] of ipDay) if (v.d != d) ipDay.delete(k);
+    return [0];
   }
-  function tradeOffer(body) {
+  /* expire(t): refund offers past TRADE.ttl, forget settled ones after TRADE.keepMs; both queues are in time order */
+  function expire(t) {
+    while (openQ.length) {
+      const tr = trades[openQ[0]];
+      if (tr && tr.st == "open" && t - tr.at < TRADE.ttl) break;
+      openQ.shift();
+      if (tr && tr.st == "open") { closeTr(tr, "expired", t); if (accts[tr.from]) put(accts[tr.from], tr.give, 0); log("expire", tr); }
+    }
+    while (doneQ.length) {
+      const tr = trades[doneQ[0]];
+      if (tr && t - (tr.end || tr.at) < TRADE.keepMs) break;
+      doneQ.shift();
+      if (tr && tr.st != "open") delete trades[tr.id];
+    }
+  }
+  function tradeOffer(body, ip) {
     const t = now(); expire(t);
     const [st, w] = who(body || {}, t); if (st) return [st, w];
     const to = typeof body.to == "string" && byCode.get(body.to);
@@ -210,27 +286,35 @@ function createBank(options = {}) {
     if (to == w.id) return [400, { error: "You can't trade with yourself." }];
     const give = side(body.give), want = side(body.want);
     if (!give || !want) return [400, { error: "Bad trade amounts." }];
-    if (!give.gold && !Object.keys(give.mat).length && !want.gold && !Object.keys(want.mat).length) return [400, { error: "An empty trade." }];
-    if (Object.values(trades).filter((tr) => tr.st == "open" && tr.from == w.id).length >= TRADE.open) return [429, { error: "Too many open offers." }];
+    if (!give.gold && !units(give) && !want.gold && !units(want)) return [400, { error: "An empty trade." }];
+    const [ct, cv] = canTrade(w, ip, t); if (ct) return [ct, cv];
+    const mine = [...idx(w.id)].filter((k) => trades[k] && trades[k].from == w.id).length;
+    if (mine >= TRADE.open) return [429, { error: "Too many open offers." }];
+    if (idx(to).size >= TRADE.inbox) return [429, { error: "That player has too many offers waiting." }];
     if (!has(w.a, give)) return [409, { error: "You don't have what you offer." }];
     take(w.a, give); /* escrow: the offer is the proposer's confirm */
     const id = hash(w.id + ":" + t + ":" + Math.random()).slice(0, 16);
     const tr = (trades[id] = { id, from: w.id, to, give, want, st: "open", at: t });
+    openQ.push(id); idx(w.id).add(id); idx(to).add(id);
     log("offer", tr); persist();
     return [200, { id, gold: w.a.gold, mat: { ...w.a.mat } }];
   }
-  function tradeAccept(body) {
+  function tradeAccept(body, ip) {
     const t = now(); expire(t);
     const [st, w] = who(body || {}, t); if (st) return [st, w];
     const tr = typeof body.id == "string" && trades[body.id];
     if (!tr || tr.to != w.id) return [404, { error: "No such offer for you." }];
     if (tr.st != "open") return [409, { error: "This offer is " + tr.st + "." }];
+    const [ct, cv] = canTrade(w, ip, t); if (ct) return [ct, cv];
     const from = accts[tr.from];
     if (!from) return [409, { error: "The other player is gone." }];
     if (!has(w.a, tr.want)) return [409, { error: "You don't have what they want." }];
     const taxIn = taxOf(tr.give.gold), taxOut = taxOf(tr.want.gold);
-    tr.st = "done"; /* first, so nothing can settle it twice */
+    if (!room(w.a, tr.give) || !room(from, tr.want)) return [409, { error: "Someone's bag is full for this trade." }];
+    if (!inboundOk(w.a, tr.give, taxIn, t) || !inboundOk(from, tr.want, taxOut, t)) return [409, { error: "Daily trade limit reached: try again tomorrow." }];
+    closeTr(tr, "done", t); /* first, so nothing can settle it twice */
     take(w.a, tr.want); put(w.a, tr.give, taxIn); put(from, tr.want, taxOut);
+    inboundAdd(w.a, tr.give, taxIn, t); inboundAdd(from, tr.want, taxOut, t);
     log("done", tr, { tax: taxIn + taxOut }); persist();
     return [200, { gold: w.a.gold, mat: { ...w.a.mat }, tax: taxIn + taxOut }];
   }
@@ -240,8 +324,8 @@ function createBank(options = {}) {
     const tr = typeof body.id == "string" && trades[body.id];
     if (!tr || (tr.from != w.id && tr.to != w.id)) return [404, { error: "No such offer." }];
     if (tr.st != "open") return [409, { error: "This offer is " + tr.st + "." }];
-    tr.st = tr.from == w.id ? "cancelled" : "declined";
-    if (accts[tr.from]) put(accts[tr.from], tr.give, 0); /* escrow back to the proposer */
+    closeTr(tr, tr.from == w.id ? "cancelled" : "declined", t);
+    if (accts[tr.from]) put(accts[tr.from], tr.give, 0); /* escrow back to the proposer (capped at the bag limit) */
     log(tr.st, tr); persist();
     return [200, { gold: w.a.gold, mat: { ...w.a.mat } }];
   }
@@ -249,11 +333,11 @@ function createBank(options = {}) {
     const t = now(); expire(t);
     const [st, w] = who(body || {}, t); if (st) return [st, w];
     const view = (tr) => ({ id: tr.id, out: tr.from == w.id, give: tr.give, want: tr.want, left: Math.max(0, TRADE.ttl - (t - tr.at)) });
-    const offers = Object.values(trades).filter((tr) => tr.st == "open" && (tr.from == w.id || tr.to == w.id)).map(view);
-    return [200, { tc: codeOf(w.id), offers, gold: w.a.gold, mat: { ...w.a.mat } }];
+    const offers = [...idx(w.id)].map((k) => trades[k]).filter((tr) => tr && tr.st == "open").map(view);
+    return [200, { tc: codeOf(w.id), offers, gold: w.a.gold, mat: { ...w.a.mat }, unlock: { syncs: Math.min(w.a.ns || 0, TRADE.syncs), need: TRADE.syncs, ready: t - (w.a.born || 0) >= TRADE.ageMs && (w.a.ns || 0) >= TRADE.syncs } }];
   }
 
-  return { sync, tradeOffer, tradeAccept, tradeCancel, tradeList, TRADE, RULES, MAT_SRC, ASSIST, assistPrice, size: () => Object.keys(accts).length };
+  return { sync, flush, tradeOffer, tradeAccept, tradeCancel, tradeList, TRADE, RULES, MAT_SRC, ASSIST, assistPrice, size: () => Object.keys(accts).length };
 }
 
 module.exports = { createBank, RULES, ASSIST, SEEDS_PER_IP, MATS, MAT_SRC, TRADE };

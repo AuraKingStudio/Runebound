@@ -2775,7 +2775,7 @@
           <div class="sm" style="margin:4px 0">You want: <span class="coin"></span> ${num("twg", 1e6)} ${pick("tw_")}</div>
           <div class="row"><button class="claim" onclick="tradeSend()" ${TRADE_UI.busy ? "disabled" : ""}>OFFER</button></div>
           <div class="mast"><span class="sm">Open offers</span></div>${rows || `<p class="sm">No open offers.</p>`}` : ""}
-          <p class="sm" style="color:#ffb37a">${String(TRADE_UI.msg).replace(/[<>&"]/g, "")}</p>
+          <p class="sm" style="color:#ffb37a">${String(TRADE_UI.msg).replace(/[<>&"'`]/g, "")}</p>
           <button class="alt x" onclick="closeDlg()" title="Close">Close</button>`;
       }
       function tradeRead(pre, gid) {

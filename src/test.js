@@ -869,17 +869,36 @@ async function bankTests(){
   r=s2([M('gather','gold',5),M('hack','ore',1),M('gather','ore',1.5),M('gather','ore',NaN),['mat',5,0,'gather','ore',1],M('gather','ore',0)]);ok(r[1].dropped==6&&r[1].mat.ore==8,'bank mats: unknown materials or sources, fractions, NaN, gold-carrying and zero entries are refused');
   r=s2([M('craft','ore',-3)]);ok(r[1].mat.ore==5&&!r[1].dropped,'bank mats: crafting spends on the server');
   r=s2([M('craft','dust',3)]);ok(r[1].dropped==1,'bank mats: a craft gain with no craft spend is refused (no minting)');
-  r=s2([M('craft','ore',-5),M('craft','dust',3)]);ok(!r[1].dropped&&r[1].mat.ore==0&&r[1].mat.dust==53,'bank mats: a refine turns spent materials into others');
-  r=s2([M('gather','ore',5)]);r=s2([M('craft','ore',-1),M('craft','dust',2)]);ok(r[1].dropped==1,'bank mats: a refine never makes more than it used');
-  r=s2([M('craft','ore',-99),M('gather','ore',-1)]);ok(r[1].dropped==2&&r[1].mat.ore==4,'bank mats: no spending below zero, and gains cannot be negative');
-  let got=0;for(let i=0;i<200;i++){r=s2([M('gather','echo',5)]);got=r[1].mat.echo;}ok(got==350,'bank mats: the daily gather cap holds ('+got+' of 350)');
-  t+=86400e3;r=s2([M('gather','echo',5)]);ok(r[1].mat.echo==355,'bank mats: the daily cap resets the next day');
+  r=s2([M('gather','echo',5)]);r=s2([M('craft','ore',-5),M('craft','echo',-2),M('craft','dust',3)]);ok(!r[1].dropped&&r[1].mat.ore==0&&r[1].mat.echo==3&&r[1].mat.dust==53,'bank mats: refine-ore (5 ore + 2 echo -> 3 dust) is accepted');
+  r=s2([M('craft','dust',-5),M('craft','heart',1),M('craft','eye',1)]);ok(r[1].dropped==2&&r[1].mat.dust==48&&!r[1].mat.heart&&!r[1].mat.eye,'bank mats: rares have no recipe: dust cannot become heart or eye');
+  r=s2([M('craft','dust',-5),M('craft','shard',1),M('craft','bark',1)]);ok(r[1].dropped==1&&r[1].mat.shard==1&&r[1].mat.dust==43,'bank mats: one recipe spend pays for one refine only');
+  r=s2([M('gather','ore',5)]);r=s2([M('craft','ore',-5),M('craft','dust',3)]);ok(r[1].dropped==1,'bank mats: a recipe needs every one of its spends (no echo, no dust)');
+  r=s2([M('craft','ore',-99),M('gather','ore',-1)]);ok(r[1].dropped==2&&r[1].mat.ore==0,'bank mats: no spending below zero, and gains cannot be negative');
+  {let n=0;for(let i=0;i<8;i++){const q=s2([M('craft','dust',-5),M('craft','shard',1)]);if(!q[1].dropped)n++;}r=s2([]);ok(n==8&&r[1].mat.dust==3,'bank mats: refines keep working within the day cap');}
+  {const L=[];for(let i=0;i<120;i++)L.push(M('lore','dust',5));let tot=0;for(let i=0;i<60;i++){t+=1100;const q=b.sync({tok:tk2,led:[M('lore','dust',5)]});if(q[0]==200&&!q[1].dropped)tot+=5;}ok(tot<=100,'bank mats: lore dust has a real daily cap ('+tot+' of 100)');}
+  let got=0;for(let i=0;i<200;i++){r=s2([M('gather','echo',5)]);got=r[1].mat.echo;}ok(got==348,'bank mats: the daily gather cap holds ('+got+' = 350 gathered today - 2 spent)');
+  t+=86400e3;r=s2([M('gather','echo',5)]);ok(r[1].mat.echo==353,'bank mats: the daily cap resets the next day');
   r=s2([['quest',0,0,'x'],['mystery',0,0,'a','b',1]]);ok(r[0]==200,'bank mats: old or unknown ledger shapes never crash the sync');}
+ {/* Contract Board: payouts only for a real delivery, 3 a day */
+  let tc=9e6;const f=require('path').join(require('os').tmpdir(),'rb-contract-test-'+process.pid+'.json'),cb=createBank({file:f,now:()=>tc}),K='e5'.repeat(16),M=(src,k,n)=>['mat',0,0,src,k,n];
+  const sy=(led,seed)=>{tc+=31000;return cb.sync({tok:K,led,seed})};sy([],{gold:0,xp:0,mat:{ore:40}});
+  let r=sy([['contract',400,0],['contract',0,300]]);ok(r[1].dropped==2&&r[1].gold==0,'contract: a payout with no delivery is refused (no free 400 gold every 30 s)');
+  r=sy([M('contract','ore',-5),['contract',400,0]]);ok(r[1].dropped==1&&r[1].gold==0&&r[1].mat.ore==35,'contract: a delivery below the minimum order pays nothing');
+  r=sy([M('contract','ore',-6),['contract',400,0],['contract',0,300],['contract',400,0]]);ok(r[1].gold==400&&r[1].xp==300&&r[1].dropped==1,'contract: one delivery pays gold and XP once');
+  sy([M('contract','ore',-6),['contract',400,0]]);r=sy([M('contract','ore',-6),['contract',400,0]]);ok(r[1].gold==1200&&!r[1].dropped,'contract: a 3rd payout in a day is fine');
+  r=sy([M('contract','ore',-6),['contract',400,0]]);ok(r[1].dropped==1&&r[1].gold==1200,'contract: a 4th payout in a day is refused');
+  r=sy([M('contract','herb',-6)]);ok(r[1].dropped==1,'contract: you cannot deliver materials you do not have');
+  tc+=86400e3;r=sy([M('contract','ore',-6),['contract',400,0]]);ok(r[1].gold==1600,'contract: the daily cap resets the next day');
+  for(const x of [f,f.replace(/\.json$/,'')+'-trades.json'])try{require('fs').unlinkSync(x)}catch{}}
  {/* trades: bank escrow between two online accounts */
   const os=require('os'),pth=require('path'),fs=require('fs');let tt=5e6;const f=pth.join(os.tmpdir(),'rb-trade-test-'+process.pid+'.json'),lg=f+'.log';
   const tb=createBank({file:f,tradeLog:lg,now:()=>tt}),A='a1'.repeat(16),B='b2'.repeat(16),C='c3'.repeat(16),M=(src,k,n)=>['mat',0,0,src,k,n];
   const sy=(tok,led,seed)=>{tt+=2500;return tb.sync({tok,led:led||[],seed})};
   const ca=sy(A,[],{gold:500,mat:{ore:20}})[1].tc,cb=sy(B,[],{gold:300,mat:{herb:10}})[1].tc;sy(C,[],{gold:0});
+  ok(tb.tradeOffer({tok:A,to:cb,give:{gold:1}})[0]==403,'trade: a brand-new account cannot trade (Sybil guard)');
+  const season=(tok)=>{for(let i=0;i<20;i++)sy(tok,[M('gather','echo',1)]);};season(A);season(B);
+  ok(tb.tradeOffer({tok:A,to:cb,give:{gold:1}})[0]==403,'trade: 20 real syncs alone are not enough: the account must be a day old');
+  tt+=86400e3;sy(A);sy(B);
   ok(/^[a-f0-9]{10}$/.test(ca)&&ca!=cb,'trade: each account gets a public trade code (not its token)');
   const off=(tok,to,give,want)=>{tt+=10;return tb.tradeOffer({tok,to,give,want})},acc=(tok,id)=>{tt+=10;return tb.tradeAccept({tok,id})};
   ok(off(A,ca,{gold:10},{})[0]==400,'trade: you cannot trade with yourself');
@@ -897,6 +916,7 @@ async function bankTests(){
   tt+=60e3;const x1=off(A,cb,{gold:10},{mat:{herb:6}})[1].id,x2=off(A,cb,{gold:10},{mat:{herb:6}})[1].id;
   const r1=acc(B,x1),r2=acc(B,x2);ok(r1[0]==200&&r2[0]==409&&sy(B)[1].mat.herb==0,'trade: two trades racing for the same materials settle only once');
   ok(tb.tradeCancel({tok:A,id:x2})[0]==200&&sy(A)[1].gold==290,'trade: cancelling refunds the escrow');
+  ok(sy(B)[1].gold==499,'trade: the tax rounds up with a 1-gold minimum (10 gold pays 1)');
   /* expiry refunds */
   tt+=60e3;const g0=sy(A)[1].gold,ex=off(A,cb,{gold:50},{gold:1})[1].id;tt+=601e3;
   ok(tb.tradeList({tok:B})[1].offers.length==0&&sy(A)[1].gold==g0&&acc(B,ex)[0]==409,'trade: an offer expires after 10 minutes and its escrow comes back');
@@ -906,7 +926,21 @@ async function bankTests(){
   tt+=60e3;let rl=0;for(let i=0;i<12;i++)if(tb.tradeList({tok:C})[0]==429)rl++;ok(rl==2,'trade: actions are rate-limited (10 a minute)');
   const lines=fs.readFileSync(lg,'utf8').trim().split('\n').map(JSON.parse);ok(lines.some(l=>l.ev=='done'&&l.tax==10)&&!fs.readFileSync(lg,'utf8').includes(A),'trade: every trade is logged, never with a token');
   ok(sy(A,[['trade',500,0],M('trade','ore',5)])[1].dropped==2,'trade: a forged ledger trade never moves the bank');
-  for(const x of [f,f.replace(/\.json$/,'')+'-trades.json',lg])try{fs.unlinkSync(x)}catch{}}
+  /* Sybil: one IP, many accounts; daily inbound cap; inbox cap; one atomic file; overflow */
+  {const toks=['d4','e5','f6','a7'].map(x=>x.repeat(16));for(const k of toks){sy(k,[],{gold:400});}tt+=86400e3;for(const k of toks)season(k);
+   const cs=toks.map(k=>sy(k)[1].tc);let ipOk=0;for(const k of toks){tt+=60e3;if(tb.tradeOffer({tok:k,to:cb,give:{gold:1}},'9.9.9.9')[0]==200)ipOk++;}
+   ok(ipOk==3,'trade: at most 3 accounts may trade from one IP a day');}
+  {tt+=86400e3;sy(A,[],null);for(let i=0;i<60;i++)sy(A,[M('gather','ore',5)]);sy(B);let rec=0,lim=0;
+   for(const amt of [90,90,90,40]){tt+=60e3;const o=tb.tradeOffer({tok:A,to:cb,give:{mat:{ore:amt}}});if(o[0]!=200)continue;const q=tb.tradeAccept({tok:B,id:o[1].id});if(q[0]==200)rec+=amt;else{lim++;tb.tradeCancel({tok:A,id:o[1].id});}}
+   ok(rec<=300&&lim>0,'trade: materials received by trade are capped per day ('+rec+' of 300)');}
+  {tt+=86400e3;sy(C);season(C);let n=0;for(const k of [A]){for(let i=0;i<30;i++){if(i%9==0)tt+=60e3;if(tb.tradeOffer({tok:k,to:sy(C)[1].tc,give:{gold:1}})[0]==200)n++;}}ok(n<=5,'trade: open offers per sender and per recipient are capped');}
+  {tb.flush();const disk=JSON.parse(fs.readFileSync(f,'utf8'));ok(disk.v==2&&disk.accts&&disk.trades&&!fs.existsSync(f.replace(/\.json$/,'')+'-trades.json'),'trade: accounts and trades are saved together in one atomic file');}
+  {const h=(x)=>require('crypto').createHash('sha256').update(x).digest('hex'),X='1a'.repeat(16),Y='2b'.repeat(16),f2=f+'.v1.json';
+   const old={[h(X)]:{gold:5,xp:0,mat:{ore:99999},born:0,ns:99,last:{},at:0},[h(Y)]:{gold:5,xp:0,mat:{ore:5},born:0,ns:99,last:{},at:0}};fs.writeFileSync(f2,JSON.stringify(old));
+   const ob=createBank({file:f2,tradeLog:lg,now:()=>tt}),cx=ob.tradeList({tok:X})[1].tc;ok(ob.tradeList({tok:Y})[0]==200,'trade: an old one-file bank (accounts only) still loads');
+   const o=ob.tradeOffer({tok:Y,to:cx,give:{mat:{ore:5}}});const q=ob.tradeAccept({tok:X,id:o[1].id});ok(o[0]==200&&q[0]==409&&/full/.test(q[1].error),'trade: an accept that would overflow a bag is refused');
+   ob.flush();try{fs.unlinkSync(f2)}catch{}}
+  for(const x of [f,lg,lg+'.1'])try{fs.unlinkSync(x)}catch{}}
 }
 async function takeoverTests(){
  const {server}=createDirectoryServer({allowedOrigins:[],hostStaleMs:50});await new Promise(r=>server.listen(0,'127.0.0.1',r));
