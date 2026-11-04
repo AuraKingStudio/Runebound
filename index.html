@@ -1681,6 +1681,60 @@
           const m = /[?&]room=([a-z0-9]{8,24})(?:&|#|$)/.exec(location.search || "");
           return m ? m[1] : "";
         }
+        /* room trust: the relay is public, so anyone with the code could answer a guest first and pose as its host.
+           Every tab has one ECDSA P-256 key (kept in sessionStorage so a reload keeps it). Its SHA-256 hex is the
+           identity: a guest's peerId is the first 48 hex, a host's hk (in the ?room= link) the first 32. Guests sign
+           offers, hosts sign answers bound to the room, the guest's peerId and its exact offer; a guest accepts one
+           answer per offer, only from a key in ROOM_TRUST (the link's hk, plus successors its verified host announced). */
+        const ROOM_TRUST = new Set();
+        let roomKey = null;
+        const hexOf = (buf) => [...new Uint8Array(buf)].map((x) => x.toString(16).padStart(2, "0")).join("");
+        const b64Of = (buf) => btoa(String.fromCharCode(...new Uint8Array(buf)));
+        const unB64 = (s) => Uint8Array.from(atob(s), (ch) => ch.charCodeAt(0));
+        const ECDSA = { name: "ECDSA", namedCurve: "P-256" }, SIGN = { name: "ECDSA", hash: "SHA-256" };
+        const store = (k, v) => { try { return v === undefined ? sessionStorage.getItem(k) : sessionStorage.setItem(k, v); } catch { return null; } };
+        function roomHkFromLink() {
+          const m = /[?&]hk=([a-f0-9]{32})(?:&|#|$)/.exec(location.search || "");
+          return m ? m[1] : "";
+        }
+        async function roomKeyGet() {
+          if (roomKey) return roomKey;
+          let pair = null;
+          try { const j = JSON.parse(store("rbRoomKey") || "null"); if (j && j.d) pair = { privateKey: await crypto.subtle.importKey("jwk", j, ECDSA, true, ["sign"]), jwk: j }; } catch { pair = null; }
+          if (!pair) {
+            const kp = await crypto.subtle.generateKey(ECDSA, true, ["sign", "verify"]);
+            pair = { privateKey: kp.privateKey, jwk: await crypto.subtle.exportKey("jwk", kp.privateKey) };
+            store("rbRoomKey", JSON.stringify(pair.jwk));
+          }
+          const pubJwk = { kty: "EC", crv: "P-256", x: pair.jwk.x, y: pair.jwk.y, ext: true };
+          const raw = await crypto.subtle.exportKey("raw", await crypto.subtle.importKey("jwk", pubJwk, ECDSA, true, ["verify"]));
+          const id = hexOf(await crypto.subtle.digest("SHA-256", raw));
+          return (roomKey = { priv: pair.privateKey, pk: b64Of(raw), peerId: id.slice(0, 48), hk: id.slice(0, 32) });
+        }
+        async function roomSign(text) {
+          const k = await roomKeyGet();
+          return b64Of(await crypto.subtle.sign(SIGN, k.priv, new TextEncoder().encode(text)));
+        }
+        /* roomVerify(pk, sig, text) -> the signer's full id hex, or "" if the signature is bad */
+        async function roomVerify(pk, sig, text) {
+          try {
+            if (typeof pk != "string" || pk.length > 120 || typeof sig != "string" || sig.length > 120) return "";
+            const raw = unB64(pk);
+            const key = await crypto.subtle.importKey("raw", raw, ECDSA, false, ["verify"]);
+            if (!(await crypto.subtle.verify(SIGN, key, unB64(sig), new TextEncoder().encode(text)))) return "";
+            return hexOf(await crypto.subtle.digest("SHA-256", raw));
+          } catch { return ""; }
+        }
+        const offerDigest = async (dJson) => hexOf(await crypto.subtle.digest("SHA-256", new TextEncoder().encode(dJson)));
+        const offerText = (code, peerId, dJson) => "rb-offer|" + code + "|" + peerId + "|" + dJson;
+        const answerText = async (code, peerId, offerJson, dJson) => "rb-answer|" + code + "|" + peerId + "|" + (await offerDigest(offerJson)) + "|" + dJson;
+        function roomTrustSave() { if (room) store("rbRoomTrust", JSON.stringify({ code: room.code, l: [...ROOM_TRUST].slice(-8) })); }
+        /* roomTrustAdd(hashes): successors announced by the verified host (its "hq" list), so a host switch stays verified */
+        function roomTrustAdd(list) {
+          if (!room || room.role != "guest" || !Array.isArray(list)) return;
+          for (const h of list.slice(0, 3)) if (typeof h == "string" && /^[a-f0-9]{32}$/.test(h)) ROOM_TRUST.add(h);
+          roomTrustSave();
+        }
         function roomToken() {
           const b = new Uint8Array(24);
           crypto.getRandomValues(b);
@@ -1708,22 +1762,49 @@
         async function roomGot(raw) {
           let msg;
           try { msg = JSON.parse(JSON.parse(raw).message); } catch { return; }
-          if (!room || !msg || typeof msg != "object" || typeof msg.peerId != "string" || msg.peerId.length != 48) return;
-          const description = await unpackSdp(msg.d).catch(() => null);
-          if (!description || !room) return;
-          if (room.role == "host" && msg.k == "offer") room.events.push({ type: "offer", peerId: msg.peerId, profile: msg.profile, description });
-          else if (room.role == "guest" && msg.k == "answer" && msg.peerId == room.peerId) room.events.push({ type: "answer", peerId: msg.peerId, description });
-          if (room.events.length > 40) room.events.shift();
+          if (!room || !msg || typeof msg != "object" || typeof msg.peerId != "string" || !/^[a-f0-9]{48}$/.test(msg.peerId) || !msg.d) return;
+          const r = room, dJson = JSON.stringify(msg.d);
+          if (r.role == "host" && msg.k == "offer") {
+            /* only the key behind a peerId can offer for it: a copied peerId with another SDP fails here */
+            const who = await roomVerify(msg.pk, msg.sig, offerText(r.code, msg.peerId, dJson));
+            if (!who || who.slice(0, 48) != msg.peerId || r.offers.has(msg.peerId)) return;
+            const description = await unpackSdp(msg.d).catch(() => null);
+            if (!description || room !== r) return;
+            r.offers.set(msg.peerId, dJson);
+            if (r.offers.size > 40) r.offers.delete(r.offers.keys().next().value);
+            r.events.push({ type: "offer", peerId: msg.peerId, profile: msg.profile, description });
+          } else if (r.role == "guest" && msg.k == "answer" && msg.peerId == r.peerId && r.offerD && !r.answered) {
+            /* a host we trust, answering exactly our offer, once */
+            const who = await roomVerify(msg.pk, msg.sig, await answerText(r.code, msg.peerId, r.offerD, dJson));
+            if (!who || !ROOM_TRUST.has(who.slice(0, 32)) || r.answered || room !== r) return;
+            const description = await unpackSdp(msg.d).catch(() => null);
+            if (!description || r.answered || room !== r) return;
+            r.answered = true;
+            r.events.push({ type: "answer", peerId: msg.peerId, description });
+          }
+          if (r.events.length > 40) r.events.shift();
         }
-        function roomJoin(profile, asHost) {
+        async function roomJoin(profile, asHost) {
           const linked = roomFromLink(), mine = sessionStorage.getItem("rbRoom");
           const role = asHost || !(linked && linked != mine) ? "host" : "guest"; /* a host reloading its own room link stays host; asHost: taking over after host loss */
-          const code = linked || roomToken().slice(0, 12);
+          const code = linked || roomToken().slice(0, 12), key = await roomKeyGet();
           if (role == "host") {
             sessionStorage.setItem("rbRoom", code);
-            if (!linked) history.replaceState(null, "", location.pathname + (location.search ? location.search + "&" : "?") + "room=" + code + location.hash);
+            /* the address bar carries this host's own key hash (a successor replaces the old host's hk) */
+            const rest = (location.search || "").replace(/^\?/, "").split("&").filter((kv) => kv && !/^(room|hk)=/.test(kv));
+            history.replaceState(null, "", location.pathname + "?" + [...rest, "room=" + code, "hk=" + key.hk].join("&") + location.hash);
+          } else {
+            /* a guest must know which host key to trust: links without hk (made before hosts signed) are refused */
+            const hk = roomHkFromLink();
+            if (!hk) throw new Error("This invite link is outdated: ask your friend to copy a new one (🔗 Invite).");
+            let saved = null;
+            try { saved = JSON.parse(store("rbRoomTrust") || "null"); } catch { saved = null; }
+            ROOM_TRUST.clear();
+            ROOM_TRUST.add(hk);
+            if (saved && saved.code == code && Array.isArray(saved.l)) for (const h of saved.l) if (/^[a-f0-9]{32}$/.test(h)) ROOM_TRUST.add(h);
           }
-          room = { code, role, profile, peerId: role == "guest" ? roomToken() : "", events: [], es: null };
+          room = { code, role, profile, peerId: role == "guest" ? key.peerId : "", hk: key.hk, events: [], offers: new Map(), offerD: "", answered: false, es: null };
+          if (role == "guest") roomTrustSave();
           return new Promise((resolve, reject) => {
             const es = (room.es = new EventSource(ROOM_RELAY + "runebound-" + code + "/sse"));
             const timer = setTimeout(() => { es.close(); room = null; reject(new Error("Room relay unreachable.")); }, 10000);
@@ -1735,8 +1816,20 @@
             es.onmessage = (e) => roomGot(e.data);
           });
         }
+        /* signed relay posts: the guest signs its offer, the host signs an answer bound to that exact offer */
+        async function roomSignedOffer(description) {
+          const r = room, d = await packSdp(description), dJson = JSON.stringify(d), key = await roomKeyGet();
+          r.offerD = dJson; r.answered = false;
+          return roomPost({ k: "offer", peerId: r.peerId, profile: r.profile, d, pk: key.pk, sig: await roomSign(offerText(r.code, r.peerId, dJson)) });
+        }
+        async function roomSignedAnswer(peerId, description) {
+          const r = room, offerJson = r.offers.get(peerId);
+          if (!offerJson) throw new Error("No signed offer from this player.");
+          const d = await packSdp(description), key = await roomKeyGet();
+          return roomPost({ k: "answer", peerId, d, pk: key.pk, sig: await roomSign(await answerText(r.code, peerId, offerJson, JSON.stringify(d))) });
+        }
         function roomInviteLink() {
-          return room ? location.origin + location.pathname + "?room=" + room.code : "";
+          return room ? location.origin + location.pathname + "?room=" + room.code + "&hk=" + room.hk : "";
         }
         function configureDirectory(url) {
           if (url === "room") { directoryUrl = "room"; return; }
@@ -1788,8 +1881,8 @@
         function directorySend(path, data = {}) {
           if (!directorySession) throw new Error("No active signaling directory session.");
           if (room) {
-            if (path == "/api/offer") return packSdp(data.description).then((d) => roomPost({ k: "offer", peerId: room.peerId, profile: room.profile, d }));
-            if (path == "/api/answer") return packSdp(data.description).then((d) => roomPost({ k: "answer", peerId: data.peerId, d }));
+            if (path == "/api/offer") return roomSignedOffer(data.description);
+            if (path == "/api/answer") return roomSignedAnswer(data.peerId, data.description);
             return Promise.resolve({ ok: true }); /* heartbeat, report, kick: nothing to tell a relay */
           }
           return directoryRequest(path, { ...data, token: directorySession.token });
@@ -2350,10 +2443,11 @@
       try {
         const s = JSON.parse(localStorage.getItem(SAVE_KEY) || "null");
         if (s && typeof s === "object") {
-          V.gold = Math.max(0, +s.gold || 0);
+          V.gold = Number.isFinite(+s.gold) ? cl(Math.trunc(+s.gold), 0, 1e9) : 0;
           V.q = cl(+s.q || 0, 0, QUESTS.length);
           V.qs = cl(+s.qs || 0, 0, 2);
-          V.up = Object.assign({ dmg: 0, vit: 0, spd: 0, cdr: 0 }, s.up);
+          V.up = { dmg: 0, vit: 0, spd: 0, cdr: 0 }; /* only the known upgrade keys (clamped to 0..MAXL below) */
+          if (s.up && typeof s.up == "object") for (const k in V.up) if (Object.hasOwn(s.up, k)) V.up[k] = +s.up[k] || 0;
           V.lt = Math.max(0, +s.lt | 0); /* times talked to the Archivist */
           V.dl = typeof s.dl == "string" ? s.dl : ""; /* last daily-bonus day, "YYYY-MM-DD" */
           V.ds = cl(+s.ds | 0, 0, 999); /* daily streak */
@@ -2362,21 +2456,21 @@
           V.nc = [1, 2, 3].includes(s.nc) ? s.nc : 0; /* name colour: 0 none, 1 he, 2 she, 3 they (GDS) */
           V.xp = Math.max(0, +s.xp | 0);
           /* Archivist state: pool (lp, lpt), last tale time (lta), bonus window (lbx, lbn), blessing (bl), title flag (af) */
-          for (const k of ["lp", "lpt", "lta", "lbx", "lbn", "cr", "bj1", "rc", "eqs", "bjc", "fg", "mk"]) if (typeof s[k] == "number") V[k] = s[k];
+          for (const k of ["lp", "lpt", "lta", "lbx", "lbn", "cr", "bj1", "rc", "eqs", "bjc", "fg", "mk"]) if (Number.isFinite(s[k])) V[k] = cl(s[k], 0, 1e13); /* times (ms) and counters: finite, never negative */
           if (s.mtr && typeof s.mtr.d == "string" && typeof s.mtr.n == "number") V.mtr = { d: s.mtr.d.slice(0, 10), n: Math.max(0, s.mtr.n | 0) }; /* Maiden trades today */
           V.bl = ["stone", "swift"].includes(s.bl) ? s.bl : null;
           V.af = s.af ? 1 : 0;
           if (s.sk) for (const k of Object.keys(V.sk)) if (Array.isArray(s.sk[k])) V.sk[k] = s.sk[k].slice(0, 3).map((x) => cl(+x | 0, 0, 5)); /* skill levels 0-5 */
           /* new NPCs: class choice, Maiden day, raid records */
-          V.cls = CL[s.cls] ? s.cls : "";
-          V.mb = typeof s.mb == "string" ? s.mb : "";
+          V.cls = typeof s.cls == "string" && Object.hasOwn(CL, s.cls) ? s.cls : "";
+          V.mb = typeof s.mb == "string" ? s.mb.slice(0, 10) : "";
           /* tutorial step 0-4 (4 = done). Old saves with progress skip it. */
-          V.tut = typeof s.tut == "number" ? s.tut : s.xp || s.q || s.lt ? 4 : 0;
+          V.tut = Number.isFinite(s.tut) ? cl(Math.trunc(s.tut), 0, 4) : s.xp || s.q || s.lt ? 4 : 0;
           /* guild + daily bounties */
-          V.gd = s.gd && typeof s.gd.name == "string" ? { name: s.gd.name.slice(0, 20), m: Array.isArray(s.gd.m) ? s.gd.m.filter((r) => r && CL[r.c]).slice(0, 10) : [] } : null;
+          V.gd = s.gd && typeof s.gd.name == "string" ? { name: s.gd.name.slice(0, 20), m: Array.isArray(s.gd.m) ? s.gd.m.filter((r) => r && typeof r.c == "string" && Object.hasOwn(CL, r.c)).slice(0, 10) : [] } : null;
           V.bo = s.bo && typeof s.bo.day == "string" && Array.isArray(s.bo.ids) ? { day: s.bo.day, ids: s.bo.ids, prog: s.bo.prog || {}, done: s.bo.done || {} } : null;
           V.ul = s.ul && typeof s.ul == "object" ? { class: !!s.ul.class, maiden: !!s.ul.maiden, smith: !!s.ul.smith, herald: !!s.ul.herald, barkeep: !!s.ul.barkeep, seraph: !!s.ul.seraph } : {};
-          for (const k of ["wins", "loss", "best"]) if (typeof s[k] == "number") V[k] = s[k];
+          for (const k of ["wins", "loss", "best"]) if (Number.isFinite(s[k])) V[k] = cl(Math.trunc(s[k]), 0, 1e9);
           if (s.bjs && typeof s.bjs == "object") { V.bjs = {}; for (const k of ["h", "w", "l", "p", "n", "s", "b", "g"]) V.bjs[k] = Math.max(k == "g" ? -1e9 : 0, Math.min(1e9, Math.trunc(+s.bjs[k] || 0))); } /* blackjack stats (display only) */
           if (s.trial && typeof s.trial == "object") { V.trial = {}; for (const k in s.trial) if (/^[a-z]{2,10}$/.test(k)) V.trial[k] = Math.max(0, Math.min(50, s.trial[k] | 0)); /* (RAIDS / TRIAL are defined later) */ }
           if (s.mat && typeof s.mat == "object") { V.mat = {}; for (const k in s.mat) if (/^[a-z]{2,12}$/.test(k) && s.mat[k] > 0) V.mat[k] = Math.min(99999, s.mat[k] | 0); }
@@ -2552,6 +2646,7 @@
           <div class="row"><button onclick="saveImport($('svi').value)">📥 Load code</button></div>
           <p class="sm">Online, your gold and XP live on the server: they come back from it, never from a code.</p>
           <div class="mast"><span class="sm">Reset progress (can't be undone)</span></div>
+          <p class="sm">Reset clears only this browser's save: quests, upgrades, items and name (settings stay). Online, the server bank keeps your gold and XP and restores them right after.</p>
           <div class="row" style="gap:6px;flex-wrap:wrap"><input id="svr" maxlength="5" placeholder="Type RESET" autocomplete="off" style="width:110px"><button class="alt" style="color:#ff7a6b" onclick="saveReset($('svr').value)">Reset</button></div>
           <button class="alt x" onclick="settingsUI()" title="Back">Back</button>`;
       }

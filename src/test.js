@@ -378,6 +378,7 @@ ok(T.saveImport('nope')===false,'save code: a bad import changes nothing');
 const keep=store[T.SAVE_KEY];ok(T.saveImport(code)===true&&JSON.parse(store[T.SAVE_KEY]).gold===g0,'save code: import writes the save for the load sanitizer');
 V.gold+=5;vm.runInContext('save()',ctx);ok(JSON.parse(store[T.SAVE_KEY]).gold===g0,'save code: no autosave overwrites an import before the reload');T.saveUnlock();V.gold-=5;
 ok(T.saveReset('reset please')===false&&store[T.SAVE_KEY]!=null,'save reset: needs the word RESET');ok(T.saveReset(' reset ')===true&&store[T.SAVE_KEY]==null,'save reset: RESET wipes the save');T.saveUnlock();store[T.SAVE_KEY]=keep;
+{ok(!/[a-f0-9]{32}/.test(JSON.stringify(T.V()))&&!/[a-f0-9]{32}/.test(atob(T.saveCode().split('.')[1])),'save code: never carries a 32-hex token (the bank key stays out)');}
 T.saveUI();ok(ctx.document.getElementById('dp').innerHTML.includes('RB1.')&&ctx.document.getElementById('dp').innerHTML.includes('Type RESET'),'save dialog: shows the code, import and reset');}
 /* ---------- dash and controls ---------- */
 T.P().dcd=0;T.P().dx=1;T.P().dy=0;T.dash(T.P());ok(T.P().dcd>0,'dash: works in the hub and starts its cooldown');
@@ -1023,4 +1024,8 @@ async function benchTests(){
 }
 {T.V().mat={};T.setRaid('large');const d=T.raidDrops(true);ok(T.V().mat.dust>=3&&T.V().mat.bark>=1&&d.some(x=>x[0]=='bark'),'materials: a large raid win drops Rune Dust and Thornbark');const l=T.raidDrops(false);ok(l.length==1&&l[0][0]=='dust','materials: a loss still gives a little dust');
  T.V().eq={bag:[{id:'a1',t:'tank',k:'dr',r:1},{id:'a2',t:'tank',k:'dr',r:2}],on:{tank:'a1'}};T.invWear('a2');ok(T.V().eq.on.tank=='a2','inventory: wearing an item swaps it into its slot');T.invWear('a2');ok(!T.V().eq.on.tank,'inventory: clicking a worn item takes it off');T.invUI();ok(ctx.document.getElementById('dp').innerHTML.includes('Thornbark'),'inventory: shows materials');}
-(BENCH_ONLY?Promise.resolve():networkTests().then(signalingTests).then(hostLossTests).then(brainHttpTests).then(reportTests).then(takeoverTests).then(bankTests).then(rateLimitTests).then(()=>marketHttpTests())).then(benchTests).then(()=>{console.log(f?f+' FAILED':'ALL PASSED');process.exit(f?1:0);}).catch(e=>{console.error(e);process.exit(1);});
+/* save load in a fresh copy of the game (runs late: a second game instance shares the fake document) */
+function saveLoadTests(){{const evil={gold:'1e999',up:{dmg:2,__proto__:{x:1},hack:99},cls:'constructor',tut:-7,lp:-5,lpt:Infinity,bjc:'9',wins:-3,best:1e99,mb:'x'.repeat(500),gd:{name:'G',m:[{c:'toString'},{c:'tank'}]}};
+ const st={[T.SAVE_KEY]:JSON.stringify(evil)},c={...ctx,localStorage:{getItem:k=>st[k]||null,setItem:(k,v)=>st[k]=v,removeItem:k=>delete st[k]}};c.window=c;vm.createContext(c);vm.runInContext(SRC+';globalThis.LV=V;',c);const L=c.LV;
+ ok(L.gold===0&&Object.keys(L.up).join()=='dmg,vit,spd,cdr'&&L.up.dmg==2&&L.cls===''&&L.tut===0&&L.lp===0&&L.lpt===undefined&&L.bjc===undefined&&L.wins===0&&L.best===1e9&&L.mb.length==10&&L.gd.m.length==1,'save load: own keys only, numbers range-clamped, prototype names refused');}}
+(BENCH_ONLY?Promise.resolve():networkTests().then(signalingTests).then(hostLossTests).then(brainHttpTests).then(reportTests).then(takeoverTests).then(bankTests).then(rateLimitTests).then(()=>marketHttpTests()).then(saveLoadTests)).then(benchTests).then(()=>{console.log(f?f+' FAILED':'ALL PASSED');process.exit(f?1:0);}).catch(e=>{console.error(e);process.exit(1);});
