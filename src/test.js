@@ -805,6 +805,11 @@ async function bankTests(){
  {const b3=createBank({file:file+'3',now:()=>t}),k='ab'.repeat(16);t+=1500;b3.sync({tok:k,led:[['bjchart',-50,0]],seed:{gold:900}});
   t+=7*60000;const r=b3.sync({tok:k,led:[['bjchart',-68,0],['bjchart',-98,0]]})[1]; /* rents at +5 and +6 min, synced at +7 */
   ok(r.dropped==0,'bank assist: two rents in one sync both get their own price window');try{require('fs').unlinkSync(file+'3')}catch{}}
+ {const b4=createBank({file:file+'4',now:()=>t}),{SEEDS_PER_IP}=require('./bank.js'),ip='203.0.113.7',g=[];
+  for(let i=0;i<SEEDS_PER_IP+2;i++){const k=(i+0x40).toString(16).repeat(16);g.push(b4.sync({tok:k,led:[],seed:{gold:500,xp:2000}},ip)[1].gold);}
+  ok(g.slice(0,SEEDS_PER_IP).every((x)=>x==500)&&g.slice(SEEDS_PER_IP).every((x)=>x==0),'bank: only '+SEEDS_PER_IP+' seeded new accounts per IP per day (a shared save code cannot farm the seed)');
+  ok(b4.sync({tok:'ef'.repeat(16),led:[],seed:{gold:500}},'198.51.100.2')[1].gold==500,'bank: another IP still gets its seed');
+  t+=25*3600e3;ok(b4.sync({tok:'cd'.repeat(16),led:[],seed:{gold:500}},ip)[1].gold==500,'bank: the per-IP seed limit resets after a day');try{require('fs').unlinkSync(file+'4')}catch{}}
  ok(b.assistPrice({bjm:999,bjmAt:t},t)==1000&&b.assistPrice({bjm:-5},t)==50,'bank assist: the multiplier is capped at x20 and never below x1');
  try{require('fs').unlinkSync(file)}catch{}
 }

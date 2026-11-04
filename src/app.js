@@ -172,7 +172,7 @@ function createDirectoryServer(options = {}) {
     }
     if (url.pathname === "/api/bank/sync") {
       if (!bank) return send(res, 503, { error: "The bank is offline on this server." });
-      const [status, value] = bank.sync(body || {});
+      const [status, value] = bank.sync(body || {}, ip); /* ip: Cloudflare-aware (above); caps seeded new accounts per IP */
       return send(res, status, value);
     }
     if (url.pathname === "/api/feedback") {

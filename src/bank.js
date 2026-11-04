@@ -25,6 +25,7 @@ const assistMul = (a, t) => 1 + (Math.min(ASSIST.max, Math.max(1, a.bjm || 1)) -
 const assistPrice = (a, t) => Math.max(ASSIST.cost, Math.round(ASSIST.cost * assistMul(a, t)));
 const SEED_GOLD = 500, SEED_XP = 2000; /* a new online account keeps at most this much of its old offline save */
 const MAX_ENTRIES = 150, SYNC_GAP_MS = 1000;
+const SEEDS_PER_IP = 3, SEED_WINDOW_MS = 24 * 3600e3; /* seeded new accounts per IP per day: a shared save code can't farm the seed with fresh tokens */
 
 const hash = (t) => createHash("sha256").update(t).digest("hex");
 const int = (n, lo, hi) => Number.isInteger(n) && n >= lo && n <= hi;
@@ -48,14 +49,24 @@ function createBank(options = {}) {
     timer.unref?.();
   }
 
-  /* sync({ tok, led, seed }): In: token, new ledger entries, offline balance (first sync only). Out: [status, { gold, xp, dropped }] */
-  function sync(body) {
+  /* sync({ tok, led, seed }, ip): In: token, new ledger entries, offline balance (first sync only). Out: [status, { gold, xp, dropped }] */
+  const seeded = new Map(); /* ip -> times a new account got a seed (in memory, last SEED_WINDOW_MS) */
+  /* seedOk(ip, t): may this IP seed one more new account? Records it if so. No IP (tests, local) = no limit. */
+  function seedOk(ip, t) {
+    if (!ip) return true;
+    if (seeded.size > 50000) for (const [k, v] of seeded) if (t - v[v.length - 1] >= SEED_WINDOW_MS) seeded.delete(k);
+    const list = (seeded.get(ip) || []).filter((x) => t - x < SEED_WINDOW_MS);
+    if (list.length >= SEEDS_PER_IP) { seeded.set(ip, list); return false; }
+    list.push(t); seeded.set(ip, list);
+    return true;
+  }
+  function sync(body, ip) {
     if (typeof body.tok != "string" || !/^[a-f0-9]{32}$/.test(body.tok)) return [400, { error: "Bad account token." }];
     if (!Array.isArray(body.led) || body.led.length > MAX_ENTRIES) return [400, { error: "Bad ledger." }];
     const id = hash(body.tok), t = now();
     let a = accts[id];
     if (!a) {
-      const s = body.seed || {};
+      const s = body.seed && seedOk(ip, t) ? body.seed : {}; /* over the per-IP limit: the account opens empty */
       a = accts[id] = { gold: int(s.gold, 0, 1e9) ? Math.min(s.gold, SEED_GOLD) : 0, xp: int(s.xp, 0, 1e9) ? Math.min(s.xp, SEED_XP) : 0, last: {}, bet: 0, at: 0 };
     }
     if (t - a.at < SYNC_GAP_MS) return [429, { error: "Too many syncs.", gold: a.gold, xp: a.xp }];
@@ -91,4 +102,4 @@ function createBank(options = {}) {
   return { sync, RULES, ASSIST, assistPrice, size: () => Object.keys(accts).length };
 }
 
-module.exports = { createBank, RULES, ASSIST };
+module.exports = { createBank, RULES, ASSIST, SEEDS_PER_IP };
