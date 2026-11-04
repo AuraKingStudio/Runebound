@@ -1640,6 +1640,56 @@
         .bjassist, .bjassist::after, .bjassist .bjchb, .bjassist .bjchb::after,
         .pn.raidpn .rban::before, .pn.raidpn .rban::after, .pn.raidpn .rban img { animation: none !important; }
       }
+
+      /* ================= Dusk Aether (UI theme): twilight glass panels with teal glyph edges, matching the rune isle =================
+         Tokens first; panels keep dark enough glass for every inline light text colour (>= 4.5:1). Code-drawn only: gradients, no images.
+         Glow pulses only on hover/focus; Low spec (body.lo) and reduced motion get static edges. */
+      :root {
+        --ae-ink: #0f1824;
+        --ae-glass: #162433;
+        --ae-glass2: #1e2f44;
+        --ae-mist: #9a7bff;
+        --ae-teal: #3fd6c6;
+        --ae-gold: #e8b84a;
+        --ae-ok: #4fd18b;
+        --ae-bad: #ff6b6b;
+        --ae-text: #e9f1f7;
+        --ae-dim: #a9bccb;
+        --ae-edge: color-mix(in srgb, var(--ae-teal) 55%, transparent);
+        --ae-r: 14px;
+      }
+      #dlg { background: radial-gradient(ellipse at 50% 40%, #1a2b4499, #070b12e6); }
+      .pn, .pn.raidpn {
+        position: relative;
+        color: var(--ae-text);
+        border: 1px solid var(--ae-edge) !important;
+        border-radius: var(--ae-r) !important;
+        background:
+          radial-gradient(ellipse 120% 60% at 50% -10%, color-mix(in srgb, var(--ae-mist) 30%, transparent), transparent 60%),
+          radial-gradient(ellipse 80% 50% at 100% 110%, color-mix(in srgb, var(--ae-teal) 14%, transparent), transparent 70%),
+          linear-gradient(180deg, color-mix(in srgb, var(--ae-glass2) 96%, transparent), color-mix(in srgb, var(--ae-glass) 97%, transparent)) !important;
+        box-shadow: 0 0 0 1px #0a121c, inset 0 1px 0 #ffffff1f, inset 0 0 30px #3fd6c612, 0 18px 50px #000b, 0 0 32px #9a7bff26 !important;
+      }
+      /* rune corner notches: four small teal brackets drawn with gradients on one pseudo-element */
+      .pn::before {
+        content: "";
+        position: absolute;
+        inset: 5px;
+        pointer-events: none;
+        border-radius: calc(var(--ae-r) - 5px);
+        --c: var(--ae-teal);
+        background:
+          linear-gradient(var(--c), var(--c)) top left / 14px 2px no-repeat, linear-gradient(var(--c), var(--c)) top left / 2px 14px no-repeat,
+          linear-gradient(var(--c), var(--c)) top right / 14px 2px no-repeat, linear-gradient(var(--c), var(--c)) top right / 2px 14px no-repeat,
+          linear-gradient(var(--c), var(--c)) bottom left / 14px 2px no-repeat, linear-gradient(var(--c), var(--c)) bottom left / 2px 14px no-repeat,
+          linear-gradient(var(--c), var(--c)) bottom right / 14px 2px no-repeat, linear-gradient(var(--c), var(--c)) bottom right / 2px 14px no-repeat;
+        opacity: 0.75;
+      }
+      .pn h2, .pn.raidpn h2 { color: #f6f0dc; font-variant: small-caps; letter-spacing: 1px; text-shadow: 0 2px 0 #0008, 0 0 16px #3fd6c666; }
+      .pn .sm { color: var(--ae-dim); }
+      .pn .mast { border-color: color-mix(in srgb, var(--ae-teal) 35%, transparent) !important; }
+      .pn input:not([type]), .pn input[type="text"], .pn textarea { background: #0b141f; color: var(--ae-text); border: 1px solid #3fd6c655; border-radius: 8px; }
+      .pn :focus-visible { outline: 2px solid var(--ae-teal); outline-offset: 2px; }
     </style>
   </head>
   <body>
