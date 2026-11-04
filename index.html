@@ -2324,6 +2324,168 @@
         /* the 8th spot: the future Pet NPC (keeper of companions). Shown as a locked ghost until the feature exists. */
         PETS = { lk: "pet", x: 450, y: 528, ic: "🐾", nm: "The Beastkeeper", col: "#ffcf9a",
           g: "M0 2.5c4 0 7 3 7 6.2 0 2.2-2 2.8-3.6 2.3C2.2 10.6 1.1 10.3 0 10.3s-2.2.3-3.4.7C-5 11.5-7 10.9-7 8.7c0-3.2 3-6.2 7-6.2zM-7.4-3.2a2.4 3 0 1 0 0.01 0zM7.4-3.2a2.4 3 0 1 0 0.01 0zM-3-8.4a2.4 3.2 0 1 0 0.01 0zM3-8.4a2.4 3.2 0 1 0 0.01 0z" };
+      /* ---------- Pets (the Beastkeeper, unlocked at level PET_LV): one companion follows you, one small bonus each ----------
+         V.pets = { kind: level 1-5 }, V.pet = the active kind ("" = none). Bought and fed with materials only (src "pet", a sink).
+         Online the bank owns ownership, level, the active pet and the gather/XP/refine bonus (RULES.pet): the client logs
+         ["pet", 0, 0, op, kind, 0] (op buy | feed | set) and only previews the bonus; the server's counts win on each sync.
+         Bonus = p x (1 + (L - 1) / 4): level 5 doubles it. Wolf damage is client-side, inside the raid caps. */
+      const PET = {
+        fox: { n: "Ember Fox", e: "🦊", col: "#ff8a3d", b: "gather", p: 0.05, d: "gather yield", price: { ore: 15, herb: 10 }, food: "herb" },
+        owl: { n: "Moon Owl", e: "🦉", col: "#b9c8ff", b: "xp", p: 0.05, d: "XP", price: { herb: 15, echo: 4 }, food: "echo" },
+        wolf: { n: "Rune Wolf", e: "🐺", col: "#7fe3ff", b: "dmg", p: 0.03, d: "raid damage", price: { shard: 6, bark: 6 }, food: "bark" },
+        sprite: { n: "Glow Sprite", e: "🧚", col: "#ffe08a", b: "refine", p: 0.05, d: "Smith refine output", price: { dust: 30, echo: 3 }, food: "dust" },
+      };
+      const PET_LV = 6, PET_MAX = 5, PET_POKE = 3000, PET_GAP = 600e3; /* PET_GAP = RULES.pet setGap: one switch per 10 min, so bonuses cannot be stacked by swapping */
+      const petWait = () => Math.max(0, (V.pst || 0) + PET_GAP - Date.now());
+      const petMult = (L) => 1 + (L - 1) / 4;
+      const petFeedCost = (L) => 5 * L;
+      const petOk = (s) => s === "" || (typeof s == "string" && /^(fox|owl|wolf|sprite)[1-5]$/.test(s)); /* the synced pet: kind + level, or "" */
+      const petNet = () => (V.pet && PET[V.pet] && V.pets && V.pets[V.pet] ? V.pet + V.pets[V.pet] : "");
+      const petBonus = (b) => { const k = V.pet, d = PET[k], L = V.pets && V.pets[k]; return d && d.b == b && L ? d.p * petMult(L) : 0; };
+      /* petLocal(kind, amt): fractional carry so small bonuses still pay out over time. Out: the whole part. */
+      function petLocal(kind, amt) { V.pfr = V.pfr || {}; const a = amt + (V.pfr[kind] || 0), n = Math.floor(a); V.pfr[kind] = Math.min(0.999, a - n); return n; }
+      /* petMat(k, n): the bonus preview on the local count only (no ledger entry: online the bank adds the same bonus itself) */
+      function petMat(k, n) { if (!MATS[k] || !(n > 0)) return 0; V.mat = V.mat || {}; V.mat[k] = Math.min(99999, (V.mat[k] || 0) + n); return n; }
+      function petLed(op, k) { LEDGER.push(["pet", 0, 0, op, k, 0]); if (LEDGER.length > 300) { LEDGER.shift(); LEDGER_BASE++; } bankSoon(); }
+      const petCan = (cost) => Object.entries(cost).every(([m, q]) => ((V.mat || {})[m] || 0) >= q);
+      function petBuy(k) {
+        const d = PET[k];
+        if (!d || !isUnl("pet") || (V.pets || {})[k] || !petCan(d.price)) return false;
+        for (const [m, q] of Object.entries(d.price)) matAdd(m, -q, "pet");
+        V.pets = V.pets || {};
+        V.pets[k] = 1;
+        petLed("buy", k);
+        if (!V.pet) petSet(k, 1);
+        save();
+        sfx("win", 1.4);
+        if (P) { burst(P.x, P.y, d.col, SET.low ? 10 : 30, 180); popMsg(d.e + " " + d.n + " joins you!"); }
+        if (CUR_DLG == "pet") petUI();
+        return true;
+      }
+      function petFeed(k) {
+        const d = PET[k], L = (V.pets || {})[k], q = petFeedCost(L || 1);
+        if (!d || !L || L >= PET_MAX || ((V.mat || {})[d.food] || 0) < q) return false;
+        matAdd(d.food, -q, "pet");
+        V.pets[k] = L + 1;
+        petLed("feed", k);
+        save();
+        sfx("heal", 1.5);
+        if (P && P._pet) { P._pet.re = 1; burst(P._pet.x, P._pet.y, d.col, SET.low ? 6 : 16, 110); }
+        if (CUR_DLG == "pet") petUI();
+        return true;
+      }
+      function petSet(k, quiet) {
+        if (k !== "" && !(V.pets || {})[k]) return false;
+        if (V.pet == k) return false;
+        const w = petWait();
+        if (w > 0) { if (!quiet) toast(`Your pet is settling in: you can switch again in ${Math.ceil(w / 60000)} min.`); return false; }
+        V.pst = Date.now();
+        V.pet = k;
+        if (P) P._pet = null; /* the new pet appears at your side */
+        petLed("set", k);
+        save();
+        if (!quiet) { sfx("ui", 1.2); if (CUR_DLG == "pet") petUI(); }
+        return true;
+      }
+      /* petAdopt(r): the bank's word on pets (sync answer { own: { kind: level }, on: kind }) */
+      function petAdopt(r) {
+        if (!r || typeof r != "object" || !r.own || typeof r.own != "object") return;
+        const own = {};
+        for (const k in PET) if (Number.isInteger(r.own[k]) && r.own[k] >= 1) own[k] = Math.min(PET_MAX, r.own[k]);
+        V.pets = own;
+        V.pet = Object.hasOwn(own, r.on) ? r.on : "";
+      }
+      let PET_UL_T = 0;
+      /* petStep(dt): level-6 unlock (checked twice a second) */
+      function petStep(dt) {
+        if ((PET_UL_T -= dt) > 0) return;
+        PET_UL_T = 0.5;
+        if (S.sc == "hub" && P && !isUnl("pet") && lvlInfo().L >= PET_LV) unlockNpc("pet");
+      }
+      function petUI() {
+        const own = V.pets || {}, m = V.mat || {}, wms = petWait(), wt = wms ? Math.ceil(wms / 60000) + " min" : "";
+        const cost = (c) => Object.entries(c).map(([k, q]) => `<span style="color:${(m[k] || 0) >= q ? "inherit" : "#ff8a8a"}">${MATS[k].e}${q}</span>`).join(" ");
+        const rows = Object.entries(PET).map(([k, d], q) => {
+          const L = own[k], on = V.pet == k, pct = (x) => Math.round(x * 1000) / 10;
+          const bonus = `+${pct(d.p * petMult(L || 1))}% ${d.d}`, next = L && L < PET_MAX ? ` · next level +${pct(d.p * petMult(L + 1))}%` : "";
+          const btn = !L
+            ? `<button ${petCan(d.price) ? "" : "disabled"} onclick="petBuy('${k}')">Adopt</button>`
+            : `<div style="display:flex;flex-direction:column;gap:6px;flex:none;margin-left:auto">${L < PET_MAX ? `<button class="claim" ${(m[d.food] || 0) >= petFeedCost(L) ? "" : "disabled"} onclick="petFeed('${k}')" title="Feed">Feed ${MATS[d.food].e}${petFeedCost(L)}</button>` : ""}<button ${on ? 'class="claim"' : ""} ${wt ? "disabled" : ""} onclick="petSet('${on ? "" : k}')" title="One switch every 10 minutes">${on ? "Rest" : "Follow"}${wt ? " · " + wt : ""}</button></div>`;
+          return `<div class="up ${on ? "can" : ""}" style="--uc:${d.col};animation:iIn .3s ease-out ${q * 35}ms both"><div style="min-width:0;flex:1"><span class="nm">${d.e} ${d.n}${L ? ` · Lv ${L}/${PET_MAX}` : ""}${on ? " · following" : ""}</span>
+            <div class="sm">${bonus}${next}${L ? "" : " · " + cost(d.price)}</div></div>${btn}</div>`;
+        }).join("");
+        $("dp").className = "pn";
+        $("dp").innerHTML = `<h2>🐾 The Beastkeeper</h2><p>"Every raider needs a friend. Pick one, feed it well, and it will pull its weight."</p>
+          <p class="sm">One pet follows you at a time and gives its bonus. Feed it to raise its level (max ${PET_MAX}: double bonus). You can switch pets once every 10 minutes. Tap your pet to play with it.${bankUrl() ? " Online, the server keeps your pets and pays the bonus." : ""}</p>${rows}
+          <button class="alt x" onclick="closeDlg()" title="Farewell">Farewell</button>`;
+      }
+      /* ---------- pet drawing: one small state object per player (p._pet), plain paths, nothing on Low spec ---------- */
+      function petReact(p) {
+        const pt = p === P ? petNet() : p.pt;
+        if (!pt) return;
+        if (p._pet) p._pet.re = 1;
+        if (p === P || (P && Math.hypot(p.x - P.x, p.y - P.y) < 260)) sfx("heal", { fox: 1.9, owl: 1.3, wolf: 1.1, sprite: 2.3 }[pt.slice(0, -1)] || 1.6);
+      }
+      let PET_POKE_AT = -1e9;
+      /* petPoke(): you tapped your pet. 1 every 3 s, shown to the room. */
+      function petPoke() {
+        const now = performance.now();
+        if (!V.pet || now - PET_POKE_AT < PET_POKE) return false;
+        PET_POKE_AT = now;
+        petReact(P);
+        if (typeof NET != "undefined" && NET && NET.peerIds().length) { if (NET_ROLE == "host") netTell({ type: "pe", s: 0 }); else if (NET_CONNECTED) NET.send(NET_SESSION?.peerId, { type: "pe" }); }
+        return true;
+      }
+      function petDraw(p, dt) {
+        if (SET.low || S.sc != "hub") return;
+        const pt = p === P ? petNet() : p.pt;
+        if (!pt) { p._pet = null; return; }
+        const k = pt.slice(0, -1), L = +pt.slice(-1), d = PET[k];
+        if (!d) return;
+        const side = p.f == "l" ? 1 : -1;
+        let o = p._pet;
+        if (!o || o.k != k) o = p._pet = { k, x: p.x + 30 * side, y: p.y + 16, f: side, re: 0 };
+        const tx = p.x + 30 * side, ty = p.y + 16, still = BJ_VFX.reduced();
+        const a = Math.min(1, dt * 6);
+        o.x += (tx - o.x) * a;
+        o.y += (ty - o.y) * a;
+        if (Math.abs(tx - o.x) > 1) o.f = tx > o.x ? 1 : -1;
+        o.re = Math.max(0, o.re - dt * 1.4);
+        const t = S.tm, hop = still ? 0 : o.re > 0 ? -Math.abs(Math.sin(o.re * 12)) * 9 : Math.sin(t * 4 + p.x) * 1.2, z = 1.1 + 0.08 * L;
+        c.save();
+        c.translate(o.x, o.y);
+        c.globalAlpha = 0.25; c.fillStyle = "#000"; c.beginPath(); c.ellipse(0, 7, 9 * z, 3, 0, 0, 6.3); c.fill(); c.globalAlpha = 1;
+        c.translate(0, hop - (k == "owl" || k == "sprite" ? 10 : 0));
+        c.scale(o.f * z, z);
+        if (k == "fox") {
+          c.fillStyle = d.col; c.beginPath(); c.ellipse(0, 0, 8, 5.5, 0, 0, 6.3); c.fill();
+          c.beginPath(); c.moveTo(-7, -1); c.quadraticCurveTo(-17, -3, -15, 4); c.quadraticCurveTo(-11, 3, -7, 2); c.fill();
+          c.fillStyle = "#fff4e6"; c.beginPath(); c.arc(-14, 2, 2, 0, 6.3); c.fill();
+          c.fillStyle = d.col; c.beginPath(); c.arc(7, -4, 4.5, 0, 6.3); c.fill();
+          c.beginPath(); c.moveTo(4, -7); c.lineTo(5.5, -12); c.lineTo(8, -8); c.lineTo(10, -12); c.lineTo(11, -6); c.fill();
+          c.fillStyle = "#1a0f07"; c.beginPath(); c.arc(9, -4.5, 1, 0, 6.3); c.fill();
+        } else if (k == "owl") {
+          c.fillStyle = d.col; c.beginPath(); c.ellipse(0, 0, 7, 8.5, 0, 0, 6.3); c.fill();
+          c.fillStyle = "#6f78a8"; c.beginPath(); c.ellipse(-5, 1, 3, 6, 0.3, 0, 6.3); c.fill(); c.beginPath(); c.ellipse(5, 1, 3, 6, -0.3, 0, 6.3); c.fill();
+          c.fillStyle = "#fff"; c.beginPath(); c.arc(-2.6, -3, 2.6, 0, 6.3); c.fill(); c.beginPath(); c.arc(2.6, -3, 2.6, 0, 6.3); c.fill();
+          c.fillStyle = "#14182a"; c.beginPath(); c.arc(-2.2, -3, 1.2, 0, 6.3); c.fill(); c.beginPath(); c.arc(3, -3, 1.2, 0, 6.3); c.fill();
+          c.fillStyle = "#ffb84a"; c.beginPath(); c.moveTo(-1, -0.5); c.lineTo(1, -0.5); c.lineTo(0, 1.8); c.fill();
+        } else if (k == "wolf") {
+          c.fillStyle = "#5c6b7a"; c.beginPath(); c.ellipse(0, 0, 9, 5.5, 0, 0, 6.3); c.fill();
+          c.beginPath(); c.moveTo(-8, -1); c.lineTo(-16, -5); c.lineTo(-9, 3); c.fill();
+          c.beginPath(); c.arc(8, -4, 5, 0, 6.3); c.fill();
+          c.beginPath(); c.moveTo(5, -8); c.lineTo(6, -13); c.lineTo(9, -8); c.lineTo(11, -13); c.lineTo(12, -6); c.fill();
+          c.strokeStyle = d.col; c.lineWidth = 1.5; c.beginPath(); c.moveTo(-4, -3); c.lineTo(0, 1); c.lineTo(3, -3); c.stroke();
+          c.fillStyle = d.col; c.beginPath(); c.arc(10, -5, 1.2, 0, 6.3); c.fill();
+        } else {
+          const fl = still ? 0 : Math.sin(t * 18) * 0.3;
+          c.fillStyle = d.col; c.globalAlpha = 0.45; c.beginPath(); c.ellipse(-5, -2, 5, 3, -0.6 + fl, 0, 6.3); c.fill(); c.beginPath(); c.ellipse(5, -2, 5, 3, 0.6 - fl, 0, 6.3); c.fill();
+          c.globalAlpha = 1; c.beginPath(); c.arc(0, 0, 4.5, 0, 6.3); c.fill();
+          c.fillStyle = "#fff"; c.beginPath(); c.arc(0, -1, 2, 0, 6.3); c.fill();
+        }
+        c.restore();
+        if (o.re > 0) { c.globalAlpha = Math.min(1, o.re * 2); c.font = "14px serif"; c.textAlign = "center"; c.fillText("💖", o.x, o.y - 22 - (still ? 0 : (1 - o.re) * 12)); c.globalAlpha = 1; }
+      }
       /* ---------- progress (saved) ---------- */
       /* upgrades. k = save key, b = base cost (cost = b * next level), pl = % per level, ic = SVG icon, col = card color */
       const UPG = [
@@ -2591,6 +2753,10 @@
           V.title = Math.max(0, +s.title | 0); /* equipped title index */
           V.name = typeof s.name == "string" ? s.name.slice(0, 16) : "";
           V.nc = [1, 2, 3].includes(s.nc) ? s.nc : 0; /* name colour: 0 none, 1 he, 2 she, 3 they (GDS) */
+          V.pets = {}; if (s.pets && typeof s.pets == "object") for (const k in PET) if (Number.isInteger(s.pets[k]) && s.pets[k] >= 1) V.pets[k] = Math.min(PET_MAX, s.pets[k]); /* pets: kind -> level */
+          V.pet = typeof s.pet == "string" && Object.hasOwn(V.pets, s.pet) ? s.pet : "";
+          V.pst = Number.isFinite(s.pst) ? cl(s.pst, 0, Date.now()) : 0; /* last pet switch (10 min gap) */
+          V.pfr = {}; if (s.pfr && typeof s.pfr == "object") for (const k of ["g", "x", "r"]) if (Number.isFinite(s.pfr[k])) V.pfr[k] = cl(s.pfr[k], 0, 0.999);
           V.xp = Math.max(0, +s.xp | 0);
           /* Archivist state: pool (lp, lpt), last tale time (lta), bonus window (lbx, lbn), blessing (bl), title flag (af) */
           for (const k of ["lp", "lpt", "lta", "lbx", "lbn", "cr", "bj1", "rc", "eqs", "bjc", "fg", "mk"]) if (Number.isFinite(s[k])) V[k] = cl(s[k], 0, 1e13); /* times (ms) and counters: finite, never negative */
@@ -2706,8 +2872,10 @@
       const lvlCol = (L) => ["#cfd8dc", "#5dff8a", "#4da3ff", "#b48cff", "#ff9f43", "#ffd84a"][Math.min(5, Math.floor(L / 10))];
       function gainXP(n, why) {
         const before = lvlInfo().L;
-        V.xp = (V.xp || 0) + n;
+        const px = n > 0 && petBonus("xp") ? petLocal("x", n * petBonus("xp")) : 0; /* owl: preview of the bank's bonus (not logged) */
+        V.xp = (V.xp || 0) + n + px;
         ledger(why || "xp", 0, n);
+        n += px;
         save();
         if (P) ftxt(P.x, P.y - 44, "+" + n + " XP", "#9fe8ff");
         const after = lvlInfo().L;
@@ -2820,7 +2988,7 @@
         const url = bankUrl();
         if (!url || BANK_BUSY) return;
         BANK_BUSY = true;
-        const end = LEDGER_BASE + LEDGER.length, led = LEDGER.slice(Math.max(0, BANK_AT - LEDGER_BASE)).filter((e) => e[0] != "dev").slice(0, 150).map((e) => e.slice(0, e[0] == "mat" ? 6 : 3)); /* mat: ["mat", 0, 0, src, key, n] */
+        const end = LEDGER_BASE + LEDGER.length, led = LEDGER.slice(Math.max(0, BANK_AT - LEDGER_BASE)).filter((e) => e[0] != "dev").slice(0, 150).map((e) => e.slice(0, e[0] == "mat" || e[0] == "pet" ? 6 : 3)); /* mat: ["mat", 0, 0, src, key, n] */
         try {
           const r = await fetch(url + "/api/bank/sync", { method: "POST", headers: { "content-type": "application/json" }, cache: "no-store",
             body: JSON.stringify({ tok: bankTok(), led, seed: { gold: V.gold | 0, xp: V.xp | 0, mat: V.mat || {} } }) }).then((r) => r.json());
@@ -2834,6 +3002,7 @@
             for (const k in MATS) m[k] = Math.max(0, (Number.isInteger(r.mat[k]) ? r.mat[k] : 0) + later.reduce((n, e) => n + (e[0] == "mat" && e[4] == k ? e[5] | 0 : 0), 0));
             V.mat = m;
           }
+          if (r.pet) petAdopt(r.pet); /* the server owns pets (RULES.pet) */
           if (Number.isFinite(r.bjm) && Number.isFinite(r.bjmAge)) { V.bjm = r.bjm; V.bjmAt = Date.now() - r.bjmAge; } /* the server's Assist price wins */
           if (r.dropped) chatSys("The server refused " + r.dropped + " gold/XP change" + (r.dropped > 1 ? "s" : "") + ".", "bye");
           save();
@@ -3037,7 +3206,7 @@
         V.gn[i] = Date.now() + GATHER.cd;
         day.n++;
         V.gm = (V.gm || 0) + 1;
-        const got = n > 0 ? matAdd(g.k, n, "gather") : 0;
+        const got = (n > 0 ? matAdd(g.k, n, "gather") : 0) + (n > 0 && petBonus("gather") ? petMat(g.k, petLocal("g", n * petBonus("gather"))) : 0); /* fox: preview of the bank's bonus */
         save();
         burst(g.x, g.y, MATS[g.k].col, SET.low ? 8 : 18, 130);
         ftxt(g.x, g.y - 26, got ? `+${got} ${MATS[g.k].e}` : "…", MATS[g.k].col);
@@ -3278,7 +3447,7 @@
       const clb = (p) => (p === P && CLB[p.cls] ? CLB[p.cls].v * (V.up[CLB[p.cls].k] || 0) : 0);
       /* upCost(u, l): next upgrade level price; gentle ramp so early levels come fast and the last ones are a goal */
       const upCost = (u, l) => u.b * (l + 1) + 10 * l * l;
-      const dm = () => (1 + 0.12 * V.up.dmg) * (1 + eqSt("dmg")) * (1 + wp("dmg")) * (bless("wrath") ? 1.2 : 1) * (V.ton ? 1.08 : 1),
+      const dm = () => (1 + 0.12 * V.up.dmg) * (1 + eqSt("dmg")) * (1 + wp("dmg")) * (bless("wrath") ? 1.2 : 1) * (V.ton ? 1.08 : 1) * (1 + petBonus("dmg")),
         hpm = () => (1 + 0.15 * V.up.vit) * (bless("stone") ? 1.3 : 1) * (1 + wp("hp")) * (1 + eqSt("hp")),
         spm = () => (1 + 0.06 * V.up.spd) * (1 + eqSt("ms")),
         cdm = () => (1 - 0.08 * V.up.cdr) * (1 - eqSt("cdr")) * (bless("haste") ? 0.8 : 1);
@@ -3463,7 +3632,7 @@
         }
         const [sx, sy] = spawnSpot(),
           v = { id, name: o.name || "Wanderer", cls: CL[o.cls] ? o.cls : "tank", x: o.x ?? sx, y: o.y ?? sy, dx: 0, dy: 0, f: "d", hp: 1, mh: 1, bot: bot ? 1 : 0,
-            lv: o.lv || 1, ti: TITLES[o.ti] || TITLES[0], nc: [1, 2, 3].includes(o.nc) ? o.nc : 0, via: [] };
+            lv: o.lv || 1, ti: TITLES[o.ti] || TITLES[0], nc: [1, 2, 3].includes(o.nc) ? o.nc : 0, pt: petOk(o.pt) ? o.pt : "", via: [] };
         v.tx = v.x;
         v.ty = v.y;
         v.born = HUB_T;
@@ -3492,7 +3661,7 @@
       const NET = window.RBNet || null, NET_CONFIG = NET?.defaultConfig?.() || { signalingUrl: "", iceServers: [] };
       const NET_LOCAL_ID = "player-" + (window.crypto?.randomUUID ? window.crypto.randomUUID() : Math.random().toString(36).slice(2));
       let NET_ROLE = "", NET_LAST_SEND = 0, NET_STATUS = "Offline", NET_SESSION = null, NET_AUTO_STARTED = false, NET_CONNECTED = false, NET_DIRECTORY_STATE = "idle";
-      let NET_MY_LV = 0, NET_CLS = "", NET_NC = -1, NET_RZ = 0, NET_POLL_TIMER = 0, NET_HEARTBEAT_TIMER = 0, NET_GUEST_POLLING = false, NET_LAST_STATE = 0, NET_CONNECT_TIMER = 0, NET_RETRY_TIMER = 0, NET_RETRY_COUNT = 0, NET_RECOVERY_NOTIFIED = false, NET_BADGE_AT = 0, NET_SEQ = 0;
+      let NET_MY_LV = 0, NET_CLS = "", NET_NC = -1, NET_PT = null, NET_RZ = 0, NET_POLL_TIMER = 0, NET_HEARTBEAT_TIMER = 0, NET_GUEST_POLLING = false, NET_LAST_STATE = 0, NET_CONNECT_TIMER = 0, NET_RETRY_TIMER = 0, NET_RETRY_COUNT = 0, NET_RECOVERY_NOTIFIED = false, NET_BADGE_AT = 0, NET_SEQ = 0;
       /* optimistic networking: the guest shows its own action at once, then the host confirms it (ack) or undoes it (reject/correct) */
       const NET_PENDING = new Map(), NET_MOVES = [];
       /* wire format is kept small for many players: facing is 0-3, positions are whole pixels, players are slot numbers
@@ -3591,7 +3760,7 @@
       }
       function netProfile() {
         return { id: NET_LOCAL_ID, name: String(pname()).replace(/[^A-Za-z0-9 _-]/g, "").slice(0, 16) || "Wanderer",
-          cls: CL[P.cls] ? P.cls : "tank", lv: cl(lvlInfo().L | 0, 1, 60), ti: cl(V.title | 0, 0, TITLES.length - 1), spd: cl(spm(), 1, 1.3), nc: [1, 2, 3].includes(V.nc) ? V.nc : 0 };
+          cls: CL[P.cls] ? P.cls : "tank", lv: cl(lvlInfo().L | 0, 1, 60), ti: cl(V.title | 0, 0, TITLES.length - 1), spd: cl(spm(), 1, 1.3), nc: [1, 2, 3].includes(V.nc) ? V.nc : 0, pt: petNet() };
       }
       async function networkAutoJoin() {
         if (NET_AUTO_STARTED || !NET || !P || !V.name) return;
@@ -3696,7 +3865,7 @@
         try { await NET?.directoryLeave(); } catch (error) { netStatus("Could not leave lobby cleanly: " + error.message); }
         NET_SESSION = null;
         NET_ROLE = "";
-        NET_CONNECTED = false; NET_RZ = 0; NET_CLS = ""; NET_NC = -1;
+        NET_CONNECTED = false; NET_RZ = 0; NET_CLS = ""; NET_NC = -1; NET_PT = null;
         NET_AUTO_STARTED = false;
         NET_DIRECTORY_STATE = "idle";
         NET_CLIENTS.clear();
@@ -3749,7 +3918,7 @@
             !Number.isInteger(value.ti) || value.ti < 0 || value.ti >= TITLES.length ||
             !Number.isFinite(value.spd) || value.spd < 1 || value.spd > 1.3) return null;
         return { id: value.id, name: value.name.replace(/[^A-Za-z0-9 _-]/g, "").slice(0, 16) || "Wanderer",
-          cls: value.cls, lv: value.lv, ti: value.ti, spd: value.spd, nc: [1, 2, 3].includes(value.nc) ? value.nc : 0 }; /* nc: cosmetic name colour, optional */
+          cls: value.cls, lv: value.lv, ti: value.ti, spd: value.spd, nc: [1, 2, 3].includes(value.nc) ? value.nc : 0, pt: petOk(value.pt) ? value.pt : "" }; /* nc: cosmetic name colour, optional */
       }
       /* ---------- fair play: the master audits every slave and every slave audits the master ----------
          Each side keeps its own progress (gold, XP, upgrades, HP) and a LEDGER of why it changed. At random moments the
@@ -3828,7 +3997,7 @@
       function netStats(auditor, n) {
         const end = LEDGER_BASE + LEDGER.length, from = NET_AUDIT_CURSOR.has(auditor) ? NET_AUDIT_CURSOR.get(auditor) : end;
         NET_AUDIT_CURSOR.set(auditor, end);
-        const led = LEDGER.slice(Math.max(0, from - LEDGER_BASE)).filter((e) => e[0] != "mat"), cls = P ? P.cls : "tank"; /* materials are the bank's job, not the gold/XP audit's */
+        const led = LEDGER.slice(Math.max(0, from - LEDGER_BASE)).filter((e) => e[0] != "mat" && e[0] != "pet"), cls = P ? P.cls : "tank"; /* materials are the bank's job, not the gold/XP audit's */
         return { type: "a", n, g: Math.round(V.gold || 0), xp: V.xp || 0, up: UPG.map((u) => V.up[u.k]), bl: V.bl || "", cls,
           hp: P ? Math.round(P.hp) : 1, mh: P ? P.mh : Math.round(CL[cls].hp * hpm()), led: led.slice(-150),
           lost: from < LEDGER_BASE, over: led.length > 150 };
@@ -3878,6 +4047,7 @@
       let NET_HOST_INFO = "";
       const netEntry = (v) => [v.netSlot, v.netClientId, v.name, v.cls, v.lv, Math.max(0, TITLES.indexOf(v.ti)), v.netSpd || 1];
       const netNc = (e) => (e[0] == 0 ? V.nc : (HUBV.find((v) => v.netSlot == e[0] && v.netClientId == e[1]) || {}).nc) || 0; /* name colour rides beside the 7-field entry (c), so older builds still read the roster */
+      const netPt = (e) => (e[0] == 0 ? petNet() : (HUBV.find((v) => v.netSlot == e[0] && v.netClientId == e[1]) || {}).pt) || ""; /* the pet rides beside the entry too (t) */
       function netHostEntry() {
         const host = netProfile();
         return [0, "host-player", host.name, P.cls, host.lv, host.ti, host.spd];
@@ -3887,7 +4057,7 @@
         const p = [netHostEntry()];
         for (const v of HUBV) if (!v.bot && !v.out && NET_CLIENTS.has(v.id) && v.id != to) p.push(netEntry(v));
         p.push(...HUBV.filter((v) => v.id == to).map(netEntry)); /* the newcomer's own entry last */
-        NET.send(to, { type: "r", p, c: p.map(netNc) });
+        NET.send(to, { type: "r", p, c: p.map(netNc), t: p.map(netPt) });
         const v = HUBV.find((o) => o.id == to);
         if (v) v.netSeen = null; /* it gets everyone's full position next */
       }
@@ -3951,14 +4121,15 @@
         typeof e[1] == "string" && e[1].length <= 56 && typeof e[2] == "string" && e[2].length <= 16 && CL[e[3]] &&
         Number.isInteger(e[4]) && e[4] >= 1 && e[4] <= 60 && Number.isInteger(e[5]) && e[5] >= 0 && e[5] < TITLES.length &&
         Number.isFinite(e[6]) && e[6] >= 1 && e[6] <= 1.3;
-      function netAddEntry([slot, pid, name, cls, lv, ti, spd], nc) {
+      function netAddEntry([slot, pid, name, cls, lv, ti, spd], nc, pt) {
         nc = [1, 2, 3].includes(nc) ? nc : 0;
+        pt = petOk(pt) ? pt : "";
         if (NET_SLOT_IDS.get(slot) != pid) { NET_SLOT_LAST.delete(slot); NET_SLOT_POS.delete(slot); } /* slot now holds someone else */
         NET_SLOT_IDS.set(slot, pid);
         NET_SLOT_INFO.set(slot, { cls, spd });
         if (pid == NET_LOCAL_ID) return;
-        const v = HUBV.find((other) => other.id == pid) || hubJoin(pid, { name: name.replace(/[^A-Za-z0-9 _-]/g, "") || "Wanderer", cls, lv, ti, nc }, 0);
-        if (v) { v.netClientId = pid; v.lv = lv; v.ti = TITLES[ti]; v.netSpd = spd; v.nc = nc || 0; }
+        const v = HUBV.find((other) => other.id == pid) || hubJoin(pid, { name: name.replace(/[^A-Za-z0-9 _-]/g, "") || "Wanderer", cls, lv, ti, nc, pt }, 0);
+        if (v) { v.netClientId = pid; v.lv = lv; v.ti = TITLES[ti]; v.netSpd = spd; v.nc = nc || 0; v.pt = pt; }
       }
       function netReceive(id, message) {
         if (NET_ROLE == "host") {
@@ -3989,7 +4160,7 @@
             NET_CLIENTS.set(id, profile.id);
             netStatus("Connected players: " + (NET_CLIENTS.size + 1));
             netRoster(id);
-            netTell({ type: "j", e: netEntry(v), c: v.nc || 0 }, id);
+            netTell({ type: "j", e: netEntry(v), c: v.nc || 0, t: v.pt || "" }, id);
             for (const o of HUBV) if (o.rz && !o.bot && o.netSlot != null) NET.send(id, { type: "rz", e: [o.netSlot, 1] });
             if (S.sc == "arena") NET.send(id, { type: "rz", e: [0, 1] });
           } else if (message.type == "m") {
@@ -4036,6 +4207,12 @@
           } else if (message.type == "nc" && [0, 1, 2, 3].includes(message.c)) { /* a guest changed its name colour: only its own slot (found by connection), at most every 0.5 s */
             const v = HUBV.find((o) => o.id == id && !o.bot), now = performance.now();
             if (v && v.nc != message.c && now - (v.ncAt || -1e9) >= 500) { v.ncAt = now; v.nc = message.c; netTell({ type: "nc", e: [v.netSlot, message.c] }, id); }
+          } else if (message.type == "pt" && petOk(message.c)) { /* a guest changed its pet: only its own slot, at most every 0.5 s */
+            const v = HUBV.find((o) => o.id == id && !o.bot), now = performance.now();
+            if (v && v.pt != message.c && now - (v.ptAt || -1e9) >= 500) { v.ptAt = now; v.pt = message.c; netTell({ type: "pt", e: [v.netSlot, message.c] }, id); }
+          } else if (message.type == "pe") { /* a guest played with its pet: 1 every 3 s, relayed with its slot */
+            const v = HUBV.find((o) => o.id == id && !o.bot), now = performance.now();
+            if (v && v.pt && now - (v.peAt || -1e9) >= PET_POKE - 200) { v.peAt = now; petReact(v); netTell({ type: "pe", s: v.netSlot }, id); }
           } else if (message.type == "a") {
             const v = HUBV.find((o) => o.id == id && !o.bot);
             if (!v?.netAud) return;
@@ -4082,9 +4259,9 @@
             const ids = new Set(roster.map((e) => e[1]));
             for (const v of HUBV.filter((v) => !v.bot && v.netClientId && !ids.has(v.id))) hubLeave(v.id);
             NET_SLOT_IDS.clear(); NET_SLOT_INFO.clear(); NET_SLOT_LAST.clear(); NET_SLOT_POS.clear();
-            message.p.forEach((e, k) => { if (netGoodEntry(e)) netAddEntry(e, Array.isArray(message.c) ? message.c[k] : 0); });
+            message.p.forEach((e, k) => { if (netGoodEntry(e)) netAddEntry(e, Array.isArray(message.c) ? message.c[k] : 0, Array.isArray(message.t) ? message.t[k] : ""); });
           } else if (message.type == "j" && netGoodEntry(message.e)) {
-            netAddEntry(message.e, message.c);
+            netAddEntry(message.e, message.c, message.t);
           } else if (message.type == "l" && Number.isInteger(message.s)) {
             const pid = NET_SLOT_IDS.get(message.s);
             NET_SLOT_IDS.delete(message.s); NET_SLOT_INFO.delete(message.s); NET_SLOT_LAST.delete(message.s); NET_SLOT_POS.delete(message.s);
@@ -4104,6 +4281,12 @@
           } else if (message.type == "nc" && Array.isArray(message.e) && message.e.length == 2 && [0, 1, 2, 3].includes(message.e[1])) {
             const v = HUBV.find((o) => o.id == NET_SLOT_IDS.get(message.e[0]));
             if (v) v.nc = message.e[1];
+          } else if (message.type == "pt" && Array.isArray(message.e) && message.e.length == 2 && petOk(message.e[1])) {
+            const v = HUBV.find((o) => o.id == NET_SLOT_IDS.get(message.e[0]));
+            if (v) v.pt = message.e[1];
+          } else if (message.type == "pe" && Number.isInteger(message.s)) {
+            const v = HUBV.find((o) => o.id == NET_SLOT_IDS.get(message.s)), now = performance.now();
+            if (v && now - (v.peAt || -1e9) >= PET_POKE - 500) { v.peAt = now; petReact(v); }
           } else if (message.type == "u" && Array.isArray(message.e) && message.e.length == 3) {
             const [slot, lv, spd] = message.e, info = NET_SLOT_INFO.get(slot), v = HUBV.find((o) => o.id == NET_SLOT_IDS.get(slot));
             if (!info || !Number.isInteger(lv) || lv < 1 || lv > 60 || !Number.isFinite(spd) || spd < 1 || spd > 1.3) return;
@@ -4224,6 +4407,10 @@
         if (NET && NET.peerIds().length && (NET_ROLE == "host" || NET_CONNECTED) && (V.nc || 0) != NET_NC) { /* name colour changed: peers see it now, not at the next join */
           const was = NET_NC; NET_NC = V.nc || 0;
           if (was >= 0 || NET_NC) { if (NET_ROLE == "host") netTell({ type: "nc", e: [0, NET_NC] }); else NET.send(NET_SESSION?.peerId, { type: "nc", c: NET_NC }); }
+        }
+        if (NET && NET.peerIds().length && (NET_ROLE == "host" || NET_CONNECTED) && petNet() != NET_PT) { /* pet changed (adopt, feed, follow, rest): peers see it now */
+          const was = NET_PT; NET_PT = petNet();
+          if (was !== null || NET_PT) { if (NET_ROLE == "host") netTell({ type: "pt", e: [0, NET_PT] }); else NET.send(NET_SESSION?.peerId, { type: "pt", c: NET_PT }); }
         }
         if (NET && NET_ROLE != "host" && NET_CONNECTED && P) { const lv = lvlInfo().L; if (NET_MY_LV && lv != NET_MY_LV) NET.send(NET_SESSION?.peerId, { type: "ql" }); NET_MY_LV = lv; } /* level-up: ask for an early check */
         if (NET && NET.peerIds().length && NET_ROLE == "host" && now - NET_HQ_SENT >= 2000) { NET_HQ_SENT = now; NET_SUCC = netRank(); netTell({ type: "hq", t: now, l: NET_SUCC, h: NET_SUCC.map((k) => { const v = HUBV.find((o) => !o.bot && o.netClientId == k); return v && /^[a-f0-9]{48}$/.test(v.id) ? v.id.slice(0, 32) : ""; }) }); } /* h: room-mode key hash of each successor (its peerId prefix) */
@@ -6830,6 +7017,7 @@
         if (paused) return;
         S.tm += dt;
         gatherStep(dt);
+        petStep(dt);
         if (!P || S.sc == "lobby") return;
         if (S.tp) {
           P.dx = P.dy = 0;
@@ -6937,7 +7125,7 @@
         if (tn && tut() < tn.tu) return lockedUI("tut");
         const ln = { class: CLASSN, maiden: MAIDEN, smith: SMITH, herald: HERALD, barkeep: BARKEEP, seraph: SERAPH, pet: PETS }[w];
         if (ln && !isUnl(ln.lk)) return lockedUI(ln.lk);
-        ({ elder: elderUI, lore: loreUI, shop: shopUI, class: classUI, maiden: maidenUI, smith: smithUI, seraph: seraphUI, herald: heraldUI, barkeep: bjUI, qboard: questBoardUI, gboard: guildUI }[w] || shopUI)();
+        ({ elder: elderUI, lore: loreUI, shop: shopUI, class: classUI, maiden: maidenUI, smith: smithUI, seraph: seraphUI, herald: heraldUI, barkeep: bjUI, pet: petUI, qboard: questBoardUI, gboard: guildUI }[w] || shopUI)();
       }
       /* ---------- daily login bonus ----------
          7-day cycle; missing a day resets the streak. In: V.dl, V.ds, today's date. Out: gold + dialog. */
@@ -7231,7 +7419,7 @@
         V.ul = V.ul || {};
         V.ul[k] = true;
         save();
-        const n = { class: CLASSN, maiden: MAIDEN, smith: SMITH, herald: HERALD, barkeep: BARKEEP, seraph: SERAPH }[k];
+        const n = { class: CLASSN, maiden: MAIDEN, smith: SMITH, herald: HERALD, barkeep: BARKEEP, seraph: SERAPH, pet: PETS }[k];
         n._rv = S.tm; /* slow fade-in */
         burst(n.x, n.y, n.col, 50, 260);
         RINGS.push({ x: n.x, y: n.y, col: n.col, t: 0 });
@@ -7277,7 +7465,7 @@
             k == "smith"
               ? `Hint: a smith only works for veterans. Complete the Elder's quest "Raid Veteran".`
               : k == "pet"
-              ? "Paw prints in the dust, a feather, a tuft of fur… a keeper of companions is on the way. Coming soon."
+              ? `Paw prints in the dust, a feather, a tuft of fur… a keeper of companions waits for proven raiders. Reach level ${PET_LV} (you are level ${lvlInfo().L}).`
               : k == "seraph"
               ? `Hint: light gathers for those who have bled in a raid. Complete the Elder's quest "First Raid".`
               : k == "herald"
@@ -7483,6 +7671,7 @@
         goldAdd(-REFINE.gold, "smith");
         matAdd("dust", -REFINE.dust, "craft");
         matAdd(k, 1, "craft");
+        petMat(k, petLocal("r", petBonus("refine"))); /* sprite: preview of the bank's bonus */
         save();
         sfx("coin");
         smithUI();
@@ -7491,7 +7680,7 @@
       function craftOre() {
         const m = V.mat || {};
         if ((m.ore || 0) < 5 || (m.echo || 0) < 2) return;
-        matAdd("ore", -5, "craft"); matAdd("echo", -2, "craft"); matAdd("dust", 3, "craft");
+        matAdd("ore", -5, "craft"); matAdd("echo", -2, "craft"); matAdd("dust", 3, "craft"); petMat("dust", petLocal("r", 3 * petBonus("refine")));
         save(); sfx("coin"); smithUI();
       }
       function craftTonic() {
@@ -8970,6 +9159,7 @@
           d = cv.width / r.width,
           gx = ((e.clientX - r.left) * d - ox) / sc,
           gy = ((e.clientY - r.top) * d - oy) / sc;
+        if (S.sc == "hub" && P && P._pet && !dlgOpen() && Math.hypot(gx - P._pet.x, gy - P._pet.y) < 24) petPoke(); /* tap your pet */
         if (gx > 4 && gx < 116 && gy > 36 && gy < 80) {
           /* triple-tap the gold coin HUD */ const n = performance.now();
           tt = tt.filter((x) => n - x < 700);
@@ -9972,6 +10162,7 @@
         return (BODY[k] = cv2);
       }
       function drawPlayer(p, dt) {
+        petDraw(p, dt); /* the companion walks behind you */
         const col = SKC[p.cls],
           moving = Math.hypot(p.dx, p.dy) > 0.1,
           da = p.ds > 0, /* dashing */
@@ -14519,7 +14710,7 @@
           npc(SMITH, "");
           npc(BARKEEP, "");
           npc(SERAPH, V.bl ? "" : "bonus"); /* marker while no blessing is carried */
-          npc(PETS, ""); /* locked ghost: the coming Pet NPC */
+          npc(PETS, isUnl("pet") && !Object.keys(V.pets || {}).length ? "new" : ""); /* the Beastkeeper (level 6): marker until your first pet */
           npc(LORE, V.lbx > Date.now() ? "bonus" : V.lt ? "" : "new");
         }
         /* healer Circles: soft green light, a turning rune ring, a pulse every second and rising motes */
