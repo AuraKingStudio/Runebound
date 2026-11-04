@@ -1739,6 +1739,11 @@
       /* touch: 44 px tap targets for the HUD plates (a pseudo-element hit area would be clipped by the chamfer clip-path too, so the plate itself grows) */
       @media (pointer: coarse) { #btns .hb, #btns #bt, #btns #mlbar button { min-width: 44px; min-height: 44px; } }
       body.ph #btns .hb, body.ph #btns #bt, body.ph #btns #mlbar button { width: 44px !important; height: 44px !important; }
+      /* Zulu P3: light text on the red/violet blackjack buttons (dark text was ~3:1); 44 px dialog buttons on touch */
+      .pn button.bjst:not(:disabled), .pn button.bjsp:not(:disabled) { color: #fff; text-shadow: 0 1px 0 #0008; }
+      @media (pointer: coarse) { .pn button, .ctabs button, .gdp { min-height: 44px; } }
+      /* short screens (phone landscape): the blackjack moves stay pinned to the bottom of the window while the table scrolls */
+      @media (max-height: 480px) { .pn .row:has(> button[onclick="bjHit()"]) { position: sticky; bottom: -14px; z-index: 3; margin: 0 -14px; padding: 8px 14px 10px; background: linear-gradient(180deg, #16243300, #162433 35%); } }
     </style>
   </head>
   <body>
