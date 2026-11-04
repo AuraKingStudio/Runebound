@@ -1744,6 +1744,8 @@
       @media (pointer: coarse) { .pn button, .ctabs button, .gdp { min-height: 44px; } }
       /* short screens (phone landscape): the blackjack moves stay pinned to the bottom of the window while the table scrolls */
       @media (max-height: 480px) { .pn .row:has(> button[onclick="bjHit()"]) { position: sticky; bottom: -14px; z-index: 3; margin: 0 -14px; padding: 8px 14px 10px; background: linear-gradient(180deg, #16243300, #162433 35%); } }
+      /* Happy R4 touch audit: the round close and row buttons and the Trade boxes reach 44 px too (were 34-38, 42 and 23 px); 16 px input text stops iOS zooming in */
+      @media (pointer: coarse) { .pn button.alt.x, body.ph .pn button.alt.x { width: 44px; height: 44px; } .pn h2 { padding-left: 46px; padding-right: 46px; } .pn button:not(.alt):not(.claim):not(.ctabs button) { min-height: 44px; } #dp input[type="number"], #dp #tto { min-height: 44px; font-size: 16px; } }
     </style>
   </head>
   <body>
