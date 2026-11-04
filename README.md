@@ -43,18 +43,22 @@ Before handing work to another agent, update this section with enough detail for
 
 ### Current handoff
 
-- **Updated:** 2026-11-03 (PM Bob, with Happy/Agent 2, Joy/Agent 3 and Zulu/security review)
-- **Task and goal:** Update, test, bench and review everything; ship new features with a recap each.
-- **Status:** F1 (live name-colour sync) and the Blackjack Stats tab are committed. F2 (save export/import + reset) and F3 (What's new card) are owned by Happy and not committed in this push. On a clean `git archive HEAD`, `npm test` passes ALL (549) and `npm run bench` passes ALL (33 scenarios).
-- **Changes (`index.html`):**
-  - F1: an `nc` message updates a name colour for peers at once. The host relays only the sender's own slot, values 0-3, at most every 0.5 s; the roster stays 7 fields.
-  - Stats: the blackjack chart menu has a 📈 Stats tab with hands, win/push/loss %, blackjacks, best streak and net gold (`V.bjs`, `bjStatAdd`, `bjStatsHTML`). It is display only: it never pays and never feeds the bank or ledger. The free tutorial hand is not counted, and the save loader clamps every field.
-  - Own aura: your own player gets a bigger pulse and a thin ring.
-  - Bank (`src/bank.js`, from Zulu's review): each Assist rent is anchored at the previous sync, so several rents in one sync keep their own price window.
-  - Deps: live-server dropped (10 audit vulnerabilities); `npm run dev` uses `src/playtest.js`.
-- **Validation:** clean-HEAD `npm test` ALL PASSED (549), `npm run bench` ALL PASSED, `git diff --check` clean. 12-player phone host: CPU 24.7 of 50 ms/s (49%), upload 0.132 of 0.5 Mbit/s (26%).
-- **Known issues and risks:** Concurrent agents sharing one tree caused a broken intermediate commit (c78becc, fixed in a68766d); verify each commit on a clean checkout. The Stats tab and F1 were not checked in a real browser or on a tablet.
-- **Next step:** Happy lands F2 and F3; browser and tablet QA of the Stats tab and live colour sync.
+- **Updated:** 2026-11-04 (Happy, for PM Bob; security review by Zulu/Hawk)
+- **Task and goal:** Ship and harden everything since ba0b406: save codes, What's new, the guest/room trust fixes and the bank seed limit. Push after Zulu's two-browser room test.
+- **Status:** All items below are committed on `main` up to 0ee50c4. On a clean checkout of 0ee50c4, `npm test` passes ALL (581 checks) and `npm run bench` passes ALL (33 scenarios).
+- **Changes:**
+  - Guest gate (fedc1ab): a guest takes hub messages (roster, joins, leaves, classes, colours, positions) only from its host, `NET_SESSION.peerId`.
+  - Room signing (4de180e): hosts sign answers and guests sign offers, and invite links carry the host key hash (`hk`). **Old `?room=` links without `hk` are refused**, so players need a fresh invite link.
+  - Bank (de9f0b4, `src/bank.js`, `src/app.js`): at most 3 seeded new accounts per IP per day (Cloudflare-aware IP), so a shared save code can't farm starting gold or XP.
+  - Dev server (efd094b, `src/playtest.js`): an allow-list serves only `index.html` and assets, never bank/market/brain data, logs, docs, source or dotfiles. A malformed URL gets 400, and `npm run dev` binds to 127.0.0.1.
+  - F2 save codes (f136b56): Settings › 💾 Save exports an `RB1.<base64>.<checksum>` code. Import goes through the normal load sanitizer, and no autosave can overwrite it before the reload. Reset needs RESET typed. The bank syncs once at load, so online gold and XP always come from the server, and the code never contains `rb_btok`.
+  - Load hardening (21f4e0b): `up` takes only dmg/vit/spd/cdr, classes are checked with `Object.hasOwn(CL, …)`, raw numbers must be finite and are range-clamped, `tut` is 0-4, and gold that isn't finite becomes 0. The reset dialog says that online the bank restores gold and XP.
+  - Blackjack Stats clamps (ca8d135): each part is clamped to the hands played, bars are capped at 100%, and net gold uses trunc.
+  - F3 What's new (f0a76ce, 0ee50c4): a corner card (`#news`) once per `BUILD` (stored in `rb_news`), with a soft `sfx("coin")` at the player's volume. Close it with ×, or it fades after 14 s. It is never a dialog, and players who haven't finished the tutorial skip it. NEWS includes the fresh-invite-link notice. **To announce an update, bump `BUILD` and edit `NEWS`** (index.html, above `sfx`).
+- **Validation (clean checkout of 0ee50c4):** `npm test` ALL PASSED, 581 checks (539 at b3a8cea). `npm run bench` ALL PASSED, 33 scenarios. 12-player phone host: CPU 34.0 of 50 ms/s when everyone walks and 15.1 when idle; upload 0.022 of 0.5 Mbit/s when idle. `git diff --check` is clean, and `npm audit` reports 0 vulnerabilities.
+- **Not tested:** a real two-browser room with signing (Zulu is running it before the push); phones and tablets for F2's Save dialog, the F3 card and the Stats tab; the bank IP limit behind the live Cloudflare tunnel.
+- **Known issues and risks:** The phone-CPU bench checks are timing-sensitive. Under heavy machine load (other agents' browsers) walk/dash 12p read 51-77 of 50 ms/s, and they pass on a quiet run (f0a76ce and 0ee50c4 measure the same, 7.3 ms CPU). Several agents share one working tree: build each commit from the HEAD blob plus your own edits, and check `git show --stat` (21f4e0b swept in early room-signing code; Bob kept it). Old invite links stop working when this is pushed.
+- **Next step:** Zulu finishes the two-browser E2E, then Bob pushes. After that: tablet QA at 1024×768, 820×1180 and 844×390 for the Save dialog, the What's new card and the Stats tab.
 
 ## Player market (paused for release)
 
