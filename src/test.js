@@ -125,6 +125,7 @@ ok(ctx.document.getElementById('dp').innerHTML.includes('class="bjmini"')&&ctx.d
  const g0=v.gold;T.bjStatAdd([{res:'win'},{res:'push'}],20,false);T.bjStatAdd([{res:'win'}],30,true);T.bjStatAdd([{res:'lose'}],-10,false);
  const s=v.bjs;ok(s.h==4&&s.w==2&&s.p==1&&s.l==1&&s.n==1&&s.b==2&&s.s==0&&s.g==40,'bj stats: counts hands, wins/pushes/losses, naturals, best streak and net gold');
  ok(v.gold==g0,'bj stats: display only, never changes gold');
+ {const o=v.bjs;v.bjs={h:1,w:1e9,l:0,p:0,n:0,s:0,b:0,g:0};ok(!/width:\d{4,}%|width:(10[1-9]|1[1-9]\d)%/.test(T.bjStatsHTML()),'bj stats: an edited save (wins > hands) cannot overflow the bars');T.bjStatAdd([{res:'win'}],3e9,false);ok(v.bjs.g==1e9,'bj stats: a huge payout clamps instead of wrapping');v.bjs=o;}
  const h=T.bjStatsHTML();ok(h.includes('50%')&&h.includes('25%')&&h.includes('+40')&&h.includes('🔥 2'),'bj stats: panel shows win/push/loss % and net gold');
  T.bjChartUI('stats');ok(ctx.document.getElementById('dp').innerHTML.includes('📈 Stats')&&ctx.document.getElementById('dp').innerHTML.includes('Best streak'),'bj stats: tab in the chart menu');
  v.bjs={h:1e12,w:'x',g:-5e12};T.bjStatAdd([{res:'win'}],5,false);ok(Number.isFinite(v.bjs.h)&&v.bjs.g>=-1e9,'bj stats: survives a garbage save');v.bjs=old;}

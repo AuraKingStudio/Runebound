@@ -2471,7 +2471,7 @@
           V.bo = s.bo && typeof s.bo.day == "string" && Array.isArray(s.bo.ids) ? { day: s.bo.day, ids: s.bo.ids, prog: s.bo.prog || {}, done: s.bo.done || {} } : null;
           V.ul = s.ul && typeof s.ul == "object" ? { class: !!s.ul.class, maiden: !!s.ul.maiden, smith: !!s.ul.smith, herald: !!s.ul.herald, barkeep: !!s.ul.barkeep, seraph: !!s.ul.seraph } : {};
           for (const k of ["wins", "loss", "best"]) if (Number.isFinite(s[k])) V[k] = cl(Math.trunc(s[k]), 0, 1e9);
-          if (s.bjs && typeof s.bjs == "object") { V.bjs = {}; for (const k of ["h", "w", "l", "p", "n", "s", "b", "g"]) V.bjs[k] = Math.max(k == "g" ? -1e9 : 0, Math.min(1e9, Math.trunc(+s.bjs[k] || 0))); } /* blackjack stats (display only) */
+          if (s.bjs && typeof s.bjs == "object") { V.bjs = {}; for (const k of ["h", "w", "l", "p", "n", "s", "b", "g"]) V.bjs[k] = Math.max(k == "g" ? -1e9 : 0, Math.min(1e9, Math.trunc(+s.bjs[k] || 0))); for (const k of ["w", "l", "p", "n", "b"]) V.bjs[k] = Math.min(V.bjs[k], V.bjs.h); } /* blackjack stats (display only); no part exceeds the hands played */
           if (s.trial && typeof s.trial == "object") { V.trial = {}; for (const k in s.trial) if (/^[a-z]{2,10}$/.test(k)) V.trial[k] = Math.max(0, Math.min(50, s.trial[k] | 0)); /* (RAIDS / TRIAL are defined later) */ }
           if (s.mat && typeof s.mat == "object") { V.mat = {}; for (const k in s.mat) if (/^[a-z]{2,12}$/.test(k) && s.mat[k] > 0) V.mat[k] = Math.min(99999, s.mat[k] | 0); }
           if (s.eq && Array.isArray(s.eq.bag)) V.eq = { bag: s.eq.bag.filter((i) => i && typeof i.id == "string" && i.id.length < 20).slice(0, 40), on: s.eq.on && typeof s.eq.on == "object" ? s.eq.on : {} };
@@ -7707,10 +7707,10 @@
         if (nat) s.n++;
         s.s = win > 0 ? s.s + 1 : 0;
         s.b = Math.max(s.b, s.s);
-        s.g = Math.max(-1e9, Math.min(1e9, s.g + (win | 0)));
+        s.g = Math.max(-1e9, Math.min(1e9, s.g + Math.trunc(+win || 0))); /* trunc, not |0: no int32 wrap */
       }
       function bjStatsHTML() {
-        const s = V.bjs || BJS0(), pc = (n) => (s.h ? Math.round((n / s.h) * 100) : 0);
+        const s = V.bjs || BJS0(), pc = (n) => (s.h ? Math.min(100, Math.max(0, Math.round((n / s.h) * 100))) : 0); /* an edited save can't overflow the bars */
         if (!s.h) return `<p class="sm">No hands played yet. Sit down with the Barkeep and your record starts here.</p>`;
         const bar = (n, cls) => `<span class="${cls}" style="display:inline-block;height:10px;width:${pc(n)}%;border-radius:3px"></span>`;
         return `<p class="sm">Your lifetime record at the Barkeep's table (the free first hand isn't counted).</p>
