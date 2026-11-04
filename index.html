@@ -1701,7 +1701,9 @@
         box-shadow: inset 0 0 0 1.5px #3fd6c68c, inset 0 1px 0 #ffffff2e, inset 0 -3px 0 #0006 !important;
         color: #f6f0dc; text-shadow: 0 1px 0 #000, 0 0 8px #3fd6c666;
       }
-      #btns .hb:not(:disabled):hover, #btns #bt:not(:disabled):hover, #btns #mlbar button:not(:disabled):hover { filter: none; box-shadow: inset 0 0 0 1.5px #3fd6c6, inset 0 1px 0 #ffffff40, inset 0 0 16px #3fd6c640 !important; }
+      @media (hover: hover) {
+        #btns .hb:not(:disabled):hover, #btns #bt:not(:disabled):hover, #btns #mlbar button:not(:disabled):hover { filter: none; box-shadow: inset 0 0 0 1.5px #3fd6c6, inset 0 1px 0 #ffffff40, inset 0 0 16px #3fd6c640 !important; }
+      }
       #btns .hb:focus-visible, #btns #bt:focus-visible, #btns #mlbar button:focus-visible { outline: none; box-shadow: inset 0 0 0 2.5px #f6f0dc, inset 0 0 16px #3fd6c666 !important; }
       #gp { padding: 3px 14px 3px 5px !important; border-radius: 999px !important; background: linear-gradient(180deg, #24384fe6, #111c29e6) !important;
         box-shadow: inset 0 0 0 1.5px #e8b84a99, 0 4px 12px #0007 !important; }
@@ -1713,6 +1715,30 @@
       #btns #bi { color: #f6f0dc; text-shadow: 0 0 8px #3fd6c6aa; background: linear-gradient(180deg, #b8fff6, #3fd6c6 50%, #1a7f77); }
       #btns #bi::before { background: radial-gradient(ellipse at 50% 30%, #24384f, #0f1824 70%); }
       body.lo #btns .hb, body.lo #btns #bt, body.lo #btns #mlbar button, body.lo #btns #bi { text-shadow: 0 1px 0 #000; }
+
+      /* ---------- Dusk Aether dialogs: twilight rows tinted by their accent (--uc), teal runestone buttons, glass raid cards ---------- */
+      .up { background: linear-gradient(90deg, #ffffff0d, transparent 70%), #13212f; border-color: #3fd6c633; box-shadow: inset 0 1px 0 #ffffff12, inset 0 -1px 0 #0006; }
+      @supports (color: color-mix(in srgb, red, blue)) { .up { background: linear-gradient(90deg, color-mix(in srgb, var(--uc) 20%, #13212f), #13212fcc 70%); } }
+      @media (hover: hover) { .up:hover, .rcard:not(.locked):hover, .ccard:hover { box-shadow: 0 6px 14px #0009, 0 0 0 1px #3fd6c6aa; } }
+      .qo { background: linear-gradient(90deg, #3fd6c626, #0006 60%); border-left-color: #3fd6c6 !important; }
+      .rcard { background: radial-gradient(ellipse at 50% 0%, #24384f, #111c29 75%); border-color: #3fd6c666; }
+      .pn .rcard { background: radial-gradient(ellipse at 50% 0%, #24384f, #0f1824 80%) !important; }
+      .pn button:not(.alt):not(.claim) {
+        border: 1px solid #3fd6c6aa; border-radius: 8px;
+        background: linear-gradient(180deg, #4fe3d3 0%, #2fb3a6 45%, #1d7d75 100%); color: #06201d; text-shadow: 0 1px 0 #ffffff55;
+        box-shadow: inset 0 1px 0 #ffffff66, inset 0 -2px 0 #0003, 0 3px 0 #0d3f3b, 0 4px 8px #0008;
+      }
+      .pn button:not(.alt):not(.claim):not(:disabled):hover { filter: brightness(1.1); }
+      .pn button:disabled { background: #1a2533 !important; color: #8ea3b5 !important; text-shadow: none !important; box-shadow: inset 0 0 0 1px #3fd6c62e !important; border-color: transparent !important; }
+      .pn button.alt { color: #e9f1f7; border-color: #3fd6c666; }
+      .pn button.alt.x { border-color: #3fd6c6aa; background: radial-gradient(circle at 40% 35%, #2a4060, #111c29 70%); box-shadow: 0 0 0 2px #0a121c, inset 0 1px 0 #ffffff22; }
+      .pn button.alt.x::after { color: #e9f1f7; }
+      .pn button.alt.x:hover { filter: brightness(1.2) drop-shadow(0 0 6px #3fd6c688); }
+      .ctabs button.on, .pn .ctabs button.on { color: #6ff0e2 !important; border-bottom-color: #3fd6c6 !important; }
+      body.lo .up:hover, body.lo .rcard:hover { box-shadow: none; }
+      /* touch: 44 px tap targets for the HUD plates (a pseudo-element hit area would be clipped by the chamfer clip-path too, so the plate itself grows) */
+      @media (pointer: coarse) { #btns .hb, #btns #bt, #btns #mlbar button { min-width: 44px; min-height: 44px; } }
+      body.ph #btns .hb, body.ph #btns #bt, body.ph #btns #mlbar button { width: 44px !important; height: 44px !important; }
     </style>
   </head>
   <body>
