@@ -1655,7 +1655,7 @@
         --ae-bad: #ff6b6b;
         --ae-text: #e9f1f7;
         --ae-dim: #a9bccb;
-        --ae-edge: color-mix(in srgb, var(--ae-teal) 55%, transparent);
+        --ae-edge: #3fd6c68c;
         --ae-r: 14px;
       }
       #dlg { background: radial-gradient(ellipse at 50% 40%, #1a2b4499, #070b12e6); }
@@ -1665,9 +1665,9 @@
         border: 1px solid var(--ae-edge) !important;
         border-radius: var(--ae-r) !important;
         background:
-          radial-gradient(ellipse 120% 60% at 50% -10%, color-mix(in srgb, var(--ae-mist) 30%, transparent), transparent 60%),
-          radial-gradient(ellipse 80% 50% at 100% 110%, color-mix(in srgb, var(--ae-teal) 14%, transparent), transparent 70%),
-          linear-gradient(180deg, color-mix(in srgb, var(--ae-glass2) 96%, transparent), color-mix(in srgb, var(--ae-glass) 97%, transparent)) !important;
+          radial-gradient(ellipse 120% 60% at 50% -10%, #9a7bff4d, transparent 60%),
+          radial-gradient(ellipse 80% 50% at 100% 110%, #3fd6c624, transparent 70%),
+          linear-gradient(180deg, #1e2f44f5, #162433f7) !important;
         box-shadow: 0 0 0 1px #0a121c, inset 0 1px 0 #ffffff1f, inset 0 0 30px #3fd6c612, 0 18px 50px #000b, 0 0 32px #9a7bff26 !important;
       }
       /* rune corner notches: four small teal brackets drawn with gradients on one pseudo-element */
@@ -1687,9 +1687,32 @@
       }
       .pn h2, .pn.raidpn h2 { color: #f6f0dc; font-variant: small-caps; letter-spacing: 1px; text-shadow: 0 2px 0 #0008, 0 0 16px #3fd6c666; }
       .pn .sm { color: var(--ae-dim); }
-      .pn .mast { border-color: color-mix(in srgb, var(--ae-teal) 35%, transparent) !important; }
+      .pn .mast { border-color: #3fd6c659 !important; }
       .pn input:not([type]), .pn input[type="text"], .pn textarea { background: #0b141f; color: var(--ae-text); border: 1px solid #3fd6c655; border-radius: 8px; }
       .pn :focus-visible { outline: 2px solid var(--ae-teal); outline-offset: 2px; }
+      body.lo .pn { box-shadow: 0 0 0 1px #0a121c, 0 8px 20px #000b !important; }
+      body.lo .pn h2 { text-shadow: none; }
+
+      /* ---------- Dusk Aether HUD: chamfered runestone plates, a rune-coin gold pill, glass badge, chat and teal action banner ---------- */
+      #btns .hb, #btns #bt, #btns #mlbar button {
+        border: 0 !important; border-radius: 0 !important;
+        clip-path: polygon(8px 0, calc(100% - 8px) 0, 100% 8px, 100% calc(100% - 8px), calc(100% - 8px) 100%, 8px 100%, 0 calc(100% - 8px), 0 8px);
+        background: linear-gradient(180deg, #24384f, #172636 60%, #111c29) !important;
+        box-shadow: inset 0 0 0 1.5px #3fd6c68c, inset 0 1px 0 #ffffff2e, inset 0 -3px 0 #0006 !important;
+        color: #f6f0dc; text-shadow: 0 1px 0 #000, 0 0 8px #3fd6c666;
+      }
+      #btns .hb:not(:disabled):hover, #btns #bt:not(:disabled):hover, #btns #mlbar button:not(:disabled):hover { filter: none; box-shadow: inset 0 0 0 1.5px #3fd6c6, inset 0 1px 0 #ffffff40, inset 0 0 16px #3fd6c640 !important; }
+      #btns .hb:focus-visible, #btns #bt:focus-visible, #btns #mlbar button:focus-visible { outline: none; box-shadow: inset 0 0 0 2.5px #f6f0dc, inset 0 0 16px #3fd6c666 !important; }
+      #gp { padding: 3px 14px 3px 5px !important; border-radius: 999px !important; background: linear-gradient(180deg, #24384fe6, #111c29e6) !important;
+        box-shadow: inset 0 0 0 1.5px #e8b84a99, 0 4px 12px #0007 !important; }
+      #netBadge { right: auto; left: 1.4%; top: 58px; text-align: left; background: #111c29e0; border: 1px solid #3fd6c659; color: #cfe0ea; }
+      body.ph #netBadge { right: auto; left: 8px; top: 54px; }
+      #chin, #emo button { background: #111c29d9; border-color: #3fd6c659; color: #e9f1f7; }
+      #chat.op #chlog { background: #111c29e6; border: 1px solid #3fd6c659; }
+      #emo button:hover { border-color: #3fd6c6; }
+      #btns #bi { color: #f6f0dc; text-shadow: 0 0 8px #3fd6c6aa; background: linear-gradient(180deg, #b8fff6, #3fd6c6 50%, #1a7f77); }
+      #btns #bi::before { background: radial-gradient(ellipse at 50% 30%, #24384f, #0f1824 70%); }
+      body.lo #btns .hb, body.lo #btns #bt, body.lo #btns #mlbar button, body.lo #btns #bi { text-shadow: 0 1px 0 #000; }
     </style>
   </head>
   <body>
@@ -2302,7 +2325,9 @@
          (e.g. VS Code's Simple Browser) are two different players */
       const SAVE_SLOT = ["localhost", "127.0.0.1"].includes(location.hostname) && /[?&]player=(\w{1,12})/.exec(location.search || "");
       const SAVE_KEY = "runebound1" + (SAVE_SLOT ? "-" + SAVE_SLOT[1] : "");
-      const saveSet = () => { try { localStorage.setItem("runebound_settings", JSON.stringify(SET)); } catch (e) {} };
+      const loCls = () => { if (document.body && document.body.classList) document.body.classList.toggle("lo", !!SET.low); }; /* body.lo: Low spec CSS (no glows) */
+      const saveSet = () => { loCls(); try { localStorage.setItem("runebound_settings", JSON.stringify(SET)); } catch (e) {} };
+      loCls();
       /* ---------- soft synth sfx (no audio files) ---------- */
       let AC = null;
       const SFX = {
