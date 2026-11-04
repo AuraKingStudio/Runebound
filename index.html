@@ -2488,6 +2488,12 @@
           for (const k of ["lp", "lpt", "lta", "lbx", "lbn", "cr", "bj1", "rc", "eqs", "bjc", "fg", "mk"]) if (Number.isFinite(s[k])) V[k] = cl(s[k], 0, 1e13); /* times (ms) and counters: finite, never negative */
           if (s.mtr && typeof s.mtr.d == "string" && typeof s.mtr.n == "number") V.mtr = { d: s.mtr.d.slice(0, 10), n: Math.max(0, s.mtr.n | 0) }; /* Maiden trades today */
           V.bl = ["stone", "swift"].includes(s.bl) ? s.bl : null;
+          /* gathering: node ready times, today's count, mastery, fractional carry, Moon Tonic */
+          if (s.gn && typeof s.gn == "object") { V.gn = {}; for (let i = 0; i < 12; i++) if (Number.isFinite(s.gn[i])) V.gn[i] = cl(s.gn[i], 0, Date.now() + 120000); }
+          if (s.gday && typeof s.gday.d == "string" && Number.isFinite(s.gday.n)) V.gday = { d: s.gday.d.slice(0, 10), n: cl(Math.trunc(s.gday.n), 0, 1e6) };
+          V.gm = Number.isFinite(s.gm) ? cl(Math.trunc(s.gm), 0, 1e7) : 0;
+          V.gfr = Number.isFinite(s.gfr) ? cl(s.gfr, 0, 0.999) : 0;
+          V.ton = s.ton ? 1 : 0;
           V.af = s.af ? 1 : 0;
           if (s.sk) for (const k of Object.keys(V.sk)) if (Array.isArray(s.sk[k])) V.sk[k] = s.sk[k].slice(0, 3).map((x) => cl(+x | 0, 0, 5)); /* skill levels 0-5 */
           /* new NPCs: class choice, Maiden day, raid records */
@@ -2771,6 +2777,9 @@
         eye: { n: "Seer's Eye", e: "👁️", col: "#ff4d8d", d: "Rare. Still watching." },
         bark: { n: "Thornbark", e: "🪵", col: "#9bd06a", d: "Ironhard bark peeled from Thornmaw." },
         heart: { n: "Colossus Heart", e: "💚", col: "#5dff8a", d: "Rare. It still beats, slowly." },
+        ore: { n: "Rune Ore", e: "⛏️", col: "#ffb36b", d: "Veined stone from the island's rocks. The Smith refines it." },
+        herb: { n: "Moonherb", e: "🌿", col: "#8fe39a", d: "Silver-green leaves that glow at dusk. Brewed into tonics." },
+        echo: { n: "Echo Shard", e: "🔹", col: "#7fdcff", d: "A crystal that hums with old runes. Binds every recipe." },
       };
       const MAT_DROP = { seer: [["shard", 1, 2], ["eye", 0.12]], thornmaw: [["bark", 1, 2], ["heart", 0.15]], synapse: [["shard", 1, 2], ["bark", 1, 2], ["eye", 0.1], ["heart", 0.1]] }; /* about 4 items per win in all */
       /* ---------- Rune Trials: repeatable harder raids (the grind ladder) ----------
@@ -2779,16 +2788,115 @@
       const TRIAL = { hp: 0.2, dmg: 0.12, rew: 0.25, rewCap: 10, max: 50 };
       const TRIAL_SEL = {};
       const trialRew = (t) => 1 + TRIAL.rew * Math.min(t || 0, TRIAL.rewCap);
-      function matAdd(k, n) { V.mat = V.mat || {}; V.mat[k] = Math.min(99999, (V.mat[k] || 0) + n); }
+      /* matAdd(k, n, src): the only way materials change (n < 0 spends). Clamped to 0..99999; returns the real change.
+         Each change is also logged as ["mat", 0, 0, src, k, n] in LEDGER for the server bank (src: raid, lore, maiden, salvage,
+         gather, bounty, craft, market); the hub master's gold/XP audit skips these entries. */
+      function matAdd(k, n, src) {
+        if (!MATS[k] || !Number.isFinite(n)) return 0;
+        V.mat = V.mat || {};
+        const have = V.mat[k] || 0, to = Math.max(0, Math.min(99999, have + Math.trunc(n))), d = to - have;
+        if (!d) return 0;
+        V.mat[k] = to;
+        if (src != "dev") {
+          LEDGER.push(["mat", 0, 0, String(src || "?"), k, d]);
+          if (LEDGER.length > 300) { LEDGER.shift(); LEDGER_BASE++; }
+          bankSoon();
+        }
+        return d;
+      }
       /* raidDrops(win): roll and store this raid's materials, returns [[key, n], ...] for the victory screen */
       function raidDrops(win) {
-        const out = [], rw = (RAIDS[S.raid] || RAIDS.small).reward * trialRew(S.trial), add = (k, n) => { if (n > 0) { matAdd(k, n); out.push([k, n]); } };
+        const out = [], rw = (RAIDS[S.raid] || RAIDS.small).reward * trialRew(S.trial), add = (k, n) => { if (n > 0) { matAdd(k, n, "raid"); out.push([k, n]); } };
         if (!win) { add("dust", 1); return out; }
         add("dust", Math.round((2 + Math.floor(Math.random() * 2)) * rw * (1 + fresh()))); /* 2-3 dust (large raid 3-5), x2 for newcomers */
         for (const [k, a, b] of MAT_DROP[(RAIDS[S.raid] || RAIDS.small).boss] || []) add(k, b == null ? (Math.random() < Math.min(0.6, a * trialRew(S.trial)) ? 1 : 0) : Math.round((a + Math.floor(Math.random() * (b - a + 1))) * trialRew(S.trial)));
         return out;
       }
       let DROPS = [];
+      /* ---------- Gathering: resource nodes on the hub island ----------
+         Walk up, press interact: a 1.2 s channel (moving cancels), then the node pops and regrows for you in 60 s (V.gn[i] = ready time).
+         Yield = base x mastery x daily curve, with a fractional carry (V.gfr) instead of dice. Daily curve (V.gday): full for 40 gathers,
+         then half up to 80, then a fifth: steady play keeps full yield, a bot running all day gets little. Mastery V.gm = gathers done,
+         level 1-10 (+4% yield per level). Gains go through matAdd(k, n, "gather") so the server bank can cap them. */
+      const GATHER = { cd: 60000, ch: 1.2, r: 48, full: 40, half: 80, per: 0.04, max: 10 };
+      const GNODES = [{ x: 365, y: 250, k: "ore" }, { x: 545, y: 258, k: "herb" }, { x: 280, y: 360, k: "echo" }, { x: 620, y: 345, k: "ore" }, { x: 335, y: 520, k: "herb" }, { x: 585, y: 405, k: "echo" }]; /* off the river, bridges and NPCs */
+      const GBASE = { ore: 2, herb: 2, echo: 1 };
+      let GCH = null; /* the channel in progress: { i, t, x, y } */
+      const gLv = () => Math.min(GATHER.max, 1 + Math.floor(Math.sqrt((V.gm || 0) / 10))); /* level L needs 10*(L-1)^2 gathers */
+      const gDay = () => { const d = dayKey(new Date()); if (!V.gday || V.gday.d != d) V.gday = { d, n: 0 }; return V.gday; };
+      const gDim = (n) => (n < GATHER.full ? 1 : n < GATHER.half ? 0.5 : 0.2);
+      const gReady = (i) => Date.now() >= ((V.gn || {})[i] || 0);
+      function gatherStart(i) {
+        const g = GNODES[i];
+        if (!g || !P || GCH) return;
+        if (!gReady(i)) return toast(`${MATS[g.k].e} Regrows in ${Math.ceil(((V.gn[i] || 0) - Date.now()) / 1000)} s`);
+        GCH = { i, t: 0, x: P.x, y: P.y };
+        sfx("ui", 0.8);
+      }
+      /* gatherStep(dt): runs the channel; moving more than a step, opening a menu or leaving the hub cancels it */
+      function gatherStep(dt) {
+        if (!GCH) return;
+        if (S.sc != "hub" || !P || dlgOpen() || Math.hypot(P.x - GCH.x, P.y - GCH.y) > 8) { GCH = null; return; }
+        GCH.t += dt;
+        if (GCH.t >= GATHER.ch) { const i = GCH.i; GCH = null; gatherDone(i); }
+      }
+      /* gatherDone(i): In: node index (ready). Out: materials via matAdd, the node's cooldown, mastery and the daily count. */
+      function gatherDone(i) {
+        const g = GNODES[i];
+        if (!g || !gReady(i)) return 0;
+        const day = gDay(), lv = gLv(), amt = GBASE[g.k] * (1 + GATHER.per * (lv - 1)) * gDim(day.n) + (V.gfr || 0), n = Math.floor(amt);
+        V.gfr = Math.min(0.999, amt - n);
+        V.gn = V.gn || {};
+        V.gn[i] = Date.now() + GATHER.cd;
+        day.n++;
+        V.gm = (V.gm || 0) + 1;
+        const got = n > 0 ? matAdd(g.k, n, "gather") : 0;
+        save();
+        burst(g.x, g.y, MATS[g.k].col, SET.low ? 8 : 18, 130);
+        ftxt(g.x, g.y - 26, got ? `+${got} ${MATS[g.k].e}` : "…", MATS[g.k].col);
+        sfx("coin", 1.2 + 0.1 * Math.min(4, got));
+        if (gLv() > lv) { popMsg(`⛏️ Gathering mastery ${gLv()}! +${Math.round(GATHER.per * 100 * (gLv() - 1))}% yield`); sfx("win", 1.3); }
+        else if (day.n == GATHER.full) toast("The island is tired of you today: gathering yields less until tomorrow.");
+        return got;
+      }
+      /* gatherDraw(dt): the six nodes (rock + ore veins, herb tuft, crystal), faded while regrowing, the channel ring on top.
+         Plain paths, no gradients or allocations per frame; no bob with reduced motion, no glow on Low spec. */
+      function gatherDraw() {
+        if (S.sc != "hub") return;
+        const t = S.tm, still = BJ_VFX.reduced(), now = Date.now();
+        for (let i = 0; i < GNODES.length; i++) {
+          const g = GNODES[i], ready = now >= ((V.gn || {})[i] || 0), b = ready && !still ? Math.sin(t * 2 + i) * 1.5 : 0, col = MATS[g.k].col;
+          c.save();
+          c.translate(g.x, g.y);
+          c.globalAlpha = 0.28;
+          c.fillStyle = "#000";
+          c.beginPath();
+          c.ellipse(0, 6, 15, 5, 0, 0, 6.3);
+          c.fill();
+          c.globalAlpha = ready ? 1 : 0.35;
+          if (ready && !SET.low) { c.shadowColor = col; c.shadowBlur = 10 + (still ? 0 : 4 * Math.sin(t * 3 + i)); }
+          c.translate(0, b);
+          if (g.k == "ore") {
+            c.fillStyle = "#6f6a74"; c.beginPath(); c.moveTo(-14, 6); c.lineTo(-10, -8); c.lineTo(-2, -13); c.lineTo(9, -9); c.lineTo(14, 6); c.closePath(); c.fill();
+            c.shadowBlur = 0; c.strokeStyle = col; c.lineWidth = 2; c.beginPath(); c.moveTo(-8, -4); c.lineTo(-2, -8); c.lineTo(3, -2); c.moveTo(5, -6); c.lineTo(9, 1); c.stroke();
+          } else if (g.k == "herb") {
+            c.fillStyle = "#3f8f4e";
+            for (let j = -2; j <= 2; j++) { c.beginPath(); c.ellipse(j * 4, -4, 3, 10, j * 0.35, 0, 6.3); c.fill(); }
+            c.shadowBlur = 0; c.fillStyle = col; c.beginPath(); c.arc(0, -13, 3, 0, 6.3); c.fill();
+          } else {
+            c.fillStyle = col; c.beginPath(); c.moveTo(0, -17); c.lineTo(8, -4); c.lineTo(0, 6); c.lineTo(-8, -4); c.closePath(); c.fill();
+            c.shadowBlur = 0; c.fillStyle = "rgba(255,255,255,.55)"; c.beginPath(); c.moveTo(0, -15); c.lineTo(3, -4); c.lineTo(0, 3); c.closePath(); c.fill();
+          }
+          c.restore();
+        }
+        if (GCH) {
+          const g = GNODES[GCH.i];
+          c.save();
+          c.strokeStyle = "rgba(0,0,0,.45)"; c.lineWidth = 5; c.beginPath(); c.arc(g.x, g.y - 4, 22, 0, 6.3); c.stroke();
+          c.strokeStyle = MATS[g.k].col; c.lineWidth = 3; c.beginPath(); c.arc(g.x, g.y - 4, 22, -1.571, -1.571 + 6.283 * Math.min(1, GCH.t / GATHER.ch)); c.stroke();
+          c.restore();
+        }
+      }
       /* ---------- playtest feedback: a note + the last game errors, sent to the hub service (feedback.log), or copied ---------- */
       const ERRLOG = [];
       addEventListener("error", (e) => { ERRLOG.push(String(e.message || e.error || "error").slice(0, 200) + " @" + (e.lineno || "?")); ERRLOG.splice(0, ERRLOG.length - 8); });
@@ -2983,7 +3091,7 @@
       const clb = (p) => (p === P && CLB[p.cls] ? CLB[p.cls].v * (V.up[CLB[p.cls].k] || 0) : 0);
       /* upCost(u, l): next upgrade level price; gentle ramp so early levels come fast and the last ones are a goal */
       const upCost = (u, l) => u.b * (l + 1) + 10 * l * l;
-      const dm = () => (1 + 0.12 * V.up.dmg) * (1 + eqSt("dmg")) * (1 + wp("dmg")) * (bless("wrath") ? 1.2 : 1),
+      const dm = () => (1 + 0.12 * V.up.dmg) * (1 + eqSt("dmg")) * (1 + wp("dmg")) * (bless("wrath") ? 1.2 : 1) * (V.ton ? 1.08 : 1),
         hpm = () => (1 + 0.15 * V.up.vit) * (bless("stone") ? 1.3 : 1) * (1 + wp("hp")) * (1 + eqSt("hp")),
         spm = () => (1 + 0.06 * V.up.spd) * (1 + eqSt("ms")),
         cdm = () => (1 - 0.08 * V.up.cdr) * (1 - eqSt("cdr")) * (bless("haste") ? 0.8 : 1);
@@ -3533,7 +3641,7 @@
       function netStats(auditor, n) {
         const end = LEDGER_BASE + LEDGER.length, from = NET_AUDIT_CURSOR.has(auditor) ? NET_AUDIT_CURSOR.get(auditor) : end;
         NET_AUDIT_CURSOR.set(auditor, end);
-        const led = LEDGER.slice(Math.max(0, from - LEDGER_BASE)), cls = P ? P.cls : "tank";
+        const led = LEDGER.slice(Math.max(0, from - LEDGER_BASE)).filter((e) => e[0] != "mat"), cls = P ? P.cls : "tank"; /* materials are the bank's job, not the gold/XP audit's */
         return { type: "a", n, g: Math.round(V.gold || 0), xp: V.xp || 0, up: UPG.map((u) => V.up[u.k]), bl: V.bl || "", cls,
           hp: P ? Math.round(P.hp) : 1, mh: P ? P.mh : Math.round(CL[cls].hp * hpm()), led: led.slice(-150),
           lost: from < LEDGER_BASE, over: led.length > 150 };
@@ -5540,6 +5648,7 @@
       }
       function win() {
         V.bl = null; /* blessings last one raid */
+        V.ton = 0; /* so does the Moon Tonic */
         raidEvent(["end", "win"]);
         V.wins = (V.wins || 0) + 1; /* Herald records */
         V.rc = (V.rc || 0) + 1; /* raids played: the equipment stock re-rolls every 2 */
@@ -6203,6 +6312,7 @@
         V.rc = (V.rc || 0) + 1;
         goldAdd(Math.round(15 * (1 + fresh())), "raid"); /* a little gold even for a loss */
         V.bl = null; /* blessings last one raid */
+        V.ton = 0; /* so does the Moon Tonic */
         V.loss = (V.loss || 0) + 1;
         DROPS = raidDrops(false);
         sfx("lose");
@@ -6532,6 +6642,7 @@
       function step(dt) {
         if (paused) return;
         S.tm += dt;
+        gatherStep(dt);
         if (!P || S.sc == "lobby") return;
         if (S.tp) {
           P.dx = P.dy = 0;
@@ -6591,6 +6702,7 @@
             const d = dist(P, n[1]);
             if (d < (n[1].ir || 75)) cand.push([n[0], d]);
           }
+        if (tut() >= TUT_DONE) for (let i = 0; i < GNODES.length; i++) { const d = dist(P, GNODES[i]); if (d < GATHER.r) cand.push(["gn:" + i, d - 20]); } /* resource nodes win over a nearby NPC */
         /* other players (bots and real ones): walk up to them and press interact to invite */
         for (const v of HUBV) if (!v.out && !v.rz && !(v.inn && S.tm - v.inn < ARRIVE)) { const d = dist(P, v); if (d < INVITE_R) cand.push(["player:" + v.id, d]); }
         cand.sort((a, b) => a[1] - b[1]);
@@ -6604,6 +6716,7 @@
         const n = nearby();
         if (!n || dlgOpen()) return;
         if (n == "raid") return raidUI();
+        if (n.startsWith("gn:")) return gatherStart(+n.slice(3));
         if (n.startsWith("player:")) { const v = HUBV.find((o) => "player:" + o.id == n); return v && (inParty(v) ? toast(v.name + " is already in your party.") : partyInvite(v)); } /* F near a player: invite at once */
         openDlg(n);
       }
@@ -6837,8 +6950,8 @@
             return `<span style="color:${b[3]}">${b[1]} blessing</span>: ${b[2]}`;
           } },
         { w: 14, big: 14, give: (b) => { /* crafting materials from the archive's vaults */
-            if (Math.random() < 0.5) { const n = (b ? 4 : 2) + Math.floor(Math.random() * 2); matAdd("dust", n); return `${MATS.dust.e} +${n} ${MATS.dust.n}`; }
-            const k = Math.random() < 0.5 ? "shard" : "bark"; matAdd(k, b ? 2 : 1); return `${MATS[k].e} +${b ? 2 : 1} ${MATS[k].n}`;
+            if (Math.random() < 0.5) { const n = (b ? 4 : 2) + Math.floor(Math.random() * 2); matAdd("dust", n, "lore"); return `${MATS.dust.e} +${n} ${MATS.dust.n}`; }
+            const k = Math.random() < 0.5 ? "shard" : "bark"; matAdd(k, b ? 2 : 1, "lore"); return `${MATS[k].e} +${b ? 2 : 1} ${MATS[k].n}`;
           } },
         { w: 6, big: 12, give: () => {
             const open = UPG.filter((u) => V.up[u.k] < MAXL);
@@ -6872,7 +6985,7 @@
       }
       function loreUI() {
         if (tut() == 4) {
-          matAdd("eye", 1);
+          matAdd("eye", 1, "lore");
           save();
           tutNext(4);
           $("dp").innerHTML = `<h2>📜 The Archivist</h2><p>"Ah, a new face. I keep the tales of this place."</p>
@@ -7055,9 +7168,9 @@
       function maidTrade(id) {
         const tr = MTRADE.find((x) => x[0] == id);
         if (!tr || !tradeOk(tr[1])) return;
-        for (const [k, n] of Object.entries(tr[1])) k == "gold" ? goldAdd(-n, "maiden") : (V.mat[k] -= n);
+        for (const [k, n] of Object.entries(tr[1])) k == "gold" ? goldAdd(-n, "maiden") : matAdd(k, -n, "maiden");
         const got = tr[2] == "rare" ? (Math.random() < 0.5 ? "eye" : "heart") : tr[2];
-        matAdd(got, tr[3]);
+        matAdd(got, tr[3], "maiden");
         const d = dayKey(new Date());
         V.mtr = V.mtr && V.mtr.d == d ? { d, n: V.mtr.n + 1 } : { d, n: 1 };
         save();
@@ -7103,7 +7216,7 @@
       }
       const craftHave = (c) => V.gold >= c.gold && Object.entries(c.mats).every(([k, n]) => ((V.mat || {})[k] || 0) >= n);
       const craftLvOk = (r) => r < 4 || lvlInfo().L >= EQ_LEG_LV;
-      function craftPay(c) { goldAdd(-c.gold, "smith"); for (const [k, n] of Object.entries(c.mats)) V.mat[k] -= n; }
+      function craftPay(c) { goldAdd(-c.gold, "smith"); for (const [k, n] of Object.entries(c.mats)) matAdd(k, -n, "craft"); }
       const costHtml = (c) => Object.entries(c.mats).map(([k, n]) => `<span title="${MATS[k].n}" style="color:${((V.mat || {})[k] || 0) >= n ? "#f3e6c8" : "#ff7a6a"}">${MATS[k].e}${n}</span>`).join(" ") + ` <span style="color:${V.gold >= c.gold ? "#ffd84a" : "#ff7a6a"}"><span class="coin"></span>${c.gold}</span>`;
       function craftMake() {
         const { t, k } = FORGE, r = k == "dd" ? Math.max(2, FORGE.r) : FORGE.r, c = craftCost(t, r);
@@ -7139,7 +7252,7 @@
         const i = (V.eq?.bag || []).findIndex((b) => b.id == id), it = V.eq?.bag[i];
         if (!it || Object.values(V.eq.on).includes(id)) return;
         V.eq.bag.splice(i, 1);
-        matAdd("dust", SALV[it.r]);
+        matAdd("dust", SALV[it.r], "salvage");
         save();
         sfx("coin");
         smithUI();
@@ -7148,11 +7261,25 @@
       function craftRefine(k) {
         if (!["shard", "bark"].includes(k) || ((V.mat || {}).dust || 0) < REFINE.dust || V.gold < REFINE.gold) return;
         goldAdd(-REFINE.gold, "smith");
-        V.mat.dust -= REFINE.dust;
-        matAdd(k, 1);
+        matAdd("dust", -REFINE.dust, "craft");
+        matAdd(k, 1, "craft");
         save();
         sfx("coin");
         smithUI();
+      }
+      /* craftOre(): 5 Rune Ore + 2 Echo Shards -> 3 Rune Dust. craftTonic(): 4 Moonherb + 1 Echo Shard -> Moon Tonic (+8% damage, next raid, one at a time). */
+      function craftOre() {
+        const m = V.mat || {};
+        if ((m.ore || 0) < 5 || (m.echo || 0) < 2) return;
+        matAdd("ore", -5, "craft"); matAdd("echo", -2, "craft"); matAdd("dust", 3, "craft");
+        save(); sfx("coin"); smithUI();
+      }
+      function craftTonic() {
+        const m = V.mat || {};
+        if (V.ton || (m.herb || 0) < 4 || (m.echo || 0) < 1) return;
+        matAdd("herb", -4, "craft"); matAdd("echo", -1, "craft");
+        V.ton = 1;
+        save(); sfx("heal", 1.3); if (P) burst(P.x, P.y, MATS.herb.col, 20, 140); smithUI();
       }
       function forgeUI() {
         if (!EQ_K[FORGE.t].includes(FORGE.k)) FORGE.k = FORGE.t == "dmg" ? { tank: "wt", dps: "wd", heal: "wh" }[(P && P.cls) || "dps"] : EQ_K[FORGE.t][0];
@@ -7173,6 +7300,10 @@
         }).join("") : `<div class="sm" style="opacity:.7;padding:4px 2px">No gear yet. Forge some above, or buy from the Merchant.</div>`;
         const rok = ((V.mat || {}).dust || 0) >= REFINE.dust && V.gold >= REFINE.gold;
         h += `<div class="mast"><span class="sm">Refine · ${MATS.dust.e}${REFINE.dust} + <span class="coin"></span>${REFINE.gold} into one boss material</span></div><div class="row" style="gap:6px">${["shard", "bark"].map((k) => `<button class="${rok ? "" : "alt"}" ${rok ? "" : "disabled"} onclick="craftRefine('${k}')">${MATS[k].e} ${MATS[k].n}</button>`).join("")}</div>`;
+        const m = V.mat || {}, ook = (m.ore || 0) >= 5 && (m.echo || 0) >= 2, tok = (m.herb || 0) >= 4 && (m.echo || 0) >= 1 && !V.ton;
+        h += `<div class="mast"><span class="sm">Island materials · gathering mastery ${gLv()} (+${Math.round(GATHER.per * 100 * (gLv() - 1))}% yield)</span></div><div class="row" style="gap:6px;flex-wrap:wrap">
+          <button ${ook ? "" : "disabled"} onclick="craftOre()" title="5 Rune Ore + 2 Echo Shards into 3 Rune Dust">${MATS.ore.e}5 ${MATS.echo.e}2 → ${MATS.dust.e}3</button>
+          <button ${tok ? "" : "disabled"} onclick="craftTonic()" title="+8% damage for your next raid">${V.ton ? "🧪 Tonic ready" : `${MATS.herb.e}4 ${MATS.echo.e}1 → 🧪 Moon Tonic`}</button></div>`;
         const mats = Object.keys(MATS).map((k) => `<span title="${MATS[k].n}">${MATS[k].e}${(V.mat || {})[k] || 0}</span>`).join(" &nbsp;");
         return `<div class="sm" style="margin:4px 0">Your materials: ${mats}</div>` + h;
       }
@@ -8228,7 +8359,7 @@
       }
       /* mktGive(item): put a market item into your save */
       function mktGive(it) {
-        if (it.k == "mat") matAdd(it.m, it.n);
+        if (it.k == "mat") matAdd(it.m, it.n, "market");
         else { V.eq = V.eq || { bag: [], on: {} }; let id; do id = "k" + Date.now().toString(36).slice(-6) + ((Math.random() * 1296) | 0).toString(36); while (V.eq.bag.some((b) => b.id == id)); V.eq.bag.push({ id, t: it.t, k: it.g, r: it.r }); V.eq.bag = V.eq.bag.slice(-40); }
       }
       async function mktSell() {
@@ -8241,7 +8372,7 @@
         const r = await mktCall("sell", { item, price, name: pname() });
         MKT.busy = false;
         if (!r.ok) return toast(r.data.error || "Could not list it.");
-        if (item.k == "mat") V.mat[item.m] -= item.n; else V.eq.bag = V.eq.bag.filter((b) => b.id != S0.id); /* the server holds it now */
+        if (item.k == "mat") matAdd(item.m, -item.n, "market"); else V.eq.bag = V.eq.bag.filter((b) => b.id != S0.id); /* the server holds it now */
         MKT.sell = null;
         V.mk = (V.mk || 0) + 1;
         save(); sfx("ui"); toast("Listed: " + mktName(item));
@@ -8529,7 +8660,7 @@
         V.eq.bag = V.eq.bag.slice(-40);
         devS();
       }
-      function devMats() { for (const k in MATS) matAdd(k, 10); devS(); }
+      function devMats() { for (const k in MATS) matAdd(k, 10, "dev"); devS(); }
       function devClearInv() { V.eq = { bag: [], on: {} }; V.mat = {}; devS(); }
       function devUnlock() { V.ul = { class: true, maiden: true, smith: true, herald: true, barkeep: true, seraph: true }; devS(); }
       function devBoss(f) {
@@ -9015,7 +9146,7 @@
         $("bil").hidden = $("bir").hidden = $("bi").hidden || NEAR_PL.length < 2; /* arrows to pick among everything in reach */
         if (!$("bil").hidden) { const kh = (a) => (INMODE == "kb" ? `<span class="kh">${keyLabel(SET.bind[a])}</span>` : ""), l = "◀" + kh("s1"), r = "▶" + kh("s2"); if ($("bil")._h != l) { $("bil")._h = l; $("bil").innerHTML = l; } if ($("bir")._h != r) { $("bir")._h = r; $("bir").innerHTML = r; } } /* key badges follow the layout */
         if (n) {
-          const lb = n == "raid" ? "CHOOSE RAID" : n.startsWith("player:") ? "INVITE · " + (HUBV.find((o) => "player:" + o.id == n)?.name || "") + "" : n == "elder" ? "TALK" : n == "lore" ? "LISTEN" : n == "barkeep" && !isUnl(n) ? "JOIN DISCORD TO UNLOCK!" : ["class", "maiden", "smith", "herald"].includes(n) && !isUnl(n) ? "???" : n == "class" ? "CLASS" : n == "maiden" ? "PRAY" : n == "smith" ? "FORGE" : n == "herald" ? "RECORDS" : n == "barkeep" ? "BLACKJACK" : n == "qboard" ? "QUESTS" : n == "gboard" ? "GUILD" : "SHOP",
+          const lb = n == "raid" ? "CHOOSE RAID" : n.startsWith("gn:") ? (gReady(+n.slice(3)) ? "GATHER · " + MATS[GNODES[+n.slice(3)].k].n.toUpperCase() : "REGROWING") : n.startsWith("player:") ? "INVITE · " + (HUBV.find((o) => "player:" + o.id == n)?.name || "") + "" : n == "elder" ? "TALK" : n == "lore" ? "LISTEN" : n == "barkeep" && !isUnl(n) ? "JOIN DISCORD TO UNLOCK!" : ["class", "maiden", "smith", "herald"].includes(n) && !isUnl(n) ? "???" : n == "class" ? "CLASS" : n == "maiden" ? "PRAY" : n == "smith" ? "FORGE" : n == "herald" ? "RECORDS" : n == "barkeep" ? "BLACKJACK" : n == "qboard" ? "QUESTS" : n == "gboard" ? "GUILD" : "SHOP",
             ht = KEYHINT[INMODE][3],
             h = lb + (NEAR_PL.length > 1 ? ` <small>${(INV_I % NEAR_PL.length) + 1}/${NEAR_PL.length}</small>` : "") + (ht ? ` <span class="kh k3">${ht}</span>` : "");
           if ($("bi")._h != h) { $("bi")._h = h; $("bi").innerHTML = h; $("bi").classList.add("small"); } /* only touch the DOM when it changes */
@@ -14302,6 +14433,7 @@
         c.globalAlpha = 1;
         RINGS = RINGS.filter((r) => r.t < 0.6);
         /* hub: you and the visitors, drawn top to bottom so whoever stands lower overlaps the one behind */
+        gatherDraw(); /* resource nodes sit on the ground, under everyone */
         const who = S.sc == "hub" ? S.ps.concat(HUBV.filter((v) => !v.rz)).sort((a, b) => a.y - b.y) : S.ps;
         for (const p of who) drawPlayer(p, dt);
         drawVX(dt);
