@@ -57,6 +57,9 @@ function rollTier(w, rng) {
 function createWish(o) {
   const rng = typeof o.rng == "function" ? o.rng : (n) => randomInt(n);
   const digs = new Map(), byAcct = new Map(), ipHits = new Map();
+  let digSweep = 0;
+  /* ipKey: IPv6 by its /64 so rotating addresses count as one client (Hawk MED2) */
+  const ipKey = (ip) => { const s = String(ip || ""); return s.includes(":") && !s.startsWith("::ffff:") ? s.split(":").slice(0, 4).join(":") : s; };
   const st = (a, t) => {
     let w = a.wi;
     if (!w || typeof w != "object") w = a.wi = {};
@@ -155,7 +158,8 @@ function createWish(o) {
     },
     /* dig: no id = start a board (if none open); with id + i = reveal tile i */
     dig(a, w, b, t, id0) {
-      for (const [k, d] of digs) if (t - d.at > WISH.dig.ttl) { digs.delete(k); if (byAcct.get(d.who) == k) byAcct.delete(d.who); }
+      /* expired boards: digs is in creation order, so only the front can be stale; swept at most once a second (Hawk MED1) */
+      if (t - digSweep >= 1000) { digSweep = t; for (const [k, d] of digs) { if (t - d.at <= WISH.dig.ttl) break; digs.delete(k); if (byAcct.get(d.who) == k) byAcct.delete(d.who); } }
       if (b.id === undefined) {
         const cur = byAcct.get(id0), cd = cur && digs.get(cur);
         if (cd) return [200, { id: cur, open: cd.open, picks: WISH.dig.picks - cd.open.length, ...view(a, w) }]; /* resume the open board */
@@ -167,7 +171,7 @@ function createWish(o) {
         for (let i = tiles.length - 1; i > 0; i--) { const j = rng(i + 1); [tiles[i], tiles[j]] = [tiles[j], tiles[i]]; }
         const id = randomBytes(12).toString("hex");
         digs.set(id, { who: id0, tiles, open: [], at: t }); byAcct.set(id0, id);
-        if (digs.size > 20000) { const k = digs.keys().next().value; digs.delete(k); }
+        if (digs.size > 20000) { const k = digs.keys().next().value; byAcct.delete(digs.get(k).who); digs.delete(k); } /* evict the oldest board and its owner link */
         track("dig");
         return [200, { id, open: [], picks: WISH.dig.picks, ...view(a, w) }];
       }
@@ -187,10 +191,14 @@ function createWish(o) {
   function call(op, body, ip) {
     if (!Object.hasOwn(ops, op)) return [404, { error: "Unknown." }];
     const t = o.now(), b = body && typeof body == "object" ? body : {};
+    ip = ipKey(ip);
     const hits = (ipHits.get(ip) || []).filter((x) => t - x < 60e3);
     if (hits.length >= 120) return [429, { error: "Slow down." }];
     hits.push(t); ipHits.set(ip, hits);
-    if (ipHits.size > 20000) for (const [k, v] of ipHits) if (t - v[v.length - 1] > 60e3) ipHits.delete(k);
+    if (ipHits.size > 20000) {
+      for (const [k, v] of ipHits) if (t - v[v.length - 1] > 60e3) ipHits.delete(k);
+      for (const k of ipHits.keys()) { if (ipHits.size <= 20000) break; ipHits.delete(k); } /* still full: drop the oldest (hard cap) */
+    }
     const w = who(b, t);
     if (!w) return [403, { error: "No online account." }];
     const r = ops[op](w[1], w[2], b, t, w[0]);
