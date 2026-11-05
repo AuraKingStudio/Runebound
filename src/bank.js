@@ -487,7 +487,7 @@ function createBank(options = {}) {
   /* Cipher bonus minigame (src/cipher.js): server-made puzzles paying a pack of the gather job's material */
   const acct = (tok) => { if (typeof tok != "string" || !/^[a-f0-9]{32}$/.test(tok)) return null; const id = hash(tok); if (!Object.hasOwn(accts, id)) return null; const a = accts[id]; if (!a.mat) a.mat = {}; return [id, a]; };
   /* Rune Wishes (src/wish.js): the free gacha shrine and its minigames; tokens also from accepted cipher wins, garden harvests, raid wins */
-  const wish = createWish({ now, persist: () => persist(), matMax: MAT_MAX, onEntry, acct, rng: options.rng });
+  const wish = createWish({ now, persist: () => persist(), matMax: MAT_MAX, onEntry, acct, byCode: (c) => { const id = byCode.get(c); return id && Object.hasOwn(accts, id) ? accts[id] : null; }, rng: options.rng });
   const cipher = createCipher({ now, persist: () => persist(), matMax: MAT_MAX, onEntry, acct, onWin: (a) => wish.grant(a, "cipher") });
   return { sync, flush, wish: wish.call, _wish: wish, cipherStart: cipher.start, cipherSolve: cipher.solve, _cipher: cipher, tradeOffer, tradeAccept, tradeCancel, tradeList, TRADE, RULES, MAT_SRC, ASSIST, assistPrice, size: () => Object.keys(accts).length };
 }

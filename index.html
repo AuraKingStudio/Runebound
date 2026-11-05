@@ -1821,6 +1821,11 @@
       .wrow { display: flex; align-items: center; gap: 8px; padding: 4px 8px; border-radius: 10px; background: rgba(0, 0, 0, 0.28); border-left: 3px solid #b8c4d0; }
       .wrow.tR { border-color: #5ab8ff; } .wrow.tE { border-color: #c77dff; } .wrow.tL { border-color: #ffcf4d; }
       .wrow.lock { opacity: 0.5; }
+      .wrow.tE:not(.lock) { background: linear-gradient(90deg, rgba(199, 125, 255, 0.16), rgba(0, 0, 0, 0.28) 60%); }
+      .wrow.tL:not(.lock) { background: linear-gradient(90deg, rgba(255, 207, 77, 0.2), rgba(0, 0, 0, 0.28) 60%); box-shadow: inset 0 0 0 1px rgba(255, 207, 77, 0.25); }
+      .wmq { display: flex; justify-content: center; margin: 4px 0; }
+      .wmq canvas { width: 200px; height: 120px; max-width: 100%; border-radius: 12px; background: radial-gradient(ellipse at 50% 70%, rgba(120, 90, 200, 0.35), rgba(10, 8, 24, 0.6) 70%); }
+      body.lo .wrow.tE:not(.lock), body.lo .wrow.tL:not(.lock) { background: rgba(0, 0, 0, 0.28); box-shadow: none; }
       .wrow span { flex: 1; display: flex; flex-direction: column; font-size: 12px; text-align: left; }
       .wrow button { min-height: 44px; min-width: 64px; border-radius: 8px; border: 1px solid var(--ln); background: rgba(0, 0, 0, 0.3); color: #f3e6c8; font: bold 12px Georgia, serif; cursor: pointer; }
       .wrow button.on { border-color: #7dff9a; color: #7dff9a; }
@@ -2952,7 +2957,7 @@
           c.globalAlpha = 1; c.beginPath(); c.arc(0, 0, 4.5, 0, 6.3); c.fill();
           c.fillStyle = "#fff"; c.beginPath(); c.arc(0, -1, 2, 0, 6.3); c.fill();
         }
-        wqHat(wqGet(p === P ? wqMine() : p.wq, "h"), k);
+        wqHat(wqGet(wqOf(p), "h"), k);
         c.restore();
         if (o.re > 0) { c.globalAlpha = Math.min(1, o.re * 2); c.font = "14px serif"; c.textAlign = "center"; c.fillText("💖", o.x, o.y - 22 - (still ? 0 : (1 - o.re) * 12)); c.globalAlpha = 1; }
       }
@@ -3020,8 +3025,8 @@
       }, true);
       /* ---------- What's new: a small corner card once per build (BUILD), a soft chime at the player's volume ----------
          Brand-new players (tutorial not done) skip it: everything is new to them. Dismiss with x, or it fades after 14 s. */
-      const BUILD = "2026.11.06.4"; /* Rune Wishes: free hub gacha + 3 games */
-      const NEWS = ["🌠 Rune Wishes: a Wish Shrine in the hub! Make free wishes for auras, pet hats, name effects and titles (odds and pity shown, dupes become Stardust). Earn 🎟 at the new Fortune Wheel, Rune Reels and Treasure Dig, plus Cipher wins, garden harvests and raids. All free, always", "🔮 Cipher: every few gathers a quick rune game pops up (strike the vein, the moonleaf pattern, the crystal echo); win a bonus pack of 5. Gathering combos and a shinier channel too", "🌸 The Zen Garden: rake the sand, water your plants, harvest materials, claim a 7-day streak bonus and trade your produce with friends", "🐾 Pets: reach level 6 to meet the Beastkeeper. Adopt a Fox, Owl, Wolf or Sprite with materials, feed it for a bigger bonus, and tap it to play", "⛏️ Gathering: Iron Ore, Moonleaf and Skycrystal nodes on the island; mastery raises your yield", "📜 Contract Board: 3 material orders a day on the Quest Board", "🌹 The Maiden's Exchange: barter materials at rates that drift each day"];
+      const BUILD = "2026.11.06.5"; /* Rune Wishes cosmetics: trails, bubbles, Runic Nova, live + bank-checked */
+      const NEWS = ["✨ Wish cosmetics glow brighter: new trails (Leaf Drift, Starlit Steps, Comet Tail), emote bubbles (Heart Puff, Rune Glyph) and the Legendary Runic Nova aura. Preview your look in the Collection; changes show to everyone at once", "🌠 Rune Wishes: a Wish Shrine in the hub! Make free wishes for auras, pet hats, name effects and titles (odds and pity shown, dupes become Stardust). Earn 🎟 at the new Fortune Wheel, Rune Reels and Treasure Dig, plus Cipher wins, garden harvests and raids. All free, always", "🔮 Cipher: every few gathers a quick rune game pops up (strike the vein, the moonleaf pattern, the crystal echo); win a bonus pack of 5. Gathering combos and a shinier channel too", "🌸 The Zen Garden: rake the sand, water your plants, harvest materials, claim a 7-day streak bonus and trade your produce with friends", "🐾 Pets: reach level 6 to meet the Beastkeeper. Adopt a Fox, Owl, Wolf or Sprite with materials, feed it for a bigger bonus, and tap it to play", "⛏️ Gathering: Iron Ore, Moonleaf and Skycrystal nodes on the island; mastery raises your yield", "📜 Contract Board: 3 material orders a day on the Quest Board", "🌹 The Maiden's Exchange: barter materials at rates that drift each day"];
       let NEWS_T = 0;
       function newsShow() {
         let seen = "";
@@ -3508,6 +3513,7 @@
           }
           if (hv && r.mat) { const d = ["herb", "ore", "echo"].map((k) => [k, (V.mat[k] || 0) - (m0[k] || 0)]).filter(([, n]) => n); if (d.length) chatSys("Harvest counted by the server: " + d.map(([k, n]) => MATS[k].e + (n > 0 ? "+" : "") + n).join(" "), "bye"); } /* the bank's harvest, not the preview */
           if (r.pet) petAdopt(r.pet); /* the server owns pets (RULES.pet) */
+          if (typeof r.tc == "string" && /^[a-f0-9]{10}$/.test(r.tc)) WI.tc = r.tc; /* my public trade code: peers look my worn cosmetics up by it */
           if (r.garden && !later.some((e) => e[0] == "garden")) { gardenAdopt(r.garden, r.gsc); gsAdopt(r.streak); } /* the server owns the garden and its streak (GARDEN in bank.js) */
           if (Number.isFinite(r.bjm) && Number.isFinite(r.bjmAge)) { V.bjm = r.bjm; V.bjmAt = Date.now() - r.bjmAge; } /* the server's Assist price wins */
           if (r.dropped) chatSys("The server refused " + r.dropped + " change" + (r.dropped > 1 ? "s" : "") + " (gold, XP or materials).", "bye");
@@ -3962,10 +3968,12 @@
         pool: {
           C: [["c_ore", "m", "Ore bundle", { ore: 4 }], ["c_herb", "m", "Moonleaf bundle", { herb: 4 }], ["c_dust", "m", "Rune dust", { dust: 4 }], ["c_echo", "m", "Skycrystal", { echo: 1 }], ["c_sd", "sd", "Stardust pouch", 5]],
           R: [["t_lucky", "t", "Title: Lucky Star"], ["t_dream", "t", "Title: Dreamwalker"], ["t_moth", "t", "Title: Lantern Moth"], ["t_rune", "t", "Title: Runeborn"],
-            ["r_shard", "m", "Shard cache", { shard: 2 }], ["r_bark", "m", "Bark cache", { bark: 2 }], ["r_echo", "m", "Crystal cluster", { echo: 3 }]],
+            ["r_shard", "m", "Shard cache", { shard: 2 }], ["r_bark", "m", "Bark cache", { bark: 2 }], ["r_echo", "m", "Crystal cluster", { echo: 3 }],
+            ["w_leaf", "w", "Trail: Leaf Drift"]],
           E: [["a_ember", "a", "Aura: Ember Ring"], ["a_tide", "a", "Aura: Tidal Halo"], ["a_bloom", "a", "Aura: Petal Bloom"],
-            ["h_crown", "h", "Pet hat: Tiny Crown"], ["h_witch", "h", "Pet hat: Witch Hat"], ["h_halo", "h", "Pet hat: Halo"]],
-          L: [["n_prism", "n", "Name: Prism"], ["n_star", "n", "Name: Starfire"], ["a_aether", "a", "Aura: Aether Wings"]],
+            ["h_crown", "h", "Pet hat: Tiny Crown"], ["h_witch", "h", "Pet hat: Witch Hat"], ["h_halo", "h", "Pet hat: Halo"],
+            ["w_spark", "w", "Trail: Starlit Steps"], ["b_heart", "b", "Bubble: Heart Puff"], ["b_rune", "b", "Bubble: Rune Glyph"]],
+          L: [["n_prism", "n", "Name: Prism"], ["n_star", "n", "Name: Starfire"], ["a_aether", "a", "Aura: Aether Wings"], ["a_nova", "a", "Aura: Runic Nova"], ["w_comet", "w", "Trail: Comet Tail"]],
         },
         wheel: { day: 2, seg: [[22, { tok: 1 }], [16, { sd: 10 }], [18, { mat: { ore: 6 } }], [12, { tok: 2 }], [18, { mat: { herb: 6 } }], [8, { tok: 3 }], [5, { sd: 40 }], [1, { tok: 10 }]] },
         reels: { day: 6, w: [30, 24, 18, 14, 9, 5], three: [{ sd: 8 }, { sd: 12 }, { tok: 1 }, { tok: 2 }, { tok: 3 }, { tok: 8 }], two: { sd: 3 }, none: { sd: 1 } },
@@ -3974,10 +3982,10 @@
       const WTIER = { C: ["Common", "#b8c4d0"], R: ["Rare", "#5ab8ff"], E: ["Epic", "#c77dff"], L: ["Legendary", "#ffcf4d"] };
       const WCAT = {};
       for (const t of "CREL") for (const [id, k, n, p] of WISH.pool[t]) WCAT[id] = [t, k, n, p];
-      const wCosm = (id) => typeof id == "string" && Object.hasOwn(WCAT, id) && "tahn".includes(WCAT[id][1]);
+      const wCosm = (id) => typeof id == "string" && Object.hasOwn(WCAT, id) && "tahnwb".includes(WCAT[id][1]);
       const wcn = (v, hi) => (Number.isInteger(v) && v >= 0 ? Math.min(v, hi) : 0);
       const wUtc = () => Math.floor(Date.now() / 86400e3);
-      const WI = { busy: false, rev: null, tab: "wish", synced: 0, dig: null, spin: 0, ang: 0 };
+      const WI = { busy: false, rev: null, tab: "wish", synced: 0, dig: null, spin: 0, ang: 0, on: null, onReq: null, onAt: -1e9, tc: "" }; /* on: the worn set the bank confirmed (null = not asked yet); tc: my public trade code */
       const wCalm = () => !!(SET.low || BJ_VFX.reduced());
       /* wiSt(): this browser's copy of the wish state (online: the bank's last answer), normalised like the server's */
       function wiSt() {
@@ -4092,6 +4100,7 @@
         const w = wiSt();
         w.t = wcn(j.t, WISH.tokMax); w.sd = wcn(j.sd, WISH.sdMax); w.p10 = wcn(j.p10, 99); w.p60 = wcn(j.p60, 999); w.n = wcn(j.n, 1e9);
         if (Array.isArray(j.own)) { w.own = {}; for (const id of j.own.slice(0, 64)) if (wCosm(id)) w.own[id] = 1; }
+        if (typeof j.on == "string") WI.on = wqOk(j.on);
         if (j.day && typeof j.day == "object") { w.dy.e = wcn(j.day.e, 999); w.dy.s = {}; for (const k of ["daily", "wheel", "reels", "dig", "cipher", "garden", "raid"]) if (j.day.s && Number.isInteger(j.day.s[k])) w.dy.s[k] = j.day.s[k]; }
         wiMat(j.mat);
       }
@@ -4144,11 +4153,12 @@
           body = `<p class="sm">Pick exactly what you want with ✨ Stardust (from duplicates, the Reels, Wheel and Dig).</p><div class="wlist">${Object.entries(WCAT).filter(([id]) => wCosm(id)).map(([id, [tr, , nm]]) => { const own = wishOwn(id), pr = WISH.shop[tr]; return `<div class="wrow t${tr}">${wIcon(id)}<span><b>${nm}</b><small style="color:${WTIER[tr][1]}">${WTIER[tr][0]}</small></span>${own ? `<em>Owned</em>` : `<button onclick="wishBuy('${id}')" ${w.sd < pr ? "disabled" : ""}>✨ ${pr}</button>`}</div>`; }).join("")}</div>`;
         } else {
           const q = V.wq || {}, st = wStat(), own = Object.keys(w.own);
-          body = `<p class="sm">${own.length} of ${Object.keys(WCAT).filter(wCosm).length} cosmetics · ${w.n} wishes made · ${st.L || 0} Legendary${st.best ? ` · best Wheel prize ${st.best}` : ""}</p><div class="wlist">${Object.entries(WCAT).filter(([id]) => wCosm(id)).map(([id, [tr, k, nm]]) => { const on = wishOwn(id), eq = k == "t" ? V.title == WTITLE_I + ["t_lucky", "t_dream", "t_moth", "t_rune"].indexOf(id) : q[k] == id; return `<div class="wrow t${tr}${on ? "" : " lock"}">${wIcon(id)}<span><b>${on ? nm : "???"}</b><small style="color:${WTIER[tr][1]}">${WTIER[tr][0]}</small></span>${on ? `<button class="${eq ? "on" : ""}" onclick="wishWear('${id}')">${eq ? "Worn" : "Wear"}</button>` : ""}</div>`; }).join("")}</div>`;
+          body = `<div class="wmq"><canvas id="wmq" width="200" height="120" aria-label="Preview of your outfit"></canvas></div><p class="sm">${own.length} of ${Object.keys(WCAT).filter(wCosm).length} cosmetics · ${w.n} wishes made · ${st.L || 0} Legendary${st.best ? ` · best Wheel prize ${st.best}` : ""}</p><div class="wlist">${Object.entries(WCAT).filter(([id]) => wCosm(id)).map(([id, [tr, k, nm]]) => { const on = wishOwn(id), eq = k == "t" ? V.title == WTITLE_I + ["t_lucky", "t_dream", "t_moth", "t_rune"].indexOf(id) : q[k] == id; return `<div class="wrow t${tr}${on ? "" : " lock"}">${wIcon(id)}<span><b>${on ? nm : "???"}</b><small style="color:${WTIER[tr][1]}">${WTIER[tr][0]}</small></span>${on ? `<button class="${eq ? "on" : ""}" onclick="wishWear('${id}',this)">${eq ? "Worn" : "Wear"}</button>` : ""}</div>`; }).join("")}</div>`;
         }
         $("dp").className = "pn wpn";
         $("dp").innerHTML = `<h2>🌠 The Wish Shrine</h2>${wiPurse()}${wiNav("wish")}<div class="wtabs sub">${[["wish", "Banner"], ["shop", "✨ Stardust shop"], ["coll", "📖 Collection"]].map(([k, n]) => `<button class="${k == t ? "on" : ""}" onclick="wishUI('${k}')">${n}</button>`).join("")}</div>${body}<div id="wrev" hidden></div><button class="alt x" onclick="closeDlg()" title="Farewell">Farewell</button>`;
         if (t == "wish") wiBanner();
+        if (t == "coll") wqMannequin();
         wiFresh();
       }
       /* the banner portal: a slow swirl (30 fps, only while it is on screen); one still frame in Low spec / reduced motion */
@@ -4192,7 +4202,7 @@
         const it = WCAT[id] || WCAT[(id && id.id) || ""];
         if (!it) return "";
         const [tr, k] = it, c = WTIER[tr][1];
-        const p = { m: '<path d="M-9 4l9-12 9 12-9 7z"/>', sd: '<path d="M0-11l3 8 8 3-8 3-3 8-3-8-8-3 8-3z"/>', t: '<path d="M-10-6h20v12h-20zM-6-2h12M-6 2h8" stroke="#0b0b18" stroke-width="1.6"/>', a: '<ellipse cx="0" cy="5" rx="11" ry="4" fill="none" stroke-width="2.6"/><circle cx="0" cy="-3" r="5"/>', h: '<path d="M-9 6h18l-3-11-3 5-3-8-3 8-3-5z"/>', n: '<path d="M-10 8l5-16h3l5 16h-3l-1-4h-5l-1 4zM-5 1h4l-2-6z"/><circle cx="8" cy="-6" r="2"/>' }[k];
+        const p = { m: '<path d="M-9 4l9-12 9 12-9 7z"/>', sd: '<path d="M0-11l3 8 8 3-8 3-3 8-3-8-8-3 8-3z"/>', t: '<path d="M-10-6h20v12h-20zM-6-2h12M-6 2h8" stroke="#0b0b18" stroke-width="1.6"/>', a: '<ellipse cx="0" cy="5" rx="11" ry="4" fill="none" stroke-width="2.6"/><circle cx="0" cy="-3" r="5"/>', h: '<path d="M-9 6h18l-3-11-3 5-3-8-3 8-3-5z"/>', w: '<circle cx="7" cy="-5" r="4"/><circle cx="0" cy="1" r="3" opacity=".7"/><circle cx="-6" cy="6" r="2" opacity=".45"/>', b: '<circle cx="0" cy="-2" r="9" fill="none" stroke-width="2.4"/><path d="M-3 6l-3 6 7-5z"/>', n: '<path d="M-10 8l5-16h3l5 16h-3l-1-4h-5l-1 4zM-5 1h4l-2-6z"/><circle cx="8" cy="-6" r="2"/>' }[k];
         return `<svg class="wic" viewBox="-14 -14 28 28" fill="${c}" stroke="${c}">${p}</svg>`;
       }
       async function wishDaily() {
@@ -4214,13 +4224,14 @@
         if (CUR_DLG == "wish") wishUI("shop");
       }
       /* wishWear(id): wear (or take off) an owned cosmetic; titles join the title list */
-      function wishWear(id) {
+      function wishWear(id, el) {
         if (!wishOwn(id)) return;
-        const k = WCAT[id][1];
+        const k = WCAT[id][1], tr = WCAT[id][0];
         if (k == "t") { const i = WTITLE_I + ["t_lucky", "t_dream", "t_moth", "t_rune"].indexOf(id); V.title = V.title == i ? 0 : i; }
         else { V.wq = V.wq && typeof V.wq == "object" ? V.wq : {}; V.wq[k] = V.wq[k] == id ? "" : id; }
-        BJ_SFX.ding(5);
-        if (P) burst(P.x, P.y, WTIER[WCAT[id][0]][1], SET.low ? 8 : 22, 150);
+        BJ_SFX.ding(tr == "L" ? 7 : 5);
+        if (P) burst(P.x, P.y, WTIER[tr][1], SET.low ? 8 : 22, 150);
+        if (!wCalm()) { wBurst(el, wCol[tr], tr == "L" ? 24 : 14, tr == "L"); WI.wearAt = S.tm; WI.wearCol = WAURA[id] || WTRAIL[id] || (tr == "L" ? "255,210,120" : "200,160,255"); } /* the wear burst */
         save();
         wishUI("coll");
       }
@@ -4882,7 +4893,7 @@
         }
         const [sx, sy] = spawnSpot(),
           v = { id, name: o.name || "Wanderer", cls: CL[o.cls] ? o.cls : "tank", x: o.x ?? sx, y: o.y ?? sy, dx: 0, dy: 0, f: "d", hp: 1, mh: 1, bot: bot ? 1 : 0,
-            lv: o.lv || 1, ti: TITLES[o.ti] || TITLES[0], nc: [1, 2, 3].includes(o.nc) ? o.nc : 0, pt: petOk(o.pt) ? o.pt : "", wq: wqOk(o.wq), via: [] };
+            lv: o.lv || 1, ti: TITLES[o.ti] || TITLES[0], nc: [1, 2, 3].includes(o.nc) ? o.nc : 0, pt: petOk(o.pt) ? o.pt : "", wq: wqOk(o.wq), wtc: tcOk(o.tc), via: [] };
         v.tx = v.x;
         v.ty = v.y;
         v.born = HUB_T;
@@ -4911,7 +4922,7 @@
       const NET = window.RBNet || null, NET_CONFIG = NET?.defaultConfig?.() || { signalingUrl: "", iceServers: [] };
       const NET_LOCAL_ID = "player-" + (window.crypto?.randomUUID ? window.crypto.randomUUID() : Math.random().toString(36).slice(2));
       let NET_ROLE = "", NET_LAST_SEND = 0, NET_STATUS = "Offline", NET_SESSION = null, NET_AUTO_STARTED = false, NET_CONNECTED = false, NET_DIRECTORY_STATE = "idle";
-      let NET_MY_LV = 0, NET_CLS = "", NET_NC = -1, NET_PT = null, NET_RZ = 0, NET_POLL_TIMER = 0, NET_HEARTBEAT_TIMER = 0, NET_GUEST_POLLING = false, NET_LAST_STATE = 0, NET_CONNECT_TIMER = 0, NET_RETRY_TIMER = 0, NET_RETRY_COUNT = 0, NET_RECOVERY_NOTIFIED = false, NET_BADGE_AT = 0, NET_SEQ = 0;
+      let NET_MY_LV = 0, NET_CLS = "", NET_NC = -1, NET_PT = null, NET_WQ = null, NET_WQ_AT = -1e9, NET_RZ = 0, NET_POLL_TIMER = 0, NET_HEARTBEAT_TIMER = 0, NET_GUEST_POLLING = false, NET_LAST_STATE = 0, NET_CONNECT_TIMER = 0, NET_RETRY_TIMER = 0, NET_RETRY_COUNT = 0, NET_RECOVERY_NOTIFIED = false, NET_BADGE_AT = 0, NET_SEQ = 0;
       /* optimistic networking: the guest shows its own action at once, then the host confirms it (ack) or undoes it (reject/correct) */
       const NET_PENDING = new Map(), NET_MOVES = [];
       /* wire format is kept small for many players: facing is 0-3, positions are whole pixels, players are slot numbers
@@ -5010,7 +5021,7 @@
       }
       function netProfile() {
         return { id: NET_LOCAL_ID, name: String(pname()).replace(/[^A-Za-z0-9 _-]/g, "").slice(0, 16) || "Wanderer",
-          cls: CL[P.cls] ? P.cls : "tank", lv: cl(lvlInfo().L | 0, 1, 60), ti: cl(V.title | 0, 0, TITLES.length - 1), spd: cl(spm(), 1, 1.3), nc: [1, 2, 3].includes(V.nc) ? V.nc : 0, pt: petNet(), wq: wqMine() };
+          cls: CL[P.cls] ? P.cls : "tank", lv: cl(lvlInfo().L | 0, 1, 60), ti: cl(V.title | 0, 0, TITLES.length - 1), spd: cl(spm(), 1, 1.3), nc: [1, 2, 3].includes(V.nc) ? V.nc : 0, pt: petNet(), wq: wqNet(), tc: bankUrl() ? WI.tc : "" };
       }
       async function networkAutoJoin() {
         if (NET_AUTO_STARTED || !NET || !P || !V.name) return;
@@ -5115,7 +5126,7 @@
         try { await NET?.directoryLeave(); } catch (error) { netStatus("Could not leave lobby cleanly: " + error.message); }
         NET_SESSION = null;
         NET_ROLE = "";
-        NET_CONNECTED = false; NET_RZ = 0; NET_CLS = ""; NET_NC = -1; NET_PT = null;
+        NET_CONNECTED = false; NET_RZ = 0; NET_CLS = ""; NET_NC = -1; NET_PT = null; NET_WQ = null;
         NET_AUTO_STARTED = false;
         NET_DIRECTORY_STATE = "idle";
         NET_CLIENTS.clear();
@@ -5168,7 +5179,7 @@
             !Number.isInteger(value.ti) || value.ti < 0 || value.ti >= TITLES.length ||
             !Number.isFinite(value.spd) || value.spd < 1 || value.spd > 1.3) return null;
         return { id: value.id, name: value.name.replace(/[^A-Za-z0-9 _-]/g, "").slice(0, 16) || "Wanderer",
-          cls: value.cls, lv: value.lv, ti: value.ti, spd: value.spd, nc: [1, 2, 3].includes(value.nc) ? value.nc : 0, pt: petOk(value.pt) ? value.pt : "", wq: wqOk(value.wq) }; /* nc: cosmetic name colour, optional; wq: wish cosmetics (whitelisted) */
+          cls: value.cls, lv: value.lv, ti: value.ti, spd: value.spd, nc: [1, 2, 3].includes(value.nc) ? value.nc : 0, pt: petOk(value.pt) ? value.pt : "", wq: wqOk(value.wq), tc: tcOk(value.tc) }; /* nc: cosmetic name colour, optional; wq: wish cosmetics (whitelisted); tc: public trade code (online: cosmetics are looked up in the bank by it) */
       }
       /* ---------- fair play: the master audits every slave and every slave audits the master ----------
          Each side keeps its own progress (gold, XP, upgrades, HP) and a LEDGER of why it changed. At random moments the
@@ -5298,6 +5309,7 @@
       const netEntry = (v) => [v.netSlot, v.netClientId, v.name, v.cls, v.lv, Math.max(0, TITLES.indexOf(v.ti)), v.netSpd || 1];
       const netNc = (e) => (e[0] == 0 ? V.nc : (HUBV.find((v) => v.netSlot == e[0] && v.netClientId == e[1]) || {}).nc) || 0; /* name colour rides beside the 7-field entry (c), so older builds still read the roster */
       const netPt = (e) => (e[0] == 0 ? petNet() : (HUBV.find((v) => v.netSlot == e[0] && v.netClientId == e[1]) || {}).pt) || ""; /* the pet rides beside the entry too (t) */
+      const netWq = (e) => { if (e[0] == 0) return [wqNet(), bankUrl() ? WI.tc : ""]; const v = HUBV.find((v) => v.netSlot == e[0] && v.netClientId == e[1]) || {}; return [v.wq || "", v.wtc || ""]; }; /* wish cosmetics + trade code ride beside the entry too (w) */
       function netHostEntry() {
         const host = netProfile();
         return [0, "host-player", host.name, P.cls, host.lv, host.ti, host.spd];
@@ -5307,7 +5319,7 @@
         const p = [netHostEntry()];
         for (const v of HUBV) if (!v.bot && !v.out && NET_CLIENTS.has(v.id) && v.id != to) p.push(netEntry(v));
         p.push(...HUBV.filter((v) => v.id == to).map(netEntry)); /* the newcomer's own entry last */
-        NET.send(to, { type: "r", p, c: p.map(netNc), t: p.map(netPt) });
+        NET.send(to, { type: "r", p, c: p.map(netNc), t: p.map(netPt), w: p.map(netWq) });
         const v = HUBV.find((o) => o.id == to);
         if (v) v.netSeen = null; /* it gets everyone's full position next */
       }
@@ -5371,15 +5383,16 @@
         typeof e[1] == "string" && e[1].length <= 56 && typeof e[2] == "string" && e[2].length <= 16 && CL[e[3]] &&
         Number.isInteger(e[4]) && e[4] >= 1 && e[4] <= 60 && Number.isInteger(e[5]) && e[5] >= 0 && e[5] < TITLES.length &&
         Number.isFinite(e[6]) && e[6] >= 1 && e[6] <= 1.3;
-      function netAddEntry([slot, pid, name, cls, lv, ti, spd], nc, pt) {
+      function netAddEntry([slot, pid, name, cls, lv, ti, spd], nc, pt, wq) {
         nc = [1, 2, 3].includes(nc) ? nc : 0;
+        const q = Array.isArray(wq) ? wqOk(wq[0]) : "", tc = Array.isArray(wq) ? tcOk(wq[1]) : "";
         pt = petOk(pt) ? pt : "";
         if (NET_SLOT_IDS.get(slot) != pid) { NET_SLOT_LAST.delete(slot); NET_SLOT_POS.delete(slot); } /* slot now holds someone else */
         NET_SLOT_IDS.set(slot, pid);
         NET_SLOT_INFO.set(slot, { cls, spd });
         if (pid == NET_LOCAL_ID) return;
         const v = HUBV.find((other) => other.id == pid) || hubJoin(pid, { name: name.replace(/[^A-Za-z0-9 _-]/g, "") || "Wanderer", cls, lv, ti, nc, pt }, 0);
-        if (v) { v.netClientId = pid; v.lv = lv; v.ti = TITLES[ti]; v.netSpd = spd; v.nc = nc || 0; v.pt = pt; }
+        if (v) { v.netClientId = pid; v.lv = lv; v.ti = TITLES[ti]; v.netSpd = spd; v.nc = nc || 0; v.pt = pt; v.wq = q; v.wtc = tc; }
       }
       function netReceive(id, message) {
         if (NET_ROLE == "host") {
@@ -5410,7 +5423,7 @@
             NET_CLIENTS.set(id, profile.id);
             netStatus("Connected players: " + (NET_CLIENTS.size + 1));
             netRoster(id);
-            netTell({ type: "j", e: netEntry(v), c: v.nc || 0, t: v.pt || "" }, id);
+            netTell({ type: "j", e: netEntry(v), c: v.nc || 0, t: v.pt || "", w: [v.wq || "", v.wtc || ""] }, id);
             for (const o of HUBV) if (o.rz && !o.bot && o.netSlot != null) NET.send(id, { type: "rz", e: [o.netSlot, 1] });
             if (S.sc == "arena") NET.send(id, { type: "rz", e: [0, 1] });
           } else if (message.type == "m") {
@@ -5457,6 +5470,9 @@
           } else if (message.type == "nc" && [0, 1, 2, 3].includes(message.c)) { /* a guest changed its name colour: only its own slot (found by connection), at most every 0.5 s */
             const v = HUBV.find((o) => o.id == id && !o.bot), now = performance.now();
             if (v && v.nc != message.c && now - (v.ncAt || -1e9) >= 500) { v.ncAt = now; v.nc = message.c; netTell({ type: "nc", e: [v.netSlot, message.c] }, id); }
+          } else if (message.type == "wq" && (message.q === "" || wqOk(message.q) === message.q) && (message.tc === "" || tcOk(message.tc) === message.tc)) { /* a guest changed its wish cosmetics: only its own slot, at most every 0.5 s, whitelisted (online, receivers still check the bank) */
+            const v = HUBV.find((o) => o.id == id && !o.bot), now = performance.now();
+            if (v && (v.wq != message.q || v.wtc != message.tc) && now - (v.wqAt || -1e9) >= 500) { v.wqAt = now; v.wq = message.q; v.wtc = message.tc; netTell({ type: "wq", e: [v.netSlot, message.q, message.tc] }, id); }
           } else if (message.type == "pt" && petOk(message.c)) { /* a guest changed its pet: only its own slot, at most every 0.5 s */
             const v = HUBV.find((o) => o.id == id && !o.bot), now = performance.now();
             if (v && v.pt != message.c && now - (v.ptAt || -1e9) >= 500) { v.ptAt = now; v.pt = message.c; netTell({ type: "pt", e: [v.netSlot, message.c] }, id); }
@@ -5509,9 +5525,9 @@
             const ids = new Set(roster.map((e) => e[1]));
             for (const v of HUBV.filter((v) => !v.bot && v.netClientId && !ids.has(v.id))) hubLeave(v.id);
             NET_SLOT_IDS.clear(); NET_SLOT_INFO.clear(); NET_SLOT_LAST.clear(); NET_SLOT_POS.clear();
-            message.p.forEach((e, k) => { if (netGoodEntry(e)) netAddEntry(e, Array.isArray(message.c) ? message.c[k] : 0, Array.isArray(message.t) ? message.t[k] : ""); });
+            message.p.forEach((e, k) => { if (netGoodEntry(e)) netAddEntry(e, Array.isArray(message.c) ? message.c[k] : 0, Array.isArray(message.t) ? message.t[k] : "", Array.isArray(message.w) ? message.w[k] : null); });
           } else if (message.type == "j" && netGoodEntry(message.e)) {
-            netAddEntry(message.e, message.c, message.t);
+            netAddEntry(message.e, message.c, message.t, message.w);
           } else if (message.type == "l" && Number.isInteger(message.s)) {
             const pid = NET_SLOT_IDS.get(message.s);
             NET_SLOT_IDS.delete(message.s); NET_SLOT_INFO.delete(message.s); NET_SLOT_LAST.delete(message.s); NET_SLOT_POS.delete(message.s);
@@ -5531,6 +5547,9 @@
           } else if (message.type == "nc" && Array.isArray(message.e) && message.e.length == 2 && [0, 1, 2, 3].includes(message.e[1])) {
             const v = HUBV.find((o) => o.id == NET_SLOT_IDS.get(message.e[0]));
             if (v) v.nc = message.e[1];
+          } else if (message.type == "wq" && Array.isArray(message.e) && message.e.length == 3 && (message.e[1] === "" || wqOk(message.e[1]) === message.e[1]) && (message.e[2] === "" || tcOk(message.e[2]) === message.e[2])) {
+            const v = HUBV.find((o) => o.id == NET_SLOT_IDS.get(message.e[0]));
+            if (v) { v.wq = message.e[1]; v.wtc = message.e[2]; }
           } else if (message.type == "pt" && Array.isArray(message.e) && message.e.length == 2 && petOk(message.e[1])) {
             const v = HUBV.find((o) => o.id == NET_SLOT_IDS.get(message.e[0]));
             if (v) v.pt = message.e[1];
@@ -5657,6 +5676,14 @@
         if (NET && NET.peerIds().length && (NET_ROLE == "host" || NET_CONNECTED) && (V.nc || 0) != NET_NC) { /* name colour changed: peers see it now, not at the next join */
           const was = NET_NC; NET_NC = V.nc || 0;
           if (was >= 0 || NET_NC) { if (NET_ROLE == "host") netTell({ type: "nc", e: [0, NET_NC] }); else NET.send(NET_SESSION?.peerId, { type: "nc", c: NET_NC }); }
+        }
+        wqPush(now); /* online: the bank records a changed outfit first */
+        if (NET && NET.peerIds().length && (NET_ROLE == "host" || NET_CONNECTED)) { /* wish cosmetics changed (bank-confirmed online): peers see it now, at most every 0.5 s */
+          const q = wqNet(), tc = bankUrl() ? WI.tc : "";
+          if (q + "|" + tc != NET_WQ && now - NET_WQ_AT >= 500) {
+            const was = NET_WQ; NET_WQ = q + "|" + tc; NET_WQ_AT = now;
+            if (was !== null || q) { if (NET_ROLE == "host") netTell({ type: "wq", e: [0, q, tc] }); else NET.send(NET_SESSION?.peerId, { type: "wq", q, tc }); }
+          }
         }
         if (NET && NET.peerIds().length && (NET_ROLE == "host" || NET_CONNECTED) && petNet() != NET_PT) { /* pet changed (adopt, feed, follow, rest): peers see it now */
           const was = NET_PT; NET_PT = petNet();
@@ -6459,13 +6486,19 @@
         c.globalAlpha = Math.min(1, (EMO_LIFE - age) * 2.5); /* full strength, not faded with the body */
         c.translate(0, y - age * 6 + Math.sin(age * 7) * 1.5);
         c.scale(pop, pop);
-        c.fillStyle = "rgba(11,18,24,.9)";
+        const bid = S.sc == "hub" ? wqGet(wqOf(p), "b") : "", bb = WBUB[bid]; /* emote bubble cosmetic (hub only) */
+        c.fillStyle = bb ? bb[0] : "rgba(11,18,24,.9)";
         c.beginPath();
         c.arc(0, 0, 13, 0, 6.3);
         c.fill();
-        c.strokeStyle = "#ffd84a";
+        c.strokeStyle = bb ? bb[1] : "#ffd84a";
         c.lineWidth = 1.6;
         c.stroke();
+        if (bb && !SET.low) {
+          const still = BJ_VFX.reduced();
+          if (bid == "b_rune") { c.setLineDash([3, 3]); c.lineDashOffset = still ? 0 : -age * 8; c.beginPath(); c.arc(0, 0, 16, 0, 6.3); c.stroke(); c.setLineDash([]); }
+          else { c.fillStyle = bb[1]; for (let i = 0; i < 2; i++) { const a = (still ? 0 : age * 2) + i * 3.14, x = Math.cos(a) * 16, y = Math.sin(a) * 10 - 4; c.beginPath(); c.arc(x - 1.2, y, 1.5, 0, 6.3); c.arc(x + 1.2, y, 1.5, 0, 6.3); c.moveTo(x - 2.6, y + 0.6); c.lineTo(x, y + 3.4); c.lineTo(x + 2.6, y + 0.6); c.fill(); } }
+        }
         c.font = "16px sans-serif";
         c.textAlign = "center";
         c.textBaseline = "middle";
@@ -11469,40 +11502,193 @@
         c.restore();
       }
       /* the wish cosmetics a player wears: "a_x,h_y,n_z" (yours from V.wq + V.wi, others' from their profile, whitelisted) */
-      const WQ_RE = /^(a_(ember|tide|bloom|aether)|h_(crown|witch|halo)|n_(prism|star))$/;
-      const wqOk = (s) => (typeof s == "string" && s.length <= 40 && s.split(",").every((x) => WQ_RE.test(x)) ? s : "");
-      const wqMine = () => { const q = V.wq && typeof V.wq == "object" ? V.wq : {}; return ["a", "h", "n"].map((k) => (typeof q[k] == "string" && q[k][0] == k && wishOwn(q[k]) ? q[k] : "")).filter(Boolean).join(","); };
+      const WQ_K = ["a", "h", "n", "w", "b"]; /* wearable slots: aura, pet hat, name effect, trail, emote bubble */
+      /* wqOk(s): s if it is a list of catalogue cosmetics, one per wearable slot (the network whitelist), else "" */
+      const wqOk = (s) => {
+        if (typeof s != "string" || !s || s.length > 80) return "";
+        const seen = {};
+        for (const x of s.split(",")) { const k = Object.hasOwn(WCAT, x) && WCAT[x][1]; if (!k || !WQ_K.includes(k) || seen[k]) return ""; seen[k] = 1; }
+        return s;
+      };
+      const wqMine = () => { const q = V.wq && typeof V.wq == "object" ? V.wq : {}; return WQ_K.map((k) => (typeof q[k] == "string" && q[k][0] == k && wishOwn(q[k]) ? q[k] : "")).filter(Boolean).join(","); };
+      const tcOk = (s) => (typeof s == "string" && /^[a-f0-9]{10}$/.test(s) ? s : "");
+      /* Cosmetic ownership proof (Hawk LOW 6). Design: the bank is the only authority online.
+         - You wear something: wqPush() stores it in the bank (/api/wish/wear checks you own it); only after the bank says yes
+           (WI.on) do peers get the small "wq" relay. Offline/LAN: no bank, peers trust the relay (whitelisted) as before.
+         - Others: online (bankUrl), a peer's cosmetics are drawn ONLY from the bank's answer for that peer's public trade code
+           (/api/wish/worn, batched up to 12 codes, cached 60 s). The relayed list is just a hint that triggers a re-check, so a
+           modified client or a lying host can't show cosmetics nobody owns; at most it can point at another real player's code
+           and copy that player's (owned, public) look. No secret ever reaches the browser, no per-frame cost: one Map lookup. */
+      const WQV = new Map(); /* trade code -> { q: bank-confirmed set, at } */
+      let WQ_ASK = new Set(), WQ_ASK_T = 0, WQ_ASK_AT = -1e9;
+      function wqAsk(tc, now) {
+        WQ_ASK.add(tc);
+        if (WQ_ASK_T) return;
+        WQ_ASK_T = setTimeout(wqFetch, Math.max(250, 1000 - (now - WQ_ASK_AT))); /* batched, at most one call a second */
+      }
+      async function wqFetch() {
+        WQ_ASK_T = 0; WQ_ASK_AT = performance.now();
+        const url = bankUrl(), codes = [...WQ_ASK].slice(0, 12);
+        WQ_ASK = new Set([...WQ_ASK].slice(12));
+        if (!url || !codes.length) return;
+        for (const c of codes) { const e = WQV.get(c); if (e) e.at = WQ_ASK_AT; else WQV.set(c, { q: "", at: WQ_ASK_AT }); } /* no re-ask storm while it is out */
+        try {
+          const j = await fetch(url + "/api/wish/worn", { method: "POST", headers: { "content-type": "application/json" }, cache: "no-store", body: JSON.stringify({ codes }) }).then((r) => r.json());
+          wqTake(j, performance.now());
+        } catch (e) {}
+        if (WQ_ASK.size) wqAsk([...WQ_ASK][0], performance.now());
+      }
+      /* wqTake(answer, now): adopt the bank's worn sets (whitelisted again) */
+      function wqTake(j, now) {
+        if (!j || typeof j.on != "object" || !j.on) return;
+        for (const c of Object.keys(j.on).slice(0, 12)) if (tcOk(c)) WQV.set(c, { q: wqOk(j.on[c]), at: now });
+        if (WQV.size > 64) for (const k of WQV.keys()) { if (WQV.size <= 48) break; WQV.delete(k); }
+      }
+      /* wqSee(p): what to draw on another player: offline/LAN the relayed list, online only the bank-confirmed one */
+      function wqSee(p) {
+        if (!p || p.bot) return "";
+        if (!bankUrl()) return p.wq || "";
+        if (!p.wtc) return "";
+        const e = WQV.get(p.wtc), now = performance.now();
+        if (!e || now - e.at > 60e3 || p.wqSeen !== p.wq) { p.wqSeen = p.wq; if (!e || now - e.at > 1000) wqAsk(p.wtc, now); else if (e) e.at = 0; } /* a new relay: look again */
+        return e ? e.q : "";
+      }
+      const wqOf = (p) => (p === P ? wqMine() : wqSee(p));
+      /* wqNet(): the set peers are told about: online only what the bank confirmed, offline what you wear */
+      const wqNet = () => (bankUrl() ? WI.on || "" : wqMine());
+      /* wqPush(now): online, store a changed outfit in the bank (at most once a second) */
+      function wqPush(now) {
+        const q = wqMine();
+        if (!bankUrl() || WI.busy || q === WI.onReq || now - WI.onAt < 1000) return;
+        WI.onReq = q; WI.onAt = now;
+        wiCall("wear", { on: q }).then(([st]) => { if (st == 0 || st == 429) WI.onReq = null; }); /* refused (not owned): wait for the next change */
+      }
       const wqGet = (s, k) => { for (const x of (s || "").split(",")) if (x[0] == k) return x; return ""; };
-      const WAURA = { a_ember: "255,140,60", a_tide: "90,200,255", a_bloom: "255,140,200", a_aether: "255,225,140" };
-      /* wqAura(id): a glowing ring at the feet (local space); motes and wings only at full spec */
+      const WAURA = { a_ember: "255,140,60", a_tide: "90,200,255", a_bloom: "255,140,200", a_aether: "255,225,140", a_nova: "170,140,255" };
+      /* wqGlow(col): a soft round glow, drawn once per colour on a small canvas, then only drawImage (cheap on a potato) */
+      const WQ_GLOW = {};
+      function wqGlow(col) {
+        if (WQ_GLOW[col] !== undefined) return WQ_GLOW[col];
+        let cv = null;
+        try {
+          cv = document.createElement("canvas"); cv.width = 64; cv.height = 64;
+          const g = cv.getContext && cv.getContext("2d");
+          if (g && g.createRadialGradient) { const gr = g.createRadialGradient(32, 32, 0, 32, 32, 32); gr.addColorStop(0, `rgba(${col},.55)`); gr.addColorStop(0.5, `rgba(${col},.18)`); gr.addColorStop(1, `rgba(${col},0)`); g.fillStyle = gr; g.fillRect(0, 0, 64, 64); } else cv = null;
+        } catch (e) { cv = null; }
+        return (WQ_GLOW[col] = cv);
+      }
+      /* wqAura(id): layered aura at the feet (local space). Low spec: the ring only. Reduced motion: still, no motes.
+         Epic: glow + ring + 4 motes. Legendary: + inner ring, 6 motes, soft twinkles (slow, never a strobe), its own shape. */
+      let WQ_C = null; /* the Collection preview borrows the cosmetic painters with its own canvas */
       function wqAura(id) {
-        const col = WAURA[id];
+        const col = WAURA[id], c = WQ_C || MAIN_C;
         if (!col) return;
-        const t = S.tm, still = SET.low || BJ_VFX.reduced(), pu = still ? 0.5 : 0.5 + 0.5 * Math.sin(t * 3);
+        const t = S.tm, lo = SET.low, still = lo || BJ_VFX.reduced(), pu = still ? 0.5 : 0.5 + 0.5 * Math.sin(t * 3), leg = WCAT[id] && WCAT[id][0] == "L";
         c.save();
         c.globalCompositeOperation = "lighter";
-        if (id == "a_aether" && !SET.low) {
+        if (!lo) { const gl = wqGlow(col); if (gl) { c.globalAlpha = 0.7 + 0.3 * pu; c.drawImage(gl, -PR * 2.1, PR + 2 - 13, PR * 4.2, 26); c.globalAlpha = 1; } }
+        if (id == "a_aether" && !lo) {
           c.fillStyle = `rgba(${col},${0.18 + 0.1 * pu})`;
           for (const s of [-1, 1]) { c.beginPath(); c.moveTo(s * 4, -4); c.quadraticCurveTo(s * 30, -26 - pu * 4, s * 26, 2); c.quadraticCurveTo(s * 16, -2, s * 4, 4); c.fill(); }
+          c.strokeStyle = `rgba(255,250,220,${0.25 + 0.1 * pu})`; c.lineWidth = 1;
+          for (const s of [-1, 1]) { c.beginPath(); c.moveTo(s * 5, -2); c.quadraticCurveTo(s * 24, -20 - pu * 3, s * 22, 0); c.stroke(); }
+        }
+        if (id == "a_nova" && !lo) { /* Runic Nova: a turning rune circle with 6 glyph ticks and a slow breathing outer ring */
+          const rot = still ? 0 : t * 0.9;
+          c.strokeStyle = `rgba(${col},${0.5 + 0.2 * pu})`; c.lineWidth = 1.4;
+          c.setLineDash([5, 4]); c.lineDashOffset = still ? 0 : -t * 10;
+          c.beginPath(); c.ellipse(0, PR + 2, PR * 2, 8, 0, 0, 6.3); c.stroke(); c.setLineDash([]);
+          c.fillStyle = "rgba(230,220,255,.85)";
+          for (let i = 0; i < 6; i++) { const a = rot + i * 1.047; c.fillRect(Math.cos(a) * PR * 2 - 1.5, PR + 2 + Math.sin(a) * 8 - 3, 3, 6); }
+          if (!still) { const u = (t * 0.5) % 1; c.strokeStyle = `rgba(${col},${0.35 * (1 - u)})`; c.beginPath(); c.ellipse(0, PR + 2, PR * (1.4 + u * 1.4), 6 + u * 5, 0, 0, 6.3); c.stroke(); }
         }
         c.strokeStyle = `rgba(${col},${0.35 + 0.25 * pu})`;
         c.lineWidth = 2.5;
         c.beginPath(); c.ellipse(0, PR + 2, PR * 1.5 + pu * 2, 6 + pu, 0, 0, 6.3); c.stroke();
-        if (!still) for (let i = 0; i < 4; i++) { const a = t * 1.5 + i * 1.571, u = (t * 0.8 + i * 0.25) % 1; c.fillStyle = `rgba(${col},${0.8 * (1 - u)})`; c.fillRect(Math.cos(a) * PR * 1.4 - 1, PR + 2 + Math.sin(a) * 5 - u * 22, 2.2, 2.2); }
+        if (leg && !lo) { c.strokeStyle = `rgba(255,245,210,${0.3 + 0.15 * pu})`; c.lineWidth = 1; c.beginPath(); c.ellipse(0, PR + 2, PR * 1.1, 4, 0, 0, 6.3); c.stroke(); }
+        if (!still) {
+          const n = leg ? 6 : 4;
+          for (let i = 0; i < n; i++) { const a = t * 1.5 + i * (6.283 / n), u = (t * 0.8 + i / n) % 1; c.fillStyle = `rgba(${col},${0.8 * (1 - u)})`; c.fillRect(Math.cos(a) * PR * 1.4 - 1, PR + 2 + Math.sin(a) * 5 - u * 22, 2.2, 2.2); }
+          if (leg) for (let i = 0; i < 3; i++) { const k = 0.5 + 0.5 * Math.sin(t * 2.2 + i * 2.1), x = Math.cos(i * 2.1 + 0.6) * PR * 1.7, y = PR - 6 - i * 5; c.fillStyle = `rgba(255,250,230,${0.5 * k})`; c.fillRect(x - 0.5, y - 2.5, 1, 5); c.fillRect(x - 2.5, y - 0.5, 5, 1); }
+        }
         c.restore();
       }
-      /* wqName(s, col): the nameplate colour with a wish name effect */
-      const wqName = (s, col) => { const n = wqGet(s, "n"); return n == "n_prism" ? `hsl(${((SET.low || BJ_VFX.reduced() ? 0 : S.tm * 90) + 200) % 360},90%,72%)` : n == "n_star" ? (BJ_VFX.reduced() || Math.sin(S.tm * 5) > 0 ? "#ffb347" : "#fff0a0") : col; };
-      /* wqHat(id, k): a tiny hat on the pet's head (pet space) */
+      /* wqWearFx(): a short burst ring around you when you put something on (skipped in Low spec / reduced motion) */
+      function wqWearFx() {
+        if (!WI.wearAt || SET.low || BJ_VFX.reduced()) return;
+        const k = (S.tm - WI.wearAt) / 0.6;
+        if (k < 0 || k > 1) { WI.wearAt = 0; return; }
+        c.save(); c.globalCompositeOperation = "lighter";
+        c.strokeStyle = `rgba(${WI.wearCol || "255,230,160"},${0.8 * (1 - k)})`; c.lineWidth = 3 * (1 - k) + 1;
+        c.beginPath(); c.ellipse(0, PR + 2, PR * (1 + k * 2.5), 6 + k * 10, 0, 0, 6.3); c.stroke();
+        c.beginPath(); c.arc(0, -4, PR * (0.6 + k * 1.6), 0, 6.3); c.stroke();
+        c.restore();
+      }
+      /* wqTrail(p, id, moving): a short fading trail behind a moving player (hub only). A fixed 8-point ring buffer per player,
+         no allocations per frame. Nothing at all in Low spec or reduced motion. */
+      const WTRAIL = { w_leaf: "120,220,120", w_spark: "170,220,255", w_comet: "255,210,120" };
+      function wqTrail(p, id, moving) {
+        if (!WTRAIL[id] || SET.low || BJ_VFX.reduced()) return;
+        const b = p.wtr || (p.wtr = new Float32Array(24)), t = S.tm;
+        if (moving && t - (p.wtt || 0) >= 0.06) { p.wtt = t; const i = ((p.wti || 0) % 8) * 3; b[i] = p.x; b[i + 1] = p.y; b[i + 2] = t; p.wti = ((p.wti || 0) + 1) % 8; }
+        const col = WTRAIL[id];
+        c.save(); c.globalCompositeOperation = "lighter";
+        for (let j = 0; j < 8; j++) {
+          const i = j * 3, age = t - b[i + 2];
+          if (!b[i + 2] || age > 0.5 || age < 0) continue;
+          const k = 1 - age / 0.5, x = b[i] - p.x, y = b[i + 1] - p.y + PR;
+          if (id == "w_leaf") { c.fillStyle = `rgba(${col},${0.6 * k})`; c.beginPath(); c.ellipse(x + Math.sin(b[i + 2] * 9) * 3, y - (1 - k) * 6, 3, 1.5, b[i + 2] * 5, 0, 6.3); c.fill(); }
+          else if (id == "w_spark") { const r = 1 + 2.5 * k; c.fillStyle = `rgba(${col},${0.8 * k})`; c.fillRect(x - r, y - 0.6, r * 2, 1.2); c.fillRect(x - 0.6, y - r, 1.2, r * 2); }
+          else { c.fillStyle = `rgba(${col},${0.45 * k})`; c.beginPath(); c.arc(x, y - 3, 2 + 5 * k, 0, 6.3); c.fill(); c.fillStyle = `rgba(255,250,230,${0.7 * k})`; c.fillRect(x - 1, y - 4, 2, 2); }
+        }
+        c.restore();
+      }
+      /* wqName(s, col): the nameplate colour with a wish name effect (Starfire: a slow warm shimmer, never a flash) */
+      const wqName = (s, col) => { const n = wqGet(s, "n"); return n == "n_prism" ? `hsl(${((SET.low || BJ_VFX.reduced() ? 0 : S.tm * 90) + 200) % 360},90%,72%)` : n == "n_star" ? (BJ_VFX.reduced() || Math.sin(S.tm * 2.5) > 0 ? "#ffb347" : "#ffd88a") : col; };
+      /* emote bubble cosmetics: [fill, edge] */
+      const WBUB = { b_heart: ["rgba(64,16,44,.92)", "#ff8ac8"], b_rune: ["rgba(14,12,42,.92)", "#9fe8ff"] };
+      /* wqHat(id, k): a tiny hat on the pet's head (pet space), with a little highlight */
       function wqHat(id, k) {
         if (!id) return;
+        const c = WQ_C || MAIN_C;
         const [hx, hy] = { fox: [7, -8], wolf: [8, -9], owl: [0, -8.5], sprite: [0, -4.5] }[k] || [0, -8];
         c.save();
         c.translate(hx, hy);
-        if (id == "h_crown") { c.fillStyle = "#ffd84a"; c.beginPath(); c.moveTo(-4, 0); c.lineTo(-4, -4); c.lineTo(-2, -2); c.lineTo(0, -5); c.lineTo(2, -2); c.lineTo(4, -4); c.lineTo(4, 0); c.fill(); }
-        else if (id == "h_witch") { c.fillStyle = "#5b3a8a"; c.beginPath(); c.ellipse(0, 0, 5.5, 1.4, 0, 0, 6.3); c.fill(); c.beginPath(); c.moveTo(-3, 0); c.lineTo(1, -8); c.lineTo(3, 0); c.fill(); }
-        else if (id == "h_halo") { c.strokeStyle = "#fff3c4"; c.lineWidth = 1.4; c.beginPath(); c.ellipse(0, -3, 4.5, 1.5, 0, 0, 6.3); c.stroke(); }
+        if (id == "h_crown") { c.fillStyle = "#ffd84a"; c.beginPath(); c.moveTo(-4, 0); c.lineTo(-4, -4); c.lineTo(-2, -2); c.lineTo(0, -5); c.lineTo(2, -2); c.lineTo(4, -4); c.lineTo(4, 0); c.fill(); c.fillStyle = "#ff5a7a"; c.fillRect(-0.8, -2, 1.6, 1.6); c.fillStyle = "rgba(255,255,255,.7)"; c.fillRect(-3.5, -1, 7, 0.8); }
+        else if (id == "h_witch") { c.fillStyle = "#5b3a8a"; c.beginPath(); c.ellipse(0, 0, 5.5, 1.4, 0, 0, 6.3); c.fill(); c.beginPath(); c.moveTo(-3, 0); c.lineTo(1, -8); c.lineTo(3, 0); c.fill(); c.fillStyle = "#c9a2ff"; c.fillRect(-2.6, -1.6, 5.4, 1); }
+        else if (id == "h_halo") { if (!SET.low) { c.strokeStyle = "rgba(255,243,196,.3)"; c.lineWidth = 3; c.beginPath(); c.ellipse(0, -3, 4.5, 1.5, 0, 0, 6.3); c.stroke(); } c.strokeStyle = "#fff3c4"; c.lineWidth = 1.4; c.beginPath(); c.ellipse(0, -3, 4.5, 1.5, 0, 0, 6.3); c.stroke(); }
         c.restore();
+      }
+      /* wqMannequin(): the Collection preview: a still figure wearing your outfit (aura, trail, pet hat, name, bubble).
+         Drawn into its own small canvas by borrowing the game context; ~20 fps while the tab is open, one frame when calm. */
+      function wqMannequin() {
+        const cv = $("wmq"), g = cv && cv.getContext && cv.getContext("2d");
+        if (!g || !P) return;
+        let last = 0;
+        const fr = (ts) => {
+          if (cv.isConnected === false) return;
+          if (ts - last >= 50 || wCalm()) {
+            last = ts;
+            const c = g, q = wqMine();
+            g.clearRect(0, 0, cv.width, cv.height);
+            try {
+              WQ_C = g; c.save(); c.translate(cv.width / 2, cv.height / 2 + 6);
+              wqAura(wqGet(q, "a"));
+              const tr = wqGet(q, "w");
+              if (tr && WTRAIL[tr] && !wCalm()) { c.save(); c.globalCompositeOperation = "lighter"; const col = WTRAIL[tr]; for (let i = 1; i < 6; i++) { const k = 1 - i / 6; c.fillStyle = `rgba(${col},${0.6 * k})`; c.beginPath(); c.arc(-i * 7, PR - 2 + Math.sin(S.tm * 4 + i) * 1.5, 1.5 + 3 * k, 0, 6.3); c.fill(); } c.restore(); }
+              c.fillStyle = SKC[P.cls] || "#c9a2ff"; c.beginPath(); c.arc(0, 0, PR, 0, 6.3); c.fill();
+              c.fillStyle = "rgba(255,255,255,.25)"; c.beginPath(); c.arc(-3, -4, PR * 0.4, 0, 6.3); c.fill();
+              c.save(); c.translate(PR + 12, 8); c.fillStyle = "#e8d8ff"; c.beginPath(); c.arc(0, 0, 5, 0, 6.3); c.fill(); wqHat(wqGet(q, "h"), "sprite"); c.restore();
+              const bb = WBUB[wqGet(q, "b")] || ["rgba(11,18,24,.9)", "#ffd84a"];
+              c.fillStyle = bb[0]; c.strokeStyle = bb[1]; c.lineWidth = 1.6; c.beginPath(); c.arc(PR + 16, -PR - 16, 10, 0, 6.3); c.fill(); c.stroke();
+              c.font = "12px sans-serif"; c.textAlign = "center"; c.textBaseline = "middle"; c.fillStyle = "#fff"; c.fillText("👋", PR + 16, -PR - 15);
+              c.font = "bold 12px sans-serif"; c.fillStyle = wqName(q, "#ffd84a"); c.fillText(String(pname()).slice(0, 16), 0, -PR - 30);
+              c.restore();
+            } catch (e) {} finally { WQ_C = null; }
+          }
+          if (!wCalm() && !$("dlg").hidden && CUR_DLG == "wish" && WI.tab == "coll") requestAnimationFrame(fr);
+        };
+        fr(0);
       }
       function drawPlayer(p, dt) {
         petDraw(p, dt); /* the companion walks behind you */
@@ -11533,7 +11719,7 @@
         c.beginPath();
         c.ellipse(-5, PR + 3, PR * 1.15, 4.2, -0.12, 0, 6.3);
         c.fill();
-        if (S.sc == "hub") { const wq = p === P ? wqMine() : p.wq; if (wq) wqAura(wqGet(wq, "a")); }
+        if (S.sc == "hub") { const wq = wqOf(p); if (wq) { wqTrail(p, wqGet(wq, "w"), moving && !da); wqAura(wqGet(wq, "a")); } if (p === P) wqWearFx(); }
         c.fillStyle = "rgba(40,25,20,.28)";
         c.beginPath();
         c.ellipse(0, PR + 2, PR * 0.6, 2.6, 0, 0, 6.3);
@@ -11637,7 +11823,7 @@
         if (p.name && p !== P && !p.ally) {
           /* hub visitor: just a name tag, no health bar (a party member gets a gold marker) */
           if (inParty(p)) { c.fillStyle = "#ffd84a"; c.beginPath(); c.moveTo(0, -PR - 30); c.lineTo(4, -PR - 25); c.lineTo(0, -PR - 20); c.lineTo(-4, -PR - 25); c.fill(); }
-          nameplate(p.lv, p.name, p.ti, 1 + (p.lvp || 0) * 1.2, p.bot ? "#63a8ff" : wqName(p.wq, "#dfe8f0"), p.badge, p.nc);
+          nameplate(p.lv, p.name, p.ti, 1 + (p.lvp || 0) * 1.2, p.bot ? "#63a8ff" : wqName(wqSee(p), "#dfe8f0"), p.badge, p.nc);
           drawEmote(p, -PR - 22);
           if (!sayBubble(p, -PR - 6) && (p.talk || p.typing)) {
             /* chat bubble with three bouncing dots */

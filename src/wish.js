@@ -19,14 +19,16 @@ const WISH = {
   tokMax: 999, sdMax: 99999,
   dayCap: 40, /* most tokens earned per UTC day from everything */
   src: { daily: 3, cipher: 4, garden: 3, raid: 3 }, /* per-source day caps (daily: the gift size, once a day) */
-  /* item pools by tier: [id, kind, name, payload]; kind m = materials (never a dupe), sd = stardust, t title, a aura, h pet hat, n name effect */
+  /* item pools by tier: [id, kind, name, payload]; kind m = materials (never a dupe), sd = stardust, t title, a aura, h pet hat, n name effect, w trail, b emote bubble */
   pool: {
     C: [["c_ore", "m", "Ore bundle", { ore: 4 }], ["c_herb", "m", "Moonleaf bundle", { herb: 4 }], ["c_dust", "m", "Rune dust", { dust: 4 }], ["c_echo", "m", "Skycrystal", { echo: 1 }], ["c_sd", "sd", "Stardust pouch", 5]],
     R: [["t_lucky", "t", "Title: Lucky Star"], ["t_dream", "t", "Title: Dreamwalker"], ["t_moth", "t", "Title: Lantern Moth"], ["t_rune", "t", "Title: Runeborn"],
-      ["r_shard", "m", "Shard cache", { shard: 2 }], ["r_bark", "m", "Bark cache", { bark: 2 }], ["r_echo", "m", "Crystal cluster", { echo: 3 }]],
+      ["r_shard", "m", "Shard cache", { shard: 2 }], ["r_bark", "m", "Bark cache", { bark: 2 }], ["r_echo", "m", "Crystal cluster", { echo: 3 }],
+      ["w_leaf", "w", "Trail: Leaf Drift"]],
     E: [["a_ember", "a", "Aura: Ember Ring"], ["a_tide", "a", "Aura: Tidal Halo"], ["a_bloom", "a", "Aura: Petal Bloom"],
-      ["h_crown", "h", "Pet hat: Tiny Crown"], ["h_witch", "h", "Pet hat: Witch Hat"], ["h_halo", "h", "Pet hat: Halo"]],
-    L: [["n_prism", "n", "Name: Prism"], ["n_star", "n", "Name: Starfire"], ["a_aether", "a", "Aura: Aether Wings"]],
+      ["h_crown", "h", "Pet hat: Tiny Crown"], ["h_witch", "h", "Pet hat: Witch Hat"], ["h_halo", "h", "Pet hat: Halo"],
+      ["w_spark", "w", "Trail: Starlit Steps"], ["b_heart", "b", "Bubble: Heart Puff"], ["b_rune", "b", "Bubble: Rune Glyph"]],
+    L: [["n_prism", "n", "Name: Prism"], ["n_star", "n", "Name: Starfire"], ["a_aether", "a", "Aura: Aether Wings"], ["a_nova", "a", "Aura: Runic Nova"], ["w_comet", "w", "Trail: Comet Tail"]],
   },
   /* Fortune Wheel: 2 spins a day. [weight, prize]; prize { tok?, sd?, mat? } */
   wheel: { day: 2, seg: [[22, { tok: 1 }], [16, { sd: 10 }], [18, { mat: { ore: 6 } }], [12, { tok: 2 }], [18, { mat: { herb: 6 } }], [8, { tok: 3 }], [5, { sd: 40 }], [1, { tok: 10 }]] },
@@ -38,7 +40,20 @@ const WISH = {
 const TIERS = ["C", "R", "E", "L"];
 const CAT = {}; /* id -> [tier, kind, name, payload] */
 for (const t of TIERS) for (const [id, k, n, p] of WISH.pool[t]) CAT[id] = [t, k, n, p];
-const COSM = (id) => Object.hasOwn(CAT, id) && "tahn".includes(CAT[id][1]);
+const COSM = (id) => Object.hasOwn(CAT, id) && "tahnwb".includes(CAT[id][1]);
+const WEAR = "ahnwb"; /* wearable slots (titles go through the title list) */
+/* wornOk(s, own): the canonical worn set "a_x,h_y,..." if every item is a catalogue cosmetic of a wearable slot, one per slot,
+   and owned (own[id] === 1); else null. "" = nothing worn. */
+function wornOk(s, own) {
+  if (s === "") return "";
+  if (typeof s != "string" || s.length > 80) return null;
+  const by = {};
+  for (const id of s.split(",")) {
+    if (!COSM(id) || !WEAR.includes(CAT[id][1]) || by[CAT[id][1]] || !own || own[id] !== 1) return null;
+    by[CAT[id][1]] = id;
+  }
+  return [...WEAR].map((k) => by[k]).filter(Boolean).join(",");
+}
 const utcDay = (t) => Math.floor(t / 86400e3);
 const cnum = (v, hi) => (Number.isInteger(v) && v >= 0 ? Math.min(v, hi) : 0);
 
@@ -53,7 +68,7 @@ function rollTier(w, rng) {
   return tier;
 }
 
-/* createWish({ acct(tok) -> [id, a] | null, now, persist, onEntry, matMax, rng? }) */
+/* createWish({ acct(tok) -> [id, a] | null, byCode(code) -> a | null, now, persist, onEntry, matMax, rng? }) */
 function createWish(o) {
   const rng = typeof o.rng == "function" ? o.rng : (n) => randomInt(n);
   const digs = new Map(), byAcct = new Map(), ipHits = new Map();
@@ -69,7 +84,7 @@ function createWish(o) {
     if (!w.dy || w.dy.d !== d) w.dy = { d, e: 0, s: {} };
     return w;
   };
-  const view = (a, w) => ({ t: w.t, sd: w.sd, p10: w.p10, p60: w.p60, n: w.n, own: Object.keys(w.own).filter(COSM), day: { e: w.dy.e, s: { ...w.dy.s }, cap: WISH.dayCap }, mat: { ...a.mat } });
+  const view = (a, w) => ({ on: wornOk(w.on, w.own) || "", t: w.t, sd: w.sd, p10: w.p10, p60: w.p60, n: w.n, own: Object.keys(w.own).filter(COSM), day: { e: w.dy.e, s: { ...w.dy.s }, cap: WISH.dayCap }, mat: { ...a.mat } });
   /* give(a, w, prize, src): apply a prize; tokens obey the day caps. Out: what was really given */
   function give(a, w, p, src) {
     const got = {};
@@ -133,6 +148,13 @@ function createWish(o) {
       track("shop");
       return [200, { id, ...view(a, w) }];
     },
+    /* wear: the bank records what you wear (only owned cosmetics, one per slot). Other players read it back with "worn". */
+    wear(a, w, b) {
+      const on = wornOk(b.on, w.own);
+      if (on === null) return [403, { error: "You can only wear cosmetics you own.", ...view(a, w) }];
+      w.on = on;
+      return [200, view(a, w)];
+    },
     wheel(a, w) {
       const u = cnum(w.dy.s.wheel, 99);
       if (u >= WISH.wheel.day) return [403, { error: "The wheel rests until tomorrow.", ...view(a, w) }];
@@ -187,9 +209,23 @@ function createWish(o) {
     },
   };
 
+  /* worn({codes}): the bank-confirmed worn sets of up to 12 public trade codes (the players in your hub).
+     Cosmetic ownership proof (Hawk LOW 6): online, every player's client draws another player's cosmetics only from this answer,
+     never from what a peer or the host relays (the relay only says "look again"). The worn set is public, read-only, and
+     re-checked against ownership here, so a modified client can't show anything its account doesn't own. No token needed:
+     trade codes are public already. Read-only, so it is not persisted. */
+  function worn(b) {
+    const codes = Array.isArray(b.codes) ? b.codes.slice(0, 12) : [], on = {};
+    for (const c of codes) {
+      if (typeof c != "string" || !/^[a-f0-9]{10}$/.test(c) || Object.hasOwn(on, c)) continue;
+      const a = o.byCode ? o.byCode(c) : null, w = a && a.wi;
+      on[c] = w && typeof w == "object" ? wornOk(w.on, w.own) || "" : "";
+    }
+    return [200, { on }];
+  }
   /* call(op, body, ip): the route; per-IP limit 120 calls a minute */
   function call(op, body, ip) {
-    if (!Object.hasOwn(ops, op)) return [404, { error: "Unknown." }];
+    if (op != "worn" && !Object.hasOwn(ops, op)) return [404, { error: "Unknown." }];
     const t = o.now(), b = body && typeof body == "object" ? body : {};
     ip = ipKey(ip);
     const hits = (ipHits.get(ip) || []).filter((x) => t - x < 60e3);
@@ -199,6 +235,7 @@ function createWish(o) {
       for (const [k, v] of ipHits) if (t - v[v.length - 1] > 60e3) ipHits.delete(k);
       for (const k of ipHits.keys()) { if (ipHits.size <= 20000) break; ipHits.delete(k); } /* still full: drop the oldest (hard cap) */
     }
+    if (op == "worn") return worn(b);
     const w = who(b, t);
     if (!w) return [403, { error: "No online account." }];
     const r = ops[op](w[1], w[2], b, t, w[0]);
@@ -208,4 +245,4 @@ function createWish(o) {
   return { call, grant, _digs: digs };
 }
 
-module.exports = { createWish, rollTier, WISH, CAT };
+module.exports = { createWish, rollTier, wornOk, WISH, CAT };

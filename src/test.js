@@ -240,7 +240,7 @@ T.togglePause();ok(T.isPaused(),'P toggles pause on');T.togglePause();ok(!T.isPa
 T.devHub();ctx.document.getElementById('dlg').hidden=true;for(let i=0;i<120;i++)T.step(1/60);
 ok(T.hubCount()>=3&&T.hubCount()<=12,'hub: bots fill to 3-12 people (you + 2-11 bots)');
 ok(T.HUBV().every(v=>v.bot&&v.name&&v.lv>=1&&v.ti),'hub: bots have names, levels and titles');
-ok(SRC.includes('p.bot ? "#63a8ff" : wqName(p.wq, "#dfe8f0")'),'hub: bot names are blue and real player names stay white');
+ok(SRC.includes('p.bot ? "#63a8ff" : wqName(wqSee(p), "#dfe8f0")'),'hub: bot names are blue and real player names stay white');
 ok(new Set(T.HUBV().map(v=>v.name)).size==T.HUBV().length,'hub: bot names are unique');
 ok(/^[A-Za-z0-9_]{2,15}$/.test(T.botName()),'hub: bot names look like player handles');
 let lv=[];for(let i=0;i<400;i++){const v={};T.botLook(v);lv.push(v.lv);}
@@ -492,12 +492,24 @@ V.gm=1e6;ok(T.gLv()===10,'gathering: mastery caps at level 10');V.gn={};V.gday.n
  R('wiAdopt({t:"999",sd:-5})');ok(V0.wi.t===7,'wish: a malformed answer is ignored');
  ok(R('wqOk("a_ember,h_crown,n_prism")')=='a_ember,h_crown,n_prism'&&R('wqOk("a_ember,<script>")')===''&&R('wqOk("x".repeat(60))')==='','wish: worn cosmetics are whitelisted on the network');
  V0.wq={a:'a_ember',h:'h_crown',n:'n_star'};ok(R('wqMine()')=='a_ember','wish: only owned cosmetics are worn');
+ ok(R('wqOk("a_nova,w_comet,b_rune")')=='a_nova,w_comet,b_rune'&&R('wqOk("a_ember,a_tide")')===''&&R('wqOk("t_lucky")')===''&&R('wqOk("c_ore")')===''&&R('wqOk("__proto__")')===''&&R('wqOk("w_bogus")')==='','wish: the network whitelist is the catalogue (one item per slot, no titles or materials)');
+ {const u0=R('NET_CONFIG.signalingUrl');R('NET_CONFIG.signalingUrl="https://bank.test"');
+  R('globalThis.__p={wq:"a_aether,n_prism",wtc:"abcdef0123"}');ok(R('wqSee(__p)')==='','wish online: a relayed cosmetic is not drawn until the bank confirms it');
+  R('wqTake({on:{abcdef0123:"a_ember"}},performance.now());__p.wqSeen=__p.wq');ok(R('wqSee(__p)')=='a_ember','wish online: only the bank-confirmed set is drawn (forged/unowned relay ignored)');
+  R('wqTake({on:{abcdef0123:"a_ember,<script>"}},performance.now())');ok(R('wqSee(__p)')==='','wish online: a malformed bank answer is whitelisted away');
+  ok(R('wqSee({wq:"a_aether"})')==='','wish online: no trade code, no cosmetics');
+  R('WI.on="a_tide"');ok(R('wqNet()')=='a_tide','wish online: peers are told only the bank-confirmed outfit');
+  R('NET_CONFIG.signalingUrl='+JSON.stringify(u0)+';WI.on=null');ok(R('wqSee({wq:"a_tide",wtc:""})')=='a_tide','wish offline/LAN: the relayed (whitelisted) set is trusted');}
+ R('wiAdopt({t:7,sd:3,p10:2,p60:5,n:9,own:["a_ember"],on:"a_ember,a_tide"})');ok(R('WI.on')==='','wish: a malformed bank outfit is not adopted');
  dl.hidden=false;let th=0;try{R('CUR_DLG="wish";wishUI("wish");wishUI("shop");wishUI("coll");wheelUI();reelsUI();digUI()');}catch(e){th=e;}ok(!th&&dp.innerHTML.includes('Treasure Dig'),'wish: shrine, shop, collection, wheel, reels and dig render'+(th?' '+th:''));
  R('CUR_DLG="wish";wishUI("wish")');ok(dp.innerHTML.includes('0.6%')&&dp.innerHTML.includes('5.1%')&&dp.innerHTML.includes('25.0%')&&dp.innerHTML.includes('69.3%'),'wish: the banner shows the exact odds');
  const res='[{id:"n_prism",tier:"L",nm:"Name: Prism",new:true,got:{}},{id:"c_ore",tier:"C",nm:"Ore bundle",got:{mat:{ore:4}}}]';
  for(const [lo,lab] of [[1,'Low spec'],[0,'full']]){th=0;try{R('SET.low='+lo+';WI.rev=null;wishReveal('+res+');wishSkip();');}catch(e){th=e;}ok(!th&&R('WI.rev&&WI.rev.done'),'wish: the reveal runs and skips without errors ('+lab+')'+(th?' '+th:''));}
  R('SET.low=0;wishCont();closeDlg()');ok(R('WI.rev===null&&WI.spin===0'),'wish: closing the window drops the reveal');
  th=0;try{R('SET.low=0;wishShrineFx(1);wqAura("a_aether");wqHat("h_witch","owl");wqName("n_prism","#fff");SET.low=1;wishShrineFx(2);wqAura("a_tide");SET.low=0');}catch(e){th=e;}ok(!th,'wish: shrine pillar, auras, hats and name effects draw (both specs)'+(th?' '+th:''));
+ for(const [lo,lab] of [[1,'Low spec'],[0,'full']]){th=0;try{R('SET.low='+lo+';{const q={x:10,y:10,wq:"b_heart",emo:{e:"👋",at:S.tm}};for(const id of ["a_nova","a_aether","a_bloom"])wqAura(id);for(const id of ["w_leaf","w_spark","w_comet"]){wqTrail(q,id,true);q.x+=5;wqTrail(q,id,true);}WI.wearAt=S.tm;wqWearFx();drawEmote(q,-30);q.wq="b_rune";drawEmote(q,-30);wqHat("h_crown","fox");wqHat("h_halo","wolf");}SET.low=0');}catch(e){th=e;}ok(!th,'wish: new auras, trails, bubbles and the wear burst draw ('+lab+')'+(th?' '+th:''));}
+ R('SET.low=1');ok(R('(()=>{const q={x:0,y:0};wqTrail(q,"w_comet",true);return !q.wtr})()'),'wish: Low spec adds no trail work');R('SET.low=0');
+ th=0;try{R('V.wi.own.a_nova=1;V.wq={a:"a_nova"};CUR_DLG="wish";wishUI("coll");wqMannequin();wishWear("a_nova",null);wishWear("a_nova",null)');}catch(e){th=e;}ok(!th&&dp.innerHTML.includes('id="wmq"'),'wish: the Collection shows the outfit preview and wearing works'+(th?' '+th:''));
  ok(R('nearby.toString().includes("WISHN")&&typeof WHEELN=="object"&&typeof REELN=="object"&&typeof DIGN=="object"'),'wish: the shrine and 3 game spots stand in the hub');
  ok(R('Object.values(EMOTES).includes("🌠")'),'wish: the 🌠 wish beam is a network-whitelisted emote');
  Object.assign(V0,keep);dl.hidden=true;}
@@ -541,6 +553,10 @@ ok(fakeBroadcast.some(x=>x.msg.type=='r'&&x.msg.p.length==2),'network hub: host 
 T.netReceive('peer-one',{type:'m',x:'far',y:0,f:3,d:0,s:1});ok(remote.netX==remoteX,'network hub: rejects malformed movement');
 T.netReceive('peer-one',{type:'rz',on:1});ok(remote.rz===1,'network hub: a guest in a raid is hidden in the hub');T.netReceive('peer-one',{type:'rz',on:'x'});ok(remote.rz===1,'network hub: rejects a malformed raid flag');T.netReceive('peer-one',{type:'rz',on:0});ok(remote.rz===0,'network hub: a guest back from a raid shows again');
 {const nc0=netClock;T.netReceive('peer-one',{type:'nc',c:2});ok(remote.nc===2,'name colour: a guest changes its own colour live');T.netReceive('peer-one',{type:'nc',c:3});ok(remote.nc===2,'name colour: changes are rate-limited (0.5 s)');netClock+=600;for(const c of [9,'3',-1,1.5,null])T.netReceive('peer-one',{type:'nc',c});ok(remote.nc===2,'name colour: rejects colours outside 0-3');T.netReceive('peer-one',{type:'nc',c:3,e:[0,1]});ok(remote.nc===3&&T.HUBV().filter(v=>v.nc===1&&v!==remote).length==0,'name colour: a guest can only change its own slot');netClock=nc0;}
+{const c0=netClock;netClock+=1000;fakeBroadcast=[];T.netReceive('peer-one',{type:'wq',q:'a_ember,w_leaf',tc:''});ok(remote.wq==='a_ember,w_leaf','wish cosmetics: a guest changes its outfit live and the host relays it for its own slot');
+ T.netReceive('peer-one',{type:'wq',q:'a_tide',tc:''});ok(remote.wq==='a_ember,w_leaf','wish cosmetics: changes are rate-limited (0.5 s)');netClock+=600;
+ for(const q of ['a_ember,a_tide','<img>','t_lucky','c_ore',5,null])T.netReceive('peer-one',{type:'wq',q,tc:''});T.netReceive('peer-one',{type:'wq',q:'a_tide',tc:'XYZ'});ok(remote.wq==='a_ember,w_leaf','wish cosmetics: off-catalogue lists and bad trade codes are rejected');
+ T.netReceive('peer-one',{type:'wq',q:'a_tide',tc:'abcdef0123',e:[0,'a_nova','']});ok(remote.wq==='a_tide'&&remote.wtc==='abcdef0123'&&T.HUBV().filter(v=>v!==remote&&v.wq==='a_nova').length==0,'wish cosmetics: a guest can only change its own slot');netClock=c0;}
 netClock+=100;fakeBroadcast=[];T.netReceive('peer-one',{type:'m',x:remoteX+10,y:remote.netY,f:3,d:0,s:2});
 ok(Math.abs(remote.netX-(remoteX+10))<1e-6&&!fakeBroadcast.some(x=>x.msg.type=='c'),'network hub: host accepts a walkable guest step without correcting');
 netClock+=100;fakeBroadcast=[];const beforeX=remote.netX;T.netReceive('peer-one',{type:'m',x:beforeX+400,y:remote.netY,f:3,d:0,s:3});
@@ -1180,6 +1196,15 @@ function wishTests(){
  const p1=b2.wish('pull',{tok:C,n:1},IP)[1].res[0],p2=b2.wish('pull',{tok:C,n:1},IP)[1];
  ok(p1.tier=='R'&&p1.new&&p2.res[0].dupe&&p2.res[0].got.sd==WISH.dupe.R&&p2.sd==WISH.dupe.R,'wish: a duplicate cosmetic turns into '+WISH.dupe.R+' Stardust');
  ok(ev.some(e=>e[0]=='wish'),'wish: analytics told about accepted wish actions');
+ {/* ownership proof: the bank records what you wear (owned only) and answers others by public trade code */
+  const {createWish}=require('./wish.js'),ac={mat:{},wi:{own:{a_nova:1,w_comet:1,t_lucky:1}}},ww=createWish({now:()=>t,persist(){},matMax:999,acct:(k)=>k=='T1'?['k1',ac]:null,byCode:(c)=>c=='abcdef0123'?ac:null});
+  ok(ww.call('wear',{tok:'T1',on:'a_ember'},IP)[0]==403,'wish wear: an unowned cosmetic is refused');
+  ok(ww.call('wear',{tok:'T1',on:'a_nova,a_nova'},IP)[0]==403&&ww.call('wear',{tok:'T1',on:'t_lucky'},IP)[0]==403&&ww.call('wear',{tok:'T1',on:'__proto__'},IP)[0]==403&&ww.call('wear',{tok:'T1',on:['a_nova']},IP)[0]==403,'wish wear: two per slot, titles, prototype keys and non-strings refused');
+  let x=ww.call('wear',{tok:'T1',on:'w_comet,a_nova'},IP);ok(x[0]==200&&x[1].on=='a_nova,w_comet','wish wear: an owned outfit is stored (canonical order)');
+  x=ww.call('worn',{codes:['abcdef0123','0000000000','__proto__',7]},IP);ok(x[0]==200&&x[1].on.abcdef0123=='a_nova,w_comet'&&x[1].on['0000000000']===''&&!Object.hasOwn(x[1].on,'__proto__')&&Object.keys(x[1].on).length==2,'wish worn: others read the bank-confirmed outfit by trade code (no token needed)');
+  ac.wi.on='a_ember,w_comet';ok(ww.call('worn',{codes:['abcdef0123']},IP)[1].on.abcdef0123==='','wish worn: a stored outfit is re-checked against ownership');
+  ok(ww.call('worn',{codes:Array(30).fill(0).map((_,i)=>('000000000'+i).slice(-10))},IP)[1].on&&Object.keys(ww.call('worn',{codes:Array(30).fill(0).map((_,i)=>('000000000'+i).slice(-10))},IP)[1].on).length==12,'wish worn: at most 12 codes a call');
+  const tcA=b.sync({tok:A,led:[]})[1].tc;ok(/^[a-f0-9]{10}$/.test(tcA)&&b.wish('worn',{codes:[tcA]},'198.51.100.7')[1].on[tcA]==='','wish worn: the bank route answers by trade code');}
  let lim=0;for(let k=0;k<130;k++)if(b.wish('state',{tok:A},'203.0.113.1')[0]==429)lim=1;ok(lim,'wish: per-IP rate limit');
  for(const f2 of [file,file+'2',file+'3'])try{fs.unlinkSync(f2);}catch{}
 }
