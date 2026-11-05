@@ -183,6 +183,13 @@ function createDirectoryServer(options = {}) {
       const [status, value] = bank.sync(body || {}, ip); /* ip: Cloudflare-aware (above); caps seeded new accounts per IP */
       return send(res, status, value);
     }
+    /* Cipher gather minigame: /api/cipher/start { tok, job } | /api/cipher/solve { tok, id, taps, ms } (per-IP limits live in the bank) */
+    const cm = /^\/api\/cipher\/(start|solve)$/.exec(url.pathname);
+    if (cm) {
+      if (!bank) return send(res, 503, { error: "Ciphers need the online server." });
+      const [status, value] = cm[1] == "start" ? bank.cipherStart(body || {}, ip) : bank.cipherSolve(body || {});
+      return send(res, status, value);
+    }
     /* trades between online players (bank escrow): /api/trade/offer | accept | cancel | list */
     const tm = /^\/api\/trade\/(offer|accept|cancel|list)$/.exec(url.pathname);
     if (tm) {

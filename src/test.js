@@ -1106,6 +1106,52 @@ async function bankTests(){
   for(const x of [f,lg,lg+'.1'])try{fs.unlinkSync(x)}catch{}}
  for(const x of [file,file+'2',file+'3',file+'4',file+'.tmp'])try{require('fs').unlinkSync(x)}catch{}
 }
+/* Cipher gather minigame (src/cipher.js through the bank): gate, games, one-time ids, timing, strikes, caps */
+function cipherTests(){
+ const {createBank}=require('./bank.js'),{CIPHER}=require('./cipher.js'),fs=require('fs');let t=5e9;const file=require('path').join(require('os').tmpdir(),'rb-bank-test-cipher-'+process.pid+'.json');
+ const ev=[];const b=createBank({file,now:()=>t,onEntry:(k,g,x,s)=>ev.push([k,s])}),A='c1'.repeat(16),B='c2'.repeat(16),IP='198.51.100.9';
+ const gath=(tok,m,n)=>{for(let i=0;i<n;i++){t+=2100;b.sync({tok,led:[['mat',0,0,'gather',m,1]]});}};
+ const st=(tok,job,ip=IP)=>b.cipherStart({tok,job},ip),sv=(tok,id,taps,ms=0)=>b.cipherSolve({tok,id,taps,ms})[1];
+ const ans=(r)=>r.game=='mine'?[0,1,2].map(()=>(r.params.zone[0]+r.params.zone[1])/2):r.game=='herb'?r.params.seq:r.params.tones;
+ const wait=(r)=>{t+=r.game=='echo'?1600+300*r.params.tones.length:1600;};
+ ok(st(A,'ore')[0]==403,'cipher: no account, no start');
+ gath(A,'ore',9);ok(st(A,'ore')[0]==403,'cipher: 9 gathers are not enough');
+ gath(A,'herb',10);ok(st(A,'ore')[0]==403,'cipher: other job gathers do not open ore');
+ gath(A,'ore',1);let r=st(A,'ore');ok(r[0]==200&&r[1].game=='mine'&&/^[a-f0-9]{24}$/.test(r[1].id)&&r[1].exp==30000&&Array.isArray(r[1].params.zone)&&r[1].params.speed>0&&r[1].params.width>0&&r[1].params.period>0,'cipher: 10 ore gathers start a mine game');
+ ok(st(A,'herb')[0]==403,'cipher: one open challenge per account');
+ ok(sv(B,r[1].id,ans(r[1])).ok===false,'cipher: another account cannot solve (unknown account)');
+ gath(B,'echo',10);ok(sv(B,r[1].id,ans(r[1])).why=='Unknown cipher.','cipher: another account\'s id is refused');
+ wait(r[1]);const m0=b.cipherSolve({tok:A,id:r[1].id,taps:ans(r[1]),ms:5,pack:{eye:99},mat:{heart:9}})[1];
+ ok(m0.ok&&m0.pack.ore==5&&!m0.pack.eye&&!m0.pack.heart&&Object.keys(m0.pack).every(k=>['ore','dust','shard','bark'].includes(k))&&m0.mat.ore>=15,'cipher: correct mine pays 5 ore (forged fields ignored, no rares)');
+ ok(ev.some(e=>e[0]=='cipher'&&e[1]=='ore'),'cipher: payout reported to analytics as kind "cipher"');
+ ok(sv(A,r[1].id,ans(r[1])).ok===false,'cipher: an id is single use');
+ ok(st(A,'ore')[0]==403,'cipher: the gather count resets after a cipher');
+ r=st(A,'herb');ok(r[0]==200&&r[1].game=='herb'&&r[1].params.grid.length==9&&new Set(r[1].params.grid).size==9&&r[1].params.seq.length==4,'cipher: herb game: 9 glyphs, 4-leaf sequence');
+ wait(r[1]);let bad=[...r[1].params.seq].reverse();ok(sv(A,r[1].id,bad).why=='Wrong.','cipher: wrong herb order fails');
+ gath(A,'herb',10);r=st(A,'herb');wait(r[1]);ok(sv(A,r[1].id,ans(r[1])).pack.herb==5,'cipher: correct herb pays 5 herb');
+ gath(A,'echo',10);r=st(A,'echo');ok(r[1].game=='echo'&&r[1].params.tones.length>=4&&r[1].params.tones.length<=6&&r[1].params.tones.every(x=>x>=0&&x<=5),'cipher: echo game: 4-6 tones 0-5');
+ t+=1600;ok(sv(A,r[1].id,ans(r[1])).why=='Too fast.','cipher: echo needs 1500 + 300 ms per tone');
+ gath(A,'echo',10);r=st(A,'echo');wait(r[1]);bad=r[1].params.tones.map(x=>(x+1)%6);ok(sv(A,r[1].id,bad).why=='Wrong.','cipher: wrong echo fails');
+ gath(A,'echo',10);r=st(A,'echo');wait(r[1]);ok(sv(A,r[1].id,ans(r[1])).pack.echo==5,'cipher: correct echo pays 5 echo');
+ gath(A,'ore',10);r=st(A,'ore');wait(r[1]);const z=r[1].params.zone;ok(sv(A,r[1].id,[z[0],z[1],Math.min(1,z[1]+0.2)]).why=='Wrong.','cipher: a mine strike outside the zone fails');
+ gath(A,'ore',10);r=st(A,'ore');wait(r[1]);ok(sv(A,r[1].id,[z[0],'x',1]).ok===false,'cipher: bad taps fail');
+ gath(A,'ore',10);r=st(A,'ore');t+=31000;ok(sv(A,r[1].id,ans(r[1])).why=='Expired.','cipher: expired after 30 s');
+ gath(A,'ore',10);r=st(A,'ore');t+=31000;ok(st(A,'herb')[0]==403,'cipher: no gather, no new start');gath(A,'herb',10);ok(st(A,'herb')[0]==200,'cipher: an expired open challenge does not block a new one');
+ /* daily cap: 3 paid so far today; pay 3 more, the 7th start is refused */
+ let paid=3;const day0=Math.floor(t/86400e3);
+ for(let i=0;i<3;i++){gath(A,'ore',10);t+=31000;r=st(A,'ore');wait(r[1]);if(sv(A,r[1].id,ans(r[1])).ok)paid++;}
+ gath(A,'ore',10);ok(Math.floor(t/86400e3)==day0&&paid==6&&st(A,'ore')[1].error=='No more ciphers today.','cipher: 6 packs a day, then refused');
+ /* strikes: B, 3 too-fast answers lock the day */
+ for(let i=0;i<3;i++){if(i)gath(B,'echo',10);r=st(B,'echo');ok(r[0]==200&&sv(B,r[1].id,ans(r[1])).why=='Too fast.','cipher: too fast is a strike '+(i+1));}
+ gath(B,'echo',10);ok(st(B,'echo')[1].error=='Rest a while','cipher: 3 strikes lock starts for the day');
+ t=(Math.floor(t/86400e3)+1)*86400e3+1000;ok(st(B,'echo')[0]==200,'cipher: the lock ends with the UTC day');
+ /* per-IP: 20 starts an hour */
+ const b2=createBank({file:file+'i',now:()=>t});let codes=[];
+ for(let i=0;i<21;i++){const k=(i+16).toString(16).padStart(2,'0').repeat(16);for(let j=0;j<10;j++){t+=2100;b2.sync({tok:k,led:[['mat',0,0,'gather','ore',1]]},'10.0.0.'+i);}codes.push(b2.cipherStart({tok:k,job:'ore'},'203.0.113.50')[0]);}
+ ok(codes.slice(0,20).every(c=>c==200)&&codes[20]==403,'cipher: 20 starts per IP per hour');
+ ok(st(A,'gold')[0]==403&&st(A,'__proto__')[0]==403,'cipher: unknown jobs refused');
+ for(const x of [file,file+'i',file+'.tmp',file+'i.tmp'])try{fs.unlinkSync(x)}catch{}
+}
 /* game analytics: anonymous events (validated, capped), trusted bank totals, owner-only reads */
 async function analyticsTests(){
  const {createAnalytics}=require('./analytics.js');let t=Date.UTC(2026,10,5,12);const A=createAnalytics({now:()=>t}),sid='0123456789abcdef';
@@ -1365,4 +1411,4 @@ async function benchTests(){
 function saveLoadTests(){{const evil={gold:'1e999',up:{dmg:2,__proto__:{x:1},hack:99},cls:'constructor',tut:-7,lp:-5,lpt:Infinity,bjc:'9',wins:-3,best:1e99,mb:'x'.repeat(500),gd:{name:'G',m:[{c:'toString'},{c:'tank'}]}};
  const st={[T.SAVE_KEY]:JSON.stringify(evil)},c={...ctx,localStorage:{getItem:k=>st[k]||null,setItem:(k,v)=>st[k]=v,removeItem:k=>delete st[k]}};c.window=c;vm.createContext(c);vm.runInContext(SRC+';globalThis.LV=V;',c);const L=c.LV;
  ok(L.gold===0&&Object.keys(L.up).join()=='dmg,vit,spd,cdr'&&L.up.dmg==2&&L.cls===''&&L.tut===0&&L.lp===0&&L.lpt===undefined&&L.bjc===undefined&&L.wins===0&&L.best===1e9&&L.mb.length==10&&L.gd.m.length==1,'save load: own keys only, numbers range-clamped, prototype names refused');}}
-(BENCH_ONLY?Promise.resolve():networkTests().then(signalingTests).then(hostLossTests).then(brainHttpTests).then(reportTests).then(takeoverTests).then(bankTests).then(analyticsTests).then(rateLimitTests).then(()=>marketHttpTests()).then(saveLoadTests)).then(benchTests).then(()=>{console.log(f?f+' FAILED':'ALL PASSED');process.exit(f?1:0);}).catch(e=>{console.error(e);process.exit(1);});
+(BENCH_ONLY?Promise.resolve():networkTests().then(signalingTests).then(hostLossTests).then(brainHttpTests).then(reportTests).then(takeoverTests).then(bankTests).then(cipherTests).then(analyticsTests).then(rateLimitTests).then(()=>marketHttpTests()).then(saveLoadTests)).then(benchTests).then(()=>{console.log(f?f+' FAILED':'ALL PASSED');process.exit(f?1:0);}).catch(e=>{console.error(e);process.exit(1);});

@@ -4,6 +4,7 @@
    A save edit or a fake reward cannot raise the server balance beyond what the rules allow.
    Identity: a private random token kept in the browser; only its SHA-256 hash is stored. File: bank.json (git-ignored). */
 "use strict";
+const { createCipher } = require("./cipher.js");
 
 const fs = require("node:fs");
 const path = require("node:path");
@@ -330,7 +331,7 @@ function createBank(options = {}) {
         a.bjm = Math.min(ASSIST.max, assistMul(a, t) * ASSIST.mul); a.bjmAt = prevAt; /* the rent happened somewhere since the last sync: anchor there, so a 2nd rent in the same sync still has its window */
       } else if (kind == "mat") {
         if (!matEntry(a, e[3], e[4], g, x, e[5], t, cr)) dropped++;
-        else if (e[5] > 0) earned = true;
+        else { if (e[5] > 0) earned = true; if (e[3] == "gather") cipher.gathered(a, e[4]); } /* Cipher gate: accepted gathers per job */
       } else if (kind == "pet") {
         if (!petEntry(a, e[3], e[4], g, x, e[5], t, cr)) dropped++;
       } else if (kind == "garden") {
@@ -480,7 +481,10 @@ function createBank(options = {}) {
     return [200, { tc: codeOf(w.id), offers, gold: w.a.gold, mat: { ...w.a.mat }, unlock: { syncs: Math.min(w.a.ns || 0, TRADE.syncs), need: TRADE.syncs, ready: t - (w.a.born || 0) >= TRADE.ageMs && (w.a.ns || 0) >= TRADE.syncs } }];
   }
 
-  return { sync, flush, tradeOffer, tradeAccept, tradeCancel, tradeList, TRADE, RULES, MAT_SRC, ASSIST, assistPrice, size: () => Object.keys(accts).length };
+  /* Cipher bonus minigame (src/cipher.js): server-made puzzles paying a pack of the gather job's material */
+  const cipher = createCipher({ now, persist: () => persist(), matMax: MAT_MAX, onEntry,
+    acct: (tok) => { if (typeof tok != "string" || !/^[a-f0-9]{32}$/.test(tok)) return null; const id = hash(tok); return accts[id] ? [id, accts[id]] : null; } });
+  return { sync, flush, cipherStart: cipher.start, cipherSolve: cipher.solve, _cipher: cipher, tradeOffer, tradeAccept, tradeCancel, tradeList, TRADE, RULES, MAT_SRC, ASSIST, assistPrice, size: () => Object.keys(accts).length };
 }
 
 module.exports = { createBank, PET, GARDEN, RULES, ASSIST, SEEDS_PER_IP, MATS, MAT_SRC, TRADE };

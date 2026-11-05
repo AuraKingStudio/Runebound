@@ -10,7 +10,7 @@
 
 const fs = require("node:fs");
 
-const EVENTS = ["session", "hb", "npc", "bj", "raid_go", "raid_win", "raid_lose", "invite", "join", "gather", "pet", "trade", "garden"];
+const EVENTS = ["session", "hb", "npc", "bj", "raid_go", "raid_win", "raid_lose", "invite", "join", "gather", "pet", "trade", "garden", "cipher"];
 const KEEP_DAYS = 90, MAX_SIDS = 5000, MAX_KEYS = 200, PER_MIN = 240, SIDS_PER_IP = 20, MAX_IPS = 20000, SAVE_MS = 60e3, HB_MS = 55e3;
 const day = (t) => new Date(t).toISOString().slice(0, 10);
 
