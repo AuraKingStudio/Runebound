@@ -4,7 +4,7 @@
 "use strict";
 
 const http = require("node:http");
-const { randomBytes, timingSafeEqual } = require("node:crypto");
+const { randomBytes, timingSafeEqual, createHash } = require("node:crypto");
 const { createMarket } = require("./market.js");
 const { createBrain } = require("./brain.js");
 const { createBank } = require("./bank.js");
@@ -48,7 +48,9 @@ function createDirectoryServer(options = {}) {
   /* game analytics (owner-only reads, ADMIN_KEY): anonymous play events + the bank's accepted entries (trusted money totals) */
   const analytics = options.analytics === false ? null : createAnalytics({ file: options.analyticsFile }) /* no file (tests): memory only */;
   const adminKey = options.adminKey ?? process.env.ADMIN_KEY ?? "";
-  const adminFails = new Map(); /* ip -> failed admin key tries (last 10 minutes) */
+  const adminFails = new Map(); /* ip -> failed admin key tries (last 10 minutes), hard-capped */
+  let globalFails = [], adminLockUntil = 0; /* 100 wrong keys from anyone in 10 minutes lock the admin read for everyone for 10 minutes */
+  const adminHash = String(adminKey).length >= 32 ? createHash("sha256").update(String(adminKey)).digest() : null; /* short key: admin disabled */
   const bank = options.bank === true ? createBank({ file: options.bankFile, onEntry: analytics ? analytics.bank : null }) : null; /* online mode: the server owns gold and XP */
   const tradeHits = new Map(); /* ip -> trade call times (last minute) */
   /* local playtests: any page served from this network (192.168.x.x, 10.x.x.x, 172.16-31.x.x) may use the service */
@@ -194,20 +196,24 @@ function createDirectoryServer(options = {}) {
     }
     if (url.pathname === "/api/analytics") {
       if (!analytics) return send(res, 503, { error: "Analytics are off on this server." });
-      const [status, value] = analytics.record(body || {});
+      const [status, value] = analytics.record(body, ip);
       return send(res, status, value);
     }
     if (url.pathname === "/api/analytics/admin") {
       /* owner only: the key lives in the server's environment (ADMIN_KEY), never in the game files; 10 wrong tries per IP per 10 minutes */
       const now = Date.now(), fails = (adminFails.get(ip) || []).filter((x) => now - x < 600e3);
-      if (fails.length >= 10) return send(res, 429, { error: "Too many tries." });
-      const k = typeof body.key === "string" ? Buffer.from(body.key) : Buffer.alloc(0), want = Buffer.from(String(adminKey));
-      if (!analytics || want.length < 16 || k.length !== want.length || !timingSafeEqual(k, want)) {
-        fails.push(now); adminFails.set(ip, fails);
-        if (adminFails.size > 20000) for (const [kk, v] of adminFails) if (now - v[v.length - 1] > 600e3) adminFails.delete(kk);
+      globalFails = globalFails.filter((x) => now - x < 600e3);
+      if (now < adminLockUntil || fails.length >= 10) return send(res, 429, { error: "Too many tries." });
+      const b = body && typeof body == "object" ? body : {};
+      const k = createHash("sha256").update(typeof b.key === "string" ? b.key : "").digest();
+      if (!analytics || !adminHash || !timingSafeEqual(k, adminHash)) {
+        if (adminFails.size >= 20000) for (const [kk, v] of adminFails) if (now - v[v.length - 1] > 600e3) adminFails.delete(kk);
+        if (adminFails.has(ip) || adminFails.size < 20000) { fails.push(now); adminFails.set(ip, fails); }
+        globalFails.push(now);
+        if (globalFails.length >= 100) { adminLockUntil = now + 600e3; globalFails = []; }
         return send(res, 403, { error: "Forbidden." });
       }
-      return send(res, 200, analytics.summary(Math.min(90, Math.max(1, Number.isInteger(body.days) ? body.days : 14))));
+      return send(res, 200, analytics.summary(Math.min(90, Math.max(1, Number.isInteger(b.days) ? b.days : 14))));
     }
     if (url.pathname === "/api/feedback") {
       /* playtest notes: one JSON line per note in feedback.log (no session needed; size-capped, rate-limited above) */

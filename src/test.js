@@ -1079,15 +1079,18 @@ async function analyticsTests(){
  const {createAnalytics}=require('./analytics.js');let t=Date.UTC(2026,10,5,12);const A=createAnalytics({now:()=>t}),sid='0123456789abcdef';
  ok(A.record({sid:'nope',ev:[]})[0]==400&&A.record({sid,ev:new Array(61).fill(['hb'])})[0]==400,'analytics: a bad id or an oversized batch is refused');
  const r=A.record({sid,ev:[['session'],['hb'],['hb'],['npc','barkeep'],['bj','win',40],['raid_win','small',95],['hack','x'],['npc','<script>'],['bj','win',1.5],['bj','lose',-5e7]]});
- ok(r[0]==200&&r[1].kept==6,'analytics: only whitelisted events with clean keys and integer amounts are kept ('+r[1].kept+')');
+ ok(r[0]==200&&r[1].kept==5,'analytics: only whitelisted events with clean keys and integer amounts are kept ('+r[1].kept+')');
  A.bank('bj',-100,0);A.bank('bj',250,0);A.bank('raid',300,0);A.bank('mat',0,0,'gather');
  let s=A.summary(1);const d=s.days[0];
- ok(d.players==1&&d.newPlayers==1&&d.minutes==2&&d.sessions==1&&d.npc==1&&d.hands==1&&d.wins==1,'analytics: players, new players, minutes connected, clicks, hands and raid wins add up');
+ ok(d.players==1&&d.newPlayers==1&&d.minutes==1&&d.sessions==1&&d.npc==1&&d.hands==1&&d.wins==1,'analytics: players, new players, minutes connected, clicks, hands and raid wins add up');
  ok(d.bjBet==100&&d.bjPaid==250&&s.bank.raid.gin==300&&s.bank['mat:gather'].c==1,'analytics: blackjack bets and payouts come from the bank (trusted), with raid rewards and material sources');
  ok(s.raid.small.win==1&&s.raid.small.secs==95&&s.bj.win.net==40&&s.npc.barkeep.c==1&&s.live==1,'analytics: per-boss raids, blackjack results, NPC clicks and players online now');
  A.record({sid,ev:new Array(60).fill(['hb'])});A.record({sid,ev:new Array(60).fill(['hb'])});A.record({sid,ev:new Array(60).fill(['hb'])});A.record({sid,ev:new Array(60).fill(['hb'])});
  ok(A.summary(1).days[0].minutes<=240,'analytics: one browser counts at most 240 events a minute (flood cap)');
- t+=864e5;A.record({sid,ev:[['session']]});s=A.summary(2);ok(s.days[1].players==1&&s.days[1].newPlayers==0&&s.players==1,'analytics: a returning player is not new again, and is counted once over several days');
+ t+=30e3;A.record({sid,ev:[['hb']]});ok(A.summary(1).days[0].minutes==1,'analytics: hb counts at most once per browser per 55 s');
+ t+=30e3;A.record({sid,ev:[['hb']]});ok(A.summary(1).days[0].minutes==2,'analytics: the next minute counts again');
+ {let k=0;for(let i=0;i<30;i++)A.record({sid:(0x100+i).toString(16).padStart(16,"a"),ev:[['session']]},'9.9.9.9');k=A.summary(1).days[0].players;ok(k==21,'analytics: one IP adds at most 20 new players a day ('+k+')');}
+ t+=864e5;A.record({sid,ev:[['session']]});s=A.summary(2);ok(s.days[1].players==1&&s.days[1].newPlayers==0&&s.days[0].players==21&&s.days[0].minutes==2&&s.players==21,'analytics: a returning player is not new again, and is counted once over several days; older days keep their totals after compaction');
  /* over HTTP: anyone can send events; only the ADMIN_KEY reads them, with a lock after 10 wrong tries */
  const {server}=createDirectoryServer({allowedOrigins:[],bank:true,bankFile:path.join(os.tmpdir(),'rb-an-bank-'+process.pid+'.json'),adminKey:'k'.repeat(32)});
  await new Promise(r=>server.listen(0,'127.0.0.1',r));const base='http://127.0.0.1:'+server.address().port,post=(p,b)=>fetch(base+p,{method:'POST',headers:{'content-type':'application/json'},body:JSON.stringify(b)}).then(async r=>[r.status,await r.json()]);
@@ -1098,7 +1101,20 @@ async function analyticsTests(){
  ok(ad[0]==200&&ad[1].npc.smith.c==1&&ad[1].days.at(-1).bjBet==50,'analytics http: the owner key reads the summary, with the bank\'s blackjack bets');
  for(let i=0;i<10;i++)await post('/api/analytics/admin',{key:'x'.repeat(32)});
  ok((await post('/api/analytics/admin',{key:'k'.repeat(32)}))[0]==429,'analytics http: 10 wrong keys lock the admin read for that IP');
- server.close();try{fs.unlinkSync(path.join(os.tmpdir(),'rb-an-bank-'+process.pid+'.json'))}catch{}
+ server.close();
+ {const {server:s3}=createDirectoryServer({allowedOrigins:[],adminKey:'g'.repeat(32)});await new Promise(r=>s3.listen(0,'127.0.0.1',r));
+  const p3=(b)=>fetch('http://127.0.0.1:'+s3.address().port+'/api/analytics/admin',{method:'POST',headers:{'content-type':'application/json'},body:JSON.stringify(b)}).then(r=>r.status);
+  ok(await p3(null)==403&&await p3(5)==403,'analytics http: a null or number body is refused, not a crash');
+  ok(await p3({key:'g'.repeat(32)})==200,'analytics http: the right key still reads');s3.close();}
+ {const {server:s4,analytics:a4}=createDirectoryServer({allowedOrigins:[],adminKey:'h'.repeat(32),trustCloudflare:true,requestsPerMinute:100000});await new Promise(r=>s4.listen(0,'127.0.0.1',r));
+  const p4=(b,h={})=>fetch('http://127.0.0.1:'+s4.address().port+'/api/analytics/admin',{method:'POST',headers:{'content-type':'application/json',...h},body:JSON.stringify(b)}).then(r=>r.status);
+  let st=[];for(let i=0;i<100;i++)st.push(await p4({key:'bad'+i},{'cf-connecting-ip':'10.0.'+(i>>3)+'.'+i}));
+  const after=await p4({key:'h'.repeat(32)},{'cf-connecting-ip':'10.9.9.9'});s4.close();
+  ok(st.every(x=>x==403)&&after==429,'analytics http: 100 wrong keys from many IPs in 10 minutes lock the admin read for everyone');}
+ {const {server:s5}=createDirectoryServer({allowedOrigins:[],adminKey:'short-key-16chars'});await new Promise(r=>s5.listen(0,'127.0.0.1',r));
+  const r5=await fetch('http://127.0.0.1:'+s5.address().port+'/api/analytics/admin',{method:'POST',headers:{'content-type':'application/json'},body:JSON.stringify({key:'short-key-16chars'})});
+  ok(r5.status==403,'analytics http: an ADMIN_KEY under 32 characters disables the admin read');s5.close();}
+ try{fs.unlinkSync(path.join(os.tmpdir(),'rb-an-bank-'+process.pid+'.json'))}catch{}
  {const {server:s2}=createDirectoryServer({allowedOrigins:[],adminKey:''});await new Promise(r=>s2.listen(0,'127.0.0.1',r));
   const r2=await fetch('http://127.0.0.1:'+s2.address().port+'/api/analytics/admin',{method:'POST',headers:{'content-type':'application/json'},body:JSON.stringify({key:''})});
   ok(r2.status==403,'analytics http: with no ADMIN_KEY set, nobody can read');s2.close();}
