@@ -1771,6 +1771,27 @@
       @media (max-height: 480px) { .pn .row:has(> button[onclick="bjHit()"]) { position: sticky; bottom: -14px; z-index: 3; margin: 0 -14px; padding: 8px 14px 10px; background: linear-gradient(180deg, #16243300, #162433 35%); } }
       /* Happy R4 touch audit: the round close and row buttons and the Trade boxes reach 44 px too (were 34-38, 42 and 23 px); 16 px input text stops iOS zooming in */
       @media (pointer: coarse) { .pn button.alt.x, body.ph .pn button.alt.x { width: 44px; height: 44px; } .pn h2 { padding-left: 46px; padding-right: 46px; } .pn button:not(.alt):not(.claim):not(.ctabs button) { min-height: 44px; } #dp input[type="number"], #dp #tto { min-height: 44px; font-size: 16px; } }
+      /* Cipher popup: a small card over the game, never a full dialog (Skip any time); 44 px+ targets */
+      #ciph { position: fixed; left: 50%; top: 50%; transform: translate(-50%, -50%); z-index: 31; width: min(340px, calc(100vw - 20px)); max-height: calc(100vh - 16px); overflow: auto; }
+      #ciph[hidden] { display: none; }
+      #ciph .cpn { padding: 10px 14px; border-radius: 12px; text-align: center; background: linear-gradient(160deg, rgba(30, 24, 52, 0.97), rgba(14, 12, 28, 0.97)); border: 1px solid #9a7cff; color: #e8e2ff; font: 14px/1.35 Georgia, serif; box-shadow: 0 0 22px rgba(154, 124, 255, 0.35); }
+      #ciph h3 { margin: 2px 0 4px; color: #cdb9ff; font-size: 17px; } #ciph .sm { margin: 4px 0; font-size: 12px; opacity: 0.9; }
+      #ciph button { min-height: 44px; min-width: 44px; border-radius: 8px; font: inherit; cursor: pointer; touch-action: manipulation; }
+      #ciph .alt { background: rgba(255, 255, 255, 0.08); color: #e8e2ff; border: 1px solid #6b5aa8; padding: 0 18px; }
+      #ciph .cbig { width: 100%; margin: 6px 0; font-weight: 700; background: #ffd27a; color: #2a1a04; border: 0; }
+      .cbar { position: relative; height: 26px; margin: 8px 4px; border-radius: 13px; background: #241c3a; border: 1px solid #5d4c94; overflow: hidden; }
+      .cbar .cz { position: absolute; top: 0; bottom: 0; background: rgba(255, 210, 122, 0.45); box-shadow: 0 0 12px #ffd27a inset; }
+      .cbar b { position: absolute; top: 2px; bottom: 2px; width: 6px; margin-left: -3px; border-radius: 3px; background: #fff; box-shadow: 0 0 6px #fff; }
+      .cdots { letter-spacing: 6px; font-size: 18px; color: #ffd27a; }
+      .cgrid { display: grid; grid-template-columns: repeat(3, 56px); gap: 8px; justify-content: center; margin: 8px 0; }
+      .cgrid .cl { height: 56px; font-size: 24px; background: #1f3a2a; border: 2px solid #3f8f4e; color: inherit; transition: transform 0.12s, box-shadow 0.12s; }
+      .cgrid .cl1 { background: #24402c; } .cgrid .cl2 { background: #1b3424; } .cgrid .cl3 { background: #2a4630; }
+      .cgrid.c6 .cl { background: #1d2a46; border-color: #6fb4ff; }
+      .cgrid .cl.on { border-color: #fff; box-shadow: 0 0 16px #b8ffd0, 0 0 4px #fff inset; transform: scale(1.08); background: #4f9a63; }
+      .cgrid.c6 .cl.on { box-shadow: 0 0 16px #9fd4ff, 0 0 4px #fff inset; background: #4a7fd0; }
+      .cwin { color: #ffd27a; display: inline-block; animation: cwin 0.5s ease-out; } @keyframes cwin { from { transform: scale(1.4); opacity: 0; } }
+      @media (max-height: 420px) { #ciph .cpn { padding: 6px 10px; } #ciph .sm { margin: 2px 0; } .cgrid { grid-template-columns: repeat(6, 46px); gap: 6px; } .cgrid .cl { height: 46px; } #ciph { width: min(400px, calc(100vw - 20px)); } #ciph h3 { font-size: 15px; } }
+      @media (prefers-reduced-motion: reduce) { .cgrid .cl, .cwin { transition: none; animation: none; } }
     </style>
   </head>
   <body>
@@ -1778,6 +1799,7 @@
     <div id="dlg" hidden><div class="pn" id="dp"></div></div>
     <div id="pinv" hidden></div>
     <div id="news" hidden role="status"></div>
+    <div id="ciph" hidden role="dialog" aria-label="Rune cipher"></div>
     <div id="dev" hidden></div>
     <div id="rot"><div><b>📱</b>Turn your phone sideways to play</div></div>
     <div id="jz"></div>
@@ -2889,8 +2911,8 @@
       }, true);
       /* ---------- What's new: a small corner card once per build (BUILD), a soft chime at the player's volume ----------
          Brand-new players (tutorial not done) skip it: everything is new to them. Dismiss with x, or it fades after 14 s. */
-      const BUILD = "2026.11.06.2"; /* round 5: the Zen Garden + daily streak */
-      const NEWS = ["🌸 The Zen Garden: rake the sand, water your plants, harvest materials, claim a 7-day streak bonus and trade your produce with friends", "🐾 Pets: reach level 6 to meet the Beastkeeper. Adopt a Fox, Owl, Wolf or Sprite with materials, feed it for a bigger bonus, and tap it to play", "⛏️ Gathering: Iron Ore, Moonleaf and Skycrystal nodes on the island; mastery raises your yield", "📜 Contract Board: 3 material orders a day on the Quest Board", "🌹 The Maiden's Exchange: barter materials at rates that drift each day"];
+      const BUILD = "2026.11.06.3"; /* Cipher: gathering rune games */
+      const NEWS = ["🔮 Cipher: every few gathers a quick rune game pops up (strike the vein, the moonleaf pattern, the crystal echo); win a bonus pack of 5. Gathering combos and a shinier channel too", "🌸 The Zen Garden: rake the sand, water your plants, harvest materials, claim a 7-day streak bonus and trade your produce with friends", "🐾 Pets: reach level 6 to meet the Beastkeeper. Adopt a Fox, Owl, Wolf or Sprite with materials, feed it for a bigger bonus, and tap it to play", "⛏️ Gathering: Iron Ore, Moonleaf and Skycrystal nodes on the island; mastery raises your yield", "📜 Contract Board: 3 material orders a day on the Quest Board", "🌹 The Maiden's Exchange: barter materials at rates that drift each day"];
       let NEWS_T = 0;
       function newsShow() {
         let seen = "";
@@ -3548,6 +3570,7 @@
       const GNODES = [{ x: 365, y: 250, k: "ore" }, { x: 545, y: 258, k: "herb" }, { x: 280, y: 360, k: "echo" }, { x: 620, y: 345, k: "ore" }, { x: 335, y: 520, k: "herb" }, { x: 585, y: 405, k: "echo" }]; /* off the river, bridges and NPCs */
       const GBASE = { ore: 2, herb: 2, echo: 1 };
       let GCH = null; /* the channel in progress: { i, t, x, y } */
+      let GPOP = null; const GCOMBO = { n: 0, t: 0 }; /* success ring { i, t } and the gather combo */
       const gLv = () => Math.min(GATHER.max, 1 + Math.floor(Math.sqrt((V.gm || 0) / 10))); /* level L needs 10*(L-1)^2 gathers */
       const gDay = () => { const d = dayKey(new Date()); if (!V.gday || V.gday.d != d) V.gday = { d, n: 0 }; return V.gday; };
       const gDim = (n) => (n < GATHER.full ? 1 : n < GATHER.half ? 0.5 : 0.2);
@@ -3581,7 +3604,15 @@
         save();
         burst(g.x, g.y, MATS[g.k].col, SET.low ? 8 : 18, 130);
         ftxt(g.x, g.y - 26, got ? `+${got} ${MATS[g.k].e}` : "…", MATS[g.k].col);
-        sfx("coin", 1.2 + 0.1 * Math.min(4, got));
+        /* combo: gathers chained within 12 s (cosmetic: a rising pop and a counter, no extra yield) */
+        const now = Date.now();
+        GCOMBO.n = now - GCOMBO.t < 12000 ? GCOMBO.n + 1 : 1;
+        GCOMBO.t = now;
+        GPOP = { i, t: 0 };
+        if (GCOMBO.n > 1) ftxt(g.x, g.y - 46, `Combo x${GCOMBO.n}`, "#ffd27a", 13);
+        sfx("coin", 1.2 + 0.1 * Math.min(4, got) + 0.04 * Math.min(8, GCOMBO.n - 1));
+        if (!SET.low) sfx("pop", 1 + 0.06 * Math.min(8, GCOMBO.n));
+        cipTrigger(g.k);
         if (gLv() > lv) { popMsg(`⛏️ Gathering mastery ${gLv()}! +${Math.round(GATHER.per * 100 * (gLv() - 1))}% yield`); sfx("win", 1.3); }
         else if (day.n == GATHER.full) toast("The island is tired of you today: gathering yields less until tomorrow.");
         return got;
@@ -3616,12 +3647,31 @@
           }
           c.restore();
         }
+        /* shimmer: a small glint sweeping over each ready node (none on Low spec / reduced motion) */
+        if (!still && !SET.low) {
+          c.fillStyle = "rgba(255,255,255,.85)";
+          for (let i = 0; i < GNODES.length; i++) {
+            if (now < ((V.gn || {})[i] || 0)) continue;
+            const u = (t * 0.6 + i * 0.37) % 2.2;
+            if (u > 1) continue;
+            const g = GNODES[i], r = 2.2 * Math.sin(u * 3.14);
+            c.beginPath(); c.moveTo(g.x - 8 + 16 * u, g.y - 14 - r * 2); c.lineTo(g.x - 8 + 16 * u + r, g.y - 14); c.lineTo(g.x - 8 + 16 * u, g.y - 14 + r * 2); c.lineTo(g.x - 8 + 16 * u - r, g.y - 14); c.fill();
+          }
+        }
         if (GCH) {
-          const g = GNODES[GCH.i];
+          const g = GNODES[GCH.i], f = Math.min(1, GCH.t / GATHER.ch), a = -1.571 + 6.283 * f, col = MATS[g.k].col;
           c.save();
-          c.strokeStyle = "rgba(0,0,0,.45)"; c.lineWidth = 5; c.beginPath(); c.arc(g.x, g.y - 4, 22, 0, 6.3); c.stroke();
-          c.strokeStyle = MATS[g.k].col; c.lineWidth = 3; c.beginPath(); c.arc(g.x, g.y - 4, 22, -1.571, -1.571 + 6.283 * Math.min(1, GCH.t / GATHER.ch)); c.stroke();
+          c.strokeStyle = "rgba(0,0,0,.5)"; c.lineWidth = 6; c.beginPath(); c.arc(g.x, g.y - 4, 22, 0, 6.3); c.stroke();
+          if (!SET.low) { c.shadowColor = col; c.shadowBlur = 8; }
+          c.strokeStyle = col; c.lineWidth = 3.5; c.lineCap = "round"; c.beginPath(); c.arc(g.x, g.y - 4, 22, -1.571, a); c.stroke();
+          c.shadowBlur = 0; c.fillStyle = "#fff"; c.beginPath(); c.arc(g.x + 22 * Math.cos(a), g.y - 4 + 22 * Math.sin(a), 2.6, 0, 6.3); c.fill();
           c.restore();
+        }
+        if (GPOP) { /* success pop: an expanding ring (one frame later gone on reduced motion) */
+          const g = GNODES[GPOP.i];
+          GPOP.t += 1 / 60;
+          if (still || GPOP.t > 0.4) GPOP = null;
+          else { c.save(); c.globalAlpha = 1 - GPOP.t / 0.4; c.strokeStyle = MATS[g.k].col; c.lineWidth = 3; c.beginPath(); c.arc(g.x, g.y - 4, 22 + 60 * GPOP.t, 0, 6.3); c.stroke(); c.restore(); }
         }
       }
       /* botGatherDraw(): bots channelling at a node get a thin progress ring and a small spark over the node.
@@ -3640,6 +3690,148 @@
           c.globalAlpha = 1;
         }
       }
+      /* ---------- Cipher: a short rune game every ~10 gathers of a job (bonus pack of 5, and a bot trap) ----------
+         mine (ore): strike 3 times while the pick is in the glowing zone; herb: tap the 4 glowing leaves in order;
+         echo: repeat 4-6 crystal tones (each glows too, never sound only). Online the bank deals and judges
+         (/api/cipher/start, /solve) and its balance wins; offline/LAN the same params are made here, capped per day. */
+      const CIP = { k: null, n: {}, busy: false, every: 10, day: 9, pack: 5, tn: [1, 1.12, 1.26, 1.5, 1.68, 2] };
+      const CIPG = { ore: "mine", herb: "herb", echo: "echo" };
+      const cipStill = () => SET.low || BJ_VFX.reduced();
+      const cipRi = (a, b) => a + Math.floor(Math.random() * (b - a + 1));
+      function cipLocal(job) {
+        const g = CIPG[job];
+        if (g == "mine") { const w = 0.16 + Math.random() * 0.06, a = 0.15 + Math.random() * (0.7 - w); return { speed: 1, width: w, zone: [a, a + w], period: 1300 }; }
+        if (g == "herb") { const s = []; while (s.length < 4) { const i = cipRi(0, 8); if (!s.includes(i)) s.push(i); } return { grid: Array.from({ length: 9 }, () => cipRi(0, 3)), seq: s }; }
+        return { tones: Array.from({ length: cipRi(4, 6) }, () => cipRi(0, 5)) };
+      }
+      /* cipTrigger(job): after a gather; every 10th gather of a job asks for a game (a client hint: online the server decides) */
+      async function cipTrigger(job) {
+        if (!CIPG[job]) return;
+        CIP.n[job] = (CIP.n[job] || 0) + 1;
+        if (CIP.n[job] < CIP.every || CIP.k || CIP.busy || dlgOpen() || S.sc != "hub") return;
+        CIP.n[job] = 0;
+        const url = bankUrl();
+        if (!url) {
+          const d = dayKey(new Date());
+          if (!V.cip || V.cip.d != d) V.cip = { d, n: 0 };
+          if (V.cip.n >= CIP.day) return;
+          V.cip.n++;
+          return cipShow({ id: "", game: CIPG[job], params: cipLocal(job), job });
+        }
+        CIP.busy = true;
+        try {
+          const r = await fetch(url + "/api/cipher/start", { method: "POST", headers: { "content-type": "application/json" }, cache: "no-store", body: JSON.stringify({ tok: bankTok(), job }) });
+          const j = await r.json().catch(() => ({}));
+          if (!r.ok) { if (typeof j.error == "string" && /rest/i.test(j.error)) toast("Rest a while"); return; }
+          if (j && j.id && CIPG[job] == j.game && j.params && !CIP.k && !dlgOpen()) cipShow({ id: String(j.id), game: j.game, params: j.params, job, exp: j.exp });
+        } catch (e) {} finally { CIP.busy = false; }
+      }
+      function cipShow(o) {
+        const el = $("ciph");
+        if (!el || CIP.k || dlgOpen()) return;
+        CIP.k = { ...o, taps: [], t0: Date.now(), lit: -1, play: o.game != "mine", done: false };
+        const p = o.params, g = o.game, m = MATS[o.job];
+        const title = { mine: "⛏️ Strike the vein", herb: "🌿 The moonleaf pattern", echo: "🔷 Echo of the crystals" }[g];
+        const how = { mine: "Tap Strike (or Space) when the pick is in the glowing zone. 3 strikes.", herb: "Watch 4 leaves glow, then tap them in the same order.", echo: "Watch the crystals glow (and listen), then repeat them in order." }[g];
+        let body = "";
+        if (g == "mine") { const z = p.zone || [0.4, 0.6]; body = `<div class="cbar"><i class="cz" style="left:${(z[0] * 100).toFixed(1)}%;width:${((z[1] - z[0]) * 100).toFixed(1)}%"></i><b id="cpk"></b></div><div class="cdots" id="cdt">○○○</div><button class="cbig" onclick="cipStrike()">Strike</button>`; }
+        else if (g == "herb") body = `<div class="cgrid">${(p.grid || []).slice(0, 9).map((v, i) => `<button class="cl cl${(v | 0) & 3}" id="cb${i}" onclick="cipTap(${i})" aria-label="Leaf ${i + 1}">🍃</button>`).join("")}</div>`;
+        else body = `<div class="cgrid c6">${[0, 1, 2, 3, 4, 5].map((i) => `<button class="cl" id="cb${i}" onclick="cipTap(${i})" aria-label="Crystal ${i + 1}">💎</button>`).join("")}</div>`;
+        el.innerHTML = `<div class="cpn"><h3>${title}</h3><p class="sm" id="cmsg">${how}</p>${body}<p class="sm">Win: ${m.e} +${CIP.pack} ${m.n}</p><button class="alt" onclick="cipClose()">Skip</button></div>`;
+        el.hidden = false;
+        sfx("heal", 1.2);
+        if (g == "mine") cipAnim(); else cipDemo();
+      }
+      /* the pick: a triangle wave 0..1..0; Low spec / reduced motion move it 8 times a second (still playable) */
+      const cipPh = () => { const k = CIP.k, p = k.params, per = Math.max(300, (+p.period || 1300) / (+p.speed || 1)), u = ((Date.now() - k.t0) / per) % 2; return u < 1 ? u : 2 - u; };
+      function cipAnim() {
+        const k = CIP.k;
+        if (!k || k.game != "mine" || k.done) return;
+        const pk = $("cpk");
+        if (pk) pk.style.left = (cipPh() * 100).toFixed(1) + "%";
+        if (cipStill()) setTimeout(cipAnim, 125); else requestAnimationFrame(cipAnim);
+      }
+      /* the pattern plays once: one leaf/crystal lit at a time (glow + tone), then input opens */
+      function cipDemo() {
+        const k = CIP.k, seq = k.game == "herb" ? k.params.seq || [] : k.params.tones || [];
+        let s = 0;
+        const lit = (i, on) => { const b = $("cb" + i); if (b && b.classList) b.classList[on ? "add" : "remove"]("on"); };
+        const tick = () => {
+          if (CIP.k !== k) return;
+          if (k.lit >= 0) lit(k.lit, 0);
+          if (s >= seq.length * 2) { k.lit = -1; k.play = false; const m = $("cmsg"); if (m) m.textContent = "Your turn."; return; }
+          if (s % 2 == 0) { k.lit = seq[s / 2] | 0; lit(k.lit, 1); sfx(k.game == "echo" ? "drip" : "ui", k.game == "echo" ? CIP.tn[k.lit] || 1 : 1); } else k.lit = -1;
+          s++;
+          setTimeout(tick, s % 2 ? 560 : 200);
+        };
+        setTimeout(tick, 500);
+      }
+      function cipStrike(ph) {
+        const k = CIP.k;
+        if (!k || k.game != "mine" || k.done) return;
+        const v = Number.isFinite(ph) ? ph : cipPh(), z = k.params.zone || [0, 0], hit = v >= z[0] && v <= z[1];
+        k.taps.push(Math.round(v * 1000) / 1000);
+        sfx(hit ? "hit" : "hurt", hit ? 1.6 : 1);
+        const d = $("cdt");
+        if (d) d.textContent = k.taps.map((t) => (t >= z[0] && t <= z[1] ? "●" : "✕")).join("") + "○○○".slice(k.taps.length);
+        if (hit && P) sparks(P.x, P.y - 20, "#ffd27a", 6, 90, 1);
+        if (k.taps.length >= 3) cipSubmit();
+      }
+      function cipTap(i) {
+        const k = CIP.k;
+        if (!k || k.game == "mine" || k.play || k.done || !(i >= 0 && i < (k.game == "herb" ? 9 : 6))) return;
+        k.taps.push(i | 0);
+        sfx(k.game == "echo" ? "drip" : "ui", k.game == "echo" ? CIP.tn[i] : 1.2);
+        const b = $("cb" + i);
+        if (b && b.classList) { b.classList.add("on"); setTimeout(() => b.classList.remove("on"), 220); }
+        if (k.taps.length >= (k.game == "herb" ? 4 : (k.params.tones || []).length)) cipSubmit();
+      }
+      async function cipSubmit() {
+        const k = CIP.k;
+        if (!k || k.done) return;
+        k.done = true;
+        const ms = Date.now() - k.t0;
+        let won = false, pack = 0;
+        if (!k.id) {
+          const p = k.params, t = k.taps;
+          won = k.game == "mine" ? t.length == 3 && t.every((v) => v >= p.zone[0] && v <= p.zone[1]) : JSON.stringify(t) == JSON.stringify(k.game == "herb" ? p.seq : p.tones);
+          if (won) pack = matAdd(k.job, CIP.pack, "cipher");
+        } else {
+          try {
+            const r = await fetch(bankUrl() + "/api/cipher/solve", { method: "POST", headers: { "content-type": "application/json" }, cache: "no-store", body: JSON.stringify({ tok: bankTok(), id: k.id, taps: k.taps, ms }) }).then((r) => r.json());
+            if (r && r.ok === true) {
+              won = true;
+              pack = Object.values(r.pack || {}).reduce((a, n) => a + (Number.isInteger(n) ? n : 0), 0);
+              if (r.mat && typeof r.mat == "object") { /* the bank's balance wins, plus what is not synced yet (as bankSync) */
+                const later = LEDGER.slice(Math.max(0, BANK_AT - LEDGER_BASE)), m = {};
+                for (const j in MATS) m[j] = Math.max(0, (Number.isInteger(r.mat[j]) ? r.mat[j] : 0) + later.reduce((n, e) => n + (e[0] == "mat" && e[4] == j ? e[5] | 0 : 0), 0));
+                V.mat = m;
+              }
+            }
+          } catch (e) {}
+        }
+        try { track("cipher", k.job, won ? 1 : 0); } catch (e) {}
+        save();
+        if (CIP.k === k) cipEnd(k, won, pack);
+        return won;
+      }
+      function cipEnd(k, won, pack) {
+        const m = MATS[k.job], msg = $("cmsg");
+        if (won) {
+          if (msg) msg.innerHTML = `<b class="cwin">Bonus pack! ${m.e} +${pack} ${m.n}</b>`;
+          sfx("win", 1.2);
+          if (P) { sparks(P.x, P.y - 20, m.col, 22, 170, 1); ftxt(P.x, P.y - 40, `+${pack} ${m.e}`, m.col); }
+        } else { if (msg) msg.textContent = "The runes slip away…"; sfx("lose", 1.4); }
+        setTimeout(() => { if (CIP.k === k) cipClose(); }, won ? 1800 : 1400);
+      }
+      /* Skip (no reward) or done: one popup at most, movement is never held */
+      function cipClose() {
+        CIP.k = null;
+        const el = $("ciph");
+        if (el) { el.hidden = true; el.innerHTML = ""; }
+      }
+      /* Space strikes while the mine game is up (before the game's own keys) */
+      addEventListener("keydown", (e) => { if (CIP.k && CIP.k.game == "mine" && e.code == "Space" && !e.repeat) { e.preventDefault(); e.stopImmediatePropagation(); cipStrike(); } }, true);
       /* ---------- playtest feedback: a note + the last game errors, sent to the hub service (feedback.log), or copied ---------- */
       const ERRLOG = [];
       addEventListener("error", (e) => { ERRLOG.push(String(e.message || e.error || "error").slice(0, 200) + " @" + (e.lineno || "?")); ERRLOG.splice(0, ERRLOG.length - 8); });
