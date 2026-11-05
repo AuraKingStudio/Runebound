@@ -358,6 +358,7 @@ V.q=qi;V.qs=1;V.fg=0;T.save&&T.save();V.fg=1;T.QUESTS[qi].ok()&&ok(true,'quests:
  const h=T.gardenHTML();ok((h.match(/class="gp /g)||[]).length==6&&h.includes('gardenTap(5)')&&h.includes('id="zen"')&&h.includes('tradeOpen()')&&(h.match(/class="gs /g)||[]).length==7,'garden: the zen view draws 6 tappable beds, the scene canvas, a 7-day streak row and a trade link');
  T.gardenAdopt([{s:'echo',age:60e3,d:40*60e3},null,{s:'cat',age:1,d:1},null,null,null]);ok(V.gd[0].s=='echo'&&T.gdStage(V.gd[0])==1&&!V.gd[2],'garden: the bank answer wins (bad seeds dropped)');
  T.gardenAdopt([1,2]);ok(V.gd[0].s=='echo','garden: a malformed answer is ignored');
+ T.gardenAdopt([{s:'herb',age:30*60e3,d:20*60e3,pk:'fox'},null,null,null,null,null],5);V.pet='';V.mat.herb=0;ok(V.gd[0].pk=='fox'&&V.gdsc==5&&T.gardenHarvest(0)&&V.mat.herb==5,'garden: the perk is locked at planting on the client too, and the sprite counter comes from the bank');V.pet='fox';
  ok(JSON.stringify(Object.keys(T.GARDEN.seeds).map(k=>[T.GARDEN.seeds[k].cost,T.GARDEN.seeds[k].grow,T.GARDEN.seeds[k].y]))==JSON.stringify(Object.keys(GARDEN.seeds).map(k=>[GARDEN.seeds[k].cost,GARDEN.seeds[k].grow,GARDEN.seeds[k].y]))&&T.GARDEN.wilt==GARDEN.wilt&&T.GARDEN.day==GARDEN.day&&T.GARDEN.owl==GARDEN.owl,'garden: client tables match the bank');
  {const cv=ctx.document.getElementById('zen');cv.getBoundingClientRect=()=>({left:0,top:0,width:300,height:220});const S=T.SET,lo=S.low,Z=T.ZEN,n0=T.LEDGER().length,ev=(x,y)=>({target:{closest:()=>null},clientX:x,clientY:y});
   V.gd[1]={s:'herb',at:Date.now(),d:20*60e3};S.low=0;let thr=null;
@@ -947,7 +948,7 @@ async function bankTests(){
   let r=bg.sync({tok:k,led:[],seed:{mat:{herb:50,ore:50}}})[1];ok(r.garden.length==6&&r.garden.every(c=>c===null),'bank garden: a new account has 6 empty plots');
   r=G([E('plant',0,'herb')]);ok(r.dropped==1&&!r.garden[0],'bank garden: no planting without the seed spend');
   r=G([M('herb',-2),E('plant',0,'herb'),E('plant',0,'herb'),M('ore',-2),E('plant',9,'ore'),E('plant',1,'gold'),E('plant',-1,'ore'),['garden',5,0,'plant',2,'ore']]);
-  ok(r.dropped==5&&r.garden[0].s=='herb'&&r.garden[0].age==0&&r.mat.herb==48&&r.mat.ore==50,'bank garden: one paid plant; used plot, bad plot, bad seed, gold refused; unused spend refunded');
+  ok(r.dropped==5&&r.garden[0].s=='herb'&&r.garden[0].age==0&&r.mat.herb==48&&r.mat.ore==50,'bank garden: one paid plant; used plot, bad plot, bad seed, gold refused; unused spend refunded');ok(r.garden[0].pk===''&&r.gsc===0,'bank garden: the sync answer carries the plot perk and the sprite counter');
   r=G([E('harvest',0),E('harvest',1)]);ok(r.dropped==2&&r.garden[0]&&r.mat.herb==48,'bank garden: an unready or empty plot cannot be harvested');
   t+=20*60e3;r=G([E('harvest',0,5),E('harvest',0),E('harvest',0)]);ok(r.dropped==2&&!r.garden[0]&&r.mat.herb==52,'bank garden: a ripe plot harvests once by server time (forged extras and double harvest dropped)');
   r=G([M('ore',-2),E('plant',1,'ore')]);t+=30*60e3+GARDEN.wilt;r=G([E('harvest',1)]);ok(r.mat.ore==48+2,'bank garden: a plot left a day past ripe wilts (half yield)');

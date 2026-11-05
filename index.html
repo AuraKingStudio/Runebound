@@ -1693,7 +1693,7 @@
       body.lo .pn { box-shadow: 0 0 0 1px #0a121c, 0 8px 20px #000b !important; }
       body.lo .pn h2 { text-shadow: none; }
       /* the Zen Garden: a canvas scene (sand, pond, lanterns) behind 6 soil beds; sprout, bud, bloom; ripe beds glow (static on Low spec / reduced motion) */
-      .gdn { position: relative; display: grid; grid-template-columns: repeat(3, 1fr); gap: 10px; padding: 70px 10px 12px; margin: 8px 0; border-radius: 14px; background: #d9cfb4; box-shadow: inset 0 0 0 1px #8a7a5a, 0 4px 14px #0006; touch-action: none; overflow: hidden; }
+      .gdn { position: relative; display: grid; grid-template-columns: repeat(3, 1fr); gap: 10px; padding: 70px 10px 12px; margin: 8px 0; border-radius: 14px; background: #d9cfb4; box-shadow: inset 0 0 0 1px #8a7a5a, 0 4px 14px #0006; touch-action: pan-y; overflow: hidden; }
       .gdn canvas { position: absolute; inset: 0; width: 100%; height: 100%; }
       .gp { position: relative; min-height: 64px; min-width: 44px; border: 0; border-radius: 18px 18px 12px 12px; padding: 4px 2px 18px; background: radial-gradient(ellipse at 50% 85%, #5a3c25ee, #3e2817cc 70%); color: #f4ecd8; font-size: 11px; line-height: 1.2; cursor: pointer; overflow: hidden; box-shadow: 0 2px 0 #2a1a0e88; }
       .gp:focus-visible { outline: 2px solid #ffe08a; }
@@ -2446,7 +2446,7 @@
         if (!c) return 0;
         const e = now - c.at;
         if (e < c.d) return e < c.d / 2 ? 1 : 2;
-        return gdPet() != "wolf" && e - c.d >= GARDEN.wilt ? 4 : 3;
+        return (typeof c.pk == "string" ? c.pk : gdPet()) != "wolf" && e - c.d >= GARDEN.wilt ? 4 : 3; /* the pet at planting (= bank.js) */
       }
       /* gdDay(k): room for one more plant (p) / harvest (h) today? Counts it if so (the bank keeps its own count) */
       function gdDay(k) {
@@ -2461,7 +2461,7 @@
         const p = gdPlots(), sd = Object.hasOwn(GARDEN.seeds, s) && GARDEN.seeds[s];
         if (!isUnl("pet") || !sd || !Number.isInteger(i) || i < 0 || i >= GARDEN.plots || p[i] || !petCan(sd.cost) || !gdDay("p")) return false;
         for (const [m, q] of Object.entries(sd.cost)) matAdd(m, -q, "garden");
-        p[i] = { s, at: Date.now(), d: Math.round(sd.grow * (gdPet() == "owl" ? GARDEN.owl : 1)) };
+        p[i] = { s, at: Date.now(), d: Math.round(sd.grow * (gdPet() == "owl" ? GARDEN.owl : 1)), pk: gdPet() }; /* perk locked at planting (= bank.js) */
         gdLed("plant", i, s);
         track("garden", "plant_" + s);
         save();
@@ -2473,7 +2473,7 @@
       function gardenHarvest(i) {
         const p = gdPlots(), c = p[i], st = gdStage(c);
         if (st < 3 || !gdDay("h")) return false;
-        const pk = gdPet(), got = [];
+        const pk = typeof c.pk == "string" ? c.pk : "", got = [];
         for (const [m, q] of Object.entries(GARDEN.seeds[c.s].y)) { const n = st == 4 ? Math.max(1, Math.floor(q / 2)) : q + (pk == "fox" ? 1 : 0); petMat(m, n); got.push(MATS[m].e + n); }
         if (pk == "sprite" && st == 3 && (V.gdsc = (V.gdsc || 0) + 1) % 3 == 0) { petMat("echo", 1); got.push(MATS.echo.e + "1"); }
         p[i] = null;
@@ -2498,10 +2498,11 @@
       }
       function gardenSeed(s) { if (Object.hasOwn(GARDEN.seeds, s)) { GD_SEL = s; if (CUR_DLG == "pet") petUI(); } }
       /* gardenAdopt(list): the bank's plots ({ s, age, d } | null; age in server ms, so no clock skew) */
-      function gardenAdopt(r) {
+      function gardenAdopt(r, sc) {
+        if (Number.isInteger(sc) && sc >= 0) V.gdsc = sc; /* the bank's sprite every-3rd counter: no drift */
         if (!Array.isArray(r) || r.length != GARDEN.plots) return;
         const now = Date.now();
-        V.gd = r.map((c) => (c && Object.hasOwn(GARDEN.seeds, c.s) && Number.isFinite(c.age) && Number.isFinite(c.d) && c.d > 0 ? { s: c.s, at: now - Math.max(0, c.age), d: Math.min(c.d, 3600e3) } : null));
+        V.gd = r.map((c) => (c && Object.hasOwn(GARDEN.seeds, c.s) && Number.isFinite(c.age) && Number.isFinite(c.d) && c.d > 0 ? { s: c.s, at: now - Math.max(0, c.age), d: Math.min(c.d, 3600e3), pk: typeof c.pk == "string" && Object.hasOwn(GARDEN.perk, c.pk) ? c.pk : "" } : null));
       }
       /* ---------- daily streak: V.gs = { d: UTC day of the last claim, n: claims in a row, gw: week whose grace day is used } ----------
          Online the bank owns it (GARDEN.streak in bank.js): the client logs ["garden", 0, 0, "streak", 0, 0] and adopts the bank's
@@ -2514,7 +2515,7 @@
       }
       function gardenStreak() {
         const v = gsView();
-        if (!isUnl("pet") || !v.can) return false;
+        if (!isUnl("pet") || !v.can || (V.gsLk && bankUrl())) return false;
         const n = v.n + 1, pay = GARDEN.streak[(n - 1) % 7], got = [];
         V.gs = { d: v.day, n, gw: v.gap == 2 && v.alive ? v.wk : V.gs ? V.gs.gw : -1 };
         for (const [m, q] of Object.entries(pay)) { petMat(m, q); got.push(MATS[m].e + q); }
@@ -2620,6 +2621,7 @@
         ZEN.raf = requestAnimationFrame(zenFrame);
       }
       addEventListener("visibilitychange", () => { if (!document.hidden && CUR_DLG == "pet") zenStart(); });
+      addEventListener("resize", () => { if (CUR_DLG == "pet") zenStart(); }); /* rotate / resize: re-fit the canvas (no stretched scene) */
       /* zenSpot(j, on): where pet j hops next: the last tapped plot (active pet), a random plot or the pond's edge */
       function zenSpot(j, on) {
         const s = { x: ZEN.W * 0.36 + 34 + (j % 2) * 16, y: 46 + (j >> 1) * 6 };
@@ -2707,7 +2709,7 @@
         }).join("");
         const seeds = Object.entries(GARDEN.seeds).map(([k, d]) => `<button style="min-height:44px" ${GD_SEL == k ? 'class="claim"' : ""} onclick="gardenSeed('${k}')">${d.n} ${Object.entries(d.cost).map(([q, n]) => `<span style="color:${(m[q] || 0) >= n ? "inherit" : "#ff8a8a"}">${MATS[q].e}${n}</span>`).join(" ")}</button>`).join(" ");
         return `<h3 style="margin:8px 0 2px">🌸 The Zen Garden</h3><p class="sm">Pick a seed, tap an empty bed to plant, tap a growing plant to water it, come back to harvest. Drag on the sand to rake. ${pk ? PET[pk].n + ": " + GARDEN.perk[pk] + "." : "Your following pet helps the garden."} Ripe plants wilt after a day${pk == "wolf" ? " (not with your wolf)" : ""}.</p>
-          <div style="display:flex;flex-wrap:wrap;gap:6px">${seeds}</div><div class="gdn" onpointerdown="zenDown(event)" onpointermove="zenMove(event)" onpointerup="zenUp()" onpointerleave="zenUp()"><canvas id="zen" aria-hidden="true"></canvas>${plots}</div>${streakHTML()}`;
+          <div style="display:flex;flex-wrap:wrap;gap:6px">${seeds}</div><div class="gdn" onpointerdown="zenDown(event)" onpointermove="zenMove(event)" onpointerup="zenUp()" onpointerleave="zenUp()" onpointercancel="zenUp()"><canvas id="zen" aria-hidden="true"></canvas>${plots}</div>${streakHTML()}`;
       }
       function petUI() {
         const own = V.pets || {}, m = V.mat || {}, wms = petWait(), wt = wms ? Math.ceil(wms / 60000) + " min" : "";
@@ -3310,12 +3312,13 @@
         AN.t = 0;
         const url = bankUrl();
         if (!url || !AN.q.length) return;
+        if (navigator.onLine === false) { AN.t = setTimeout(anFlush, 20000); return; } /* offline: keep the queue, try later */
         const ev = AN.q.splice(0, 60);
         fetch(url + "/api/analytics", { method: "POST", headers: { "content-type": "application/json" }, body: JSON.stringify({ sid: anSid(), ev }), keepalive: true, cache: "no-store" }).catch(() => {});
         if (AN.q.length) AN.t = setTimeout(anFlush, 20000);
       }
       setTimeout(() => track("session"), 3000);
-      (function anBeat() { setTimeout(() => { if (!document.hidden) track("hb"); anBeat(); }, 60000); })(); /* one per minute the game is on screen: time connected */
+      (function anBeat() { setTimeout(() => { if (!document.hidden && navigator.onLine !== false) track("hb"); anBeat(); }, 60000); })(); /* one per minute the game is on screen: time connected */
       if (typeof addEventListener == "function") addEventListener("pagehide", anFlush); /* send what's left when the tab closes */
       setTimeout(newsShow, 2500); /* after the first frames, so it never competes with the load */
       setTimeout(bankSoon, 0); /* once at load (after the script, when NET_CONFIG exists): an imported or edited save shows the server's gold and XP right away */
@@ -3333,15 +3336,17 @@
           const later = LEDGER.slice(Math.max(0, end - LEDGER_BASE)); /* entries made while the request was out */
           V.gold = Math.max(0, r.gold + later.reduce((n, e) => n + e[1], 0));
           V.xp = r.xp + later.reduce((n, e) => n + e[2], 0);
+          const hv = led.some((e) => e[0] == "garden" && e[3] == "harvest"), m0 = { ...(V.mat || {}) };
           if (r.mat && typeof r.mat == "object") { /* the server owns materials: its counts win, plus what was gathered while the request was out */
             const m = {};
             for (const k in MATS) m[k] = Math.max(0, (Number.isInteger(r.mat[k]) ? r.mat[k] : 0) + later.reduce((n, e) => n + (e[0] == "mat" && e[4] == k ? e[5] | 0 : 0), 0));
             V.mat = m;
           }
+          if (hv && r.mat) { const d = ["herb", "ore", "echo"].map((k) => [k, (V.mat[k] || 0) - (m0[k] || 0)]).filter(([, n]) => n); if (d.length) chatSys("Harvest counted by the server: " + d.map(([k, n]) => MATS[k].e + (n > 0 ? "+" : "") + n).join(" "), "bye"); } /* the bank's harvest, not the preview */
           if (r.pet) petAdopt(r.pet); /* the server owns pets (RULES.pet) */
-          if (r.garden && !later.some((e) => e[0] == "garden")) { gardenAdopt(r.garden); gsAdopt(r.streak); } /* the server owns the garden and its streak (GARDEN in bank.js) */
+          if (r.garden && !later.some((e) => e[0] == "garden")) { gardenAdopt(r.garden, r.gsc); gsAdopt(r.streak); } /* the server owns the garden and its streak (GARDEN in bank.js) */
           if (Number.isFinite(r.bjm) && Number.isFinite(r.bjmAge)) { V.bjm = r.bjm; V.bjmAt = Date.now() - r.bjmAge; } /* the server's Assist price wins */
-          if (r.dropped) chatSys("The server refused " + r.dropped + " gold/XP change" + (r.dropped > 1 ? "s" : "") + ".", "bye");
+          if (r.dropped) chatSys("The server refused " + r.dropped + " change" + (r.dropped > 1 ? "s" : "") + " (gold, XP or materials).", "bye");
           save();
         } catch (e) {} finally { BANK_BUSY = false; if (LEDGER_BASE + LEDGER.length > BANK_AT) bankSoon(); }
       }
@@ -7456,6 +7461,8 @@
         bjClockStop(); /* the blackjack Assist clock */
         if (typeof BJ_VFX != "undefined") BJ_VFX.stop(); /* no blackjack sounds, coins or stamps after the window closes */
         CUR_DLG = "";
+        clearTimeout(GD_T); GD_T = 0; /* the garden refresh */
+        if (ZEN.raf) { cancelAnimationFrame(ZEN.raf); ZEN.raf = 0; } /* the zen scene */
         $("dlg").hidden = true;
         $("dp").className = "pn"; /* the shop widens the panel */
       }
@@ -8085,7 +8092,7 @@
         const L = lvlInfo(), row = (k, v) => `<div class="row"><span>${k}</span><b>${v}</b></div>`;
         $("dp").innerHTML = `<h2>📯 The Herald</h2><p class="sm">"Hear ye! The deeds of ${pname()}, as written in the hall of records."</p>
           ${row("Raids won", V.wins || 0)}${row("Raids lost", V.loss || 0)}${row("Fastest raid win", V.best ? V.best.toFixed(1) + "s" : "—")}
-          ${row("Level", `<span style="color:${lvlCol(L.L)}">${L.L}</span> (${L.cur}/${L.need} XP)`)}${row("Login streak", (V.ds || 0) + " days")}${row("Tales heard", V.lt || 0)}
+          ${row("Level", `<span style="color:${lvlCol(L.L)}">${L.L}</span> (${L.cur}/${L.need} XP)`)}${row("Login streak", (V.ds || 0) + ((V.ds || 0) == 1 ? " day" : " days"))}${row("Tales heard", V.lt || 0)}
           <button class="alt x" onclick="closeDlg()" title="Farewell">Farewell</button>`;
       }
       /* ---------- The Barkeep (bar, right wall) + the two wall boards ---------- */

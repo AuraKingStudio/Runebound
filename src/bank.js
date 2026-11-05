@@ -345,7 +345,7 @@ function createBank(options = {}) {
     for (const [m, q] of Object.entries(cr.pt)) if (q > 0) a.mat[m] = Math.min(MAT_MAX, (a.mat[m] || 0) + q); /* unused pet spends come back */
     if (earned && t - (a.nsAt || 0) >= NS_GAP) { a.ns = (a.ns || 0) + 1; a.nsAt = t; } /* a real sync (trade unlock): a real earn, at most one per 5 minutes */
     persist();
-    return [200, { gold: a.gold, xp: a.xp, mat: { ...a.mat }, tc: codeOf(id), dropped, pet: a.pet ? { own: { ...a.pet.own }, on: a.pet.on } : { own: {}, on: "" }, garden: (a.gd ? a.gd.p : Array(GARDEN.plots).fill(null)).map((c) => (c ? { s: c.s, age: t - c.at, d: c.d } : null)), streak: gsOut(a, t), bjm: a.bjm || 1, bjmAge: a.bjmAt ? t - a.bjmAt : 1e12 }]; /* bjmAge: ms since the last rent (no clock skew) */
+    return [200, { gold: a.gold, xp: a.xp, mat: { ...a.mat }, tc: codeOf(id), dropped, pet: a.pet ? { own: { ...a.pet.own }, on: a.pet.on } : { own: {}, on: "" }, garden: (a.gd ? a.gd.p : Array(GARDEN.plots).fill(null)).map((c) => (c ? { s: c.s, age: t - c.at, d: c.d, pk: typeof c.pk == "string" ? c.pk : "" } : null)), gsc: a.gd ? a.gd.sc | 0 : 0, streak: gsOut(a, t), bjm: a.bjm || 1, bjmAge: a.bjmAt ? t - a.bjmAt : 1e12 }]; /* bjmAge: ms since the last rent (no clock skew) */
   }
 
   /* ---------- trades ---------- */
