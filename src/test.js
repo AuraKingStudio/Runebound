@@ -1023,6 +1023,35 @@ async function bankTests(){
   for(const x of [f,lg,lg+'.1'])try{fs.unlinkSync(x)}catch{}}
  for(const x of [file,file+'2',file+'3',file+'4',file+'.tmp'])try{require('fs').unlinkSync(x)}catch{}
 }
+/* game analytics: anonymous events (validated, capped), trusted bank totals, owner-only reads */
+async function analyticsTests(){
+ const {createAnalytics}=require('./analytics.js');let t=Date.UTC(2026,10,5,12);const A=createAnalytics({now:()=>t}),sid='0123456789abcdef';
+ ok(A.record({sid:'nope',ev:[]})[0]==400&&A.record({sid,ev:new Array(61).fill(['hb'])})[0]==400,'analytics: a bad id or an oversized batch is refused');
+ const r=A.record({sid,ev:[['session'],['hb'],['hb'],['npc','barkeep'],['bj','win',40],['raid_win','small',95],['hack','x'],['npc','<script>'],['bj','win',1.5],['bj','lose',-5e7]]});
+ ok(r[0]==200&&r[1].kept==6,'analytics: only whitelisted events with clean keys and integer amounts are kept ('+r[1].kept+')');
+ A.bank('bj',-100,0);A.bank('bj',250,0);A.bank('raid',300,0);A.bank('mat',0,0,'gather');
+ let s=A.summary(1);const d=s.days[0];
+ ok(d.players==1&&d.newPlayers==1&&d.minutes==2&&d.sessions==1&&d.npc==1&&d.hands==1&&d.wins==1,'analytics: players, new players, minutes connected, clicks, hands and raid wins add up');
+ ok(d.bjBet==100&&d.bjPaid==250&&s.bank.raid.gin==300&&s.bank['mat:gather'].c==1,'analytics: blackjack bets and payouts come from the bank (trusted), with raid rewards and material sources');
+ ok(s.raid.small.win==1&&s.raid.small.secs==95&&s.bj.win.net==40&&s.npc.barkeep.c==1&&s.live==1,'analytics: per-boss raids, blackjack results, NPC clicks and players online now');
+ A.record({sid,ev:new Array(60).fill(['hb'])});A.record({sid,ev:new Array(60).fill(['hb'])});A.record({sid,ev:new Array(60).fill(['hb'])});A.record({sid,ev:new Array(60).fill(['hb'])});
+ ok(A.summary(1).days[0].minutes<=240,'analytics: one browser counts at most 240 events a minute (flood cap)');
+ t+=864e5;A.record({sid,ev:[['session']]});s=A.summary(2);ok(s.days[1].players==1&&s.days[1].newPlayers==0&&s.players==1,'analytics: a returning player is not new again, and is counted once over several days');
+ /* over HTTP: anyone can send events; only the ADMIN_KEY reads them, with a lock after 10 wrong tries */
+ const {server}=createDirectoryServer({allowedOrigins:[],bank:true,bankFile:path.join(os.tmpdir(),'rb-an-bank-'+process.pid+'.json'),adminKey:'k'.repeat(32)});
+ await new Promise(r=>server.listen(0,'127.0.0.1',r));const base='http://127.0.0.1:'+server.address().port,post=(p,b)=>fetch(base+p,{method:'POST',headers:{'content-type':'application/json'},body:JSON.stringify(b)}).then(async r=>[r.status,await r.json()]);
+ ok((await post('/api/analytics',{sid,ev:[['npc','smith']]}))[0]==200,'analytics http: a browser can send events');
+ await post('/api/bank/sync',{tok:'ef'.repeat(16),led:[['bj',-50,0]],seed:{gold:500}});
+ ok((await post('/api/analytics/admin',{key:'wrong'}))[0]==403&&(await post('/api/analytics/admin',{}))[0]==403,'analytics http: no key or a wrong key reads nothing');
+ const ad=await post('/api/analytics/admin',{key:'k'.repeat(32),days:3});
+ ok(ad[0]==200&&ad[1].npc.smith.c==1&&ad[1].days.at(-1).bjBet==50,'analytics http: the owner key reads the summary, with the bank\'s blackjack bets');
+ for(let i=0;i<10;i++)await post('/api/analytics/admin',{key:'x'.repeat(32)});
+ ok((await post('/api/analytics/admin',{key:'k'.repeat(32)}))[0]==429,'analytics http: 10 wrong keys lock the admin read for that IP');
+ server.close();try{fs.unlinkSync(path.join(os.tmpdir(),'rb-an-bank-'+process.pid+'.json'))}catch{}
+ {const {server:s2}=createDirectoryServer({allowedOrigins:[],adminKey:''});await new Promise(r=>s2.listen(0,'127.0.0.1',r));
+  const r2=await fetch('http://127.0.0.1:'+s2.address().port+'/api/analytics/admin',{method:'POST',headers:{'content-type':'application/json'},body:JSON.stringify({key:''})});
+  ok(r2.status==403,'analytics http: with no ADMIN_KEY set, nobody can read');s2.close();}
+}
 async function takeoverTests(){
  const {server}=createDirectoryServer({allowedOrigins:[],hostStaleMs:50});await new Promise(r=>server.listen(0,'127.0.0.1',r));
  const base=`http://127.0.0.1:${server.address().port}`,post=(path,body)=>fetch(base+path,{method:'POST',headers:{'content-type':'application/json'},body:JSON.stringify(body)}).then(async r=>({status:r.status,body:await r.json()}));
@@ -1237,4 +1266,4 @@ async function benchTests(){
 function saveLoadTests(){{const evil={gold:'1e999',up:{dmg:2,__proto__:{x:1},hack:99},cls:'constructor',tut:-7,lp:-5,lpt:Infinity,bjc:'9',wins:-3,best:1e99,mb:'x'.repeat(500),gd:{name:'G',m:[{c:'toString'},{c:'tank'}]}};
  const st={[T.SAVE_KEY]:JSON.stringify(evil)},c={...ctx,localStorage:{getItem:k=>st[k]||null,setItem:(k,v)=>st[k]=v,removeItem:k=>delete st[k]}};c.window=c;vm.createContext(c);vm.runInContext(SRC+';globalThis.LV=V;',c);const L=c.LV;
  ok(L.gold===0&&Object.keys(L.up).join()=='dmg,vit,spd,cdr'&&L.up.dmg==2&&L.cls===''&&L.tut===0&&L.lp===0&&L.lpt===undefined&&L.bjc===undefined&&L.wins===0&&L.best===1e9&&L.mb.length==10&&L.gd.m.length==1,'save load: own keys only, numbers range-clamped, prototype names refused');}}
-(BENCH_ONLY?Promise.resolve():networkTests().then(signalingTests).then(hostLossTests).then(brainHttpTests).then(reportTests).then(takeoverTests).then(bankTests).then(rateLimitTests).then(()=>marketHttpTests()).then(saveLoadTests)).then(benchTests).then(()=>{console.log(f?f+' FAILED':'ALL PASSED');process.exit(f?1:0);}).catch(e=>{console.error(e);process.exit(1);});
+(BENCH_ONLY?Promise.resolve():networkTests().then(signalingTests).then(hostLossTests).then(brainHttpTests).then(reportTests).then(takeoverTests).then(bankTests).then(analyticsTests).then(rateLimitTests).then(()=>marketHttpTests()).then(saveLoadTests)).then(benchTests).then(()=>{console.log(f?f+' FAILED':'ALL PASSED');process.exit(f?1:0);}).catch(e=>{console.error(e);process.exit(1);});

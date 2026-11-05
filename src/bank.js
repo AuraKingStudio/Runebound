@@ -85,6 +85,7 @@ const int = (n, lo, hi) => Number.isInteger(n) && n >= lo && n <= hi;
 function createBank(options = {}) {
   const file = options.file || path.join(__dirname, "..", "bank.json");
   const now = options.now || Date.now;
+  const onEntry = typeof options.onEntry == "function" ? options.onEntry : null; /* analytics: told about every ACCEPTED entry */
   /* one file, written atomically: { v: 2, accts, trades, migrated } (older files held only the accounts) */
   let accts = {}, trades = {}, migrated = false;
   try {
@@ -244,6 +245,8 @@ function createBank(options = {}) {
     let dropped = 0, earned = false;
     const cr = { sp: {}, ms: {}, c: 0, used: {}, pt: {} }; /* craft spends in this sync per material (for recipes); contract units delivered (for payouts) */
     for (const e of body.led) {
+      const d0 = dropped;
+      try {
       if (!Array.isArray(e) || typeof e[0] != "string" || !int(e[1], -1e6, 1e6) || !int(e[2], 0, 1e5)) { dropped++; continue; }
       const [kind, g, x] = e, rule = RULES[kind];
       if (rule) {
@@ -271,6 +274,7 @@ function createBank(options = {}) {
         if (g > 0 || x || a.gold + g < 0) { dropped++; continue; }
         a.gold += g;
       } else dropped++; /* dev tools, market (escrow pays itself) and unknown kinds never move the bank */
+      } finally { if (onEntry && dropped == d0 && Array.isArray(e)) try { onEntry(e[0], e[1], e[2], e[3]); } catch {} } /* accepted: count it */
     }
     for (const [m, q] of Object.entries(cr.pt)) if (q > 0) a.mat[m] = Math.min(MAT_MAX, (a.mat[m] || 0) + q); /* unused pet spends come back */
     if (earned && t - (a.nsAt || 0) >= NS_GAP) { a.ns = (a.ns || 0) + 1; a.nsAt = t; } /* a real sync (trade unlock): a real earn, at most one per 5 minutes */

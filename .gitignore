@@ -15,3 +15,5 @@ bank-trades.json
 bank-trades.json.tmp
 bank-trades.log
 .claude/worktrees/
+analytics.json
+analytics.json.tmp

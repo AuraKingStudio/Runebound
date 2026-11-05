@@ -1902,6 +1902,7 @@
           if (r.events.length > 40) r.events.shift();
         }
         async function roomJoin(profile, asHost) {
+          if (typeof track == "function") track("join", asHost ? "takeover" : "room"); /* the networking block also runs alone in tests */
           const linked = roomFromLink(), mine = sessionStorage.getItem("rbRoom");
           const role = asHost || !(linked && linked != mine) ? "host" : "guest"; /* a host reloading its own room link stays host; asHost: taking over after host loss */
           const code = linked || roomToken().slice(0, 12), key = await roomKeyGet();
@@ -2349,6 +2350,7 @@
       function petLed(op, k) { LEDGER.push(["pet", 0, 0, op, k, 0]); if (LEDGER.length > 300) { LEDGER.shift(); LEDGER_BASE++; } bankSoon(); }
       const petCan = (cost) => Object.entries(cost).every(([m, q]) => ((V.mat || {})[m] || 0) >= q);
       function petBuy(k) {
+        track("pet", k);
         const d = PET[k];
         if (!d || !isUnl("pet") || (V.pets || {})[k] || !petCan(d.price)) return false;
         for (const [m, q] of Object.entries(d.price)) matAdd(m, -q, "pet");
@@ -2981,6 +2983,30 @@
       const bankUrl = () => { const u = typeof NET_CONFIG != "undefined" && NET_CONFIG.signalingUrl; return u && u.startsWith("https://") ? u : ""; };
       const bankTok = () => { let t = ""; try { t = localStorage.getItem("rb_btok") || ""; } catch (e) {} if (!/^[a-f0-9]{32}$/.test(t)) { t = [...crypto.getRandomValues(new Uint8Array(16))].map((b) => b.toString(16).padStart(2, "0")).join(""); try { localStorage.setItem("rb_btok", t); } catch (e) {} } return t; };
       function bankSoon() { if (!BANK_T && bankUrl()) BANK_T = setTimeout(bankSync, 1100); }
+      /* ---------- game analytics (online server only, anonymous) ----------
+         A random id per browser (not the bank token, nothing personal): sessions, minutes connected, NPC clicks, blackjack
+         hands, raids, invites, gathering. Batched every 20 s to /api/analytics; only the owner can read the totals.
+         Gold and rewards are counted by the bank itself, so an edited client can't fake those numbers. */
+      const AN = { q: [], t: 0 };
+      const anSid = () => { let s = ""; try { s = localStorage.getItem("rb_asid") || ""; } catch (e) {} if (!/^[a-f0-9]{16}$/.test(s)) { s = [...crypto.getRandomValues(new Uint8Array(8))].map((b) => b.toString(16).padStart(2, "0")).join(""); try { localStorage.setItem("rb_asid", s); } catch (e) {} } return s; };
+      /* track(name, key, n): queue one event (no-op offline, LAN and room play) */
+      function track(name, key = "", n = 1) {
+        if (!bankUrl()) return;
+        AN.q.push([name, String(key).toLowerCase().replace(/[^a-z0-9_-]/g, "").slice(0, 24), Math.max(-1e6, Math.min(1e6, Math.round(+n) || 0))]);
+        if (AN.q.length > 300) AN.q.splice(0, AN.q.length - 300);
+        if (!AN.t) AN.t = setTimeout(anFlush, 20000);
+      }
+      function anFlush() {
+        AN.t = 0;
+        const url = bankUrl();
+        if (!url || !AN.q.length) return;
+        const ev = AN.q.splice(0, 60);
+        fetch(url + "/api/analytics", { method: "POST", headers: { "content-type": "application/json" }, body: JSON.stringify({ sid: anSid(), ev }), keepalive: true, cache: "no-store" }).catch(() => {});
+        if (AN.q.length) AN.t = setTimeout(anFlush, 20000);
+      }
+      setTimeout(() => track("session"), 3000);
+      (function anBeat() { setTimeout(() => { if (!document.hidden) track("hb"); anBeat(); }, 60000); })(); /* one per minute the game is on screen: time connected */
+      if (typeof addEventListener == "function") addEventListener("pagehide", anFlush); /* send what's left when the tab closes */
       setTimeout(newsShow, 2500); /* after the first frames, so it never competes with the load */
       setTimeout(bankSoon, 0); /* once at load (after the script, when NET_CONFIG exists): an imported or edited save shows the server's gold and XP right away */
       async function bankSync() {
@@ -3065,6 +3091,7 @@
         return { gold: Math.min(1e6, v(gid)), mat };
       }
       async function tradeSend() {
+        track("trade");
         const to = String(($("tto") && $("tto").value) || "").trim().toLowerCase();
         if (!/^[a-f0-9]{10}$/.test(to)) { TRADE_UI.msg = "A trade code is 10 letters and digits (0-9, a-f)."; return tradeUI(); }
         return tradeRun(() => tradeApi("offer", { to, give: tradeRead("tg_", "tgg"), want: tradeRead("tw_", "twg") }), "Offer sent: what you give is held safely until they answer.");
@@ -3204,6 +3231,7 @@
         V.gfr = Math.min(0.999, amt - n);
         V.gn = V.gn || {};
         V.gn[i] = Date.now() + GATHER.cd;
+        track("gather", g.k, n);
         day.n++;
         V.gm = (V.gm || 0) + 1;
         const got = (n > 0 ? matAdd(g.k, n, "gather") : 0) + (n > 0 && petBonus("gather") ? petMat(g.k, petLocal("g", n * petBonus("gather"))) : 0); /* fox: preview of the bank's bonus */
@@ -6028,6 +6056,7 @@
         V.rc = (V.rc || 0) + 1; /* raids played: the equipment stock re-rolls every 2 */
         V.best = V.best ? Math.min(V.best, S.at) : S.at;
         S.end = "win";
+        track("raid_win", S.raid, Math.round(S.at || 0)); /* n: clear time in seconds */
         if (BRAIN_LOG) brainSend();
         S.res = 5;
         V.trial = V.trial || {};
@@ -6679,6 +6708,7 @@
       function raidEnd(why) {
         raidEvent(["end", "lose", why]);
         S.end = "lose";
+        track("raid_lose", S.raid);
         if (BRAIN_LOG) brainSend();
         S.why = why;
         S.res = 5;
@@ -7006,6 +7036,7 @@
       const TP_TIME = 1.6;
       /* startTeleport(): runes flare, a pillar of light lifts the player, then the raid starts (see step and teleportFx) */
       function startTeleport(key = "small", team, net = null) {
+        track("raid_go", key);
         if (S.tp || S.sc != "hub") return;
         S.next = { key, team, net };
         S.tp = S.tm || 1e-6; /* never 0, so "is teleporting" stays true */
@@ -7120,6 +7151,7 @@
       let CUR_DLG = ""; /* which NPC menu is open ("elder" | "shop" | "lore"), kept across hot reloads */
       function openDlg(w) {
         CUR_DLG = w;
+        track("npc", w);
         $("dlg").hidden = false;
         const tn = { elder: ELDER, shop: SHOP, lore: LORE }[w];
         if (tn && tut() < tn.tu) return lockedUI("tut");
@@ -8744,6 +8776,7 @@
         }
         if (paid) goldAdd(paid, "bj");
         BJ.win = paid - staked;
+        track("bj", BJ.fx && BJ.fx.k == "blackjack" && BJ.win > 0 ? "blackjack" : BJ.win > 0 ? "win" : BJ.win < 0 ? "lose" : "push", BJ.win);
         const one = BJ.hs.length == 1, h0 = BJ.hs[0];
         BJ.end = one
           ? (bjVal(h0.c) > 21 ? "Bust! The Barkeep takes your coin." : msgs[0] == "BLACKJACK!" ? "BLACKJACK! +" + paid : h0.res == "win" ? "You win! +" + paid : h0.res == "push" ? "Push. Your bet is returned." : "The house wins this round.")
@@ -9384,6 +9417,7 @@
       $("blk").addEventListener("pointerdown", (e) => {
         e.preventDefault();
         const link = lobbyLink();
+        track("invite", "lobby");
         (navigator.clipboard?.writeText(link) || Promise.reject()).then(() => toast("Lobby link copied: send it to friends"), () => chatSys("Lobby link: " + link));
         sfx("ui");
       });
@@ -9414,6 +9448,7 @@
       }
       function setInvite() {
         const link = lobbyLink();
+        track("invite", "party");
         (navigator.clipboard?.writeText(link) || Promise.reject()).then(() => toast("Invite link copied: send it to friends"), () => chatSys("Invite link: " + link));
         sfx("ui");
       }

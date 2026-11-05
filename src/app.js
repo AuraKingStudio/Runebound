@@ -4,10 +4,11 @@
 "use strict";
 
 const http = require("node:http");
-const { randomBytes } = require("node:crypto");
+const { randomBytes, timingSafeEqual } = require("node:crypto");
 const { createMarket } = require("./market.js");
 const { createBrain } = require("./brain.js");
 const { createBank } = require("./bank.js");
+const { createAnalytics } = require("./analytics.js");
 
 const MAX_BODY_BYTES = 16 * 1024;
 const MAX_HUBS = 10;
@@ -44,7 +45,11 @@ function createDirectoryServer(options = {}) {
   const feedbackFile = options.feedbackFile || require("path").join(__dirname, "..", "feedback.log");
   const market = options.market === true ? createMarket({ file: options.marketFile }) : null;
   const brain = options.brain === false ? null : createBrain({ file: options.brainFile });
-  const bank = options.bank === true ? createBank({ file: options.bankFile }) : null; /* online mode: the server owns gold and XP */
+  /* game analytics (owner-only reads, ADMIN_KEY): anonymous play events + the bank's accepted entries (trusted money totals) */
+  const analytics = options.analytics === false ? null : createAnalytics({ file: options.analyticsFile }) /* no file (tests): memory only */;
+  const adminKey = options.adminKey ?? process.env.ADMIN_KEY ?? "";
+  const adminFails = new Map(); /* ip -> failed admin key tries (last 10 minutes) */
+  const bank = options.bank === true ? createBank({ file: options.bankFile, onEntry: analytics ? analytics.bank : null }) : null; /* online mode: the server owns gold and XP */
   const tradeHits = new Map(); /* ip -> trade call times (last minute) */
   /* local playtests: any page served from this network (192.168.x.x, 10.x.x.x, 172.16-31.x.x) may use the service */
   const lanOrigin = (o) => options.allowLan !== false && /^http:\/\/(192\.168\.\d+\.\d+|10\.\d+\.\d+\.\d+|172\.(1[6-9]|2\d|3[01])\.\d+\.\d+)(:\d+)?$/.test(o);
@@ -187,6 +192,23 @@ function createDirectoryServer(options = {}) {
       const [status, value] = bank["trade" + tm[1][0].toUpperCase() + tm[1].slice(1)](body || {}, ip);
       return send(res, status, value);
     }
+    if (url.pathname === "/api/analytics") {
+      if (!analytics) return send(res, 503, { error: "Analytics are off on this server." });
+      const [status, value] = analytics.record(body || {});
+      return send(res, status, value);
+    }
+    if (url.pathname === "/api/analytics/admin") {
+      /* owner only: the key lives in the server's environment (ADMIN_KEY), never in the game files; 10 wrong tries per IP per 10 minutes */
+      const now = Date.now(), fails = (adminFails.get(ip) || []).filter((x) => now - x < 600e3);
+      if (fails.length >= 10) return send(res, 429, { error: "Too many tries." });
+      const k = typeof body.key === "string" ? Buffer.from(body.key) : Buffer.alloc(0), want = Buffer.from(String(adminKey));
+      if (!analytics || want.length < 16 || k.length !== want.length || !timingSafeEqual(k, want)) {
+        fails.push(now); adminFails.set(ip, fails);
+        if (adminFails.size > 20000) for (const [kk, v] of adminFails) if (now - v[v.length - 1] > 600e3) adminFails.delete(kk);
+        return send(res, 403, { error: "Forbidden." });
+      }
+      return send(res, 200, analytics.summary(Math.min(90, Math.max(1, Number.isInteger(body.days) ? body.days : 14))));
+    }
     if (url.pathname === "/api/feedback") {
       /* playtest notes: one JSON line per note in feedback.log (no session needed; size-capped, rate-limited above) */
       if (typeof body.text !== "string" || !body.text.trim() || body.text.length > 1500) return send(res, 400, { error: "Feedback is invalid." });
@@ -306,7 +328,7 @@ function createDirectoryServer(options = {}) {
   });
   server.keepAliveTimeout = 5000; /* slow or idle connections are dropped (slowloris) */
   server.maxConnections = options.maxConnections ?? 4000;
-  return { server, hubs, sessions, cleanup, market, brain, bank };
+  return { server, hubs, sessions, cleanup, market, brain, bank, analytics };
 }
 
 if (require.main === module) {
@@ -316,7 +338,7 @@ if (require.main === module) {
   /* modes: local (this PC), --lan (players on your Wi-Fi), --cf (behind a Cloudflare tunnel: home PC or VPS).
      Behind the tunnel only this machine may connect (127.0.0.1); Cloudflare filters floods before they arrive. */
   const cf = process.env.TRUST_CLOUDFLARE === "1" || process.argv.includes("--cf"), lan = process.argv.includes("--lan");
-  const { server } = createDirectoryServer({ allowedOrigins, trustCloudflare: cf, allowLan: !cf, bank: cf,
+  const { server } = createDirectoryServer({ allowedOrigins, trustCloudflare: cf, allowLan: !cf, bank: cf, analyticsFile: require("path").join(__dirname, "..", "analytics.json"),
     requestsPerMinute: Number(process.env.RATE_PER_MIN) || (cf ? 600 : 3000) });
   const bind = cf ? "127.0.0.1" : lan ? "0.0.0.0" : "127.0.0.1";
   server.listen(port, bind, () => console.log(`Runebound signaling directory (${cf ? "online" : lan ? "LAN" : "local"}) listening on ${bind}:${port}`));
