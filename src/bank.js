@@ -31,7 +31,7 @@ const MAT_SRC = {
   bounty: { m: all(5), gap: 1000, day: 50 },
   contract: { m: { echo: 3 }, gap: 0, day: 0 }, /* Contract Board reward: echo only (never a rare), at most 3 and never more than delivered; 3 a day via contractOk */
 };
-const MAT_SPEND = ["craft", "maiden", "smith", "contract", "pet"]; /* n < 0 only, never below 0 */
+const MAT_SPEND = ["craft", "maiden", "smith", "contract", "pet", "garden"]; /* n < 0 only, never below 0 */
 /* Contract Board: a payout (gold, XP or a material reward, each its own entry) needs a delivery of at least CONTRACT.min
    materials ("contract" spends) earlier in the same sync, one payout of each kind per delivery, at most CONTRACT.day a day. */
 const CONTRACT = { min: 6, day: 3 };
@@ -60,6 +60,14 @@ const PET = {
   food: { fox: "herb", owl: "echo", wolf: "bark", sprite: "dust" }, max: 5, setGap: 600e3, /* one switch per 10 min: no swapping pets per gain type */
 };
 const petMult = (lv) => 1 + (lv - 1) / 4;
+/* the Beastkeeper's Garden: the bank owns the plots. Ledger ["garden", 0, 0, "plant", plot, seed] paid by "garden" material spends
+   earlier in the same sync, ["garden", 0, 0, "harvest", plot, 0]. Plant time, growth and yield use server time and these tables only.
+   Perk of the active pet: owl grows 15% faster (fixed at planting), fox +1 yield, sprite +1 echo every 3rd harvest, wolf: never wilts.
+   A plot left WILT ms after it is ripe wilts (yield halved, at least 1). Day caps: plants and harvests. */
+const GARDEN = {
+  plots: 6, day: 24, wilt: 24 * 3600e3, owl: 0.85,
+  seeds: { herb: { cost: { herb: 2 }, grow: 20 * 60e3, y: { herb: 4 } }, ore: { cost: { ore: 2 }, grow: 30 * 60e3, y: { ore: 5 } }, echo: { cost: { herb: 2, ore: 2 }, grow: 40 * 60e3, y: { echo: 2 } } },
+};
 const MAT_MAX = 99999, SEED_MAT = 50;
 /* trades (online only): A offers { give, want } to B's public trade code. A's give is escrowed at once (A's confirm, the offer can't change);
    B accepts (B's confirm): the bank re-checks B, swaps both sides in one step and burns TAX of the gold each side receives.
@@ -166,6 +174,7 @@ function createBank(options = {}) {
       if (src == "maiden") cr.ms[k] = (cr.ms[k] || 0) - n;
       if (src == "contract") cr.c -= n;
       if (src == "pet") cr.pt[k] = (cr.pt[k] || 0) - n;
+      if (src == "garden") cr.gd[k] = (cr.gd[k] || 0) - n;
       return true;
     }
     if (src == "maiden") {
@@ -216,6 +225,32 @@ function createBank(options = {}) {
     if (op == "feed") { const lv = own[k]; if (!lv || lv >= PET.max || !pay({ [PET.food[k]]: 5 * lv })) return false; own[k] = lv + 1; return true; }
     return false;
   }
+  /* gardenEntry(a, op, plot, g, x, s, t, cr): plant / harvest. Out: true if applied. */
+  function gardenEntry(a, op, i, g, x, s, t, cr) {
+    if (g || x || !Number.isInteger(i) || i < 0 || i >= GARDEN.plots) return false;
+    if (!a.gd || !Array.isArray(a.gd.p)) a.gd = { p: Array(GARDEN.plots).fill(null), sc: 0 };
+    const p = a.gd.p, pk = a.pet && a.pet.own && a.pet.own[a.pet.on] ? a.pet.on : "";
+    if (op == "plant") {
+      const sd = typeof s == "string" && Object.hasOwn(GARDEN.seeds, s) && GARDEN.seeds[s];
+      if (!sd || p[i] || Object.entries(sd.cost).some(([m, q]) => (cr.gd[m] || 0) < q) || !dayOk(a, "garden:plant", 1, GARDEN.day, t)) return false;
+      for (const [m, q] of Object.entries(sd.cost)) cr.gd[m] -= q;
+      p[i] = { s, at: t, d: Math.round(sd.grow * (pk == "owl" ? GARDEN.owl : 1)) };
+      return true;
+    }
+    if (op == "harvest") {
+      const c = p[i];
+      if (s || !c || t - c.at < c.d || !dayOk(a, "garden:harvest", 1, GARDEN.day, t)) return false;
+      const wilt = pk != "wolf" && t - c.at - c.d >= GARDEN.wilt;
+      for (const [m, q] of Object.entries(GARDEN.seeds[c.s].y)) {
+        const n = wilt ? Math.max(1, Math.floor(q / 2)) : q + (pk == "fox" ? 1 : 0);
+        a.mat[m] = Math.min(MAT_MAX, (a.mat[m] || 0) + n);
+      }
+      if (pk == "sprite" && !wilt && ++a.gd.sc % 3 == 0) a.mat.echo = Math.min(MAT_MAX, (a.mat.echo || 0) + 1);
+      p[i] = null;
+      return true;
+    }
+    return false;
+  }
   /* sync({ tok, led, seed }, ip): In: token, new ledger entries, offline balance (first sync only). Out: [status, { gold, xp, dropped }] */
   const seeded = new Map(); /* ip -> times a new account got a seed (in memory, last SEED_WINDOW_MS) */
   /* seedOk(ip, t): may this IP seed one more new account? Records it if so. No IP (tests, local) = no limit. */
@@ -243,7 +278,7 @@ function createBank(options = {}) {
     const prevAt = a.at || t; /* the client may have rented any time since the last sync, when the price was higher */
     a.at = t;
     let dropped = 0, earned = false;
-    const cr = { sp: {}, ms: {}, c: 0, used: {}, pt: {} }; /* craft spends in this sync per material (for recipes); contract units delivered (for payouts) */
+    const cr = { sp: {}, ms: {}, c: 0, used: {}, pt: {}, gd: {} }; /* craft spends in this sync per material (for recipes); contract units delivered (for payouts) */
     for (const e of body.led) {
       const d0 = dropped;
       try {
@@ -270,16 +305,19 @@ function createBank(options = {}) {
         else if (e[5] > 0) earned = true;
       } else if (kind == "pet") {
         if (!petEntry(a, e[3], e[4], g, x, e[5], t, cr)) dropped++;
+      } else if (kind == "garden") {
+        if (!gardenEntry(a, e[3], e[4], g, x, e[5], t, cr)) dropped++;
       } else if (SPENDS.includes(kind)) {
         if (g > 0 || x || a.gold + g < 0) { dropped++; continue; }
         a.gold += g;
       } else dropped++; /* dev tools, market (escrow pays itself) and unknown kinds never move the bank */
       } finally { if (onEntry && dropped == d0 && Array.isArray(e)) try { onEntry(e[0], e[1], e[2], e[3]); } catch {} } /* accepted: count it */
     }
+    for (const [m, q] of Object.entries(cr.gd)) if (q > 0) a.mat[m] = Math.min(MAT_MAX, (a.mat[m] || 0) + q); /* unused garden spends come back */
     for (const [m, q] of Object.entries(cr.pt)) if (q > 0) a.mat[m] = Math.min(MAT_MAX, (a.mat[m] || 0) + q); /* unused pet spends come back */
     if (earned && t - (a.nsAt || 0) >= NS_GAP) { a.ns = (a.ns || 0) + 1; a.nsAt = t; } /* a real sync (trade unlock): a real earn, at most one per 5 minutes */
     persist();
-    return [200, { gold: a.gold, xp: a.xp, mat: { ...a.mat }, tc: codeOf(id), dropped, pet: a.pet ? { own: { ...a.pet.own }, on: a.pet.on } : { own: {}, on: "" }, bjm: a.bjm || 1, bjmAge: a.bjmAt ? t - a.bjmAt : 1e12 }]; /* bjmAge: ms since the last rent (no clock skew) */
+    return [200, { gold: a.gold, xp: a.xp, mat: { ...a.mat }, tc: codeOf(id), dropped, pet: a.pet ? { own: { ...a.pet.own }, on: a.pet.on } : { own: {}, on: "" }, garden: (a.gd ? a.gd.p : Array(GARDEN.plots).fill(null)).map((c) => (c ? { s: c.s, age: t - c.at, d: c.d } : null)), bjm: a.bjm || 1, bjmAge: a.bjmAt ? t - a.bjmAt : 1e12 }]; /* bjmAge: ms since the last rent (no clock skew) */
   }
 
   /* ---------- trades ---------- */
@@ -417,4 +455,4 @@ function createBank(options = {}) {
   return { sync, flush, tradeOffer, tradeAccept, tradeCancel, tradeList, TRADE, RULES, MAT_SRC, ASSIST, assistPrice, size: () => Object.keys(accts).length };
 }
 
-module.exports = { createBank, PET, RULES, ASSIST, SEEDS_PER_IP, MATS, MAT_SRC, TRADE };
+module.exports = { createBank, PET, GARDEN, RULES, ASSIST, SEEDS_PER_IP, MATS, MAT_SRC, TRADE };

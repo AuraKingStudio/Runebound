@@ -1692,6 +1692,21 @@
       .pn :focus-visible { outline: 2px solid var(--ae-teal); outline-offset: 2px; }
       body.lo .pn { box-shadow: 0 0 0 1px #0a121c, 0 8px 20px #000b !important; }
       body.lo .pn h2 { text-shadow: none; }
+      /* the Beastkeeper's Garden: 6 code-drawn plots, owned pets hop between them (no motion on Low spec / reduced motion) */
+      .gdn { position: relative; display: grid; grid-template-columns: repeat(3, 1fr); gap: 8px; padding: 10px; margin: 8px 0; border-radius: 12px; background: linear-gradient(#2b4a2a, #1d3320); box-shadow: inset 0 0 0 1px #4d7a3f; }
+      .gp { position: relative; min-height: 64px; min-width: 44px; border: 0; border-radius: 10px; padding: 4px 2px 18px; background: linear-gradient(#5a3c25, #3e2817); color: #f4ecd8; font-size: 11px; line-height: 1.2; cursor: pointer; overflow: hidden; }
+      .gp:focus-visible { outline: 2px solid #ffe08a; }
+      .gp.rp { box-shadow: 0 0 0 2px #ffe08a; }
+      .gp.wl { filter: saturate(0.3) brightness(0.8); }
+      .gp .st { position: absolute; left: 50%; bottom: 18px; width: 3px; margin-left: -1.5px; background: #6fcf5a; border-radius: 2px; }
+      .gp .lf { position: absolute; left: 50%; width: 12px; height: 7px; background: #7fe36a; border-radius: 0 9px 0 9px; }
+      .gp .fl { position: absolute; left: 50%; width: 14px; height: 14px; margin-left: -7px; border-radius: 50%; box-shadow: 0 0 6px currentColor; }
+      .gp .lb { position: absolute; left: 0; right: 0; bottom: 3px; text-align: center; }
+      .gpet { position: absolute; font-size: 18px; pointer-events: none; animation: gHop 9s ease-in-out infinite; }
+      .gpet.on { filter: drop-shadow(0 0 5px #ffe08a); }
+      @keyframes gHop { 0%, 100% { transform: translate(0, 0); } 25% { transform: translate(60px, -4px); } 50% { transform: translate(60px, 40px); } 75% { transform: translate(0, 40px); } }
+      body.lo .gpet { animation: none; }
+      @media (prefers-reduced-motion: reduce) { .gpet { animation: none; } }
 
       /* ---------- Dusk Aether HUD: chamfered runestone plates, a rune-coin gold pill, glass badge, chat and teal action banner ---------- */
       #btns .hb, #btns #bt, #btns #mlbar button {
@@ -2404,6 +2419,87 @@
         PET_UL_T = 0.5;
         if (S.sc == "hub" && P && !isUnl("pet") && lvlInfo().L >= PET_LV) unlockNpc("pet");
       }
+      /* ---------- the Beastkeeper's Garden (AFK): V.gd = 6 plots { s: seed, at: local ms, d: grow ms } | null ----------
+         Online the bank owns the plots (GARDEN in bank.js): the client logs "garden" material spends + ["garden", 0, 0, "plant", plot, seed]
+         and ["garden", 0, 0, "harvest", plot, 0]; the bank computes growth and yield from server time and its own tables.
+         Locally (offline / LAN) the same tables run on this copy. Perk of the active pet: owl grows 15% faster, fox +1 yield,
+         sprite +1 echo every 3rd harvest, wolf: never wilts. */
+      const GARDEN = {
+        plots: 6, day: 24, wilt: 24 * 3600e3, owl: 0.85,
+        seeds: { herb: { cost: { herb: 2 }, grow: 20 * 60e3, y: { herb: 4 }, col: "#7fe36a", n: "Moonleaf" }, ore: { cost: { ore: 2 }, grow: 30 * 60e3, y: { ore: 5 }, col: "#c9a27a", n: "Ironroot" }, echo: { cost: { herb: 2, ore: 2 }, grow: 40 * 60e3, y: { echo: 2 }, col: "#9fd8ff", n: "Echo bloom" } },
+        perk: { owl: "grows 15% faster", fox: "+1 harvest", sprite: "a bonus echo every 3rd harvest", wolf: "plants never wilt" },
+      };
+      let GD_SEL = "herb", GD_T = 0;
+      const gdPlots = () => { if (!Array.isArray(V.gd) || V.gd.length != GARDEN.plots) V.gd = Array(GARDEN.plots).fill(null); return V.gd; };
+      const gdPet = () => (V.pet && (V.pets || {})[V.pet] ? V.pet : "");
+      /* gdStage(c, now): 0 empty, 1-2 growing, 3 ripe, 4 wilted */
+      function gdStage(c, now = Date.now()) {
+        if (!c) return 0;
+        const e = now - c.at;
+        if (e < c.d) return e < c.d / 2 ? 1 : 2;
+        return gdPet() != "wolf" && e - c.d >= GARDEN.wilt ? 4 : 3;
+      }
+      /* gdDay(k): room for one more plant (p) / harvest (h) today? Counts it if so (the bank keeps its own count) */
+      function gdDay(k) {
+        const d = Math.floor(Date.now() / 86400e3);
+        if (!V.gdn || V.gdn.d != d) V.gdn = { d, p: 0, h: 0 };
+        if (V.gdn[k] >= GARDEN.day) return false;
+        V.gdn[k]++;
+        return true;
+      }
+      function gdLed(op, i, s) { LEDGER.push(["garden", 0, 0, op, i, s]); if (LEDGER.length > 300) { LEDGER.shift(); LEDGER_BASE++; } bankSoon(); }
+      function gardenPlant(i, s = GD_SEL) {
+        const p = gdPlots(), sd = Object.hasOwn(GARDEN.seeds, s) && GARDEN.seeds[s];
+        if (!isUnl("pet") || !sd || !Number.isInteger(i) || i < 0 || i >= GARDEN.plots || p[i] || !petCan(sd.cost) || !gdDay("p")) return false;
+        for (const [m, q] of Object.entries(sd.cost)) matAdd(m, -q, "garden");
+        p[i] = { s, at: Date.now(), d: Math.round(sd.grow * (gdPet() == "owl" ? GARDEN.owl : 1)) };
+        gdLed("plant", i, s);
+        track("garden", "plant_" + s);
+        save();
+        sfx("ui", 0.9);
+        if (CUR_DLG == "pet") petUI();
+        return true;
+      }
+      function gardenHarvest(i) {
+        const p = gdPlots(), c = p[i], st = gdStage(c);
+        if (st < 3 || !gdDay("h")) return false;
+        const pk = gdPet(), got = [];
+        for (const [m, q] of Object.entries(GARDEN.seeds[c.s].y)) { const n = st == 4 ? Math.max(1, Math.floor(q / 2)) : q + (pk == "fox" ? 1 : 0); petMat(m, n); got.push(MATS[m].e + n); }
+        if (pk == "sprite" && st == 3 && (V.gdsc = (V.gdsc || 0) + 1) % 3 == 0) { petMat("echo", 1); got.push(MATS.echo.e + "1"); }
+        p[i] = null;
+        gdLed("harvest", i, 0);
+        track("garden", "harvest_" + c.s);
+        save();
+        sfx("win", 1.6);
+        if (P) popMsg("Harvest " + got.join(" "));
+        if (CUR_DLG == "pet") petUI();
+        return true;
+      }
+      function gardenTap(i) { return gdPlots()[i] ? gardenHarvest(i) : gardenPlant(i); }
+      function gardenSeed(s) { if (Object.hasOwn(GARDEN.seeds, s)) { GD_SEL = s; if (CUR_DLG == "pet") petUI(); } }
+      /* gardenAdopt(list): the bank's plots ({ s, age, d } | null; age in server ms, so no clock skew) */
+      function gardenAdopt(r) {
+        if (!Array.isArray(r) || r.length != GARDEN.plots) return;
+        const now = Date.now();
+        V.gd = r.map((c) => (c && Object.hasOwn(GARDEN.seeds, c.s) && Number.isFinite(c.age) && Number.isFinite(c.d) && c.d > 0 ? { s: c.s, at: now - Math.max(0, c.age), d: Math.min(c.d, 3600e3) } : null));
+      }
+      function gardenHTML() {
+        const p = gdPlots(), now = Date.now(), m = V.mat || {}, pk = gdPet();
+        const plots = p.map((c, i) => {
+          const st = gdStage(c, now), sd = c && GARDEN.seeds[c.s];
+          let art = "", lb = "Plant";
+          if (st) {
+            const h = [0, 10, 20, 26, 14][st];
+            art = `<i class="st" style="height:${h}px"></i>${st >= 2 ? `<i class="lf" style="bottom:${18 + h / 2}px"></i><i class="lf" style="bottom:${16 + h / 2}px;margin-left:-12px;transform:scaleX(-1)"></i>` : ""}${st == 3 ? `<i class="fl" style="bottom:${12 + h}px;color:${sd.col};background:${sd.col}"></i>` : ""}`;
+            lb = st == 3 ? "Harvest" : st == 4 ? "Wilted" : Math.ceil((c.at + c.d - now) / 60000) + " min";
+          }
+          return `<button class="gp ${st == 3 ? "rp" : st == 4 ? "wl" : ""}" onclick="gardenTap(${i})" title="${st ? sd.n : "Plant " + GARDEN.seeds[GD_SEL].n}">${art}<span class="lb">${lb}</span></button>`;
+        }).join("");
+        const pets = Object.keys(V.pets || {}).filter((k) => PET[k]).map((k, j) => `<span class="gpet ${k == pk ? "on" : ""}" style="left:${12 + (j % 2) * 90}px;top:${8 + (j >> 1) * 36}px;animation-delay:-${j * 2.2}s">${PET[k].e}</span>`).join("");
+        const seeds = Object.entries(GARDEN.seeds).map(([k, d]) => `<button style="min-height:44px" ${GD_SEL == k ? 'class="claim"' : ""} onclick="gardenSeed('${k}')">${d.n} ${Object.entries(d.cost).map(([q, n]) => `<span style="color:${(m[q] || 0) >= n ? "inherit" : "#ff8a8a"}">${MATS[q].e}${n}</span>`).join(" ")}</button>`).join(" ");
+        return `<h3 style="margin:8px 0 2px">🌱 The Beastkeeper's Garden</h3><p class="sm">Pick a seed, tap an empty plot to plant, come back later to harvest. ${pk ? PET[pk].n + ": " + GARDEN.perk[pk] + "." : "Your following pet helps the garden."} Ripe plants wilt after a day${pk == "wolf" ? " (not with your wolf)" : ""}.</p>
+          <div style="display:flex;flex-wrap:wrap;gap:6px">${seeds}</div><div class="gdn">${plots}${SET.low ? "" : pets}</div>`;
+      }
       function petUI() {
         const own = V.pets || {}, m = V.mat || {}, wms = petWait(), wt = wms ? Math.ceil(wms / 60000) + " min" : "";
         const cost = (c) => Object.entries(c).map(([k, q]) => `<span style="color:${(m[k] || 0) >= q ? "inherit" : "#ff8a8a"}">${MATS[k].e}${q}</span>`).join(" ");
@@ -2417,9 +2513,11 @@
             <div class="sm">${bonus}${next}${L ? "" : " · " + cost(d.price)}</div></div>${btn}</div>`;
         }).join("");
         $("dp").className = "pn";
-        $("dp").innerHTML = `<h2>🐾 The Beastkeeper</h2><p>"Every raider needs a friend. Pick one, feed it well, and it will pull its weight."</p>
+        $("dp").innerHTML = `<h2>🐾 The Beastkeeper</h2><p>"Every raider needs a friend. Pick one, feed it well, and it will pull its weight."</p>${gardenHTML()}
           <p class="sm">One pet follows you at a time and gives its bonus. Feed it to raise its level (max ${PET_MAX}: double bonus). You can switch pets once every 10 minutes. Tap your pet to play with it.${bankUrl() ? " Online, the server keeps your pets and pays the bonus." : ""}</p>${rows}
           <button class="alt x" onclick="closeDlg()" title="Farewell">Farewell</button>`;
+        clearTimeout(GD_T);
+        GD_T = setTimeout(() => { if (CUR_DLG == "pet") petUI(); }, 15000); /* growth timers tick while the window is open */
       }
       /* ---------- pet drawing: one small state object per player (p._pet), plain paths, nothing on Low spec ---------- */
       function petReact(p) {
@@ -2550,8 +2648,8 @@
       }, true);
       /* ---------- What's new: a small corner card once per build (BUILD), a soft chime at the player's volume ----------
          Brand-new players (tutorial not done) skip it: everything is new to them. Dismiss with x, or it fades after 14 s. */
-      const BUILD = "2026.11.05"; /* round 5: pets */
-      const NEWS = ["🐾 Pets: reach level 6 to meet the Beastkeeper. Adopt a Fox, Owl, Wolf or Sprite with materials, feed it for a bigger bonus, and tap it to play", "⛏️ Gathering: Iron Ore, Moonleaf and Skycrystal nodes on the island; mastery raises your yield", "📜 Contract Board: 3 material orders a day on the Quest Board", "🌹 The Maiden's Exchange: barter materials at rates that drift each day", "🤝 Trading: swap with friends using a trade code, kept safe by the server"];
+      const BUILD = "2026.11.06"; /* round 5: the Beastkeeper's Garden */
+      const NEWS = ["🌱 The Beastkeeper's Garden: plant seeds, let them grow while you are away, harvest materials; your pet helps", "🐾 Pets: reach level 6 to meet the Beastkeeper. Adopt a Fox, Owl, Wolf or Sprite with materials, feed it for a bigger bonus, and tap it to play", "⛏️ Gathering: Iron Ore, Moonleaf and Skycrystal nodes on the island; mastery raises your yield", "📜 Contract Board: 3 material orders a day on the Quest Board", "🌹 The Maiden's Exchange: barter materials at rates that drift each day"];
       let NEWS_T = 0;
       function newsShow() {
         let seen = "";
@@ -3014,7 +3112,7 @@
         const url = bankUrl();
         if (!url || BANK_BUSY) return;
         BANK_BUSY = true;
-        const end = LEDGER_BASE + LEDGER.length, led = LEDGER.slice(Math.max(0, BANK_AT - LEDGER_BASE)).filter((e) => e[0] != "dev").slice(0, 150).map((e) => e.slice(0, e[0] == "mat" || e[0] == "pet" ? 6 : 3)); /* mat: ["mat", 0, 0, src, key, n] */
+        const end = LEDGER_BASE + LEDGER.length, led = LEDGER.slice(Math.max(0, BANK_AT - LEDGER_BASE)).filter((e) => e[0] != "dev").slice(0, 150).map((e) => e.slice(0, e[0] == "mat" || e[0] == "pet" || e[0] == "garden" ? 6 : 3)); /* mat: ["mat", 0, 0, src, key, n] */
         try {
           const r = await fetch(url + "/api/bank/sync", { method: "POST", headers: { "content-type": "application/json" }, cache: "no-store",
             body: JSON.stringify({ tok: bankTok(), led, seed: { gold: V.gold | 0, xp: V.xp | 0, mat: V.mat || {} } }) }).then((r) => r.json());
@@ -3029,6 +3127,7 @@
             V.mat = m;
           }
           if (r.pet) petAdopt(r.pet); /* the server owns pets (RULES.pet) */
+          if (r.garden && !later.some((e) => e[0] == "garden")) gardenAdopt(r.garden); /* the server owns the garden (GARDEN in bank.js) */
           if (Number.isFinite(r.bjm) && Number.isFinite(r.bjmAge)) { V.bjm = r.bjm; V.bjmAt = Date.now() - r.bjmAge; } /* the server's Assist price wins */
           if (r.dropped) chatSys("The server refused " + r.dropped + " gold/XP change" + (r.dropped > 1 ? "s" : "") + ".", "bye");
           save();
