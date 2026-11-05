@@ -1692,21 +1692,29 @@
       .pn :focus-visible { outline: 2px solid var(--ae-teal); outline-offset: 2px; }
       body.lo .pn { box-shadow: 0 0 0 1px #0a121c, 0 8px 20px #000b !important; }
       body.lo .pn h2 { text-shadow: none; }
-      /* the Beastkeeper's Garden: 6 code-drawn plots, owned pets hop between them (no motion on Low spec / reduced motion) */
-      .gdn { position: relative; display: grid; grid-template-columns: repeat(3, 1fr); gap: 8px; padding: 10px; margin: 8px 0; border-radius: 12px; background: linear-gradient(#2b4a2a, #1d3320); box-shadow: inset 0 0 0 1px #4d7a3f; }
-      .gp { position: relative; min-height: 64px; min-width: 44px; border: 0; border-radius: 10px; padding: 4px 2px 18px; background: linear-gradient(#5a3c25, #3e2817); color: #f4ecd8; font-size: 11px; line-height: 1.2; cursor: pointer; overflow: hidden; }
+      /* the Zen Garden: a canvas scene (sand, pond, lanterns) behind 6 soil beds; sprout, bud, bloom; ripe beds glow (static on Low spec / reduced motion) */
+      .gdn { position: relative; display: grid; grid-template-columns: repeat(3, 1fr); gap: 10px; padding: 70px 10px 12px; margin: 8px 0; border-radius: 14px; background: #d9cfb4; box-shadow: inset 0 0 0 1px #8a7a5a, 0 4px 14px #0006; touch-action: none; overflow: hidden; }
+      .gdn canvas { position: absolute; inset: 0; width: 100%; height: 100%; }
+      .gp { position: relative; min-height: 64px; min-width: 44px; border: 0; border-radius: 18px 18px 12px 12px; padding: 4px 2px 18px; background: radial-gradient(ellipse at 50% 85%, #5a3c25ee, #3e2817cc 70%); color: #f4ecd8; font-size: 11px; line-height: 1.2; cursor: pointer; overflow: hidden; box-shadow: 0 2px 0 #2a1a0e88; }
       .gp:focus-visible { outline: 2px solid #ffe08a; }
-      .gp.rp { box-shadow: 0 0 0 2px #ffe08a; }
+      .gp.rp { box-shadow: 0 0 0 2px #ffe08a, 0 0 14px #ffe08a88; animation: gRipe 2.4s ease-in-out infinite; }
       .gp.wl { filter: saturate(0.3) brightness(0.8); }
+      .gp.wl .st { transform: rotate(18deg); transform-origin: bottom; }
       .gp .st { position: absolute; left: 50%; bottom: 18px; width: 3px; margin-left: -1.5px; background: #6fcf5a; border-radius: 2px; }
       .gp .lf { position: absolute; left: 50%; width: 12px; height: 7px; background: #7fe36a; border-radius: 0 9px 0 9px; }
-      .gp .fl { position: absolute; left: 50%; width: 14px; height: 14px; margin-left: -7px; border-radius: 50%; box-shadow: 0 0 6px currentColor; }
+      .gp .bd { position: absolute; left: 50%; width: 8px; height: 11px; margin-left: -4px; border-radius: 50% 50% 45% 45%; box-shadow: inset 0 -4px 0 #2f7a2a; }
+      .gp .fl { position: absolute; left: 50%; width: 8px; height: 8px; margin-left: -4px; border-radius: 50%; background: #fff3c4; box-shadow: 0 -6px 0 var(--c), 6px 0 0 var(--c), 0 6px 0 var(--c), -6px 0 0 var(--c), 0 0 12px var(--c); }
       .gp .lb { position: absolute; left: 0; right: 0; bottom: 3px; text-align: center; }
-      .gpet { position: absolute; font-size: 18px; pointer-events: none; animation: gHop 9s ease-in-out infinite; }
-      .gpet.on { filter: drop-shadow(0 0 5px #ffe08a); }
-      @keyframes gHop { 0%, 100% { transform: translate(0, 0); } 25% { transform: translate(60px, -4px); } 50% { transform: translate(60px, 40px); } 75% { transform: translate(0, 40px); } }
-      body.lo .gpet { animation: none; }
-      @media (prefers-reduced-motion: reduce) { .gpet { animation: none; } }
+      @keyframes gRipe { 50% { box-shadow: 0 0 0 2px #ffe08a, 0 0 22px #ffe08acc; } }
+      .gsr { display: grid; grid-template-columns: repeat(7, minmax(0, 1fr)); gap: 4px; margin: 4px 0 6px; }
+      .gs { min-height: 44px; border-radius: 8px; background: #0b141f; border: 1px solid #3fd6c633; font-size: 10px; text-align: center; padding: 3px 1px; opacity: 0.6; overflow: hidden; word-break: break-all; }
+      .gs b { display: block; font-size: 11px; }
+      .gs.ok { opacity: 1; border-color: #7fe36a; background: #18301c; }
+      .gs.now { opacity: 1; border-color: #ffe08a; box-shadow: 0 0 8px #ffe08a66; }
+      .gs.big { border-width: 2px; }
+      body.lo .gp.rp { animation: none; box-shadow: 0 0 0 2px #ffe08a; }
+      body.lo .gdn { box-shadow: inset 0 0 0 1px #8a7a5a; }
+      @media (prefers-reduced-motion: reduce) { .gp.rp { animation: none; } }
 
       /* ---------- Dusk Aether HUD: chamfered runestone plates, a rune-coin gold pill, glass badge, chat and teal action banner ---------- */
       #btns .hb, #btns #bt, #btns #mlbar button {
@@ -2428,6 +2436,7 @@
         plots: 6, day: 24, wilt: 24 * 3600e3, owl: 0.85,
         seeds: { herb: { cost: { herb: 2 }, grow: 20 * 60e3, y: { herb: 4 }, col: "#7fe36a", n: "Moonleaf" }, ore: { cost: { ore: 2 }, grow: 30 * 60e3, y: { ore: 5 }, col: "#c9a27a", n: "Ironroot" }, echo: { cost: { herb: 2, ore: 2 }, grow: 40 * 60e3, y: { echo: 2 }, col: "#9fd8ff", n: "Echo bloom" } },
         perk: { owl: "grows 15% faster", fox: "+1 harvest", sprite: "a bonus echo every 3rd harvest", wolf: "plants never wilt" },
+        streak: [{ herb: 2 }, { ore: 2 }, { herb: 3 }, { ore: 3 }, { herb: 3, ore: 3 }, { herb: 3, echo: 1 }, { herb: 5, ore: 5, echo: 3 }], /* = bank.js */
       };
       let GD_SEL = "herb", GD_T = 0;
       const gdPlots = () => { if (!Array.isArray(V.gd) || V.gd.length != GARDEN.plots) V.gd = Array(GARDEN.plots).fill(null); return V.gd; };
@@ -2458,6 +2467,7 @@
         save();
         sfx("ui", 0.9);
         if (CUR_DLG == "pet") petUI();
+        zenAt(i, (x, y) => { zenP(7, x, y - 40, 0, 40, 0.5, sd.col); for (let k = 0; k < 8; k++) zenP(7, x, y, (Math.random() - 0.5) * 70, -30 - Math.random() * 40, 0.6, "#8a6a48"); }); /* seed drop + soil puff */
         return true;
       }
       function gardenHarvest(i) {
@@ -2473,9 +2483,19 @@
         sfx("win", 1.6);
         if (P) popMsg("Harvest " + got.join(" "));
         if (CUR_DLG == "pet") petUI();
+        sfx("pop", 1);
+        zenAt(i, (x, y) => { for (let k = 0; k < 14; k++) zenP(k % 2 ? 2 : 4, x, y - 20, (Math.random() - 0.5) * 140, -40 - Math.random() * 80, 1.2, k % 2 ? GARDEN.seeds[c.s].col : "#ffe08a"); got.forEach((t, k) => zenP(5, x, y - 36 - k * 14, 0, -18, 1.6, "#fff3c4", "+" + t)); });
         return true;
       }
-      function gardenTap(i) { return gdPlots()[i] ? gardenHarvest(i) : gardenPlant(i); }
+      function gardenTap(i) { const c = gdPlots()[i], st = gdStage(c); ZEN.lp = i; return !c ? gardenPlant(i) : st >= 3 ? gardenHarvest(i) : gardenWater(i); }
+      /* gardenWater(i): tap a growing plant. Cosmetic only: droplets, a shimmer and a soft drip; no ledger entry, no growth change. */
+      function gardenWater(i) {
+        const st = gdStage(gdPlots()[i]);
+        if (st != 1 && st != 2) return false;
+        sfx("drip", 0.9 + Math.random() * 0.3);
+        zenAt(i, (x, y) => { for (let k = 0; k < 10; k++) zenP(1, x + (Math.random() - 0.5) * 22, y - 30, (Math.random() - 0.5) * 20, 30 + Math.random() * 40, 0.8, "#9fd8ff"); zenP(3, x, y - 6, 0, 0, 0.9, "#bfefff"); });
+        return true;
+      }
       function gardenSeed(s) { if (Object.hasOwn(GARDEN.seeds, s)) { GD_SEL = s; if (CUR_DLG == "pet") petUI(); } }
       /* gardenAdopt(list): the bank's plots ({ s, age, d } | null; age in server ms, so no clock skew) */
       function gardenAdopt(r) {
@@ -2483,22 +2503,209 @@
         const now = Date.now();
         V.gd = r.map((c) => (c && Object.hasOwn(GARDEN.seeds, c.s) && Number.isFinite(c.age) && Number.isFinite(c.d) && c.d > 0 ? { s: c.s, at: now - Math.max(0, c.age), d: Math.min(c.d, 3600e3) } : null));
       }
+      /* ---------- daily streak: V.gs = { d: UTC day of the last claim, n: claims in a row, gw: week whose grace day is used } ----------
+         Online the bank owns it (GARDEN.streak in bank.js): the client logs ["garden", 0, 0, "streak", 0, 0] and adopts the bank's
+         { n, ago, gu } (server days, no clock skew). One missed day a week is forgiven; day 7 pays the most, then the ladder loops. */
+      function gsView(now = Date.now()) {
+        const day = Math.floor(now / 86400e3), wk = Math.floor(day / 7), gs = V.gs;
+        if (!gs || !Number.isInteger(gs.d) || !Number.isInteger(gs.n)) return { n: 0, can: true, gap: 99, wk, graceLeft: true, day };
+        const gap = day - gs.d, graceLeft = gs.gw != wk, alive = gap <= 1 || (gap == 2 && graceLeft);
+        return { n: alive ? gs.n : 0, can: gap >= 1, gap, wk, graceLeft, day, alive };
+      }
+      function gardenStreak() {
+        const v = gsView();
+        if (!isUnl("pet") || !v.can) return false;
+        const n = v.n + 1, pay = GARDEN.streak[(n - 1) % 7], got = [];
+        V.gs = { d: v.day, n, gw: v.gap == 2 && v.alive ? v.wk : V.gs ? V.gs.gw : -1 };
+        for (const [m, q] of Object.entries(pay)) { petMat(m, q); got.push(MATS[m].e + q); }
+        gdLed("streak", 0, 0);
+        track("garden", "streak", ((n - 1) % 7) + 1);
+        save();
+        sfx("win", (n - 1) % 7 == 6 ? 2 : 1.4);
+        if (P) popMsg("Day " + (((n - 1) % 7) + 1) + " streak " + got.join(" "));
+        ZEN.burst = 1;
+        if (CUR_DLG == "pet") petUI();
+        return true;
+      }
+      function gsAdopt(r) {
+        if (!r || !Number.isInteger(r.n) || !Number.isInteger(r.ago) || r.n < 0) return;
+        const day = Math.floor(Date.now() / 86400e3);
+        V.gs = r.ago < 0 ? null : { d: day - r.ago, n: r.n, gw: r.gu ? Math.floor(day / 7) : -1 };
+      }
+      function streakHTML() {
+        const v = gsView(), done = v.can ? v.n % 7 : ((v.n - 1) % 7) + 1;
+        const tiles = GARDEN.streak.map((p, i) => {
+          const cl = i < done ? "ok" : i == done && v.can ? "now" : "";
+          return `<div class="gs ${cl} ${i == 6 ? "big" : ""}" title="Day ${i + 1}"><b>${i < done ? "✓" : "D" + (i + 1)}</b>${Object.entries(p).map(([m, q]) => MATS[m].e + q).join("")}</div>`;
+        }).join("");
+        return `<div class="gsr">${tiles}</div><div style="display:flex;gap:6px;flex-wrap:wrap;align-items:center"><button class="claim" style="min-height:44px" ${v.can ? "" : "disabled"} onclick="gardenStreak()">${v.can ? "🌸 Claim day " + (done + 1) : "✓ Back tomorrow"}</button>
+          <button style="min-height:44px" onclick="tradeOpen()" title="Trade produce with friends">🤝 Trade produce</button><span class="sm">${v.n ? v.n + " day" + (v.n > 1 ? "s" : "") + " in a row · " : ""}${v.graceLeft ? "1 grace day left this week" : "grace day used this week"}</span></div>`;
+      }
+      /* ---------- the zen scene: one canvas behind the plots. Raked sand with ripples around stones, a koi pond, lanterns,
+         stepping stones; petals, pond rings, fireflies at night; pets hop between plots and the pond. One rAF loop only while the
+         Beastkeeper is open and the tab is visible; pooled particles (cap 90); Low spec / reduced motion: one static frame. ---------- */
+      const ZEN_CAP = 90;
+      const ZEN = { raf: 0, cv: null, g: null, bg: null, W: 0, H: 0, D: 1, t: 0, last: 0, lp: -1, burst: 0, rk: [], rkOn: 0, pets: {}, n: 0,
+        k: new Uint8Array(ZEN_CAP), x: new Float32Array(ZEN_CAP), y: new Float32Array(ZEN_CAP), vx: new Float32Array(ZEN_CAP), vy: new Float32Array(ZEN_CAP), l: new Float32Array(ZEN_CAP), m: new Float32Array(ZEN_CAP), c: Array(ZEN_CAP).fill(""), s: Array(ZEN_CAP).fill("") };
+      const zenStill = () => !!(SET.low || BJ_VFX.reduced());
+      const zenNight = () => { const h = new Date().getHours(); return h >= 19 || h < 6; };
+      /* zenP(kind, x, y, vx, vy, life, colour, text): one pooled particle. 1 drop, 2 petal, 3 ring, 4 spark, 5 text, 6 heart, 7 soil */
+      function zenP(k, x, y, vx, vy, l, c, s = "") {
+        if (zenStill() || !ZEN.g) return;
+        let i = ZEN.n < ZEN_CAP ? ZEN.n++ : -1;
+        if (i < 0) { i = 0; for (let j = 1; j < ZEN_CAP; j++) if (ZEN.l[j] < ZEN.l[i]) i = j; } /* full: recycle the oldest */
+        ZEN.k[i] = k; ZEN.x[i] = x; ZEN.y[i] = y; ZEN.vx[i] = vx; ZEN.vy[i] = vy; ZEN.l[i] = l; ZEN.m[i] = l; ZEN.c[i] = c; ZEN.s[i] = s;
+      }
+      /* zenAt(i, f): f(x, y) at plot i's base in canvas pixels */
+      function zenAt(i, f) {
+        const cv = ZEN.cv, b = cv && cv.isConnected && cv.parentNode.querySelectorAll(".gp")[i];
+        if (!b) return;
+        const r = cv.getBoundingClientRect(), q = b.getBoundingClientRect();
+        f(q.left - r.left + q.width / 2, q.top - r.top + q.height - 20);
+      }
+      function zenBg(W, H) {
+        const c = document.createElement("canvas"), D = ZEN.D;
+        c.width = W * D; c.height = H * D;
+        const g = c.getContext ? c.getContext("2d") : null, night = zenNight();
+        if (!g) return c;
+        g.scale(D, D);
+        g.fillStyle = night ? "#2a2c3e" : "#d9cfb4"; g.fillRect(0, 0, W, H);
+        const stones = [[W * 0.12, 30, 11], [W * 0.9, H - 14, 9], [W * 0.62, 26, 7]];
+        g.strokeStyle = night ? "#3a3d55" : "#c6b998"; g.lineWidth = 1.2;
+        for (let y = 8; y < H; y += 7) { g.beginPath(); for (let x = 0; x <= W; x += 12) g.lineTo(x, y + Math.sin(x / 40 + y) * 1.2); g.stroke(); }
+        for (const [x, y, r] of stones) { /* concentric ripples raked around each stone */
+          g.fillStyle = night ? "#2a2c3e" : "#d9cfb4"; g.beginPath(); g.arc(x, y, r + 16, 0, 7); g.fill();
+          for (let k = 1; k <= 3; k++) { g.beginPath(); g.arc(x, y, r + k * 5, 0, 7); g.stroke(); }
+          g.fillStyle = night ? "#55597a" : "#7d786c"; g.beginPath(); g.ellipse(x, y, r, r * 0.75, 0, 0, 7); g.fill();
+          g.fillStyle = "#ffffff22"; g.beginPath(); g.ellipse(x - r * 0.3, y - r * 0.3, r * 0.4, r * 0.25, 0, 0, 7); g.fill();
+        }
+        const px = W * 0.36, py = 32; /* the koi pond */
+        g.fillStyle = night ? "#2f3e4a" : "#8a9a7a"; g.beginPath(); g.ellipse(px, py, 46, 22, 0, 0, 7); g.fill();
+        g.fillStyle = night ? "#15304a" : "#2f7f8f"; g.beginPath(); g.ellipse(px, py, 41, 18, 0, 0, 7); g.fill();
+        g.fillStyle = "#3fd6c633"; g.beginPath(); g.ellipse(px - 8, py - 5, 22, 7, 0, 0, 7); g.fill();
+        g.fillStyle = "#4f9a4a"; g.beginPath(); g.arc(px + 24, py + 6, 6, 0.4, 6.0); g.fill(); /* a lily pad */
+        for (const [x, y] of [[W * 0.78, 22], [W * 0.05 + 8, H - 22]]) { /* stone lanterns */
+          g.fillStyle = "#4a4458"; g.fillRect(x - 2, y, 4, 14); g.fillRect(x - 7, y + 12, 14, 3);
+          g.fillStyle = "#5a5468"; g.beginPath(); g.moveTo(x - 9, y - 6); g.lineTo(x + 9, y - 6); g.lineTo(x, y - 13); g.fill();
+          g.fillStyle = night ? "#ffd27a" : "#e8c98a"; g.fillRect(x - 5, y - 6, 10, 7);
+          if (night) { g.fillStyle = "#ffd27a22"; g.beginPath(); g.arc(x, y - 2, 18, 0, 7); g.fill(); }
+        }
+        g.fillStyle = night ? "#3c3f55" : "#a39a86"; /* stepping stones */
+        for (let k = 0; k < 4; k++) { g.beginPath(); g.ellipse(W * 0.5 + k * 22, 54 - (k % 2) * 5, 8, 5, 0, 0, 7); g.fill(); }
+        return c;
+      }
+      function zenStart() {
+        const cv = $("zen");
+        if (!cv) return;
+        const W = cv.clientWidth || (cv.parentNode && cv.parentNode.clientWidth) || 300, H = cv.clientHeight || 220, D = Math.min(1.5, (typeof devicePixelRatio == "number" && devicePixelRatio) || 1);
+        if (ZEN.cv !== cv || ZEN.W != W || ZEN.H != H) {
+          ZEN.cv = cv; ZEN.g = cv.getContext ? cv.getContext("2d") : null; ZEN.W = W; ZEN.H = H; ZEN.D = D;
+          if (!ZEN.g) return;
+          cv.width = W * D; cv.height = H * D;
+          ZEN.bg = zenBg(W, H);
+          ZEN.n = 0;
+        }
+        if (!ZEN.g) return;
+        if (zenStill()) { ZEN.n = 0; ZEN.rk.length = 0; zenDraw(0); return; } /* Low spec / reduced motion: a static scene */
+        if (!ZEN.raf && !document.hidden) { ZEN.last = performance.now(); ZEN.raf = requestAnimationFrame(zenFrame); }
+      }
+      function zenFrame(ts) {
+        ZEN.raf = 0;
+        if (CUR_DLG != "pet" || !ZEN.cv || !ZEN.cv.isConnected || document.hidden || zenStill()) return; /* closed, hidden: stop */
+        const dt = Math.min(0.05, (ts - ZEN.last) / 1000 || 0);
+        ZEN.last = ts;
+        zenDraw(dt);
+        ZEN.raf = requestAnimationFrame(zenFrame);
+      }
+      addEventListener("visibilitychange", () => { if (!document.hidden && CUR_DLG == "pet") zenStart(); });
+      /* zenSpot(j, on): where pet j hops next: the last tapped plot (active pet), a random plot or the pond's edge */
+      function zenSpot(j, on) {
+        const s = { x: ZEN.W * 0.36 + 34 + (j % 2) * 16, y: 46 + (j >> 1) * 6 };
+        const i = on && ZEN.lp >= 0 ? ZEN.lp : Math.random() < 0.35 ? -1 : (Math.random() * GARDEN.plots) | 0;
+        if (i >= 0) zenAt(i, (x, y) => { s.x = x + (j - 1.5) * 12; s.y = y + 14; });
+        return s;
+      }
+      function zenDraw(dt) {
+        const g = ZEN.g, W = ZEN.W, H = ZEN.H, still = !dt, night = zenNight();
+        ZEN.t += dt;
+        g.setTransform(ZEN.D, 0, 0, ZEN.D, 0, 0);
+        g.drawImage(ZEN.bg, 0, 0, W, H);
+        g.lineWidth = 2; /* rake trails fade over 6 s */
+        for (let i = ZEN.rk.length - 1; i >= 0; i--) {
+          const r = ZEN.rk[i];
+          if ((r.l -= dt) <= 0) { ZEN.rk.splice(i, 1); continue; }
+          g.strokeStyle = (night ? "rgba(90,96,130," : "rgba(160,145,110,") + Math.min(1, r.l / 3) + ")";
+          for (const o of [-5, 0, 5]) { g.beginPath(); for (let k = 0; k < r.p.length; k += 2) g.lineTo(r.p[k] + o * r.nx, r.p[k + 1] + o * r.ny); g.stroke(); }
+        }
+        if (!still) { /* ambient: petals, pond rings, fireflies at night */
+          if (Math.random() < dt * 0.8) zenP(2, Math.random() * W, -6, 8 + Math.random() * 10, 14 + Math.random() * 10, 9, Math.random() < 0.5 ? "#ffb7d0" : "#f4d6ff");
+          if (Math.random() < dt * 0.5) zenP(3, W * 0.36 + (Math.random() - 0.5) * 50, 30 + (Math.random() - 0.5) * 18, 0, 0, 2.2, "#bfefff");
+          if (night && Math.random() < dt * 0.9) zenP(4, Math.random() * W, 20 + Math.random() * (H - 30), (Math.random() - 0.5) * 10, -4, 4, "#e8ff8a");
+          if (ZEN.burst) { ZEN.burst = 0; for (let k = 0; k < 18; k++) zenP(2, W / 2, H / 2, (Math.random() - 0.5) * 160, -40 - Math.random() * 90, 1.6, "#ffb7d0"); }
+        }
+        for (let i = 0; i < ZEN.n; i++) {
+          if ((ZEN.l[i] -= dt) <= 0) { const e = --ZEN.n; for (const a of ["k", "x", "y", "vx", "vy", "l", "m", "c", "s"]) ZEN[a][i] = ZEN[a][e]; i--; continue; }
+          const k = ZEN.k[i], a = ZEN.l[i] / ZEN.m[i];
+          ZEN.x[i] += ZEN.vx[i] * dt; ZEN.y[i] += ZEN.vy[i] * dt;
+          if (k == 1 || k == 7) ZEN.vy[i] += 200 * dt;
+          if (k == 2) ZEN.vx[i] += Math.sin(ZEN.t * 2 + i) * 20 * dt;
+          g.globalAlpha = Math.min(1, a * 1.5); g.fillStyle = g.strokeStyle = ZEN.c[i];
+          const x = ZEN.x[i], y = ZEN.y[i];
+          if (k == 3) { g.lineWidth = 1; g.beginPath(); g.ellipse(x, y, 4 + (1 - a) * 18, 2 + (1 - a) * 7, 0, 0, 7); g.stroke(); }
+          else if (k == 5 || k == 6) { g.font = k == 5 ? "bold 13px system-ui,sans-serif" : "14px system-ui,sans-serif"; g.textAlign = "center"; g.fillText(ZEN.s[i] || "❤", x, y); }
+          else if (k == 4) { g.globalAlpha = a * (0.5 + 0.5 * Math.sin(ZEN.t * 6 + i)); g.beginPath(); g.arc(x, y, 2, 0, 7); g.fill(); }
+          else if (k == 2) { g.beginPath(); g.ellipse(x, y, 3.5, 2, ZEN.t + i, 0, 7); g.fill(); }
+          else g.fillRect(x - 1.5, y - 1.5, 3, 3);
+        }
+        g.globalAlpha = 1;
+        const pk = gdPet(); /* pets: hop to a plot or the pond, rest, repeat; the active one glows and goes to the last tapped plot */
+        Object.keys(V.pets || {}).filter((k) => PET[k]).forEach((k, j) => {
+          let p = ZEN.pets[k];
+          if (!p) p = ZEN.pets[k] = { x: 24 + j * 30, y: H - 16, fx: 0, fy: 0, tx: 0, ty: 0, h: 1, w: Math.random() * 3 };
+          if (!still) {
+            if (p.h >= 1 && (p.w -= dt) <= 0) { const s = zenSpot(j, k == pk); p.fx = p.x; p.fy = p.y; p.tx = Math.max(10, Math.min(W - 10, s.x)); p.ty = Math.max(20, Math.min(H - 6, s.y)); p.h = 0; p.w = 2 + Math.random() * 4; }
+            if (p.h < 1) { p.h = Math.min(1, p.h + dt * 1.2); p.x = p.fx + (p.tx - p.fx) * p.h; p.y = p.fy + (p.ty - p.fy) * p.h; }
+          }
+          const hop = still || p.h >= 1 ? 0 : Math.sin(((p.h * 3) % 1) * Math.PI) * 8;
+          if (k == pk) { g.fillStyle = "#ffe08a33"; g.beginPath(); g.arc(p.x, p.y - 8, 14, 0, 7); g.fill(); }
+          g.font = "18px system-ui,sans-serif"; g.textAlign = "center"; g.fillText(PET[k].e, p.x, p.y - hop);
+        });
+        if (night) { g.fillStyle = "#0a0c2a33"; g.fillRect(0, 0, W, H); }
+      }
+      /* the sand: drag to rake (cosmetic, no ledger), tap a pet for hearts */
+      function zenDown(e) {
+        if ((e.target && e.target.closest && e.target.closest("button")) || !ZEN.cv) return false;
+        const r = ZEN.cv.getBoundingClientRect(), x = e.clientX - r.left, y = e.clientY - r.top;
+        for (const k in ZEN.pets) { const p = ZEN.pets[k]; if (Math.hypot(p.x - x, p.y - 8 - y) < 22) { for (let h = 0; h < 4; h++) zenP(6, p.x + (h - 1.5) * 6, p.y - 22, (h - 1.5) * 8, -30, 1.2, "#ff7aa8", "❤"); sfx("heal", 1.9); return true; } }
+        if (zenStill()) return false;
+        ZEN.rk.push({ p: [x, y], l: 6, nx: 0, ny: 1 });
+        if (ZEN.rk.length > 12) ZEN.rk.shift();
+        ZEN.rkOn = 1;
+        return true;
+      }
+      function zenMove(e) {
+        if (!ZEN.rkOn || !ZEN.rk.length || !ZEN.cv) return;
+        const r = ZEN.cv.getBoundingClientRect(), x = e.clientX - r.left, y = e.clientY - r.top, t = ZEN.rk[ZEN.rk.length - 1], n = t.p.length;
+        const dx = x - t.p[n - 2], dy = y - t.p[n - 1], d = Math.hypot(dx, dy);
+        if (d < 6 || n > 240) return;
+        t.p.push(x, y); t.nx = -dy / d; t.ny = dx / d; t.l = 6;
+      }
+      const zenUp = () => { ZEN.rkOn = 0; };
       function gardenHTML() {
         const p = gdPlots(), now = Date.now(), m = V.mat || {}, pk = gdPet();
         const plots = p.map((c, i) => {
           const st = gdStage(c, now), sd = c && GARDEN.seeds[c.s];
           let art = "", lb = "Plant";
-          if (st) {
+          if (st) { /* sprout, bud, bloom (ripe beds glow), wilted droops */
             const h = [0, 10, 20, 26, 14][st];
-            art = `<i class="st" style="height:${h}px"></i>${st >= 2 ? `<i class="lf" style="bottom:${18 + h / 2}px"></i><i class="lf" style="bottom:${16 + h / 2}px;margin-left:-12px;transform:scaleX(-1)"></i>` : ""}${st == 3 ? `<i class="fl" style="bottom:${12 + h}px;color:${sd.col};background:${sd.col}"></i>` : ""}`;
-            lb = st == 3 ? "Harvest" : st == 4 ? "Wilted" : Math.ceil((c.at + c.d - now) / 60000) + " min";
+            art = `<i class="st" style="height:${h}px"></i><i class="lf" style="bottom:${12 + h / 2}px"></i><i class="lf" style="bottom:${10 + h / 2}px;margin-left:-12px;transform:scaleX(-1)"></i>${st == 2 ? `<i class="bd" style="bottom:${14 + h}px;background:${sd.col}"></i>` : ""}${st >= 3 ? `<i class="fl" style="bottom:${10 + h}px;--c:${sd.col}"></i>` : ""}`;
+            lb = st == 3 ? "Harvest" : st == 4 ? "Wilted" : "💧 " + Math.ceil((c.at + c.d - now) / 60000) + " min";
           }
-          return `<button class="gp ${st == 3 ? "rp" : st == 4 ? "wl" : ""}" onclick="gardenTap(${i})" title="${st ? sd.n : "Plant " + GARDEN.seeds[GD_SEL].n}">${art}<span class="lb">${lb}</span></button>`;
+          return `<button class="gp ${st == 3 ? "rp" : st == 4 ? "wl" : ""}" onclick="gardenTap(${i})" title="${st ? sd.n + (st < 3 ? " (tap to water)" : "") : "Plant " + GARDEN.seeds[GD_SEL].n}">${art}<span class="lb">${lb}</span></button>`;
         }).join("");
-        const pets = Object.keys(V.pets || {}).filter((k) => PET[k]).map((k, j) => `<span class="gpet ${k == pk ? "on" : ""}" style="left:${12 + (j % 2) * 90}px;top:${8 + (j >> 1) * 36}px;animation-delay:-${j * 2.2}s">${PET[k].e}</span>`).join("");
         const seeds = Object.entries(GARDEN.seeds).map(([k, d]) => `<button style="min-height:44px" ${GD_SEL == k ? 'class="claim"' : ""} onclick="gardenSeed('${k}')">${d.n} ${Object.entries(d.cost).map(([q, n]) => `<span style="color:${(m[q] || 0) >= n ? "inherit" : "#ff8a8a"}">${MATS[q].e}${n}</span>`).join(" ")}</button>`).join(" ");
-        return `<h3 style="margin:8px 0 2px">🌱 The Beastkeeper's Garden</h3><p class="sm">Pick a seed, tap an empty plot to plant, come back later to harvest. ${pk ? PET[pk].n + ": " + GARDEN.perk[pk] + "." : "Your following pet helps the garden."} Ripe plants wilt after a day${pk == "wolf" ? " (not with your wolf)" : ""}.</p>
-          <div style="display:flex;flex-wrap:wrap;gap:6px">${seeds}</div><div class="gdn">${plots}${SET.low ? "" : pets}</div>`;
+        return `<h3 style="margin:8px 0 2px">🌸 The Zen Garden</h3><p class="sm">Pick a seed, tap an empty bed to plant, tap a growing plant to water it, come back to harvest. Drag on the sand to rake. ${pk ? PET[pk].n + ": " + GARDEN.perk[pk] + "." : "Your following pet helps the garden."} Ripe plants wilt after a day${pk == "wolf" ? " (not with your wolf)" : ""}.</p>
+          <div style="display:flex;flex-wrap:wrap;gap:6px">${seeds}</div><div class="gdn" onpointerdown="zenDown(event)" onpointermove="zenMove(event)" onpointerup="zenUp()" onpointerleave="zenUp()"><canvas id="zen" aria-hidden="true"></canvas>${plots}</div>${streakHTML()}`;
       }
       function petUI() {
         const own = V.pets || {}, m = V.mat || {}, wms = petWait(), wt = wms ? Math.ceil(wms / 60000) + " min" : "";
@@ -2518,6 +2725,7 @@
           <button class="alt x" onclick="closeDlg()" title="Farewell">Farewell</button>`;
         clearTimeout(GD_T);
         GD_T = setTimeout(() => { if (CUR_DLG == "pet") petUI(); }, 15000); /* growth timers tick while the window is open */
+        zenStart();
       }
       /* ---------- pet drawing: one small state object per player (p._pet), plain paths, nothing on Low spec ---------- */
       function petReact(p) {
@@ -2635,6 +2843,8 @@
         ui: [640, 760, "sine", 0.035, 0.07],
         phase: [110, 55, "sawtooth", 0.06, 0.7],
         win: [523, 1046, "triangle", 0.07, 0.7],
+        drip: [1250, 620, "sine", 0.03, 0.14],
+        pop: [420, 900, "sine", 0.05, 0.12],
         lose: [260, 90, "triangle", 0.07, 0.7],
       };
       /* sfx(t, m): play sound t. m = pitch multiplier (1 = normal). */
@@ -2648,8 +2858,8 @@
       }, true);
       /* ---------- What's new: a small corner card once per build (BUILD), a soft chime at the player's volume ----------
          Brand-new players (tutorial not done) skip it: everything is new to them. Dismiss with x, or it fades after 14 s. */
-      const BUILD = "2026.11.06"; /* round 5: the Beastkeeper's Garden */
-      const NEWS = ["🌱 The Beastkeeper's Garden: plant seeds, let them grow while you are away, harvest materials; your pet helps", "🐾 Pets: reach level 6 to meet the Beastkeeper. Adopt a Fox, Owl, Wolf or Sprite with materials, feed it for a bigger bonus, and tap it to play", "⛏️ Gathering: Iron Ore, Moonleaf and Skycrystal nodes on the island; mastery raises your yield", "📜 Contract Board: 3 material orders a day on the Quest Board", "🌹 The Maiden's Exchange: barter materials at rates that drift each day"];
+      const BUILD = "2026.11.06.2"; /* round 5: the Zen Garden + daily streak */
+      const NEWS = ["🌸 The Zen Garden: rake the sand, water your plants, harvest materials, claim a 7-day streak bonus and trade your produce with friends", "🐾 Pets: reach level 6 to meet the Beastkeeper. Adopt a Fox, Owl, Wolf or Sprite with materials, feed it for a bigger bonus, and tap it to play", "⛏️ Gathering: Iron Ore, Moonleaf and Skycrystal nodes on the island; mastery raises your yield", "📜 Contract Board: 3 material orders a day on the Quest Board", "🌹 The Maiden's Exchange: barter materials at rates that drift each day"];
       let NEWS_T = 0;
       function newsShow() {
         let seen = "";
@@ -3127,7 +3337,7 @@
             V.mat = m;
           }
           if (r.pet) petAdopt(r.pet); /* the server owns pets (RULES.pet) */
-          if (r.garden && !later.some((e) => e[0] == "garden")) gardenAdopt(r.garden); /* the server owns the garden (GARDEN in bank.js) */
+          if (r.garden && !later.some((e) => e[0] == "garden")) { gardenAdopt(r.garden); gsAdopt(r.streak); } /* the server owns the garden and its streak (GARDEN in bank.js) */
           if (Number.isFinite(r.bjm) && Number.isFinite(r.bjmAge)) { V.bjm = r.bjm; V.bjmAt = Date.now() - r.bjmAge; } /* the server's Assist price wins */
           if (r.dropped) chatSys("The server refused " + r.dropped + " gold/XP change" + (r.dropped > 1 ? "s" : "") + ".", "bye");
           save();

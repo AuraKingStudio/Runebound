@@ -67,7 +67,17 @@ const petMult = (lv) => 1 + (lv - 1) / 4;
 const GARDEN = {
   plots: 6, day: 24, wilt: 24 * 3600e3, owl: 0.85,
   seeds: { herb: { cost: { herb: 2 }, grow: 20 * 60e3, y: { herb: 4 } }, ore: { cost: { ore: 2 }, grow: 30 * 60e3, y: { ore: 5 } }, echo: { cost: { herb: 2, ore: 2 }, grow: 40 * 60e3, y: { echo: 2 } } },
+  /* daily streak: ["garden", 0, 0, "streak", 0, 0], one claim per server UTC day; consecutive days climb a 7-step ladder (then it loops),
+     one missed day per UTC week (day / 7) is forgiven; materials only, paid from this table (never from the entry). */
+  streak: [{ herb: 2 }, { ore: 2 }, { herb: 3 }, { ore: 3 }, { herb: 3, ore: 3 }, { herb: 3, echo: 1 }, { herb: 5, ore: 5, echo: 3 }],
 };
+/* gsView(gs, t): the streak as of server time t. Out: { n: claims in the live streak, can: claim open today, gap, wk, graceLeft } */
+function gsView(gs, t) {
+  const day = Math.floor(t / 86400e3), wk = Math.floor(day / 7);
+  if (!gs) return { n: 0, can: true, gap: 99, wk, graceLeft: true, day };
+  const gap = day - gs.d, graceLeft = gs.gw != wk, alive = gap <= 1 || (gap == 2 && graceLeft);
+  return { n: alive ? gs.n : 0, can: gap >= 1, gap, wk, graceLeft, day, alive };
+}
 const MAT_MAX = 99999, SEED_MAT = 50;
 /* trades (online only): A offers { give, want } to B's public trade code. A's give is escrowed at once (A's confirm, the offer can't change);
    B accepts (B's confirm): the bank re-checks B, swaps both sides in one step and burns TAX of the gold each side receives.
@@ -237,6 +247,14 @@ function createBank(options = {}) {
       p[i] = { s, at: t, d: Math.round(sd.grow * (pk == "owl" ? GARDEN.owl : 1)) };
       return true;
     }
+    if (op == "streak") {
+      const v = gsView(a.gd.gs, t);
+      if (i || s || !v.can) return false; /* once per server day; nothing in the entry decides the payout */
+      const n = v.n + 1, gw = v.gap == 2 && v.alive ? v.wk : a.gd.gs ? a.gd.gs.gw : -1;
+      a.gd.gs = { d: v.day, n, gw };
+      for (const [m, q] of Object.entries(GARDEN.streak[(n - 1) % 7])) a.mat[m] = Math.min(MAT_MAX, (a.mat[m] || 0) + q);
+      return true;
+    }
     if (op == "harvest") {
       const c = p[i];
       if (s || !c || t - c.at < c.d || !dayOk(a, "garden:harvest", 1, GARDEN.day, t)) return false;
@@ -250,6 +268,13 @@ function createBank(options = {}) {
       return true;
     }
     return false;
+  }
+  /* gsOut(a, t): the streak for the client, relative to server days (no clock skew): { n, ago: days since the last claim (-1 none), gu: grace used this week } */
+  function gsOut(a, t) {
+    const gs = a.gd && a.gd.gs;
+    if (!gs) return { n: 0, ago: -1, gu: 0 };
+    const v = gsView(gs, t);
+    return { n: gs.n, ago: v.gap, gu: v.graceLeft ? 0 : 1 };
   }
   /* sync({ tok, led, seed }, ip): In: token, new ledger entries, offline balance (first sync only). Out: [status, { gold, xp, dropped }] */
   const seeded = new Map(); /* ip -> times a new account got a seed (in memory, last SEED_WINDOW_MS) */
@@ -317,7 +342,7 @@ function createBank(options = {}) {
     for (const [m, q] of Object.entries(cr.pt)) if (q > 0) a.mat[m] = Math.min(MAT_MAX, (a.mat[m] || 0) + q); /* unused pet spends come back */
     if (earned && t - (a.nsAt || 0) >= NS_GAP) { a.ns = (a.ns || 0) + 1; a.nsAt = t; } /* a real sync (trade unlock): a real earn, at most one per 5 minutes */
     persist();
-    return [200, { gold: a.gold, xp: a.xp, mat: { ...a.mat }, tc: codeOf(id), dropped, pet: a.pet ? { own: { ...a.pet.own }, on: a.pet.on } : { own: {}, on: "" }, garden: (a.gd ? a.gd.p : Array(GARDEN.plots).fill(null)).map((c) => (c ? { s: c.s, age: t - c.at, d: c.d } : null)), bjm: a.bjm || 1, bjmAge: a.bjmAt ? t - a.bjmAt : 1e12 }]; /* bjmAge: ms since the last rent (no clock skew) */
+    return [200, { gold: a.gold, xp: a.xp, mat: { ...a.mat }, tc: codeOf(id), dropped, pet: a.pet ? { own: { ...a.pet.own }, on: a.pet.on } : { own: {}, on: "" }, garden: (a.gd ? a.gd.p : Array(GARDEN.plots).fill(null)).map((c) => (c ? { s: c.s, age: t - c.at, d: c.d } : null)), streak: gsOut(a, t), bjm: a.bjm || 1, bjmAge: a.bjmAt ? t - a.bjmAt : 1e12 }]; /* bjmAge: ms since the last rent (no clock skew) */
   }
 
   /* ---------- trades ---------- */
