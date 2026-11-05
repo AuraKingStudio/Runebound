@@ -1696,6 +1696,7 @@
       .gdn { position: relative; display: grid; grid-template-columns: repeat(3, 1fr); gap: 10px; padding: 70px 10px 12px; margin: 8px 0; border-radius: 14px; background: #d9cfb4; box-shadow: inset 0 0 0 1px #8a7a5a, 0 4px 14px #0006; touch-action: pan-y; overflow: hidden; }
       .gdn canvas { position: absolute; inset: 0; width: 100%; height: 100%; }
       .gp { position: relative; min-height: 64px; min-width: 44px; border: 0; border-radius: 18px 18px 12px 12px; padding: 4px 2px 18px; background: radial-gradient(ellipse at 50% 85%, #5a3c25ee, #3e2817cc 70%); color: #f4ecd8; font-size: 11px; line-height: 1.2; cursor: pointer; overflow: hidden; box-shadow: 0 2px 0 #2a1a0e88; }
+      .pn .up button, .pn .x { min-height: 44px; }
       .gp:focus-visible { outline: 2px solid #ffe08a; }
       .gp.rp { box-shadow: 0 0 0 2px #ffe08a, 0 0 14px #ffe08a88; animation: gRipe 2.4s ease-in-out infinite; }
       .gp.wl { filter: saturate(0.3) brightness(0.8); }
@@ -1712,6 +1713,7 @@
       .gs.ok { opacity: 1; border-color: #7fe36a; background: #18301c; }
       .gs.now { opacity: 1; border-color: #ffe08a; box-shadow: 0 0 8px #ffe08a66; }
       .gs.big { border-width: 2px; }
+      @media (max-width: 480px) { .gsr { grid-template-columns: repeat(4, minmax(0, 1fr)); } .gs { font-size: 11px; word-break: normal; overflow-wrap: anywhere; overflow: visible; } .gs b { font-size: 12px; } }
       body.lo .gp.rp { animation: none; box-shadow: 0 0 0 2px #ffe08a; }
       body.lo .gdn { box-shadow: inset 0 0 0 1px #8a7a5a; }
       @media (prefers-reduced-motion: reduce) { .gp.rp { animation: none; } }
@@ -2466,6 +2468,7 @@
         track("garden", "plant_" + s);
         save();
         sfx("ui", 0.9);
+        if (zenStill()) popMsg("Planted " + sd.n); /* no seed drop on Low spec / reduced motion: say it */
         if (CUR_DLG == "pet") petUI();
         zenAt(i, (x, y) => { zenP(7, x, y - 40, 0, 40, 0.5, sd.col); for (let k = 0; k < 8; k++) zenP(7, x, y, (Math.random() - 0.5) * 70, -30 - Math.random() * 40, 0.6, "#8a6a48"); }); /* seed drop + soil puff */
         return true;
@@ -2481,7 +2484,7 @@
         track("garden", "harvest_" + c.s);
         save();
         sfx("win", 1.6);
-        if (P) popMsg("Harvest " + got.join(" "));
+        if (P || zenStill()) popMsg("Harvest " + got.join(" ")); /* Low spec / reduced motion: no floating +N, the toast shows the yield */
         if (CUR_DLG == "pet") petUI();
         sfx("pop", 1);
         zenAt(i, (x, y) => { for (let k = 0; k < 14; k++) zenP(k % 2 ? 2 : 4, x, y - 20, (Math.random() - 0.5) * 140, -40 - Math.random() * 80, 1.2, k % 2 ? GARDEN.seeds[c.s].col : "#ffe08a"); got.forEach((t, k) => zenP(5, x, y - 36 - k * 14, 0, -18, 1.6, "#fff3c4", "+" + t)); });
@@ -2547,7 +2550,7 @@
       /* ---------- the zen scene: one canvas behind the plots. Raked sand with ripples around stones, a koi pond, lanterns,
          stepping stones; petals, pond rings, fireflies at night; pets hop between plots and the pond. One rAF loop only while the
          Beastkeeper is open and the tab is visible; pooled particles (cap 90); Low spec / reduced motion: one static frame. ---------- */
-      const ZEN_CAP = 90;
+      const ZEN_CAP = 90, ZEN_F = ["k", "x", "y", "vx", "vy", "l", "m", "c", "s"], ZEN_RK = 120; /* pool fields; rake points per trail */
       const ZEN = { raf: 0, cv: null, g: null, bg: null, W: 0, H: 0, D: 1, t: 0, last: 0, lp: -1, burst: 0, rk: [], rkOn: 0, pets: {}, n: 0,
         k: new Uint8Array(ZEN_CAP), x: new Float32Array(ZEN_CAP), y: new Float32Array(ZEN_CAP), vx: new Float32Array(ZEN_CAP), vy: new Float32Array(ZEN_CAP), l: new Float32Array(ZEN_CAP), m: new Float32Array(ZEN_CAP), c: Array(ZEN_CAP).fill(""), s: Array(ZEN_CAP).fill("") };
       const zenStill = () => !!(SET.low || BJ_VFX.reduced());
@@ -2566,6 +2569,8 @@
         const r = cv.getBoundingClientRect(), q = b.getBoundingClientRect();
         f(q.left - r.left + q.width / 2, q.top - r.top + q.height - 20);
       }
+      /* zenPond(W): the pond radius; it stays clear of the raked rings of the stones at 0.12 W (r 11 + 16) and 0.62 W (r 7 + 16) */
+      const zenPond = (W) => Math.max(18, Math.min(46, W * 0.24 - 29, W * 0.26 - 25));
       function zenBg(W, H) {
         const c = document.createElement("canvas"), D = ZEN.D;
         c.width = W * D; c.height = H * D;
@@ -2573,7 +2578,7 @@
         if (!g) return c;
         g.scale(D, D);
         g.fillStyle = night ? "#2a2c3e" : "#d9cfb4"; g.fillRect(0, 0, W, H);
-        const stones = [[W * 0.12, 30, 11], [W * 0.9, H - 14, 9], [W * 0.62, 26, 7]];
+        const stones = [[W * 0.12, 30, 11], [W * 0.9, 24, 9], [W * 0.62, 26, 7]]; /* all in the top band (the beds cover the rest) */
         g.strokeStyle = night ? "#3a3d55" : "#c6b998"; g.lineWidth = 1.2;
         for (let y = 8; y < H; y += 7) { g.beginPath(); for (let x = 0; x <= W; x += 12) g.lineTo(x, y + Math.sin(x / 40 + y) * 1.2); g.stroke(); }
         for (const [x, y, r] of stones) { /* concentric ripples raked around each stone */
@@ -2582,12 +2587,12 @@
           g.fillStyle = night ? "#55597a" : "#7d786c"; g.beginPath(); g.ellipse(x, y, r, r * 0.75, 0, 0, 7); g.fill();
           g.fillStyle = "#ffffff22"; g.beginPath(); g.ellipse(x - r * 0.3, y - r * 0.3, r * 0.4, r * 0.25, 0, 0, 7); g.fill();
         }
-        const px = W * 0.36, py = 32; /* the koi pond */
-        g.fillStyle = night ? "#2f3e4a" : "#8a9a7a"; g.beginPath(); g.ellipse(px, py, 46, 22, 0, 0, 7); g.fill();
-        g.fillStyle = night ? "#15304a" : "#2f7f8f"; g.beginPath(); g.ellipse(px, py, 41, 18, 0, 0, 7); g.fill();
-        g.fillStyle = "#3fd6c633"; g.beginPath(); g.ellipse(px - 8, py - 5, 22, 7, 0, 0, 7); g.fill();
-        g.fillStyle = "#4f9a4a"; g.beginPath(); g.arc(px + 24, py + 6, 6, 0.4, 6.0); g.fill(); /* a lily pad */
-        for (const [x, y] of [[W * 0.78, 22], [W * 0.05 + 8, H - 22]]) { /* stone lanterns */
+        const px = W * 0.36, py = 32, pr = zenPond(W); /* the koi pond: scales with width, never over a stone */
+        g.fillStyle = night ? "#2f3e4a" : "#8a9a7a"; g.beginPath(); g.ellipse(px, py, pr, pr * 0.48, 0, 0, 7); g.fill();
+        g.fillStyle = night ? "#15304a" : "#2f7f8f"; g.beginPath(); g.ellipse(px, py, pr - 5, pr * 0.39, 0, 0, 7); g.fill();
+        g.fillStyle = "#3fd6c633"; g.beginPath(); g.ellipse(px - pr * 0.17, py - 5, pr * 0.48, 7, 0, 0, 7); g.fill();
+        g.fillStyle = "#4f9a4a"; g.beginPath(); g.arc(px + pr * 0.52, py + 6, 6, 0.4, 6.0); g.fill(); /* a lily pad */
+        for (const [x, y] of [[W * 0.78, 22]]) { /* a stone lantern (the top band only: the beds hide anything lower) */
           g.fillStyle = "#4a4458"; g.fillRect(x - 2, y, 4, 14); g.fillRect(x - 7, y + 12, 14, 3);
           g.fillStyle = "#5a5468"; g.beginPath(); g.moveTo(x - 9, y - 6); g.lineTo(x + 9, y - 6); g.lineTo(x, y - 13); g.fill();
           g.fillStyle = night ? "#ffd27a" : "#e8c98a"; g.fillRect(x - 5, y - 6, 10, 7);
@@ -2624,7 +2629,7 @@
       addEventListener("resize", () => { if (CUR_DLG == "pet") zenStart(); }); /* rotate / resize: re-fit the canvas (no stretched scene) */
       /* zenSpot(j, on): where pet j hops next: the last tapped plot (active pet), a random plot or the pond's edge */
       function zenSpot(j, on) {
-        const s = { x: ZEN.W * 0.36 + 34 + (j % 2) * 16, y: 46 + (j >> 1) * 6 };
+        const s = { x: ZEN.W * 0.36 + zenPond(ZEN.W) * 0.74 + (j % 2) * 16, y: 46 + (j >> 1) * 6 };
         const i = on && ZEN.lp >= 0 ? ZEN.lp : Math.random() < 0.35 ? -1 : (Math.random() * GARDEN.plots) | 0;
         if (i >= 0) zenAt(i, (x, y) => { s.x = x + (j - 1.5) * 12; s.y = y + 14; });
         return s;
@@ -2639,16 +2644,20 @@
           const r = ZEN.rk[i];
           if ((r.l -= dt) <= 0) { ZEN.rk.splice(i, 1); continue; }
           g.strokeStyle = (night ? "rgba(90,96,130," : "rgba(160,145,110,") + Math.min(1, r.l / 3) + ")";
-          for (const o of [-5, 0, 5]) { g.beginPath(); for (let k = 0; k < r.p.length; k += 2) g.lineTo(r.p[k] + o * r.nx, r.p[k + 1] + o * r.ny); g.stroke(); }
+          g.beginPath(); /* the 3 tines in one path */
+          for (let o = -5; o <= 5; o += 5) { g.moveTo(r.p[0] + o * r.nx, r.p[1] + o * r.ny); for (let k = 2; k < r.p.length; k += 2) g.lineTo(r.p[k] + o * r.nx, r.p[k + 1] + o * r.ny); }
+          g.stroke();
         }
         if (!still) { /* ambient: petals, pond rings, fireflies at night */
           if (Math.random() < dt * 0.8) zenP(2, Math.random() * W, -6, 8 + Math.random() * 10, 14 + Math.random() * 10, 9, Math.random() < 0.5 ? "#ffb7d0" : "#f4d6ff");
-          if (Math.random() < dt * 0.5) zenP(3, W * 0.36 + (Math.random() - 0.5) * 50, 30 + (Math.random() - 0.5) * 18, 0, 0, 2.2, "#bfefff");
+          if (Math.random() < dt * 0.5) zenP(3, W * 0.36 + (Math.random() - 0.5) * zenPond(W) * 1.1, 30 + (Math.random() - 0.5) * 18, 0, 0, 2.2, "#bfefff");
           if (night && Math.random() < dt * 0.9) zenP(4, Math.random() * W, 20 + Math.random() * (H - 30), (Math.random() - 0.5) * 10, -4, 4, "#e8ff8a");
           if (ZEN.burst) { ZEN.burst = 0; for (let k = 0; k < 18; k++) zenP(2, W / 2, H / 2, (Math.random() - 0.5) * 160, -40 - Math.random() * 90, 1.6, "#ffb7d0"); }
         }
+        let fnt = "";
+        g.textAlign = "center";
         for (let i = 0; i < ZEN.n; i++) {
-          if ((ZEN.l[i] -= dt) <= 0) { const e = --ZEN.n; for (const a of ["k", "x", "y", "vx", "vy", "l", "m", "c", "s"]) ZEN[a][i] = ZEN[a][e]; i--; continue; }
+          if ((ZEN.l[i] -= dt) <= 0) { const e = --ZEN.n; for (const a of ZEN_F) ZEN[a][i] = ZEN[a][e]; i--; continue; }
           const k = ZEN.k[i], a = ZEN.l[i] / ZEN.m[i];
           ZEN.x[i] += ZEN.vx[i] * dt; ZEN.y[i] += ZEN.vy[i] * dt;
           if (k == 1 || k == 7) ZEN.vy[i] += 200 * dt;
@@ -2656,12 +2665,13 @@
           g.globalAlpha = Math.min(1, a * 1.5); g.fillStyle = g.strokeStyle = ZEN.c[i];
           const x = ZEN.x[i], y = ZEN.y[i];
           if (k == 3) { g.lineWidth = 1; g.beginPath(); g.ellipse(x, y, 4 + (1 - a) * 18, 2 + (1 - a) * 7, 0, 0, 7); g.stroke(); }
-          else if (k == 5 || k == 6) { g.font = k == 5 ? "bold 13px system-ui,sans-serif" : "14px system-ui,sans-serif"; g.textAlign = "center"; g.fillText(ZEN.s[i] || "❤", x, y); }
+          else if (k == 5 || k == 6) { const f = k == 5 ? "bold 13px system-ui,sans-serif" : "14px system-ui,sans-serif"; if (f != fnt) g.font = fnt = f; g.fillText(ZEN.s[i] || "❤", x, y); }
           else if (k == 4) { g.globalAlpha = a * (0.5 + 0.5 * Math.sin(ZEN.t * 6 + i)); g.beginPath(); g.arc(x, y, 2, 0, 7); g.fill(); }
           else if (k == 2) { g.beginPath(); g.ellipse(x, y, 3.5, 2, ZEN.t + i, 0, 7); g.fill(); }
           else g.fillRect(x - 1.5, y - 1.5, 3, 3);
         }
         g.globalAlpha = 1;
+        g.font = "18px system-ui,sans-serif";
         const pk = gdPet(); /* pets: hop to a plot or the pond, rest, repeat; the active one glows and goes to the last tapped plot */
         Object.keys(V.pets || {}).filter((k) => PET[k]).forEach((k, j) => {
           let p = ZEN.pets[k];
@@ -2672,7 +2682,7 @@
           }
           const hop = still || p.h >= 1 ? 0 : Math.sin(((p.h * 3) % 1) * Math.PI) * 8;
           if (k == pk) { g.fillStyle = "#ffe08a33"; g.beginPath(); g.arc(p.x, p.y - 8, 14, 0, 7); g.fill(); }
-          g.font = "18px system-ui,sans-serif"; g.textAlign = "center"; g.fillText(PET[k].e, p.x, p.y - hop);
+          g.fillStyle = "#000"; g.fillText(PET[k].e, p.x, p.y - hop);
         });
         if (night) { g.fillStyle = "#0a0c2a33"; g.fillRect(0, 0, W, H); }
       }
@@ -2691,7 +2701,7 @@
         if (!ZEN.rkOn || !ZEN.rk.length || !ZEN.cv) return;
         const r = ZEN.cv.getBoundingClientRect(), x = e.clientX - r.left, y = e.clientY - r.top, t = ZEN.rk[ZEN.rk.length - 1], n = t.p.length;
         const dx = x - t.p[n - 2], dy = y - t.p[n - 1], d = Math.hypot(dx, dy);
-        if (d < 6 || n > 240) return;
+        if (d < 6 || n >= ZEN_RK * 2) return;
         t.p.push(x, y); t.nx = -dy / d; t.ny = dx / d; t.l = 6;
       }
       const zenUp = () => { ZEN.rkOn = 0; };
@@ -2709,9 +2719,10 @@
         }).join("");
         const seeds = Object.entries(GARDEN.seeds).map(([k, d]) => `<button style="min-height:44px" ${GD_SEL == k ? 'class="claim"' : ""} onclick="gardenSeed('${k}')">${d.n} ${Object.entries(d.cost).map(([q, n]) => `<span style="color:${(m[q] || 0) >= n ? "inherit" : "#ff8a8a"}">${MATS[q].e}${n}</span>`).join(" ")}</button>`).join(" ");
         return `<h3 style="margin:8px 0 2px">🌸 The Zen Garden</h3><p class="sm">Pick a seed, tap an empty bed to plant, tap a growing plant to water it, come back to harvest. Drag on the sand to rake. ${pk ? PET[pk].n + ": " + GARDEN.perk[pk] + "." : "Your following pet helps the garden."} Ripe plants wilt after a day${pk == "wolf" ? " (not with your wolf)" : ""}.</p>
-          <div style="display:flex;flex-wrap:wrap;gap:6px">${seeds}</div><div class="gdn" onpointerdown="zenDown(event)" onpointermove="zenMove(event)" onpointerup="zenUp()" onpointerleave="zenUp()" onpointercancel="zenUp()"><canvas id="zen" aria-hidden="true"></canvas>${plots}</div>${streakHTML()}`;
+          <div style="display:flex;flex-wrap:wrap;gap:6px">${seeds}</div><div class="gdn" onpointerdown="zenDown(event)" onpointermove="zenMove(event)" onpointerup="zenUp()" onpointerleave="zenUp()" onpointercancel="zenUp()"><canvas id="zen" aria-hidden="true"></canvas>${plots}</div><div id="gsw">${streakHTML()}</div>`;
       }
       function petUI() {
+        const old = $("zen"), re = !!old && ZEN.re; /* a rebuild of an open dialog: keep the canvas node (and its particles), no entrance animation */
         const own = V.pets || {}, m = V.mat || {}, wms = petWait(), wt = wms ? Math.ceil(wms / 60000) + " min" : "";
         const cost = (c) => Object.entries(c).map(([k, q]) => `<span style="color:${(m[k] || 0) >= q ? "inherit" : "#ff8a8a"}">${MATS[k].e}${q}</span>`).join(" ");
         const rows = Object.entries(PET).map(([k, d], q) => {
@@ -2720,16 +2731,32 @@
           const btn = !L
             ? `<button ${petCan(d.price) ? "" : "disabled"} onclick="petBuy('${k}')">Adopt</button>`
             : `<div style="display:flex;flex-direction:column;gap:6px;flex:none;margin-left:auto">${L < PET_MAX ? `<button class="claim" ${(m[d.food] || 0) >= petFeedCost(L) ? "" : "disabled"} onclick="petFeed('${k}')" title="Feed">Feed ${MATS[d.food].e}${petFeedCost(L)}</button>` : ""}<button ${on ? 'class="claim"' : ""} ${wt ? "disabled" : ""} onclick="petSet('${on ? "" : k}')" title="One switch every 10 minutes">${on ? "Rest" : "Follow"}${wt ? " · " + wt : ""}</button></div>`;
-          return `<div class="up ${on ? "can" : ""}" style="--uc:${d.col};animation:iIn .3s ease-out ${q * 35}ms both"><div style="min-width:0;flex:1"><span class="nm">${d.e} ${d.n}${L ? ` · Lv ${L}/${PET_MAX}` : ""}${on ? " · following" : ""}</span>
+          return `<div class="up ${on ? "can" : ""}" style="--uc:${d.col}${re ? "" : `;animation:iIn .3s ease-out ${q * 35}ms both`}"><div style="min-width:0;flex:1"><span class="nm">${d.e} ${d.n}${L ? ` · Lv ${L}/${PET_MAX}` : ""}${on ? " · following" : ""}</span>
             <div class="sm">${bonus}${next}${L ? "" : " · " + cost(d.price)}</div></div>${btn}</div>`;
         }).join("");
         $("dp").className = "pn";
         $("dp").innerHTML = `<h2>🐾 The Beastkeeper</h2><p>"Every raider needs a friend. Pick one, feed it well, and it will pull its weight."</p>${gardenHTML()}
           <p class="sm">One pet follows you at a time and gives its bonus. Feed it to raise its level (max ${PET_MAX}: double bonus). You can switch pets once every 10 minutes. Tap your pet to play with it.${bankUrl() ? " Online, the server keeps your pets and pays the bonus." : ""}</p>${rows}
           <button class="alt x" onclick="closeDlg()" title="Farewell">Farewell</button>`;
-        clearTimeout(GD_T);
-        GD_T = setTimeout(() => { if (CUR_DLG == "pet") petUI(); }, 15000); /* growth timers tick while the window is open */
+        ZEN.re = 1;
+        if (re) { const n = $("zen"); if (n && n !== old) n.replaceWith(old); }
+        gardenTimer();
         zenStart();
+      }
+      function gardenTimer() { clearTimeout(GD_T); GD_T = setTimeout(gardenTick, 15000); } /* growth timers tick while the window is open */
+      /* gardenTick(): update bed labels/classes and the streak row in place (no rebuild: focus, canvas and particles stay) */
+      function gardenTick() {
+        GD_T = 0;
+        if (CUR_DLG != "pet") return;
+        const gd = document.querySelector(".gdn"), w = $("gsw");
+        if (!gd || !w) return petUI();
+        const t = document.createElement("div");
+        t.innerHTML = gardenHTML();
+        const nb = t.querySelectorAll(".gp"), ob = gd.querySelectorAll(".gp");
+        ob.forEach((b, i) => { const n = nb[i]; if (!n) return; if (b.className != n.className) b.className = n.className; if (b.title != n.title) b.title = n.title; if (b.innerHTML != n.innerHTML) b.innerHTML = n.innerHTML; });
+        const nw = t.querySelector("#gsw");
+        if (nw && w.innerHTML != nw.innerHTML && !w.contains(document.activeElement)) w.innerHTML = nw.innerHTML;
+        gardenTimer();
       }
       /* ---------- pet drawing: one small state object per player (p._pet), plain paths, nothing on Low spec ---------- */
       function petReact(p) {
@@ -7463,6 +7490,7 @@
         CUR_DLG = "";
         clearTimeout(GD_T); GD_T = 0; /* the garden refresh */
         if (ZEN.raf) { cancelAnimationFrame(ZEN.raf); ZEN.raf = 0; } /* the zen scene */
+        ZEN.re = 0; /* the next open is fresh (entrance animation) */
         $("dlg").hidden = true;
         $("dp").className = "pn"; /* the shop widens the panel */
       }
@@ -9753,7 +9781,7 @@
         const tg = (k, lab) => `<label class="row" style="justify-content:space-between"><span>${lab}</span><input type="checkbox" style="accent-color:#d9a94a" ${SET[k] ? "checked" : ""} onchange="SET.${k}=this.checked?1:0;saveSet()"></label>`;
         const binds = `<div style="display:grid;grid-template-columns:1fr 1fr;gap:4px 14px">` + Object.keys(BIND_N).map((k) => `<div style="display:flex;align-items:center;justify-content:space-between;gap:6px"><span class="sm">${BIND_N[k]}</span><span ${k == "s0" ? "title='Mouse button'" : `onclick="REBIND='${k}';settingsUI()"`} style="cursor:${k == "s0" ? "default" : "pointer"};min-width:54px;text-align:center;padding:3px 8px;border:1px solid ${REBIND == k ? "#ffe08a" : "var(--ln)"};border-bottom-width:2px;border-radius:6px;font:bold 12px Georgia;color:${REBIND == k ? "#ffe08a" : "#f3e6c8"};background:rgba(0,0,0,.25)">${REBIND == k ? "…" : keyLabel(SET.bind[k])}</span></div>`).join("") + `</div>`;
         $("dp").innerHTML = `<h2>⚙️ Settings</h2>
-          <div class="row" style="justify-content:space-between;flex-wrap:wrap;gap:6px"><span>Name colour</span>${gdPills(V.nc, "gdSet")}</div><div class="mast"><span class="sm">Sound &amp; screen</span></div>${sl("vol", "Volume", 1, 0.05)}${sl("shake", "Screen shake", 1.5, 0.1)}${tg("fx", "Full particle effects")}<label class="row" style="justify-content:space-between"><span>Low spec mode <span class="sm">(older PCs / phones)</span></span><input type="checkbox" style="accent-color:#d9a94a" ${SET.low ? "checked" : ""} onchange="SET.low=this.checked?1:0;saveSet();rs()"></label>${tg("dmg", "Damage numbers")}${tg("showFps", "Show FPS")}<div class="row" style="justify-content:space-between"><span>Frame rate</span><span style="display:flex;gap:4px">${[30, 60, 144, 0].map((f) => `<span onclick="SET.fps=${f};saveSet();settingsUI()" style="cursor:pointer;padding:3px 9px;border-radius:6px;border:1px solid ${(+SET.fps || 0) == f ? "#ffe08a" : "var(--ln)"};color:${(+SET.fps || 0) == f ? "#ffe08a" : "#f3e6c8"};background:rgba(0,0,0,.25);font:bold 12px Georgia">${f || "Max"}</span>`).join("")}</span></div><div class="row" style="justify-content:space-between"><span>Dash aim <span class="sm">(keyboard)</span></span><span style="display:flex;gap:4px">${[[0, "🖱 Cursor"], [1, "⌨ Movement"]].map(([v, lab]) => `<span onclick="SET.dashMove=${v};saveSet();settingsUI()" style="cursor:pointer;padding:3px 9px;border-radius:6px;border:1px solid ${(+SET.dashMove || 0) == v ? "#ffe08a" : "var(--ln)"};color:${(+SET.dashMove || 0) == v ? "#ffe08a" : "#f3e6c8"};background:rgba(0,0,0,.25);font:bold 12px Georgia">${lab}</span>`).join("")}</span></div>
+          <div class="row" style="justify-content:space-between;flex-wrap:wrap;gap:6px"><span>Name colour</span>${gdPills(V.nc, "gdSet")}</div><div class="mast"><span class="sm">Sound &amp; screen</span></div>${sl("vol", "Volume", 1, 0.05)}${sl("shake", "Screen shake", 1.5, 0.1)}${tg("fx", "Full particle effects")}<label class="row" style="justify-content:space-between"><span>Low spec mode <span class="sm">(older PCs / phones)</span></span><input type="checkbox" style="accent-color:#d9a94a" ${SET.low ? "checked" : ""} onchange="SET.low=this.checked?1:0;saveSet();rs();if(CUR_DLG=='pet')zenStart()"></label>${tg("dmg", "Damage numbers")}${tg("showFps", "Show FPS")}<div class="row" style="justify-content:space-between"><span>Frame rate</span><span style="display:flex;gap:4px">${[30, 60, 144, 0].map((f) => `<span onclick="SET.fps=${f};saveSet();settingsUI()" style="cursor:pointer;padding:3px 9px;border-radius:6px;border:1px solid ${(+SET.fps || 0) == f ? "#ffe08a" : "var(--ln)"};color:${(+SET.fps || 0) == f ? "#ffe08a" : "#f3e6c8"};background:rgba(0,0,0,.25);font:bold 12px Georgia">${f || "Max"}</span>`).join("")}</span></div><div class="row" style="justify-content:space-between"><span>Dash aim <span class="sm">(keyboard)</span></span><span style="display:flex;gap:4px">${[[0, "🖱 Cursor"], [1, "⌨ Movement"]].map(([v, lab]) => `<span onclick="SET.dashMove=${v};saveSet();settingsUI()" style="cursor:pointer;padding:3px 9px;border-radius:6px;border:1px solid ${(+SET.dashMove || 0) == v ? "#ffe08a" : "var(--ln)"};color:${(+SET.dashMove || 0) == v ? "#ffe08a" : "#f3e6c8"};background:rgba(0,0,0,.25);font:bold 12px Georgia">${lab}</span>`).join("")}</span></div>
           <div class="mast"><span class="sm">Keys (keyboard)</span></div>${binds}<div class="row"><button class="alt" onclick="SET.bind={...BIND_DEF};saveSet();refreshHints();settingsUI()">Reset keys</button></div>
           <div class="mast"><span class="sm">More</span></div><div class="row" style="flex-wrap:wrap;gap:6px">
             <button onclick="closeDlg();$('dlg').hidden=false;titleUI()">🎖️ Titles</button>
