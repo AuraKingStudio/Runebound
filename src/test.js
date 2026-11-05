@@ -240,7 +240,7 @@ T.togglePause();ok(T.isPaused(),'P toggles pause on');T.togglePause();ok(!T.isPa
 T.devHub();ctx.document.getElementById('dlg').hidden=true;for(let i=0;i<120;i++)T.step(1/60);
 ok(T.hubCount()>=3&&T.hubCount()<=12,'hub: bots fill to 3-12 people (you + 2-11 bots)');
 ok(T.HUBV().every(v=>v.bot&&v.name&&v.lv>=1&&v.ti),'hub: bots have names, levels and titles');
-ok(SRC.includes('p.bot ? "#63a8ff" : "#dfe8f0"'),'hub: bot names are blue and real player names stay white');
+ok(SRC.includes('p.bot ? "#63a8ff" : wqName(p.wq, "#dfe8f0")'),'hub: bot names are blue and real player names stay white');
 ok(new Set(T.HUBV().map(v=>v.name)).size==T.HUBV().length,'hub: bot names are unique');
 ok(/^[A-Za-z0-9_]{2,15}$/.test(T.botName()),'hub: bot names look like player handles');
 let lv=[];for(let i=0;i<400;i++){const v={};T.botLook(v);lv.push(v.lv);}
@@ -475,6 +475,32 @@ V.gm=1e6;ok(T.gLv()===10,'gathering: mastery caps at level 10');V.gn={};V.gday.n
  V.cip.n=C.day;C.n.herb=9;T.cipTrigger('herb');ok(!C.k,'cipher: the offline daily cap stops popups');V.cip=null;C.n={};
  V.gn={};T.GCOMBO.t=0;const gi=T.GNODES.findIndex(n=>n.k=='herb');T.gatherDone(gi);V.gn={};T.gatherDone(gi);ok(T.GCOMBO.n===2,'gathering: chained gathers build a combo');
  let dt=0;try{T.gatherDraw();}catch(e){dt=1;}ok(!dt,'gathering: the channel bar, shimmer and pop draw without errors');T.cipClose();}
+{/* Rune Wishes client: tables equal the bank's, the offline shrine, adopting the bank's answer, reveal paths, draw hooks */
+ const R=(c)=>vm.runInContext(c,ctx),SW=require('./wish.js'),dp=ctx.document.getElementById('dp'),dl=ctx.document.getElementById('dlg');
+ ok(JSON.stringify(R('WISH'))===JSON.stringify(SW.WISH),'wish: the client tables equal src/wish.js (odds, pity, pools, games)');
+ const V0=R('V');const keep={wi:V0.wi,mat:V0.mat,wq:V0.wq,title:V0.title};V0.wi=null;V0.mat={};
+ let r=R('wiLocal("daily",{})');ok(r[0]==200&&r[1].t==3&&R('wiLocal("daily",{})')[0]==403,'wish: offline daily gift once a day');
+ V0.wi.t=30;r=R('wiLocal("pull",{n:10})');ok(r[0]==200&&r[1].res.length==10&&r[1].t==20&&r[1].res.some(q=>q.tier=='E'||q.tier=='L'),'wish: offline 10-pull with an Epic or better');
+ ok(R('wiLocal("pull",{n:3})')[0]==400,'wish: offline only 1 or 10');
+ let wh=0;while(R('wiLocal("wheel",{})')[0]==200)wh++;let rl=0;while(R('wiLocal("reels",{})')[0]==200)rl++;ok(wh==2&&rl==6,'wish: offline wheel 2 and reels 6 a day');
+ R('WI.dig=null');r=R('wiLocal("dig",{})');ok(r[0]==200&&r[1].id=='local','wish: offline dig opens a board');
+ R('WI.dig={id:"local",local:WI.dig.local,open:[],picks:6,sum:{}}');r=R('wiLocal("dig",{id:"local",i:0})');ok(r[0]==200&&typeof r[1].k=='string'&&R('wiLocal("dig",{id:"local",i:0})')[0]==400,'wish: offline dig reveals a tile once');
+ ok(R('wiLocal("shop",{id:"__proto__"})')[0]==400&&R('wiLocal("shop",{id:"c_ore"})')[0]==400,'wish: offline shop refuses prototype keys and materials');
+ R('V.wi.sd=1000');ok(R('wiLocal("shop",{id:"n_star"})')[0]==200&&R('wishOwn("n_star")'),'wish: offline Stardust shop sells a chosen cosmetic');
+ R('wiAdopt({t:7,sd:3,p10:2,p60:5,n:9,own:["a_ember","__proto__","bogus","constructor"],day:{e:4,s:{wheel:1,x:9}},mat:{ore:3,heart:"9"}})');
+ ok(V0.wi.t===7&&V0.wi.sd===3&&V0.wi.p60===5&&Object.keys(V0.wi.own).join()=='a_ember'&&V0.wi.dy.s.wheel===1&&!('x'in V0.wi.dy.s)&&V0.mat.ore>=3&&!V0.mat.heart,'wish: adopts the bank\'s answer (only catalogue items, only known counters)');
+ R('wiAdopt({t:"999",sd:-5})');ok(V0.wi.t===7,'wish: a malformed answer is ignored');
+ ok(R('wqOk("a_ember,h_crown,n_prism")')=='a_ember,h_crown,n_prism'&&R('wqOk("a_ember,<script>")')===''&&R('wqOk("x".repeat(60))')==='','wish: worn cosmetics are whitelisted on the network');
+ V0.wq={a:'a_ember',h:'h_crown',n:'n_star'};ok(R('wqMine()')=='a_ember','wish: only owned cosmetics are worn');
+ dl.hidden=false;let th=0;try{R('CUR_DLG="wish";wishUI("wish");wishUI("shop");wishUI("coll");wheelUI();reelsUI();digUI()');}catch(e){th=e;}ok(!th&&dp.innerHTML.includes('Treasure Dig'),'wish: shrine, shop, collection, wheel, reels and dig render'+(th?' '+th:''));
+ R('CUR_DLG="wish";wishUI("wish")');ok(dp.innerHTML.includes('0.6%')&&dp.innerHTML.includes('5.1%')&&dp.innerHTML.includes('25.0%')&&dp.innerHTML.includes('69.3%'),'wish: the banner shows the exact odds');
+ const res='[{id:"n_prism",tier:"L",nm:"Name: Prism",new:true,got:{}},{id:"c_ore",tier:"C",nm:"Ore bundle",got:{mat:{ore:4}}}]';
+ for(const [lo,lab] of [[1,'Low spec'],[0,'full']]){th=0;try{R('SET.low='+lo+';WI.rev=null;wishReveal('+res+');wishSkip();');}catch(e){th=e;}ok(!th&&R('WI.rev&&WI.rev.done'),'wish: the reveal runs and skips without errors ('+lab+')'+(th?' '+th:''));}
+ R('SET.low=0;wishCont();closeDlg()');ok(R('WI.rev===null&&WI.spin===0'),'wish: closing the window drops the reveal');
+ th=0;try{R('SET.low=0;wishShrineFx(1);wqAura("a_aether");wqHat("h_witch","owl");wqName("n_prism","#fff");SET.low=1;wishShrineFx(2);wqAura("a_tide");SET.low=0');}catch(e){th=e;}ok(!th,'wish: shrine pillar, auras, hats and name effects draw (both specs)'+(th?' '+th:''));
+ ok(R('nearby.toString().includes("WISHN")&&typeof WHEELN=="object"&&typeof REELN=="object"&&typeof DIGN=="object"'),'wish: the shrine and 3 game spots stand in the hub');
+ ok(R('Object.values(EMOTES).includes("🌠")'),'wish: the 🌠 wish beam is a network-whitelisted emote');
+ Object.assign(V0,keep);dl.hidden=true;}
 V.mat={ore:5,echo:3,herb:4};T.craftOre();ok(V.mat.ore===0&&V.mat.echo===1&&V.mat.dust===3,'smith: 5 ore + 2 echo refine into 3 dust');
 V.ton=0;const d0=T.dmG();T.craftTonic();ok(V.ton===1&&V.mat.herb===0&&V.mat.echo===0&&Math.abs(T.dmG()/d0-1.08)<1e-9,'smith: Moon Tonic costs 4 herb + 1 echo and gives +8% damage');
 V.mat={herb:8,echo:2};T.craftTonic();ok(V.mat.herb===8,'smith: only one tonic at a time');

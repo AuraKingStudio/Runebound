@@ -1791,6 +1791,109 @@
       .cgrid.c6 .cl.on { box-shadow: 0 0 16px #9fd4ff, 0 0 4px #fff inset; background: #4a7fd0; }
       .cwin { color: #ffd27a; display: inline-block; animation: cwin 0.5s ease-out; } @keyframes cwin { from { transform: scale(1.4); opacity: 0; } }
       @media (max-height: 420px) { #ciph .cpn { padding: 6px 10px; } #ciph .sm { margin: 2px 0; } .cgrid { grid-template-columns: repeat(6, 46px); gap: 6px; } .cgrid .cl { height: 46px; } #ciph { width: min(400px, calc(100vw - 20px)); } #ciph h3 { font-size: 15px; } }
+      /* ---------- Rune Wishes: the Wish Shrine and its three games ---------- */
+      .pn.wpn { width: min(560px, calc(100vw - 16px)); position: relative; }
+      .wpurse { display: flex; gap: 14px; justify-content: center; align-items: center; margin: 2px 0 6px; font: bold 15px Georgia, serif; }
+      .wpurse .sm { font-weight: normal; }
+      .wtabs { display: flex; gap: 4px; justify-content: center; flex-wrap: wrap; margin: 4px 0; }
+      .wtabs button { min-height: 44px; min-width: 44px; padding: 6px 10px; border-radius: 10px; border: 1px solid var(--ln); background: rgba(0, 0, 0, 0.25); color: #f3e6c8; font: bold 13px Georgia, serif; cursor: pointer; }
+      .wtabs button.on { border-color: #c9a2ff; color: #fff; background: linear-gradient(180deg, rgba(150, 100, 255, 0.35), rgba(60, 30, 110, 0.35)); box-shadow: 0 0 10px rgba(201, 162, 255, 0.35); }
+      .wtabs.sub button { min-height: 36px; font-size: 12px; }
+      .wban { position: relative; height: 110px; border-radius: 12px; overflow: hidden; background: radial-gradient(ellipse at 50% 60%, #3b2470, #120c26 70%); border: 1px solid #9a7cff; }
+      .wban canvas { width: 100%; height: 100%; display: block; }
+      .wbt { position: absolute; left: 0; right: 0; bottom: 8px; text-align: center; text-shadow: 0 2px 6px #000; }
+      .wbt b { display: block; font: bold 22px Georgia, serif; color: #ffe7a8; letter-spacing: 1px; }
+      .wbt span { font-size: 12px; color: #d9ccff; }
+      .wodds { display: flex; flex-wrap: wrap; gap: 4px 12px; justify-content: center; margin: 6px 0; font-size: 13px; }
+      .wpity { display: grid; grid-template-columns: 1fr 1fr; gap: 8px; margin: 4px 0; }
+      .wpity div { position: relative; padding: 4px 8px; border-radius: 8px; background: rgba(0, 0, 0, 0.3); font-size: 12px; overflow: hidden; display: flex; justify-content: space-between; align-items: center; }
+      .wpity b { font-size: 16px; color: #c77dff; z-index: 1; }
+      .wpity span { z-index: 1; }
+      .wpity i { position: absolute; left: 0; bottom: 0; height: 3px; background: #c77dff; }
+      .wpity i.lg { background: linear-gradient(90deg, #ffcf4d, #fff3c4); }
+      .wbtns { display: flex; gap: 10px; justify-content: center; margin: 8px 0; }
+      .wbig { min-height: 52px; min-width: 130px; padding: 6px 16px; border-radius: 12px; border: 2px solid #ffd27a; color: #2a1640; font: bold 17px Georgia, serif; cursor: pointer; background: linear-gradient(180deg, #ffe9a8, #e6b04a); box-shadow: 0 3px 0 #8a5a1c, 0 0 14px rgba(255, 210, 122, 0.4); }
+      .wbig.ten { background: linear-gradient(180deg, #e3c8ff, #9a6cff); border-color: #e3c8ff; box-shadow: 0 3px 0 #4a2a8a, 0 0 18px rgba(201, 162, 255, 0.55); }
+      .wbig small { display: block; font-size: 11px; font-weight: normal; }
+      .wbig:disabled { filter: grayscale(0.8) brightness(0.7); cursor: default; box-shadow: none; }
+      .wbig:not(:disabled):active { transform: translateY(2px); box-shadow: 0 1px 0 #8a5a1c; }
+      .wlist { display: grid; grid-template-columns: 1fr 1fr; gap: 6px; max-height: 46vh; overflow: auto; }
+      .wrow { display: flex; align-items: center; gap: 8px; padding: 4px 8px; border-radius: 10px; background: rgba(0, 0, 0, 0.28); border-left: 3px solid #b8c4d0; }
+      .wrow.tR { border-color: #5ab8ff; } .wrow.tE { border-color: #c77dff; } .wrow.tL { border-color: #ffcf4d; }
+      .wrow.lock { opacity: 0.5; }
+      .wrow span { flex: 1; display: flex; flex-direction: column; font-size: 12px; text-align: left; }
+      .wrow button { min-height: 44px; min-width: 64px; border-radius: 8px; border: 1px solid var(--ln); background: rgba(0, 0, 0, 0.3); color: #f3e6c8; font: bold 12px Georgia, serif; cursor: pointer; }
+      .wrow button.on { border-color: #7dff9a; color: #7dff9a; }
+      .wrow em { font-size: 12px; color: #7dff9a; }
+      .wic { width: 28px; height: 28px; flex: none; }
+      .whow { margin: 4px 0; padding: 6px 10px; border-radius: 8px; background: rgba(90, 184, 255, 0.12); border: 1px dashed #5ab8ff; font-size: 12px; text-align: left; }
+      .wmsg { min-height: 22px; margin: 6px 0; font-size: 15px; }
+      .wwin { color: #ffe08a; text-shadow: 0 0 10px rgba(255, 210, 122, 0.6); }
+      /* the reveal */
+      .wrev { position: absolute; inset: 0; z-index: 5; border-radius: inherit; display: flex; flex-direction: column; align-items: center; justify-content: center; gap: 8px; background: radial-gradient(ellipse at 50% 40%, rgba(40, 20, 80, 0.97), rgba(8, 6, 18, 0.98)); overflow: hidden; }
+      .wrev canvas { position: absolute; top: 6%; left: 50%; transform: translateX(-50%); width: 320px; max-width: 90%; transition: opacity 0.4s; }
+      .wrev.beam canvas { opacity: 0.25; }
+      .wbeam { position: absolute; top: 0; bottom: 0; left: 50%; width: 80px; margin-left: -40px; opacity: 0; pointer-events: none; background: linear-gradient(90deg, transparent, var(--wc, #fff) 50%, transparent); filter: blur(6px); }
+      .wrev.beam .wbeam { animation: wbeam 1.1s ease-out forwards; }
+      .wrev.inst .wbeam { animation: none; opacity: 0; }
+      @keyframes wbeam { 0% { opacity: 0; transform: scaleX(0.2); } 30% { opacity: 0.45; transform: scaleX(1.4); } 100% { opacity: 0.12; transform: scaleX(1); } }
+      .wrev.tC { --wc: #b8c4d0; } .wrev.tR { --wc: #5ab8ff; } .wrev.tE { --wc: #c77dff; } .wrev.tL { --wc: #ffcf4d; }
+      .wcards { position: relative; display: grid; grid-template-columns: 150px; gap: 8px; perspective: 700px; z-index: 1; }
+      .wcards.ten { grid-template-columns: repeat(5, 92px); }
+      .wcard { position: relative; height: 170px; transform-style: preserve-3d; transition: transform 0.45s cubic-bezier(0.3, 1.4, 0.5, 1); }
+      .wcards.ten .wcard { height: 118px; }
+      .wcard.on { transform: rotateY(180deg); }
+      .wrev.inst .wcard { transition: none; }
+      .wcard > div { position: absolute; inset: 0; border-radius: 10px; backface-visibility: hidden; display: flex; flex-direction: column; align-items: center; justify-content: center; gap: 4px; padding: 4px; }
+      .wf { background: repeating-linear-gradient(45deg, #2a1d4a 0 6px, #22173d 6px 12px); border: 2px solid #6a52a8; }
+      .wf i { font-style: normal; font-size: 26px; color: #c9a2ff; }
+      .wb { transform: rotateY(180deg); background: linear-gradient(170deg, #241a3e, #120c24); border: 2px solid var(--tc); box-shadow: 0 0 14px var(--tg); text-align: center; }
+      .wb b { font-size: 12px; line-height: 1.15; }
+      .wb small { font-size: 10px; color: var(--tc); }
+      .wb em { color: #7dff9a; font-style: normal; font-weight: bold; }
+      .wb .wic { width: 40px; height: 40px; }
+      .wcard.tC { --tc: #b8c4d0; --tg: transparent; } .wcard.tR { --tc: #5ab8ff; --tg: rgba(90, 184, 255, 0.4); } .wcard.tE { --tc: #c77dff; --tg: rgba(199, 125, 255, 0.55); } .wcard.tL { --tc: #ffcf4d; --tg: rgba(255, 207, 77, 0.75); }
+      .wcard.tL.on .wb { animation: wleg 2.4s ease-in-out infinite; }
+      @keyframes wleg { 50% { box-shadow: 0 0 26px var(--tg); } }
+      .wrb { position: relative; z-index: 1; }
+      .wrb button { min-height: 44px; min-width: 120px; }
+      /* the wheel */
+      .wwh { position: relative; width: 280px; height: 280px; margin: 6px auto; max-width: 100%; }
+      .wwh canvas { width: 100%; height: 100%; border-radius: 50%; box-shadow: 0 0 20px rgba(255, 207, 77, 0.35); }
+      .wptr { position: absolute; top: -6px; left: 50%; margin-left: -11px; border: 11px solid transparent; border-top: 22px solid #fff3c4; filter: drop-shadow(0 2px 2px #000); }
+      .whub { position: absolute; left: 50%; top: 50%; width: 76px; height: 76px; margin: -38px 0 0 -38px; border-radius: 50%; border: 3px solid #fff3c4; background: radial-gradient(#ffe9a8, #c98a2a); color: #2a1640; font: bold 16px Georgia, serif; cursor: pointer; box-shadow: 0 0 14px rgba(255, 210, 122, 0.6); }
+      .whub:disabled { filter: grayscale(0.7) brightness(0.75); cursor: default; }
+      /* the reels */
+      .wslot { position: relative; margin: 6px auto; padding: 10px; width: 270px; max-width: 100%; border-radius: 16px; background: linear-gradient(180deg, #4a2c1a, #2a170c); border: 3px solid #c98a2a; box-shadow: inset 0 0 14px #000, 0 0 16px rgba(255, 138, 58, 0.3); }
+      .wreels { display: flex; gap: 8px; justify-content: center; }
+      .wreel { width: 72px; height: 150px; border-radius: 8px; background: linear-gradient(180deg, #120c18, #2a2236 30%, #2a2236 70%, #120c18); display: flex; flex-direction: column; justify-content: space-around; align-items: center; overflow: hidden; }
+      .wreel i { font-style: normal; font-size: 30px; opacity: 0.45; height: 42px; line-height: 42px; }
+      .wreel i.mid { opacity: 1; font-size: 38px; }
+      .wreel.spin i { filter: blur(1.5px); }
+      .wreel.stop { animation: wbump 0.25s ease-out; }
+      @keyframes wbump { 40% { transform: translateY(6px); } }
+      .wline { position: absolute; left: 6px; right: 6px; top: 50%; height: 2px; background: rgba(255, 210, 122, 0.5); pointer-events: none; }
+      .wslot.tease { box-shadow: inset 0 0 14px #000, 0 0 26px rgba(255, 210, 122, 0.7); }
+      .wslot.win { border-color: #ffe08a; }
+      .wpay { display: flex; flex-wrap: wrap; gap: 2px 12px; justify-content: center; font-size: 12px; margin: 4px 0; }
+      .wpay b { font-size: 14px; }
+      /* the dig */
+      .wdig { display: grid; grid-template-columns: repeat(5, 52px); gap: 5px; justify-content: center; margin: 6px 0; }
+      .wtile { width: 52px; height: 52px; border-radius: 8px; border: 1px solid #5a3e22; background: linear-gradient(160deg, #7a5532, #4d331c); color: #fff; font-size: 24px; cursor: pointer; box-shadow: inset 0 -3px 0 rgba(0, 0, 0, 0.3); }
+      .wdig.live .wtile:not(:disabled):hover { filter: brightness(1.15); }
+      .wtile:disabled { cursor: default; }
+      .wtile.op { background: linear-gradient(160deg, #2c2016, #1a120b); }
+      .wtile.op.kchest, .wtile.op.ktok { box-shadow: 0 0 12px rgba(255, 207, 77, 0.7); }
+      .wtile.op.kcave { background: #3a3a3a; }
+      .wtile.miss { opacity: 0.35; background: #1a120b; }
+      .wtile.dg { animation: wshake 0.25s linear infinite; }
+      .wtile.pop { animation: wpop 0.35s ease-out; }
+      @keyframes wshake { 25% { transform: translateX(-2px) rotate(-3deg); } 75% { transform: translateX(2px) rotate(3deg); } }
+      @keyframes wpop { 0% { transform: scale(0.6); } 70% { transform: scale(1.15); } }
+      body.lo .wbeam, body.lo .wcard.tL.on .wb { animation: none !important; }
+      @media (prefers-reduced-motion: reduce) { .wbeam, .wcard, .wcard.tL.on .wb, .wreel.stop, .wtile.dg, .wtile.pop { animation: none !important; transition: none !important; } .wrev.beam .wbeam { opacity: 0.12; } }
+      @media (max-width: 560px) { .wcards.ten { grid-template-columns: repeat(5, 58px); gap: 4px; } .wcards.ten .wcard { height: 92px; } .wcards.ten .wb .wic { width: 26px; height: 26px; } .wcards.ten .wb b { font-size: 9px; } .wcards.ten .wb small { display: none; } .wlist { grid-template-columns: 1fr; } }
+      @media (max-height: 460px) { .wban { height: 70px; } .wwh { width: 200px; height: 200px; } .wreel { height: 110px; } .wreel i { height: 30px; line-height: 30px; font-size: 22px; } .wreel i.mid { font-size: 28px; } .wdig { grid-template-columns: repeat(5, 44px); gap: 4px; } .wtile { width: 44px; height: 44px; font-size: 20px; } .wcard { height: 120px; } .wcards.ten .wcard { height: 70px; } .wcards.ten .wb .wic { display: none; } }
       @media (prefers-reduced-motion: reduce) { .cgrid .cl, .cwin { transition: none; animation: none; } }
     </style>
   </head>
@@ -2372,6 +2475,11 @@
         /* the 8th spot: the future Pet NPC (keeper of companions). Shown as a locked ghost until the feature exists. */
         PETS = { lk: "pet", x: 450, y: 528, ic: "🐾", nm: "The Beastkeeper", col: "#ffcf9a",
           g: "M0 2.5c4 0 7 3 7 6.2 0 2.2-2 2.8-3.6 2.3C2.2 10.6 1.1 10.3 0 10.3s-2.2.3-3.4.7C-5 11.5-7 10.9-7 8.7c0-3.2 3-6.2 7-6.2zM-7.4-3.2a2.4 3 0 1 0 0.01 0zM7.4-3.2a2.4 3 0 1 0 0.01 0zM-3-8.4a2.4 3.2 0 1 0 0.01 0zM3-8.4a2.4 3.2 0 1 0 0.01 0z" };
+      /* Rune Wishes in the hub: the Wish Shrine (east, the centrepiece: a light pillar over it) and its three game spots */
+      const WISHN = { tu: 5, x: 770, y: 250, ic: "🌠", nm: "Wish Shrine", col: "#c9a2ff", g: "M0-13L3.5-4.5L13-4L5.5 2L8 12L0 6.5L-8 12L-5.5 2L-13-4L-3.5-4.5Z" },
+        WHEELN = { tu: 5, x: 345, y: 150, ic: "🎡", nm: "Fortune Wheel", col: "#ffcf4d", g: "M0 0L0-12A12 12 0 0 1 12 0ZM0 0L0 12A12 12 0 0 1-12 0ZM-2-15h4l-2 4z" },
+        REELN = { tu: 5, x: 770, y: 452, ic: "🎰", nm: "Rune Reels", col: "#ff8a3a", g: "M-12-9h7v18h-7zM-3.5-9h7v18h-7zM5-9h7v18h-7z" },
+        DIGN = { tu: 5, x: 555, y: 150, ic: "⛏️", nm: "Treasure Dig", col: "#7dff9a", g: "M-1-13h2v13h-2zM-6 0h12l-2 9q-4 3-8 0z" };
       /* ---------- Pets (the Beastkeeper, unlocked at level PET_LV): one companion follows you, one small bonus each ----------
          V.pets = { kind: level 1-5 }, V.pet = the active kind ("" = none). Bought and fed with materials only (src "pet", a sink).
          Online the bank owns ownership, level, the active pet and the gather/XP/refine bonus (RULES.pet): the client logs
@@ -2844,6 +2952,7 @@
           c.globalAlpha = 1; c.beginPath(); c.arc(0, 0, 4.5, 0, 6.3); c.fill();
           c.fillStyle = "#fff"; c.beginPath(); c.arc(0, -1, 2, 0, 6.3); c.fill();
         }
+        wqHat(wqGet(p === P ? wqMine() : p.wq, "h"), k);
         c.restore();
         if (o.re > 0) { c.globalAlpha = Math.min(1, o.re * 2); c.font = "14px serif"; c.textAlign = "center"; c.fillText("💖", o.x, o.y - 22 - (still ? 0 : (1 - o.re) * 12)); c.globalAlpha = 1; }
       }
@@ -2911,8 +3020,8 @@
       }, true);
       /* ---------- What's new: a small corner card once per build (BUILD), a soft chime at the player's volume ----------
          Brand-new players (tutorial not done) skip it: everything is new to them. Dismiss with x, or it fades after 14 s. */
-      const BUILD = "2026.11.06.3"; /* Cipher: gathering rune games */
-      const NEWS = ["🔮 Cipher: every few gathers a quick rune game pops up (strike the vein, the moonleaf pattern, the crystal echo); win a bonus pack of 5. Gathering combos and a shinier channel too", "🌸 The Zen Garden: rake the sand, water your plants, harvest materials, claim a 7-day streak bonus and trade your produce with friends", "🐾 Pets: reach level 6 to meet the Beastkeeper. Adopt a Fox, Owl, Wolf or Sprite with materials, feed it for a bigger bonus, and tap it to play", "⛏️ Gathering: Iron Ore, Moonleaf and Skycrystal nodes on the island; mastery raises your yield", "📜 Contract Board: 3 material orders a day on the Quest Board", "🌹 The Maiden's Exchange: barter materials at rates that drift each day"];
+      const BUILD = "2026.11.06.4"; /* Rune Wishes: free hub gacha + 3 games */
+      const NEWS = ["🌠 Rune Wishes: a Wish Shrine in the hub! Make free wishes for auras, pet hats, name effects and titles (odds and pity shown, dupes become Stardust). Earn 🎟 at the new Fortune Wheel, Rune Reels and Treasure Dig, plus Cipher wins, garden harvests and raids. All free, always", "🔮 Cipher: every few gathers a quick rune game pops up (strike the vein, the moonleaf pattern, the crystal echo); win a bonus pack of 5. Gathering combos and a shinier channel too", "🌸 The Zen Garden: rake the sand, water your plants, harvest materials, claim a 7-day streak bonus and trade your produce with friends", "🐾 Pets: reach level 6 to meet the Beastkeeper. Adopt a Fox, Owl, Wolf or Sprite with materials, feed it for a bigger bonus, and tap it to play", "⛏️ Gathering: Iron Ore, Moonleaf and Skycrystal nodes on the island; mastery raises your yield", "📜 Contract Board: 3 material orders a day on the Quest Board", "🌹 The Maiden's Exchange: barter materials at rates that drift each day"];
       let NEWS_T = 0;
       function newsShow() {
         let seen = "";
@@ -3164,7 +3273,13 @@
         { n: "Moneybags", col: "#ffd84a", ok: () => V.gold >= 1000, how: "Hold 1000 gold at once" },
         { n: "Fully Runed", col: "#ff9f43", ok: () => UPG.every((u) => V.up[u.k] >= MAXL), how: "Max every upgrade" },
         { n: "Archivist's Friend", col: "#ff7ad9", ok: () => !!V.af, how: "A rare secret page from the Archivist" },
+        /* Rune Wishes titles (Rare): owned through the Wish Shrine (V.wi.own) */
+        { n: "Lucky Star", col: "#5ab8ff", ok: () => !!(V.wi && V.wi.own && V.wi.own.t_lucky === 1), how: "A Rune Wish" },
+        { n: "Dreamwalker", col: "#5ab8ff", ok: () => !!(V.wi && V.wi.own && V.wi.own.t_dream === 1), how: "A Rune Wish" },
+        { n: "Lantern Moth", col: "#5ab8ff", ok: () => !!(V.wi && V.wi.own && V.wi.own.t_moth === 1), how: "A Rune Wish" },
+        { n: "Runeborn", col: "#5ab8ff", ok: () => !!(V.wi && V.wi.own && V.wi.own.t_rune === 1), how: "A Rune Wish" },
       ];
+      const WTITLE_I = TITLES.length - 4;
       if (!TITLES[V.title || 0]) V.title = 0;
       const myTitle = () => (TITLES[V.title || 0].ok() ? TITLES[V.title || 0] : TITLES[0]);
       /* ---------- player name ---------- */
@@ -3795,7 +3910,7 @@
         if (!k.id) {
           const p = k.params, t = k.taps;
           won = k.game == "mine" ? t.length == 3 && t.every((v) => v >= p.zone[0] && v <= p.zone[1]) : JSON.stringify(t) == JSON.stringify(k.game == "herb" ? p.seq : p.tones);
-          if (won) pack = matAdd(k.job, CIP.pack, "cipher");
+          if (won) { pack = matAdd(k.job, CIP.pack, "cipher"); wiGrant("cipher"); }
         } else {
           try {
             const r = await fetch(bankUrl() + "/api/cipher/solve", { method: "POST", headers: { "content-type": "application/json" }, cache: "no-store", body: JSON.stringify({ tok: bankTok(), id: k.id, taps: k.taps, ms }) }).then((r) => r.json());
@@ -3832,6 +3947,562 @@
       }
       /* Space strikes while the mine game is up (before the game's own keys) */
       addEventListener("keydown", (e) => { if (CIP.k && CIP.k.game == "mine" && e.code == "Space" && !e.repeat) { e.preventDefault(); e.stopImmediatePropagation(); cipStrike(); } }, true);
+      /* ---------- Rune Wishes: the free Wish Shrine (gacha) and its three hub games (Fortune Wheel, Rune Reels, Treasure Dig) ----------
+         ALL FREE: no money anywhere. Wish Tokens (🎟) come from play only. Online the bank (src/wish.js) rolls everything with
+         crypto RNG and owns tokens, pity, Stardust and the collection: the client sends {tok, op args}, animates the answer and
+         adopts its balance. Offline/LAN the same tables run here (WISH is a copy of src/wish.js WISH; a test keeps them equal). */
+      const WISH = {
+        odds: { L: 60, E: 510, R: 2500, C: 6930 },
+        epicEvery: 10, hard: 60, soft: 45, softAdd: 600,
+        dupe: { R: 5, E: 25, L: 100 },
+        shop: { R: 40, E: 160, L: 600 },
+        tokMax: 999, sdMax: 99999,
+        dayCap: 40,
+        src: { daily: 3, cipher: 4, garden: 3, raid: 3 },
+        pool: {
+          C: [["c_ore", "m", "Ore bundle", { ore: 4 }], ["c_herb", "m", "Moonleaf bundle", { herb: 4 }], ["c_dust", "m", "Rune dust", { dust: 4 }], ["c_echo", "m", "Skycrystal", { echo: 1 }], ["c_sd", "sd", "Stardust pouch", 5]],
+          R: [["t_lucky", "t", "Title: Lucky Star"], ["t_dream", "t", "Title: Dreamwalker"], ["t_moth", "t", "Title: Lantern Moth"], ["t_rune", "t", "Title: Runeborn"],
+            ["r_shard", "m", "Shard cache", { shard: 2 }], ["r_bark", "m", "Bark cache", { bark: 2 }], ["r_echo", "m", "Crystal cluster", { echo: 3 }]],
+          E: [["a_ember", "a", "Aura: Ember Ring"], ["a_tide", "a", "Aura: Tidal Halo"], ["a_bloom", "a", "Aura: Petal Bloom"],
+            ["h_crown", "h", "Pet hat: Tiny Crown"], ["h_witch", "h", "Pet hat: Witch Hat"], ["h_halo", "h", "Pet hat: Halo"]],
+          L: [["n_prism", "n", "Name: Prism"], ["n_star", "n", "Name: Starfire"], ["a_aether", "a", "Aura: Aether Wings"]],
+        },
+        wheel: { day: 2, seg: [[22, { tok: 1 }], [16, { sd: 10 }], [18, { mat: { ore: 6 } }], [12, { tok: 2 }], [18, { mat: { herb: 6 } }], [8, { tok: 3 }], [5, { sd: 40 }], [1, { tok: 10 }]] },
+        reels: { day: 6, w: [30, 24, 18, 14, 9, 5], three: [{ sd: 8 }, { sd: 12 }, { tok: 1 }, { tok: 2 }, { tok: 3 }, { tok: 8 }], two: { sd: 3 }, none: { sd: 1 } },
+        dig: { day: 3, n: 25, picks: 6, ttl: 600e3, tiles: [["chest", 1, { tok: 3 }], ["tok", 3, { tok: 1 }], ["sd", 4, { sd: 6 }], ["gem", 3, { mat: { shard: 1 } }], ["ore", 3, { mat: { ore: 3 } }], ["cave", 2, null]] },
+      };
+      const WTIER = { C: ["Common", "#b8c4d0"], R: ["Rare", "#5ab8ff"], E: ["Epic", "#c77dff"], L: ["Legendary", "#ffcf4d"] };
+      const WCAT = {};
+      for (const t of "CREL") for (const [id, k, n, p] of WISH.pool[t]) WCAT[id] = [t, k, n, p];
+      const wCosm = (id) => typeof id == "string" && Object.hasOwn(WCAT, id) && "tahn".includes(WCAT[id][1]);
+      const wcn = (v, hi) => (Number.isInteger(v) && v >= 0 ? Math.min(v, hi) : 0);
+      const wUtc = () => Math.floor(Date.now() / 86400e3);
+      const WI = { busy: false, rev: null, tab: "wish", synced: 0, dig: null, spin: 0, ang: 0 };
+      const wCalm = () => !!(SET.low || BJ_VFX.reduced());
+      /* wiSt(): this browser's copy of the wish state (online: the bank's last answer), normalised like the server's */
+      function wiSt() {
+        let w = V.wi;
+        if (!w || typeof w != "object") w = V.wi = {};
+        w.t = wcn(w.t, WISH.tokMax); w.sd = wcn(w.sd, WISH.sdMax); w.p10 = wcn(w.p10, 99); w.p60 = wcn(w.p60, 999); w.n = wcn(w.n, 1e9);
+        if (!w.own || typeof w.own != "object") w.own = {};
+        for (const k of Object.keys(w.own)) if (!wCosm(k) || w.own[k] !== 1) delete w.own[k];
+        if (!w.dy || typeof w.dy != "object" || w.dy.d !== wUtc()) w.dy = { d: wUtc(), e: 0, s: {} };
+        if (!w.dy.s || typeof w.dy.s != "object") w.dy.s = {};
+        return w;
+      }
+      const wishOwn = (id) => wCosm(id) && !!(V.wi && V.wi.own && V.wi.own[id] === 1);
+      const wiView = (w) => ({ t: w.t, sd: w.sd, p10: w.p10, p60: w.p60, n: w.n, own: Object.keys(w.own), day: { e: w.dy.e, s: { ...w.dy.s }, cap: WISH.dayCap } });
+      const wRi = (n) => Math.floor(Math.random() * n);
+      /* wiTier(w): one local pull's tier (same rule as rollTier in src/wish.js) */
+      function wiTier(w) {
+        w.p10 = wcn(w.p10, 99) + 1; w.p60 = wcn(w.p60, 999) + 1;
+        const o = WISH.odds, L = w.p60 >= WISH.hard ? 10000 : w.p60 >= WISH.soft ? o.L + (w.p60 - WISH.soft + 1) * WISH.softAdd : o.L, r = wRi(10000);
+        let t = r < L ? "L" : r < L + o.E ? "E" : r < L + o.E + o.R ? "R" : "C";
+        if (t != "L" && t != "E" && w.p10 >= WISH.epicEvery) t = "E";
+        if (t == "L") { w.p60 = 0; w.p10 = 0; } else if (t == "E") w.p10 = 0;
+        return t;
+      }
+      function wiGive(w, p) {
+        const got = {};
+        if (p.tok) { const n = Math.max(0, Math.min(p.tok, WISH.dayCap - w.dy.e, WISH.tokMax - w.t)); if (n) { w.t += n; w.dy.e += n; got.tok = n; } }
+        if (p.sd) { const n = Math.min(p.sd, WISH.sdMax - w.sd); if (n > 0) { w.sd += n; got.sd = n; } }
+        if (p.mat) for (const [m, n] of Object.entries(p.mat)) { V.mat = V.mat || {}; V.mat[m] = Math.min(99999, (V.mat[m] || 0) + n); got.mat = got.mat || {}; got.mat[m] = n; }
+        return got;
+      }
+      /* wiGrant(src): offline/LAN token for a local cipher win / garden harvest / raid win (online the bank grants these itself) */
+      function wiGrant(src) {
+        if (bankUrl() || !Object.hasOwn(WISH.src, src) || src == "daily") return 0;
+        const w = wiSt(), used = wcn(w.dy.s[src], 999), k = Math.max(0, Math.min(1, WISH.src[src] - used));
+        const got = k ? wiGive(w, { tok: k }) : {};
+        if (got.tok) { w.dy.s[src] = used + got.tok; if (P) ftxt(P.x, P.y - 52, "+1 🎟", "#ffcf4d"); }
+        return got.tok || 0;
+      }
+      /* wiLocal(op, body): the offline shrine, same answers as the bank */
+      function wiLocal(op, b) {
+        const w = wiSt(), V2 = () => wiView(w), cnt = (k, cap, err) => { const u = wcn(w.dy.s[k], 99); if (u >= cap) return err; w.dy.s[k] = u + 1; return ""; };
+        if (op == "state") return [200, V2()];
+        if (op == "daily") { if (w.dy.s.daily) return [403, { error: "Already claimed today.", ...V2() }]; const got = wiGive(w, { tok: WISH.src.daily }); w.dy.s.daily = 1; return [200, { got, ...V2() }]; }
+        if (op == "pull") {
+          const n = b.n === 10 ? 10 : b.n === 1 ? 1 : 0;
+          if (!n) return [400, { error: "Pull 1 or 10." }];
+          if (w.t < n) return [403, { error: "Not enough Wish Tokens.", ...V2() }];
+          w.t -= n;
+          const res = [];
+          for (let i = 0; i < n; i++) {
+            const tier = wiTier(w), pool = WISH.pool[tier], [id, k, nm, p] = pool[wRi(pool.length)], r = { id, tier, nm };
+            if (k == "m") r.got = wiGive(w, { mat: p }); else if (k == "sd") r.got = wiGive(w, { sd: p });
+            else if (w.own[id]) { r.dupe = 1; r.got = wiGive(w, { sd: WISH.dupe[tier] }); } else { w.own[id] = 1; r.new = 1; }
+            res.push(r);
+          }
+          w.n += n;
+          return [200, { res, ...V2() }];
+        }
+        if (op == "shop") {
+          const id = b.id;
+          if (!wCosm(id)) return [400, { error: "Unknown item." }];
+          if (w.own[id]) return [403, { error: "Already yours.", ...V2() }];
+          const pr = WISH.shop[WCAT[id][0]];
+          if (w.sd < pr) return [403, { error: "Not enough Stardust.", ...V2() }];
+          w.sd -= pr; w.own[id] = 1;
+          return [200, { id, ...V2() }];
+        }
+        if (op == "wheel") {
+          const e = cnt("wheel", WISH.wheel.day, "The wheel rests until tomorrow."); if (e) return [403, { error: e, ...V2() }];
+          const seg = WISH.wheel.seg; let r = wRi(seg.reduce((s, x) => s + x[0], 0)), i = 0;
+          while (r >= seg[i][0]) r -= seg[i++][0];
+          return [200, { seg: i, got: wiGive(w, seg[i][1]), ...V2() }];
+        }
+        if (op == "reels") {
+          const e = cnt("reels", WISH.reels.day, "The reels rest until tomorrow."); if (e) return [403, { error: e, ...V2() }];
+          const R = WISH.reels, tot = R.w.reduce((s, x) => s + x, 0), one = () => { let r = wRi(tot), i = 0; while (r >= R.w[i]) r -= R.w[i++]; return i; };
+          const reels = [one(), one(), one()], [x, y, z] = reels, p = x == y && y == z ? R.three[x] : x == y || y == z || x == z ? R.two : R.none;
+          return [200, { reels, got: wiGive(w, p), ...V2() }];
+        }
+        if (op == "dig") {
+          const d = WI.dig;
+          if (b.id === undefined) {
+            if (d && d.local) return [200, { id: d.id, open: d.open, picks: WISH.dig.picks - d.open.length, ...V2() }];
+            const e = cnt("dig", WISH.dig.day, "The dig site rests until tomorrow."); if (e) return [403, { error: e, ...V2() }];
+            const tiles = []; for (const [k, n] of WISH.dig.tiles) for (let i = 0; i < n; i++) tiles.push(k);
+            while (tiles.length < WISH.dig.n) tiles.push("dirt");
+            for (let i = tiles.length - 1; i > 0; i--) { const j = wRi(i + 1); [tiles[i], tiles[j]] = [tiles[j], tiles[i]]; }
+            WI.dig = { id: "local", local: tiles, open: [] };
+            return [200, { id: "local", open: [], picks: WISH.dig.picks, ...V2() }];
+          }
+          if (!d || !d.local || b.id !== d.id) return [403, { error: "Unknown dig." }];
+          const i = b.i;
+          if (!Number.isInteger(i) || i < 0 || i >= WISH.dig.n || d.open.some((x) => x[0] == i)) return [400, { error: "Pick a closed tile." }];
+          const k = d.local[i], def = WISH.dig.tiles.find((x) => x[0] == k), got = def && def[2] ? wiGive(w, def[2]) : {};
+          d.open.push([i, k]);
+          const over = k == "cave" || d.open.length >= WISH.dig.picks;
+          return [200, { i, k, got, over, picks: WISH.dig.picks - d.open.length, board: over ? d.local : undefined, ...V2() }];
+        }
+        return [404, { error: "Unknown." }];
+      }
+      /* wiMat(mat): adopt the bank's materials plus what is not synced yet (as bankSync / the Cipher do) */
+      function wiMat(mat) {
+        if (!mat || typeof mat != "object") return;
+        const later = LEDGER.slice(Math.max(0, BANK_AT - LEDGER_BASE)), m = {};
+        for (const j in MATS) m[j] = Math.max(0, (Number.isInteger(mat[j]) ? mat[j] : 0) + later.reduce((n, e) => n + (e[0] == "mat" && e[4] == j ? e[5] | 0 : 0), 0));
+        V.mat = m;
+      }
+      /* wiAdopt(j): the bank's answer wins (tokens, Stardust, pity, collection, today's counters, materials) */
+      function wiAdopt(j) {
+        if (!j || typeof j != "object" || !Number.isInteger(j.t)) return;
+        const w = wiSt();
+        w.t = wcn(j.t, WISH.tokMax); w.sd = wcn(j.sd, WISH.sdMax); w.p10 = wcn(j.p10, 99); w.p60 = wcn(j.p60, 999); w.n = wcn(j.n, 1e9);
+        if (Array.isArray(j.own)) { w.own = {}; for (const id of j.own.slice(0, 64)) if (wCosm(id)) w.own[id] = 1; }
+        if (j.day && typeof j.day == "object") { w.dy.e = wcn(j.day.e, 999); w.dy.s = {}; for (const k of ["daily", "wheel", "reels", "dig", "cipher", "garden", "raid"]) if (j.day.s && Number.isInteger(j.day.s[k])) w.dy.s[k] = j.day.s[k]; }
+        wiMat(j.mat);
+      }
+      /* wiCall(op, body): online the bank, offline the local shrine. Out: [status, answer] */
+      async function wiCall(op, b = {}) {
+        const url = bankUrl();
+        if (!url) { const r = wiLocal(op, b); save(); return r; }
+        try {
+          const r = await fetch(url + "/api/wish/" + op, { method: "POST", headers: { "content-type": "application/json" }, cache: "no-store", body: JSON.stringify({ ...b, tok: bankTok() }) });
+          const j = await r.json().catch(() => ({}));
+          wiAdopt(j);
+          save();
+          return [r.status, j];
+        } catch (e) { return [0, { error: "The shrine is out of reach. Try again." }]; }
+      }
+      const wiFresh = () => { if (bankUrl() && Date.now() - WI.synced > 8000) { WI.synced = Date.now(); const w0 = CUR_DLG; wiCall("state").then(() => { if (CUR_DLG == w0 && !$("dlg").hidden && !WI.rev && !WI.spin) ({ wish: wishUI, wheel: wheelUI, reels: reelsUI, dig: digUI }[w0] || (() => {}))(); }); } };
+      const wiPurse = () => { const w = wiSt(); return `<div class="wpurse"><span title="Wish Tokens">🎟 <b>${w.t}</b></span><span title="Stardust">✨ <b>${w.sd}</b></span><span class="sm">today ${w.dy.e}/${WISH.dayCap} 🎟</span></div>`; };
+      const wiNav = (cur) => `<div class="wtabs">${[["wish", "🌠 Shrine"], ["wheel", "🎡 Wheel"], ["reels", "🎰 Reels"], ["dig", "⛏️ Dig"]].map(([k, n]) => `<button class="${k == cur ? "on" : ""}" onclick="CUR_DLG='${k}';${{ wish: "wishUI", wheel: "wheelUI", reels: "reelsUI", dig: "digUI" }[k]}()">${n}</button>`).join("")}</div>`;
+      const wGot = (g) => { const p = []; if (g && g.tok) p.push(`+${g.tok} 🎟`); if (g && g.sd) p.push(`+${g.sd} ✨`); if (g && g.mat) for (const [m, n] of Object.entries(g.mat)) if (MATS[m]) p.push(`+${n} ${MATS[m].e}`); return p.join(" ") || "nothing"; };
+      const wHow = (k, txt) => (V.wtu && V.wtu[k] ? "" : `<div class="whow"><b>How to play</b> ${txt}</div>`);
+      const wLearn = (k) => { V.wtu = V.wtu && typeof V.wtu == "object" ? V.wtu : {}; V.wtu[k] = 1; };
+      const wStat = () => { V.wst = V.wst && typeof V.wst == "object" ? V.wst : {}; return V.wst; };
+      /* screen point of an element, for BJ_VFX particles */
+      const wAt = (el) => { try { const r = el.getBoundingClientRect(); return [r.left + r.width / 2, r.top + r.height / 2]; } catch (e) { return null; } };
+      function wBurst(el, col, n, big) {
+        const p = el && wAt(el);
+        if (!p) return;
+        const C = BJ_VFX.C;
+        BJ_VFX.emit(0, col, p[0], p[1], n, big ? 260 : 160, 60, 0.6, 2.6);
+        if (big) { BJ_VFX.emit(3, C.violet, p[0], p[1], n, 220, 120, 1.1, 4); BJ_VFX.emit(3, C.gold, p[0], p[1], n, 220, 120, 1.1, 4); }
+        BJ_VFX.ring(col, p[0], p[1], big ? 320 : 200);
+      }
+      const wCol = { C: 1, R: 8, E: 4, L: 0 }; /* tier -> BJ_VFX palette index */
+
+      /* ===== the Shrine ===== */
+      function wishUI(tab) {
+        if (tab) WI.tab = tab;
+        CUR_DLG = "wish";
+        const w = wiSt(), dl = !w.dy.s.daily, t = WI.tab;
+        let body = "";
+        if (t == "wish") {
+          body = `<div class="wban"><canvas id="wpc" width="300" height="110"></canvas><div class="wbt"><b>Rune Wishes</b><span>Always free · earned by playing</span></div></div>
+            <div class="wodds">${"LERC".split("").map((k) => `<span style="color:${WTIER[k][1]}">${WTIER[k][0]} <b>${(WISH.odds[k] / 100).toFixed(1)}%</b></span>`).join("")}</div>
+            <div class="wpity"><div><span>Epic or better within</span><b>${WISH.epicEvery - w.p10}</b><i style="width:${(w.p10 / WISH.epicEvery) * 100}%"></i></div><div><span>Legendary within</span><b>${WISH.hard - w.p60}</b><i class="lg" style="width:${(w.p60 / WISH.hard) * 100}%"></i></div></div>
+            <p class="sm">Guaranteed Epic or better every ${WISH.epicEvery} wishes · Legendary by wish ${WISH.hard}, its chance rising +${WISH.softAdd / 100}% a wish from wish ${WISH.soft} · a duplicate cosmetic becomes ✨ Stardust (${WISH.dupe.R}/${WISH.dupe.E}/${WISH.dupe.L})</p>
+            <div class="wbtns"><button class="wbig" onclick="wishPull(1)" ${w.t < 1 ? "disabled" : ""}>Wish ×1<small>🎟 1</small></button><button class="wbig ten" onclick="wishPull(10)" ${w.t < 10 ? "disabled" : ""}>Wish ×10<small>🎟 10</small></button></div>
+            ${dl ? `<button class="claim" onclick="wishDaily()">🎁 Daily gift: +${WISH.src.daily} 🎟</button>` : ""}
+            <p class="sm">Earn 🎟 from the daily gift, the Wheel, Reels and Dig, Cipher wins, garden harvests and raid wins (up to ${WISH.dayCap} a day).</p>`;
+        } else if (t == "shop") {
+          body = `<p class="sm">Pick exactly what you want with ✨ Stardust (from duplicates, the Reels, Wheel and Dig).</p><div class="wlist">${Object.entries(WCAT).filter(([id]) => wCosm(id)).map(([id, [tr, , nm]]) => { const own = wishOwn(id), pr = WISH.shop[tr]; return `<div class="wrow t${tr}">${wIcon(id)}<span><b>${nm}</b><small style="color:${WTIER[tr][1]}">${WTIER[tr][0]}</small></span>${own ? `<em>Owned</em>` : `<button onclick="wishBuy('${id}')" ${w.sd < pr ? "disabled" : ""}>✨ ${pr}</button>`}</div>`; }).join("")}</div>`;
+        } else {
+          const q = V.wq || {}, st = wStat(), own = Object.keys(w.own);
+          body = `<p class="sm">${own.length} of ${Object.keys(WCAT).filter(wCosm).length} cosmetics · ${w.n} wishes made · ${st.L || 0} Legendary${st.best ? ` · best Wheel prize ${st.best}` : ""}</p><div class="wlist">${Object.entries(WCAT).filter(([id]) => wCosm(id)).map(([id, [tr, k, nm]]) => { const on = wishOwn(id), eq = k == "t" ? V.title == WTITLE_I + ["t_lucky", "t_dream", "t_moth", "t_rune"].indexOf(id) : q[k] == id; return `<div class="wrow t${tr}${on ? "" : " lock"}">${wIcon(id)}<span><b>${on ? nm : "???"}</b><small style="color:${WTIER[tr][1]}">${WTIER[tr][0]}</small></span>${on ? `<button class="${eq ? "on" : ""}" onclick="wishWear('${id}')">${eq ? "Worn" : "Wear"}</button>` : ""}</div>`; }).join("")}</div>`;
+        }
+        $("dp").className = "pn wpn";
+        $("dp").innerHTML = `<h2>🌠 The Wish Shrine</h2>${wiPurse()}${wiNav("wish")}<div class="wtabs sub">${[["wish", "Banner"], ["shop", "✨ Stardust shop"], ["coll", "📖 Collection"]].map(([k, n]) => `<button class="${k == t ? "on" : ""}" onclick="wishUI('${k}')">${n}</button>`).join("")}</div>${body}<div id="wrev" hidden></div><button class="alt x" onclick="closeDlg()" title="Farewell">Farewell</button>`;
+        if (t == "wish") wiBanner();
+        wiFresh();
+      }
+      /* the banner portal: a slow swirl (30 fps, only while it is on screen); one still frame in Low spec / reduced motion */
+      function wiBanner() {
+        const cv = $("wpc");
+        if (!cv || !cv.getContext) return;
+        const g = cv.getContext("2d");
+        if (!g) return;
+        let last = 0;
+        const fr = (ts) => {
+          if (!cv.isConnected && cv.isConnected !== undefined) return;
+          if (ts - last >= 33 || wCalm()) {
+            last = ts;
+            wPortal(g, 300, 110, wCalm() ? 0 : ts / 1000, "#c77dff", 0.6);
+          }
+          if (!wCalm() && !$("dlg").hidden && CUR_DLG == "wish") requestAnimationFrame(fr);
+        };
+        fr(0);
+      }
+      /* wPortal(g, w, h, t, col, k): the swirling rune portal (k 0..1 = intensity) */
+      function wPortal(g, W2, H2, t, col, k) {
+        g.clearRect(0, 0, W2, H2);
+        const cx = W2 / 2, cy = H2 / 2, R = Math.min(W2, H2) * 0.42;
+        const gr = g.createRadialGradient(cx, cy, 0, cx, cy, R * 1.6);
+        gr.addColorStop(0, col); gr.addColorStop(0.35, "rgba(60,30,110,.55)"); gr.addColorStop(1, "rgba(10,8,24,0)");
+        g.globalAlpha = 0.35 + 0.5 * k; g.fillStyle = gr; g.fillRect(0, 0, W2, H2);
+        g.globalAlpha = 1; g.lineWidth = 2;
+        for (let i = 0; i < 5; i++) {
+          const r = R * (0.35 + i * 0.16), a = t * (i % 2 ? -0.8 : 1.1) * (1 + k) + i;
+          g.strokeStyle = i % 2 ? col : "rgba(255,240,200,.7)";
+          g.globalAlpha = 0.25 + 0.15 * (5 - i) / 5 + 0.3 * k;
+          g.beginPath(); g.ellipse(cx, cy, r * 1.5, r * 0.75, 0, a, a + 4.2); g.stroke();
+        }
+        g.globalAlpha = 1;
+        g.fillStyle = "#fff";
+        for (let i = 0; i < 10; i++) { const a = t * 2 + i * 0.628, rr = R * (0.4 + ((t * 0.5 + i * 0.13) % 1)); g.globalAlpha = 0.6; g.fillRect(cx + Math.cos(a) * rr * 1.5, cy + Math.sin(a) * rr * 0.75, 2, 2); }
+        g.globalAlpha = 1;
+      }
+      /* wIcon(id): a small code-drawn emblem for a catalogue item (SVG) */
+      function wIcon(id) {
+        const it = WCAT[id] || WCAT[(id && id.id) || ""];
+        if (!it) return "";
+        const [tr, k] = it, c = WTIER[tr][1];
+        const p = { m: '<path d="M-9 4l9-12 9 12-9 7z"/>', sd: '<path d="M0-11l3 8 8 3-8 3-3 8-3-8-8-3 8-3z"/>', t: '<path d="M-10-6h20v12h-20zM-6-2h12M-6 2h8" stroke="#0b0b18" stroke-width="1.6"/>', a: '<ellipse cx="0" cy="5" rx="11" ry="4" fill="none" stroke-width="2.6"/><circle cx="0" cy="-3" r="5"/>', h: '<path d="M-9 6h18l-3-11-3 5-3-8-3 8-3-5z"/>', n: '<path d="M-10 8l5-16h3l5 16h-3l-1-4h-5l-1 4zM-5 1h4l-2-6z"/><circle cx="8" cy="-6" r="2"/>' }[k];
+        return `<svg class="wic" viewBox="-14 -14 28 28" fill="${c}" stroke="${c}">${p}</svg>`;
+      }
+      async function wishDaily() {
+        if (WI.busy) return;
+        WI.busy = true;
+        const [st, j] = await wiCall("daily");
+        WI.busy = false;
+        if (st == 200) { BJ_SFX.jackpot(4); toast(`🎁 ${wGot(j.got)}`); try { track("wish", "daily"); } catch (e) {} }
+        else toast(j.error || "Try again later.");
+        if (CUR_DLG == "wish") wishUI();
+      }
+      async function wishBuy(id) {
+        if (WI.busy || !wCosm(id)) return;
+        WI.busy = true;
+        const [st, j] = await wiCall("shop", { id });
+        WI.busy = false;
+        if (st == 200) { BJ_SFX.blackjack(); toast(`✨ ${WCAT[id][2]} is yours!`); try { track("wish", "shop"); } catch (e) {} }
+        else toast(j.error || "Not now.");
+        if (CUR_DLG == "wish") wishUI("shop");
+      }
+      /* wishWear(id): wear (or take off) an owned cosmetic; titles join the title list */
+      function wishWear(id) {
+        if (!wishOwn(id)) return;
+        const k = WCAT[id][1];
+        if (k == "t") { const i = WTITLE_I + ["t_lucky", "t_dream", "t_moth", "t_rune"].indexOf(id); V.title = V.title == i ? 0 : i; }
+        else { V.wq = V.wq && typeof V.wq == "object" ? V.wq : {}; V.wq[k] = V.wq[k] == id ? "" : id; }
+        BJ_SFX.ding(5);
+        if (P) burst(P.x, P.y, WTIER[WCAT[id][0]][1], SET.low ? 8 : 22, 150);
+        save();
+        wishUI("coll");
+      }
+      async function wishPull(n) {
+        if (WI.busy || WI.rev) return;
+        WI.busy = true;
+        BJ_SFX.chip();
+        const [st, j] = await wiCall("pull", { n });
+        WI.busy = false;
+        if (st != 200 || !Array.isArray(j.res)) { toast(j.error || "The shrine is quiet."); return CUR_DLG == "wish" && wishUI("wish"); }
+        const res = j.res.slice(0, 10).filter((r) => r && Object.hasOwn(WCAT, r.id)).map((r) => ({ id: r.id, tier: WCAT[r.id][0], nm: WCAT[r.id][2], new: !!r.new, dupe: !!r.dupe, got: r.got && typeof r.got == "object" ? r.got : {} }));
+        const s = wStat();
+        for (const r of res) if (r.tier == "L") s.L = (s.L || 0) + 1;
+        try { track("wish", n == 10 ? "x10" : "x1", n); } catch (e) {}
+        save();
+        if (CUR_DLG != "wish" || $("dlg").hidden) return;
+        if (WI.tab != "wish") wishUI("wish");
+        wishReveal(res);
+      }
+      /* wishReveal(res): portal -> beam in the best tier's colour -> cards flip one by one (rarity sting each Epic+).
+         Skip jumps to the end. Low spec / reduced motion: no portal, no flash, cards face up at once. */
+      function wishReveal(res) {
+        const el = $("wrev");
+        if (!el || !res.length) return;
+        const top = "CREL"[res.reduce((m, r) => Math.max(m, "CREL".indexOf(r.tier)), 0)], calm = wCalm();
+        WI.rev = { res, top, done: false };
+        el.hidden = false;
+        el.className = "wrev t" + top;
+        el.innerHTML = `<canvas id="wrc" width="320" height="200"></canvas><i class="wbeam"></i><div class="wcards${res.length > 1 ? " ten" : ""}">${res.map((r, i) => `<div class="wcard t${r.tier}" id="wc${i}"><div class="wf"><i>✦</i></div><div class="wb">${wIcon(r.id)}<b>${r.nm}</b><small>${WTIER[r.tier][0]}${r.new ? ' · <em>NEW!</em>' : r.dupe ? ` · dupe +${(r.got && r.got.sd) || 0} ✨` : r.got ? " · " + wGot(r.got) : ""}</small></div></div>`).join("")}</div><div class="wrb"><button class="alt" id="wsk" onclick="wishSkip()">Skip</button></div>`;
+        if (calm) return wishSkip();
+        const cv = $("wrc"), g = cv && cv.getContext && cv.getContext("2d"), t0 = performance.now(), col = WTIER[top][1];
+        BJ_SFX.reveal();
+        /* the portal winds up for 1.3 s; for an Epic+ it starts violet-blue and turns at 0.8 s (the tease) */
+        const fr = (ts) => {
+          if (!WI.rev || WI.rev.done || !g) return;
+          const u = (ts - t0) / 1300;
+          wPortal(g, 320, 200, u * 4, u < 0.6 ? "#5ab8ff" : col, Math.min(1, u));
+          if (u < 1) requestAnimationFrame(fr);
+        };
+        requestAnimationFrame(fr);
+        BJ_VFX.later(() => {
+          if (!WI.rev || WI.rev.done) return;
+          if (el.classList) el.classList.add("beam");
+          wSting(top);
+          if (top == "L" || top == "E") BJ_VFX.quake(el, top == "L" ? 1 : 0.5, 0);
+        }, 1.3);
+        res.forEach((r, i) => BJ_VFX.later(() => wFlip(i), 1.7 + i * (res.length > 1 ? 0.22 : 0)));
+        BJ_VFX.later(() => wDone(), 1.9 + res.length * (res.length > 1 ? 0.22 : 0));
+      }
+      function wFlip(i) {
+        const rv = WI.rev, c = $("wc" + i);
+        if (!rv || !c || !c.classList || c.classList.contains("on")) return;
+        c.classList.add("on");
+        const r = rv.res[i];
+        BJ_SFX.flip();
+        if (!rv.done && (r.tier == "E" || r.tier == "L")) { wSting(r.tier); BJ_VFX.later(() => wBurst(c, wCol[r.tier], r.tier == "L" ? 26 : 12, r.tier == "L"), 0.2); }
+      }
+      function wSting(t) {
+        if (t == "L") { BJ_SFX.blackjack(); BJ_SFX.jackpot(8); }
+        else if (t == "E") BJ_SFX.win();
+        else if (t == "R") BJ_SFX.ding(7);
+        else BJ_SFX.ding(2);
+      }
+      function wishSkip() {
+        const rv = WI.rev;
+        if (!rv) return;
+        BJ_VFX.cancel();
+        const el = $("wrev");
+        if (el && el.classList) el.classList.add("inst", "beam");
+        rv.res.forEach((r, i) => { const c = $("wc" + i); if (c && c.classList) c.classList.add("on"); });
+        if (!rv.done) wSting(rv.top);
+        wDone();
+      }
+      function wDone() {
+        const rv = WI.rev;
+        if (!rv || rv.done) return;
+        rv.done = true;
+        const b = $("wsk");
+        if (b) { b.textContent = "Continue"; b.onclick = wishCont; }
+        if (rv.top == "L" || rv.top == "E") wishBeam();
+      }
+      function wishCont() { WI.rev = null; if (CUR_DLG == "wish" && !$("dlg").hidden) wishUI("wish"); }
+      /* wishBeam(): a 🌠 over your head that other players see too (the emote channel): Epic+ pulls only */
+      function wishBeam() {
+        if (!P || S.sc != "hub") return;
+        emote(P, "🌠");
+        try {
+          if (NET?.peerIds().length) {
+            if (NET_ROLE == "guest") netQuery({ type: "emote", e: "🌠" }, () => {});
+            else if (NET_ROLE == "host") NET.broadcast({ type: "emote", id: "host-player", e: "🌠" });
+          }
+        } catch (e) {}
+      }
+
+      /* ===== Fortune Wheel: 2 free spins a day; slices sized by their real odds ===== */
+      const WHEEL_COL = ["#ffcf4d", "#c77dff", "#9fb3c8", "#ffb347", "#7dff9a", "#ff8a3a", "#5ab8ff", "#ff4d8d"];
+      const wSegTxt = (p) => (p.tok ? `${p.tok} 🎟` : p.sd ? `${p.sd} ✨` : Object.entries(p.mat).map(([m, n]) => `${n} ${MATS[m] ? MATS[m].e : ""}`).join(""));
+      const wSegs = () => { const s = WISH.wheel.seg, tot = s.reduce((a, x) => a + x[0], 0); let a = 0; return s.map(([wt, p], i) => { const a0 = a; a += (wt / tot) * Math.PI * 2; return { a0, a1: a, p, i, pc: (wt / tot) * 100 }; }); };
+      function wheelUI() {
+        CUR_DLG = "wheel";
+        const w = wiSt(), left = WISH.wheel.day - wcn(w.dy.s.wheel, 99);
+        $("dp").className = "pn wpn";
+        $("dp").innerHTML = `<h2>🎡 Fortune Wheel</h2>${wiPurse()}${wiNav("wheel")}${wHow("wheel", "Tap SPIN. The wheel lands where the bank rolled; bigger slices are likelier, the thin gold one is the 10 🎟 jackpot.")}
+          <div class="wwh"><canvas id="wwc" width="280" height="280"></canvas><i class="wptr"></i><button class="whub" id="wwb" onclick="wheelSpin()" ${left < 1 || WI.spin ? "disabled" : ""}>SPIN</button></div>
+          <p class="wmsg" id="wwm">${left > 0 ? `${left} free spin${left == 1 ? "" : "s"} today` : "The wheel rests until tomorrow (UTC)."}</p>
+          <div class="wodds">${wSegs().map((s) => `<span style="color:${WHEEL_COL[s.i]}">${wSegTxt(s.p)} <b>${s.pc.toFixed(0)}%</b></span>`).join("")}</div>
+          <button class="alt x" onclick="closeDlg()" title="Farewell">Farewell</button>`;
+        wheelPaint();
+        wiFresh();
+      }
+      function wheelPaint() {
+        const cv = $("wwc"), g = cv && cv.getContext && cv.getContext("2d");
+        if (!g) return;
+        g.clearRect(0, 0, 280, 280);
+        const cx = 140, cy = 140, R = 132;
+        g.fillStyle = "#2a1f45"; g.beginPath(); g.arc(cx, cy, R + 6, 0, 6.3); g.fill();
+        for (const s of wSegs()) {
+          g.fillStyle = WHEEL_COL[s.i]; g.globalAlpha = 0.9;
+          g.beginPath(); g.moveTo(cx, cy); g.arc(cx, cy, R, s.a0, s.a1); g.closePath(); g.fill();
+          g.globalAlpha = 1; g.strokeStyle = "#1a1230"; g.lineWidth = 2; g.stroke();
+          if (s.a1 - s.a0 > 0.2) {
+            const m = (s.a0 + s.a1) / 2;
+            g.save(); g.translate(cx, cy); g.rotate(m); g.fillStyle = "#1a1230"; g.font = "bold 14px Georgia"; g.textAlign = "right"; g.textBaseline = "middle"; g.fillText(wSegTxt(s.p), R - 10, 0); g.restore();
+          }
+        }
+        for (let i = 0; i < 24; i++) { const a = (i / 24) * 6.283; g.fillStyle = i % 2 ? "#fff3c4" : "#ffd84a"; g.beginPath(); g.arc(cx + Math.cos(a) * (R + 3), cy + Math.sin(a) * (R + 3), 2.2, 0, 6.3); g.fill(); }
+        cv.style.transform = `rotate(${WI.ang}rad)`;
+      }
+      async function wheelSpin() {
+        if (WI.spin || WI.busy) return;
+        WI.busy = true;
+        const [st, j] = await wiCall("wheel");
+        WI.busy = false;
+        if (st != 200 || !Number.isInteger(j.seg) || !WISH.wheel.seg[j.seg]) { toast(j.error || "The wheel is stuck."); return CUR_DLG == "wheel" && wheelUI(); }
+        wLearn("wheel");
+        try { track("wish", "wheel"); } catch (e) {}
+        if (CUR_DLG != "wheel") return;
+        const s = wSegs()[j.seg], cv = $("wwc"), b = $("wwb");
+        if (b) b.disabled = true;
+        /* the pointer is at the top (-90°): land somewhere inside the slice (the exact spot is only looks) */
+        const land = s.a0 + (s.a1 - s.a0) * (0.2 + Math.random() * 0.6), want = -Math.PI / 2 - land;
+        const from = WI.ang, to = from + ((((want - from) % 6.283) + 6.283) % 6.283) + 6.283 * (BJ_VFX.reduced() ? 0 : SET.low ? 3 : 5);
+        const dur = SET.low ? 2200 : 4200, t0 = performance.now(), ease = (u) => 1 - Math.pow(1 - u, 4);
+        WI.spin = 1;
+        let lastSeg = -1;
+        const segAt = (ang) => { const a = (((-Math.PI / 2 - ang) % 6.283) + 6.283) % 6.283; return wSegs().findIndex((x) => a >= x.a0 && a < x.a1); };
+        const end = () => {
+          WI.spin = 0; WI.ang = to % 6.283;
+          if (cv) cv.style.transform = `rotate(${WI.ang}rad)`;
+          if (CUR_DLG != "wheel") return;
+          const m = $("wwm"), big = s.p.tok >= 3 || s.p.sd >= 40;
+          if (m) m.innerHTML = `<b class="wwin">${big ? "JACKPOT! " : ""}${wGot(j.got)}</b>`;
+          if (big) BJ_SFX.jackpot(s.p.tok >= 10 ? 12 : 7); else BJ_SFX.win();
+          if (cv) wBurst(cv, big ? 0 : 1, big ? 30 : 12, big);
+          const sd = wStat(); if (big) sd.best = wSegTxt(s.p);
+          BJ_VFX.later(() => { if (CUR_DLG == "wheel" && !WI.spin) wheelUI(); }, 2.2);
+        };
+        if (wCalm() && BJ_VFX.reduced()) return end();
+        const fr = (ts) => {
+          if (CUR_DLG != "wheel" || $("dlg").hidden) { WI.spin = 0; return; }
+          const u = Math.min(1, (ts - t0) / dur), a = from + (to - from) * ease(u);
+          if (cv) cv.style.transform = `rotate(${a}rad)`;
+          const sg = segAt(a);
+          if (sg != lastSeg) { if (lastSeg >= 0) BJ_SFX.deal(); lastSeg = sg; }
+          if (u < 1) requestAnimationFrame(fr); else end();
+        };
+        requestAnimationFrame(fr);
+      }
+
+      /* ===== Rune Reels: 6 free spins a day, three reels of six runes ===== */
+      const WRUNE = [["ᚠ", "#9fb3c8"], ["ᚢ", "#7dff9a"], ["ᚦ", "#5ab8ff"], ["ᚨ", "#c77dff"], ["ᚱ", "#ff8a3a"], ["✦", "#ffd84a"]];
+      const wRune = (i) => `<b style="color:${WRUNE[i][1]}">${WRUNE[i][0]}</b>`;
+      function reelsUI() {
+        CUR_DLG = "reels";
+        const w = wiSt(), left = WISH.reels.day - wcn(w.dy.s.reels, 99), st = wStat(), R = WISH.reels;
+        $("dp").className = "pn wpn";
+        $("dp").innerHTML = `<h2>🎰 Rune Reels</h2>${wiPurse()}${wiNav("reels")}${wHow("reels", "Pull the lever. Three of a kind pays the most (✦✦✦ = 8 🎟), any pair pays 3 ✨, and every spin pays at least 1 ✨.")}
+          <div class="wslot" id="wsl"><div class="wreels">${[0, 1, 2].map((r) => `<div class="wreel" id="wr${r}"><i>${wRune((r + 2) % 6)}</i><i class="mid">${wRune((r * 2) % 6)}</i><i>${wRune((r + 4) % 6)}</i></div>`).join("")}</div><i class="wline"></i></div>
+          <button class="wbig" id="wrb" onclick="reelsSpin()" ${left < 1 || WI.spin ? "disabled" : ""}>PULL<small>${left} left today</small></button>
+          <p class="wmsg" id="wrm">${st.rs > 1 ? `🔥 Win streak ×${st.rs}` : "&nbsp;"}</p>
+          <div class="wpay">${R.three.map((p, i) => `<span>${wRune(i)}${wRune(i)}${wRune(i)} ${wGot(p)}</span>`).join("")}<span>any pair ${wGot(R.two)}</span><span>no match ${wGot(R.none)}</span></div>
+          <p class="sm">Odds per reel: ${R.w.map((x, i) => `${WRUNE[i][0]} ${x}%`).join(" · ")}</p>
+          <button class="alt x" onclick="closeDlg()" title="Farewell">Farewell</button>`;
+        wiFresh();
+      }
+      async function reelsSpin() {
+        if (WI.spin || WI.busy) return;
+        WI.busy = true;
+        const b = $("wrb"); if (b) b.disabled = true;
+        BJ_SFX.chip();
+        const [st, j] = await wiCall("reels");
+        WI.busy = false;
+        if (st != 200 || !Array.isArray(j.reels) || j.reels.length != 3 || !j.reels.every((v) => Number.isInteger(v) && v >= 0 && v < 6)) { toast(j.error || "The reels jam."); return CUR_DLG == "reels" && reelsUI(); }
+        wLearn("reels");
+        try { track("wish", "reels"); } catch (e) {}
+        if (CUR_DLG != "reels") return;
+        const r = j.reels, calm = wCalm(), tease = r[0] == r[1];
+        WI.spin = 1;
+        const ivs = [0, 1, 2].map((k) => { const el = $("wr" + k); if (el && el.classList && !calm) el.classList.add("spin"); return setInterval(() => { if (!el || calm) return; const c = el.children; if (c) for (let q = 0; q < c.length; q++) c[q].innerHTML = wRune(wRi(6)); }, SET.low ? 110 : 60); });
+        const stops = [0.8, 1.25, tease ? 2.6 : 1.7].map((s) => (calm ? s * 0.5 : s));
+        if (tease && !calm) BJ_VFX.later(() => { const el = $("wsl"); if (el && el.classList) el.classList.add("tease"); BJ_SFX.ding(9); }, stops[1] + 0.1);
+        stops.forEach((s, k) => BJ_VFX.later(() => {
+          clearInterval(ivs[k]);
+          const el = $("wr" + k);
+          if (el && el.children && el.children.length == 3) { el.children[0].innerHTML = wRune((r[k] + 5) % 6); el.children[1].innerHTML = wRune(r[k]); el.children[2].innerHTML = wRune((r[k] + 1) % 6); el.classList.remove("spin"); el.classList.add("stop"); }
+          BJ_SFX.hit();
+          if (k == 2) reelsEnd(j);
+        }, s));
+        WI.ivs = ivs;
+      }
+      function reelsEnd(j) {
+        WI.spin = 0;
+        const r = j.reels, three = r[0] == r[1] && r[1] == r[2], two = !three && (r[0] == r[1] || r[1] == r[2] || r[0] == r[2]), st = wStat(), m = $("wrm"), sl = $("wsl");
+        if (sl && sl.classList) sl.classList.remove("tease");
+        st.rs = three || two ? (st.rs || 0) + 1 : 0;
+        if (three) { BJ_SFX.jackpot(r[0] == 5 ? 14 : 6 + r[0]); if (sl && sl.classList) { sl.classList.add("win"); wBurst(sl, r[0] == 5 ? 0 : 4, r[0] >= 4 ? 30 : 16, r[0] >= 3); } }
+        else if (two) { BJ_SFX.win(); if (st.rs > 1) BJ_SFX.streak(st.rs); }
+        else BJ_SFX.push();
+        if (m) m.innerHTML = `<b class="${three ? "wwin" : ""}">${three ? (r[0] == 5 ? "✦ STARFALL ✦ " : "THREE OF A KIND! ") : two ? "A pair! " : "So close… "}${wGot(j.got)}</b>${st.rs > 1 ? ` · 🔥 ×${st.rs}` : ""}`;
+        save();
+        BJ_VFX.later(() => { if (CUR_DLG == "reels" && !WI.spin) { const b = $("wrb"); const left = WISH.reels.day - wcn(wiSt().dy.s.reels, 99); if (b) { b.disabled = left < 1; b.innerHTML = `PULL<small>${left} left today</small>`; } } }, 0.6);
+      }
+
+      /* ===== Treasure Dig: 3 boards a day, 5x5, 6 picks; two cave-ins end a board early (you keep your finds) ===== */
+      const WDIG = { chest: ["💰", "Treasure chest!"], tok: ["🎟", "A Wish Token"], sd: ["✨", "Stardust"], gem: ["💎", "A shard"], ore: ["⛏️", "Ore"], cave: ["🪨", "Cave-in!"], dirt: ["·", "Just dirt"] };
+      function digUI() {
+        CUR_DLG = "dig";
+        const w = wiSt(), d = WI.dig, left = WISH.dig.day - wcn(w.dy.s.dig, 99), open = d ? d.open : [], fin = d && d.board;
+        const cell = (i) => { const o = open.find((x) => x[0] == i), k = o ? o[1] : fin ? fin[i] : ""; return `<button class="wtile${o ? " op k" + k : fin ? " miss k" + k : ""}" id="wt${i}" onclick="digPick(${i})" ${!d || o || fin ? "disabled" : ""} aria-label="Tile ${i + 1}">${k ? WDIG[k][0] : ""}</button>`; };
+        $("dp").className = "pn wpn";
+        $("dp").innerHTML = `<h2>⛏️ Treasure Dig</h2>${wiPurse()}${wiNav("dig")}${wHow("dig", "Start a dig, then pick 6 tiles. Hidden: 1 chest (3 🎟), 3 tokens, 4 Stardust, 3 shards, 3 ore and 2 cave-ins that end the dig early. You keep everything you find.")}
+          <div class="wdig${d && !fin ? " live" : ""}">${Array.from({ length: WISH.dig.n }, (_, i) => cell(i)).join("")}</div>
+          <p class="wmsg" id="wdm">${d && !fin ? `Picks left: ${"⛏️".repeat(Math.max(0, d.picks))}` : fin ? `<b class="wwin">Found: ${wGot(d.sum)}</b>` : "&nbsp;"}</p>
+          ${!d || fin ? `<button class="wbig" onclick="digStart()" ${left < 1 ? "disabled" : ""}>${fin ? "Dig again" : "Start a dig"}<small>${left} left today</small></button>` : ""}
+          <button class="alt x" onclick="closeDlg()" title="Farewell">Farewell</button>`;
+        if (!d) wiFresh();
+      }
+      async function digStart() {
+        if (WI.busy) return;
+        if (WI.dig && WI.dig.board) WI.dig = null;
+        WI.busy = true;
+        const [st, j] = await wiCall("dig");
+        WI.busy = false;
+        if (st != 200 || typeof j.id != "string") { toast(j.error || "The ground is frozen."); return CUR_DLG == "dig" && digUI(); }
+        wLearn("dig");
+        try { track("wish", "dig"); } catch (e) {}
+        const loc = WI.dig && WI.dig.local;
+        WI.dig = { id: j.id, local: loc && j.id == "local" ? loc : null, open: Array.isArray(j.open) ? j.open.filter((x) => Array.isArray(x) && Number.isInteger(x[0]) && WDIG[x[1]]) : [], picks: wcn(j.picks, WISH.dig.picks), sum: {} };
+        BJ_SFX.deal();
+        if (CUR_DLG == "dig") digUI();
+      }
+      async function digPick(i) {
+        const d = WI.dig;
+        if (!d || d.board || WI.busy || !Number.isInteger(i) || d.open.some((x) => x[0] == i)) return;
+        WI.busy = true;
+        const t = $("wt" + i);
+        if (t && t.classList && !wCalm()) t.classList.add("dg");
+        BJ_SFX.hit();
+        const [st, j] = await wiCall("dig", { id: d.id, i });
+        WI.busy = false;
+        if (WI.dig !== d) return;
+        if (st != 200 || !WDIG[j.k]) { toast(j.error || "The tile will not budge."); if (st == 403) WI.dig = null; return CUR_DLG == "dig" && digUI(); }
+        if (!d.open.some((x) => x[0] == i)) d.open.push([i, j.k]);
+        d.picks = wcn(j.picks, WISH.dig.picks);
+        const g = j.got || {};
+        for (const k of ["tok", "sd"]) if (g[k]) d.sum[k] = (d.sum[k] || 0) + g[k];
+        if (g.mat) for (const [m, n] of Object.entries(g.mat)) { d.sum.mat = d.sum.mat || {}; d.sum.mat[m] = (d.sum.mat[m] || 0) + n; }
+        if (j.over) d.board = Array.isArray(j.board) && j.board.length == WISH.dig.n ? j.board.map((k) => (WDIG[k] ? k : "dirt")) : Array(WISH.dig.n).fill("");
+        if (CUR_DLG != "dig") return;
+        digUI();
+        const el = $("wt" + i);
+        if (el && el.classList) el.classList.add("pop");
+        const k = j.k;
+        if (k == "chest") { BJ_SFX.jackpot(9); wBurst(el, 0, 28, true); }
+        else if (k == "tok") { BJ_SFX.win(); wBurst(el, 0, 14); }
+        else if (k == "cave") { BJ_SFX.bust(); BJ_VFX.quake($("dp"), 0.8, 0); BJ_VFX.emit(4, BJ_VFX.C.grey, ...(wAt(el) || [0, 0]), 14, 90, 10, 0.7, 6); }
+        else if (k == "dirt") BJ_SFX.stand();
+        else { BJ_SFX.ding(k == "gem" ? 9 : 5); wBurst(el, k == "gem" ? 5 : 1, 8); }
+        const m = $("wdm");
+        if (m && !j.over) m.innerHTML = `<b>${WDIG[k][1]}</b> ${k != "dirt" && k != "cave" ? wGot(g) : ""} · picks left: ${"⛏️".repeat(d.picks)}`;
+        if (m && j.over) m.innerHTML = `<b class="wwin">${k == "cave" ? "Cave-in! " : ""}Found: ${wGot(d.sum)}</b>`;
+      }
       /* ---------- playtest feedback: a note + the last game errors, sent to the hub service (feedback.log), or copied ---------- */
       const ERRLOG = [];
       addEventListener("error", (e) => { ERRLOG.push(String(e.message || e.error || "error").slice(0, 200) + " @" + (e.lineno || "?")); ERRLOG.splice(0, ERRLOG.length - 8); });
@@ -4211,7 +4882,7 @@
         }
         const [sx, sy] = spawnSpot(),
           v = { id, name: o.name || "Wanderer", cls: CL[o.cls] ? o.cls : "tank", x: o.x ?? sx, y: o.y ?? sy, dx: 0, dy: 0, f: "d", hp: 1, mh: 1, bot: bot ? 1 : 0,
-            lv: o.lv || 1, ti: TITLES[o.ti] || TITLES[0], nc: [1, 2, 3].includes(o.nc) ? o.nc : 0, pt: petOk(o.pt) ? o.pt : "", via: [] };
+            lv: o.lv || 1, ti: TITLES[o.ti] || TITLES[0], nc: [1, 2, 3].includes(o.nc) ? o.nc : 0, pt: petOk(o.pt) ? o.pt : "", wq: wqOk(o.wq), via: [] };
         v.tx = v.x;
         v.ty = v.y;
         v.born = HUB_T;
@@ -4339,7 +5010,7 @@
       }
       function netProfile() {
         return { id: NET_LOCAL_ID, name: String(pname()).replace(/[^A-Za-z0-9 _-]/g, "").slice(0, 16) || "Wanderer",
-          cls: CL[P.cls] ? P.cls : "tank", lv: cl(lvlInfo().L | 0, 1, 60), ti: cl(V.title | 0, 0, TITLES.length - 1), spd: cl(spm(), 1, 1.3), nc: [1, 2, 3].includes(V.nc) ? V.nc : 0, pt: petNet() };
+          cls: CL[P.cls] ? P.cls : "tank", lv: cl(lvlInfo().L | 0, 1, 60), ti: cl(V.title | 0, 0, TITLES.length - 1), spd: cl(spm(), 1, 1.3), nc: [1, 2, 3].includes(V.nc) ? V.nc : 0, pt: petNet(), wq: wqMine() };
       }
       async function networkAutoJoin() {
         if (NET_AUTO_STARTED || !NET || !P || !V.name) return;
@@ -4497,7 +5168,7 @@
             !Number.isInteger(value.ti) || value.ti < 0 || value.ti >= TITLES.length ||
             !Number.isFinite(value.spd) || value.spd < 1 || value.spd > 1.3) return null;
         return { id: value.id, name: value.name.replace(/[^A-Za-z0-9 _-]/g, "").slice(0, 16) || "Wanderer",
-          cls: value.cls, lv: value.lv, ti: value.ti, spd: value.spd, nc: [1, 2, 3].includes(value.nc) ? value.nc : 0, pt: petOk(value.pt) ? value.pt : "" }; /* nc: cosmetic name colour, optional */
+          cls: value.cls, lv: value.lv, ti: value.ti, spd: value.spd, nc: [1, 2, 3].includes(value.nc) ? value.nc : 0, pt: petOk(value.pt) ? value.pt : "", wq: wqOk(value.wq) }; /* nc: cosmetic name colour, optional; wq: wish cosmetics (whitelisted) */
       }
       /* ---------- fair play: the master audits every slave and every slave audits the master ----------
          Each side keeps its own progress (gold, XP, upgrades, HP) and a LEDGER of why it changed. At random moments the
@@ -5350,6 +6021,7 @@
         { id: "e_pray", t: "emote", k: "pray", e: "🙏", n: "Thanks", need: () => (V.ds || 0) >= 7, how: "7-day login streak" },
         { id: "e_crown", t: "emote", k: "crown", e: "👑", n: "Crown", gold: 400 },
         { id: "e_dragon", t: "emote", k: "dragon", e: "🐉", n: "Dragon", gold: 500 },
+        { id: "e_wish", t: "emote", k: "wish", e: "🌠", n: "Wish beam", need: () => !!(V.wi && V.wi.n > 0), how: "Make a Rune Wish" },
         { id: "e_bolt", t: "emote", k: "bolt", e: "⚡", n: "Rune Bolt", gold: 600 }, /* emotes never cost real money (owner) */
       ];
       const PASS = { eur: 2.99, bonus: 0.25 }; /* Rune Pass: +25% gold and XP from raids, plus its exclusive cosmetics */
@@ -5778,6 +6450,11 @@
         const age = S.tm - p.emo.at;
         if (age > EMO_LIFE) return (p.emo = null);
         const pop = age < 0.25 ? 0.4 + (age / 0.25) * 0.8 : 1.2 - Math.min(0.2, (age - 0.25) * 0.8);
+        if (p.emo.e == "🌠" && !SET.low) { /* a wish beam: a soft column of light over the head (no flashing) */
+          const a = Math.min(1, (EMO_LIFE - age) * 1.5) * Math.min(1, age * 4), g = c.createLinearGradient(0, y - 120, 0, y);
+          g.addColorStop(0, "rgba(255,220,140,0)"); g.addColorStop(1, `rgba(255,220,140,${0.35 * a})`);
+          c.fillStyle = g; c.fillRect(-9, y - 120, 18, 120);
+        }
         c.save();
         c.globalAlpha = Math.min(1, (EMO_LIFE - age) * 2.5); /* full strength, not faded with the body */
         c.translate(0, y - age * 6 + Math.sin(age * 7) * 1.5);
@@ -7670,6 +8347,10 @@
           ["seraph", SERAPH], /* the Herald is retired from the hub (8 spots); heraldUI is kept */
           ["pet", PETS],
           ["barkeep", BARKEEP],
+          ["wish", WISHN],
+          ["wheel", WHEELN],
+          ["reels", REELN],
+          ["dig", DIGN],
         ])
           if (!npcHidden(n[1])) {
             const d = dist(P, n[1]);
@@ -7711,6 +8392,7 @@
       function closeDlg() {
         bjClockStop(); /* the blackjack Assist clock */
         if (typeof BJ_VFX != "undefined") BJ_VFX.stop(); /* no blackjack sounds, coins or stamps after the window closes */
+        if (typeof WI != "undefined") { WI.rev = null; WI.spin = 0; for (const iv of WI.ivs || []) clearInterval(iv); WI.ivs = null; }
         CUR_DLG = "";
         clearTimeout(GD_T); GD_T = 0; /* the garden refresh */
         if (ZEN.raf) { cancelAnimationFrame(ZEN.raf); ZEN.raf = 0; } /* the zen scene */
@@ -7727,7 +8409,7 @@
         if (tn && tut() < tn.tu) return lockedUI("tut");
         const ln = { class: CLASSN, maiden: MAIDEN, smith: SMITH, herald: HERALD, barkeep: BARKEEP, seraph: SERAPH, pet: PETS }[w];
         if (ln && !isUnl(ln.lk)) return lockedUI(ln.lk);
-        ({ elder: elderUI, lore: loreUI, shop: shopUI, class: classUI, maiden: maidenUI, smith: smithUI, seraph: seraphUI, herald: heraldUI, barkeep: bjUI, pet: petUI, qboard: questBoardUI, gboard: guildUI }[w] || shopUI)();
+        ({ elder: elderUI, lore: loreUI, shop: shopUI, class: classUI, maiden: maidenUI, smith: smithUI, seraph: seraphUI, herald: heraldUI, barkeep: bjUI, pet: petUI, qboard: questBoardUI, gboard: guildUI, wish: () => wishUI("wish"), wheel: wheelUI, reels: reelsUI, dig: digUI }[w] || shopUI)();
       }
       /* ---------- daily login bonus ----------
          7-day cycle; missing a day resets the streak. In: V.dl, V.ds, today's date. Out: gold + dialog. */
@@ -10216,7 +10898,7 @@
         $("bil").hidden = $("bir").hidden = $("bi").hidden || NEAR_PL.length < 2; /* arrows to pick among everything in reach */
         if (!$("bil").hidden) { const kh = (a) => (INMODE == "kb" ? `<span class="kh">${keyLabel(SET.bind[a])}</span>` : ""), l = "◀" + kh("s1"), r = "▶" + kh("s2"); if ($("bil")._h != l) { $("bil")._h = l; $("bil").innerHTML = l; } if ($("bir")._h != r) { $("bir")._h = r; $("bir").innerHTML = r; } } /* key badges follow the layout */
         if (n) {
-          const lb = n == "raid" ? "CHOOSE RAID" : n.startsWith("gn:") ? (gReady(+n.slice(3)) ? "GATHER · " + MATS[GNODES[+n.slice(3)].k].n.toUpperCase() : "REGROWING") : n.startsWith("player:") ? "INVITE · " + (HUBV.find((o) => "player:" + o.id == n)?.name || "") + "" : n == "elder" ? "TALK" : n == "lore" ? "LISTEN" : n == "barkeep" && !isUnl(n) ? "JOIN DISCORD TO UNLOCK!" : ["class", "maiden", "smith", "herald"].includes(n) && !isUnl(n) ? "???" : n == "class" ? "CLASS" : n == "maiden" ? "PRAY" : n == "smith" ? "FORGE" : n == "herald" ? "RECORDS" : n == "barkeep" ? "BLACKJACK" : n == "qboard" ? "QUESTS" : n == "gboard" ? "GUILD" : "SHOP",
+          const lb = n == "raid" ? "CHOOSE RAID" : n.startsWith("gn:") ? (gReady(+n.slice(3)) ? "GATHER · " + MATS[GNODES[+n.slice(3)].k].n.toUpperCase() : "REGROWING") : n.startsWith("player:") ? "INVITE · " + (HUBV.find((o) => "player:" + o.id == n)?.name || "") + "" : n == "elder" ? "TALK" : n == "lore" ? "LISTEN" : n == "barkeep" && !isUnl(n) ? "JOIN DISCORD TO UNLOCK!" : ["class", "maiden", "smith", "herald"].includes(n) && !isUnl(n) ? "???" : n == "class" ? "CLASS" : n == "maiden" ? "PRAY" : n == "smith" ? "FORGE" : n == "herald" ? "RECORDS" : n == "barkeep" ? "BLACKJACK" : n == "qboard" ? "QUESTS" : n == "gboard" ? "GUILD" : n == "wish" ? "MAKE A WISH" : n == "wheel" ? "SPIN THE WHEEL" : n == "reels" ? "RUNE REELS" : n == "dig" ? "TREASURE DIG" : "SHOP",
             ht = KEYHINT[INMODE][3],
             h = lb + (NEAR_PL.length > 1 ? ` <small>${(INV_I % NEAR_PL.length) + 1}/${NEAR_PL.length}</small>` : "") + (ht ? ` <span class="kh k3">${ht}</span>` : "");
           if ($("bi")._h != h) { $("bi")._h = h; $("bi").innerHTML = h; $("bi").classList.add("small"); } /* only touch the DOM when it changes */
@@ -10766,6 +11448,62 @@
         g.fill(PEMB[k]);
         return (BODY[k] = cv2);
       }
+      /* wishShrineFx(t): a soft light pillar and a turning rune ring under the Wish Shrine (Low spec: the ring only, still) */
+      function wishShrineFx(t) {
+        const { x, y } = WISHN, still = SET.low || BJ_VFX.reduced();
+        c.save();
+        c.globalCompositeOperation = "lighter";
+        if (!SET.low) {
+          const pu = still ? 0.5 : 0.5 + 0.5 * Math.sin(t * 1.7), g = c.createLinearGradient(0, y - 150, 0, y + 10);
+          g.addColorStop(0, "rgba(200,160,255,0)"); g.addColorStop(0.7, `rgba(200,160,255,${0.1 + 0.08 * pu})`); g.addColorStop(1, "rgba(255,230,160,.22)");
+          c.fillStyle = g;
+          c.fillRect(x - 16 - pu * 3, y - 150, 32 + pu * 6, 160);
+          if (!still) for (let i = 0; i < 6; i++) { const u = (t * 0.35 + i / 6) % 1; c.fillStyle = `rgba(255,240,200,${0.7 * (1 - u)})`; c.fillRect(x - 12 + ((i * 37) % 24), y - u * 140, 2, 2); }
+        }
+        c.strokeStyle = "rgba(201,162,255,.45)";
+        c.lineWidth = 2;
+        c.setLineDash([6, 5]);
+        c.lineDashOffset = still ? 0 : -t * 12;
+        c.beginPath(); c.ellipse(x, y + 18, 40, 13, 0, 0, 6.3); c.stroke();
+        c.setLineDash([]);
+        c.restore();
+      }
+      /* the wish cosmetics a player wears: "a_x,h_y,n_z" (yours from V.wq + V.wi, others' from their profile, whitelisted) */
+      const WQ_RE = /^(a_(ember|tide|bloom|aether)|h_(crown|witch|halo)|n_(prism|star))$/;
+      const wqOk = (s) => (typeof s == "string" && s.length <= 40 && s.split(",").every((x) => WQ_RE.test(x)) ? s : "");
+      const wqMine = () => { const q = V.wq && typeof V.wq == "object" ? V.wq : {}; return ["a", "h", "n"].map((k) => (typeof q[k] == "string" && q[k][0] == k && wishOwn(q[k]) ? q[k] : "")).filter(Boolean).join(","); };
+      const wqGet = (s, k) => { for (const x of (s || "").split(",")) if (x[0] == k) return x; return ""; };
+      const WAURA = { a_ember: "255,140,60", a_tide: "90,200,255", a_bloom: "255,140,200", a_aether: "255,225,140" };
+      /* wqAura(id): a glowing ring at the feet (local space); motes and wings only at full spec */
+      function wqAura(id) {
+        const col = WAURA[id];
+        if (!col) return;
+        const t = S.tm, still = SET.low || BJ_VFX.reduced(), pu = still ? 0.5 : 0.5 + 0.5 * Math.sin(t * 3);
+        c.save();
+        c.globalCompositeOperation = "lighter";
+        if (id == "a_aether" && !SET.low) {
+          c.fillStyle = `rgba(${col},${0.18 + 0.1 * pu})`;
+          for (const s of [-1, 1]) { c.beginPath(); c.moveTo(s * 4, -4); c.quadraticCurveTo(s * 30, -26 - pu * 4, s * 26, 2); c.quadraticCurveTo(s * 16, -2, s * 4, 4); c.fill(); }
+        }
+        c.strokeStyle = `rgba(${col},${0.35 + 0.25 * pu})`;
+        c.lineWidth = 2.5;
+        c.beginPath(); c.ellipse(0, PR + 2, PR * 1.5 + pu * 2, 6 + pu, 0, 0, 6.3); c.stroke();
+        if (!still) for (let i = 0; i < 4; i++) { const a = t * 1.5 + i * 1.571, u = (t * 0.8 + i * 0.25) % 1; c.fillStyle = `rgba(${col},${0.8 * (1 - u)})`; c.fillRect(Math.cos(a) * PR * 1.4 - 1, PR + 2 + Math.sin(a) * 5 - u * 22, 2.2, 2.2); }
+        c.restore();
+      }
+      /* wqName(s, col): the nameplate colour with a wish name effect */
+      const wqName = (s, col) => { const n = wqGet(s, "n"); return n == "n_prism" ? `hsl(${((SET.low || BJ_VFX.reduced() ? 0 : S.tm * 90) + 200) % 360},90%,72%)` : n == "n_star" ? (BJ_VFX.reduced() || Math.sin(S.tm * 5) > 0 ? "#ffb347" : "#fff0a0") : col; };
+      /* wqHat(id, k): a tiny hat on the pet's head (pet space) */
+      function wqHat(id, k) {
+        if (!id) return;
+        const [hx, hy] = { fox: [7, -8], wolf: [8, -9], owl: [0, -8.5], sprite: [0, -4.5] }[k] || [0, -8];
+        c.save();
+        c.translate(hx, hy);
+        if (id == "h_crown") { c.fillStyle = "#ffd84a"; c.beginPath(); c.moveTo(-4, 0); c.lineTo(-4, -4); c.lineTo(-2, -2); c.lineTo(0, -5); c.lineTo(2, -2); c.lineTo(4, -4); c.lineTo(4, 0); c.fill(); }
+        else if (id == "h_witch") { c.fillStyle = "#5b3a8a"; c.beginPath(); c.ellipse(0, 0, 5.5, 1.4, 0, 0, 6.3); c.fill(); c.beginPath(); c.moveTo(-3, 0); c.lineTo(1, -8); c.lineTo(3, 0); c.fill(); }
+        else if (id == "h_halo") { c.strokeStyle = "#fff3c4"; c.lineWidth = 1.4; c.beginPath(); c.ellipse(0, -3, 4.5, 1.5, 0, 0, 6.3); c.stroke(); }
+        c.restore();
+      }
       function drawPlayer(p, dt) {
         petDraw(p, dt); /* the companion walks behind you */
         const col = SKC[p.cls],
@@ -10795,6 +11533,7 @@
         c.beginPath();
         c.ellipse(-5, PR + 3, PR * 1.15, 4.2, -0.12, 0, 6.3);
         c.fill();
+        if (S.sc == "hub") { const wq = p === P ? wqMine() : p.wq; if (wq) wqAura(wqGet(wq, "a")); }
         c.fillStyle = "rgba(40,25,20,.28)";
         c.beginPath();
         c.ellipse(0, PR + 2, PR * 0.6, 2.6, 0, 0, 6.3);
@@ -10898,7 +11637,7 @@
         if (p.name && p !== P && !p.ally) {
           /* hub visitor: just a name tag, no health bar (a party member gets a gold marker) */
           if (inParty(p)) { c.fillStyle = "#ffd84a"; c.beginPath(); c.moveTo(0, -PR - 30); c.lineTo(4, -PR - 25); c.lineTo(0, -PR - 20); c.lineTo(-4, -PR - 25); c.fill(); }
-          nameplate(p.lv, p.name, p.ti, 1 + (p.lvp || 0) * 1.2, p.bot ? "#63a8ff" : "#dfe8f0", p.badge, p.nc);
+          nameplate(p.lv, p.name, p.ti, 1 + (p.lvp || 0) * 1.2, p.bot ? "#63a8ff" : wqName(p.wq, "#dfe8f0"), p.badge, p.nc);
           drawEmote(p, -PR - 22);
           if (!sayBubble(p, -PR - 6) && (p.talk || p.typing)) {
             /* chat bubble with three bouncing dots */
@@ -10931,7 +11670,7 @@
         }
         if (p.ally) nameplate(p.lv, p.name, p.ti, 1, p.filler ? "#63a8ff" : "#dfe8f0", p.badge, p.nc); /* raid ally */
         if (p === P) {
-          nameplate(lvlInfo().L, pname(), myTitle(), 1 + p.lvp * 1.2, "#ffd84a", cosV().badge, V.nc);
+          nameplate(lvlInfo().L, pname(), myTitle(), 1 + p.lvp * 1.2, S.sc == "hub" ? wqName(wqMine(), "#ffd84a") : "#ffd84a", cosV().badge, V.nc);
           sayBubble(p, -PR - 17);
           drawEmote(p, -PR - 32);
         }
@@ -15317,6 +16056,14 @@
           npc(SERAPH, V.bl ? "" : "bonus"); /* marker while no blessing is carried */
           npc(PETS, isUnl("pet") && !Object.keys(V.pets || {}).length ? "new" : ""); /* the Beastkeeper (level 6): marker until your first pet */
           npc(LORE, V.lbx > Date.now() ? "bonus" : V.lt ? "" : "new");
+          if (!npcHidden(WISHN)) {
+            const w = wiSt();
+            wishShrineFx(S.tm);
+            npc(WISHN, w.t > 0 || !w.dy.s.daily ? "bonus" : "");
+            npc(WHEELN, wcn(w.dy.s.wheel, 99) < WISH.wheel.day ? "bonus" : "");
+            npc(REELN, wcn(w.dy.s.reels, 99) < WISH.reels.day ? "bonus" : "");
+            npc(DIGN, wcn(w.dy.s.dig, 99) < WISH.dig.day ? "bonus" : "");
+          }
         }
         /* healer Circles: soft green light, a turning rune ring, a pulse every second and rising motes */
         for (const z of S.zo) {
