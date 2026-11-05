@@ -3624,6 +3624,22 @@
           c.restore();
         }
       }
+      /* botGatherDraw(): bots channelling at a node get a thin progress ring and a small spark over the node.
+         Cosmetic only; nothing on Low spec, no motion with reduced motion. */
+      function botGatherDraw() {
+        if (S.sc != "hub" || SET.low) return;
+        const still = BJ_VFX.reduced();
+        for (const v of HUBV) {
+          if (!v.bot || v.out || v.plan != "gather" || v.gi == null || !(v.wait > 0) || v.goal) continue;
+          const g = GNODES[v.gi];
+          if (Math.abs(v.x - g.x) > 40 || Math.abs(v.y - g.y) > 40) continue;
+          const p = Math.min(1, 1 - v.wait / (v.stay || 1)), col = MATS[g.k].col;
+          c.strokeStyle = col; c.lineWidth = 2; c.globalAlpha = 0.7;
+          c.beginPath(); c.arc(g.x, g.y - 4, 19, -1.571, -1.571 + 6.283 * p); c.stroke();
+          if (!still) { c.fillStyle = col; c.beginPath(); c.arc(g.x + Math.sin(S.tm * 9 + v.gi) * 6, g.y - 18 - (S.tm * 20 % 8), 1.8, 0, 6.3); c.fill(); }
+          c.globalAlpha = 1;
+        }
+      }
       /* ---------- playtest feedback: a note + the last game errors, sent to the hub service (feedback.log), or copied ---------- */
       const ERRLOG = [];
       addEventListener("error", (e) => { ERRLOG.push(String(e.message || e.error || "error").slice(0, 200) + " @" + (e.lineno || "?")); ERRLOG.splice(0, ERRLOG.length - 8); });
@@ -5748,9 +5764,24 @@
           free = HUB_NPCS(v).filter((n) => n !== v.npc && HUBV.filter((o) => o.npc === n).length < (n === BARKEEP ? 3 : 2)); /* the card table seats 3 */
         v.npc = null;
         v.goal = null;
+        v.gi = null; /* frees the bot's visual-only claim on a resource node */
+        /* some bots gather: walk to a node no other bot is working, channel a few seconds, move on.
+           Purely cosmetic: no ledger, no V.gn, no network; players are never blocked by it. */
+        if (r >= 0.45 && r < 0.65) {
+          const fn = [];
+          for (let i = 0; i < GNODES.length; i++) if (!HUBV.some((o) => o.gi === i && !o.out)) fn.push(i);
+          if (fn.length) {
+            const i = pick(fn), g = GNODES[i], s = v.x < g.x ? -1 : 1;
+            v.gi = i;
+            v.goal = { x: g.x + s * 24, y: g.y + 4 };
+            v.stay = rnd(3, 5); /* the channel */
+            v.plan = "gather";
+          }
+        }
         /* NPC visits are weighted: the blackjack table, the Merchant and the Archivist draw the most traffic */
         const NPC_W = (n) => (n === BARKEEP || n === SHOP || n === LORE ? 3 : 1);
-        if (r < 0.6 && free.length) {
+        if (v.gi != null);
+        else if (r < 0.45 && free.length) {
           let w = Math.random() * free.reduce((t, n) => t + NPC_W(n), 0);
           v.npc = free.find((n) => (w -= NPC_W(n)) < 0) || free[0];
           v.goal = npcSpot(v.npc);
@@ -5765,7 +5796,7 @@
           v.stay = rnd(8, 20);
           v.plan = "stroll";
         }
-        if (!v.goal) return (v.wait = rnd(3, 8)), (v.npc = null);
+        if (!v.goal) return (v.wait = rnd(3, 8)), (v.npc = null), (v.gi = null);
         /* other bank: three waypoints over the Rune Crossing */
         v.via = [];
         const mine = riverNear(v.x, v.y).side,
@@ -5783,7 +5814,8 @@
           /* lingering: at an NPC keep facing it, chat bubble on and off */
           v.wait -= dt;
           v.talk = v.plan == "npc" && v.npc && v.wait % 7 > 3;
-          if (!v.npc && Math.random() < dt * 0.15) v.f = pick(["u", "d", "l", "r"]); /* now and then turns to look around */
+          if (v.plan == "gather" && v.gi != null) v.f = v.x < GNODES[v.gi].x ? "r" : "l"; /* channelling: face the node */
+          else if (!v.npc && Math.random() < dt * 0.15) v.f = pick(["u", "d", "l", "r"]); /* now and then turns to look around */
           if (v.npc) {
             const dx = v.npc.x - v.x,
               dy = v.npc.y - v.y;
@@ -15281,6 +15313,7 @@
         RINGS = RINGS.filter((r) => r.t < 0.6);
         /* hub: you and the visitors, drawn top to bottom so whoever stands lower overlaps the one behind */
         gatherDraw(); /* resource nodes sit on the ground, under everyone */
+        botGatherDraw();
         const who = S.sc == "hub" ? S.ps.concat(HUBV.filter((v) => !v.rz)).sort((a, b) => a.y - b.y) : S.ps;
         for (const p of who) drawPlayer(p, dt);
         drawVX(dt);

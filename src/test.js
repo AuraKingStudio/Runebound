@@ -262,6 +262,10 @@ for(let i=0;i<12;i++)T.hubLeave('real'+i);ok(!T.HUBV().some(v=>!v.bot),'hub: lea
  console.log('  lobby run: samples',samples,'pinned >3s:',pinned,'bad:',bad.join('; ')||'none'); /* prints where, if any */
  ok(!bad.length,'hub: bots never stand inside a pedestal or the river (10 min)');ok(pinned<=2,'hub: bots are never pinned for long (10 min)');}
 {const s0=T.BOT_STUCK(),n0=T.HUBV().length;for(let i=0;i<60*240;i++)T.step(1/60);const g=T.BOT_STUCK()-s0;console.log('  bot give-ups in 240s:',g,'bots',n0);ok(g<=2,'hub: bots path around the river (rarely give up stuck)');}
+{const V=T.V(),m0=JSON.stringify(V.mat||{}),gn0=JSON.stringify(V.gn||{}),l0=T.LEDGER().length;let seen=0,ch=0,dup=0;for(let i=0;i<60*180;i++){T.step(1/60);if(i%30)continue;const gs=T.HUBV().filter(v=>v.bot&&!v.out&&v.gi!=null);seen+=gs.length;ch+=gs.filter(v=>v.plan=='gather'&&v.wait>0&&!v.goal).length;if(new Set(gs.map(v=>v.gi)).size<gs.length)dup++;}
+console.log('  bot gather samples:',seen,'channelling:',ch);ok(seen>0&&ch>0,'hub: some bots walk to resource nodes and channel');ok(!dup,'hub: one bot per node at a time');
+ok(JSON.stringify(V.mat||{})===m0&&JSON.stringify(V.gn||{})===gn0&&T.LEDGER().length===l0,'hub: bots gathering never touch V.mat, node cooldowns or the ledger');
+const b=T.HUBV().find(v=>v.bot&&v.gi!=null)||Object.assign(T.HUBV().find(v=>v.bot)||{},{gi:0});if(b){const sv=[V.mat,V.gn,V.gday,V.gm,V.gfr];V.mat={};V.gn={};V.gday=null;V.gm=0;V.gfr=0;ok(T.gatherDone(b.gi)>0,'hub: a bot at a node never blocks the player gathering it');[V.mat,V.gn,V.gday,V.gm,V.gfr]=sv;}}
 {const lo=T.HUB_NPCS({lv:1}),hi=T.HUB_NPCS({lv:60});ok(lo.every(n=>!n.lk||n.lk=='barkeep')&&hi.length==7,'hub: bots only visit NPCs their level has unlocked');}
 /* ---------- crafting at the Smith ---------- */
 {const V=T.V();V.mat={dust:100,shard:30,bark:30};V.gold=2000;V.eq={bag:[],on:{}};
