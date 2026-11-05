@@ -190,6 +190,13 @@ function createDirectoryServer(options = {}) {
       const [status, value] = cm[1] == "start" ? bank.cipherStart(body || {}, ip) : bank.cipherSolve(body || {});
       return send(res, status, value);
     }
+    /* Rune Wishes: /api/wish/state|daily|pull|shop|wheel|reels|dig { tok, ... } (all rolls in the bank, src/wish.js) */
+    const wm = /^\/api\/wish\/(state|daily|pull|shop|wheel|reels|dig)$/.exec(url.pathname);
+    if (wm) {
+      if (!bank) return send(res, 503, { error: "Wishes need the online server." });
+      const [status, value] = bank.wish(wm[1], body || {}, ip);
+      return send(res, status, value);
+    }
     /* trades between online players (bank escrow): /api/trade/offer | accept | cancel | list */
     const tm = /^\/api\/trade\/(offer|accept|cancel|list)$/.exec(url.pathname);
     if (tm) {

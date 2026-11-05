@@ -1106,6 +1106,57 @@ async function bankTests(){
   for(const x of [f,lg,lg+'.1'])try{fs.unlinkSync(x)}catch{}}
  for(const x of [file,file+'2',file+'3',file+'4',file+'.tmp'])try{require('fs').unlinkSync(x)}catch{}
 }
+/* Rune Wishes (src/wish.js through the bank): odds, pity, soft pity, dupes -> stardust, shop, token caps, minigames, forgery */
+function wishTests(){
+ const {createBank}=require('./bank.js'),{WISH,rollTier,CAT}=require('./wish.js'),fs=require('fs');let t=7e9;const file=require('path').join(require('os').tmpdir(),'rb-bank-test-wish-'+process.pid+'.json');
+ let seed=12345;const rng=(n)=>{seed=(Math.imul(1103515245,seed)+12345)>>>0;return Math.floor(seed/4294967296*n);};
+ const N=200000,cnt={C:0,R:0,E:0,L:0};for(let i=0;i<N;i++){const w={p10:0,p60:0};cnt[rollTier(w,rng)]++;}
+ ok(['C','R','E','L'].every(k=>Math.abs(cnt[k]/N-WISH.odds[k]/1e4)<0.004),'wish: base odds match the banner within 0.4% over 200k rolls '+JSON.stringify(cnt));
+ let w={p10:0,p60:0},maxE=0,gap=0,maxL=0,lg=0;for(let i=0;i<300000;i++){const r=rollTier(w,rng);gap++;lg++;if(r=='E'||r=='L'){maxE=Math.max(maxE,gap);gap=0;}if(r=='L'){maxL=Math.max(maxL,lg);lg=0;}}
+ ok(maxE<=10,'wish: an Epic or better at least every 10 pulls (max gap '+maxE+')');ok(maxL<=60,'wish: a Legendary by the 60th pull at the latest (max '+maxL+')');
+ w={p10:0,p60:59};ok(rollTier(w,()=>9999)=='L'&&w.p60==0&&w.p10==0,'wish: the 60th pull is a Legendary even with the worst roll');
+ w={p10:0,p60:44};ok(rollTier(w,()=>WISH.odds.L+WISH.softAdd-1)=='L','wish: soft pity from pull 45 raises the Legendary rate');
+ w={p10:0,p60:10};ok(rollTier(w,()=>WISH.odds.L+WISH.softAdd-1)!='L','wish: no soft pity before pull 45');
+ w={p10:9,p60:0};ok(rollTier(w,()=>9999)=='E','wish: the 10th pull without an Epic is an Epic');
+ const ev=[];const b=createBank({file,now:()=>t,onEntry:(k,g,x,s)=>ev.push([k,s]),rng}),A='d1'.repeat(16),B='d2'.repeat(16),IP='198.51.100.7';
+ const W=(op,body,ip=IP)=>b.wish(op,body,ip);
+ ok(W('state',{tok:A})[0]==403,'wish: no account, nothing');b.sync({tok:A,led:[]});t+=2000;b.sync({tok:B,led:[]});
+ let r=W('state',{tok:A});ok(r[0]==200&&r[1].t==0&&r[1].sd==0,'wish: a new account starts with 0 tokens');
+ ok(W('pull',{tok:A,n:1})[0]==403,'wish: no tokens, no pull');
+ r=W('daily',{tok:A,t:999,got:{tok:99}});ok(r[0]==200&&r[1].t==WISH.src.daily,'wish: the daily gift pays '+WISH.src.daily+' tokens (forged fields ignored)');
+ ok(W('daily',{tok:A})[0]==403&&W('state',{tok:A})[1].t==WISH.src.daily,'wish: one daily gift per server UTC day (replay refused)');
+ ok(W('pull',{tok:A,n:5})[0]==400&&W('pull',{tok:A,n:'10'})[0]==400,'wish: only 1 or 10 pulls');
+ r=W('pull',{tok:A,n:1,res:[{id:'n_prism'}],tier:'L'});ok(r[0]==200&&r[1].res.length==1&&r[1].t==WISH.src.daily-1&&Object.hasOwn(CAT,r[1].res[0].id),'wish: a pull costs 1 token and returns a catalogue item (forged result ignored)');
+ let spins=0;while(W('wheel',{tok:A})[0]==200)spins++;ok(spins==WISH.wheel.day,'wish: the wheel spins '+WISH.wheel.day+' times a day');
+ let re=0,okR=1;for(;;){const x=W('reels',{tok:A});if(x[0]!=200)break;re++;const [p,q,s2]=x[1].reels;if(!x[1].reels.every(v=>Number.isInteger(v)&&v>=0&&v<6))okR=0;if(p==q&&q==s2&&!(x[1].got.tok||x[1].got.sd))okR=0;}
+ ok(re==WISH.reels.day&&okR,'wish: the reels spin '+WISH.reels.day+' times a day, triples pay');
+ r=W('dig',{tok:A});ok(r[0]==200&&/^[a-f0-9]{24}$/.test(r[1].id)&&r[1].picks==WISH.dig.picks,'wish: a dig board opens with '+WISH.dig.picks+' picks');
+ const id=r[1].id;ok(W('dig',{tok:A})[1].id==id,'wish: one open board per account (resumed)');ok(W('dig',{tok:B,id,i:0})[0]==403,'wish: another account cannot dig your board');
+ r=W('dig',{tok:A,id,i:3});ok(r[0]==200&&typeof r[1].k=='string','wish: a pick reveals a tile');
+ ok(W('dig',{tok:A,id,i:3})[0]==400&&W('dig',{tok:A,id,i:25})[0]==400&&W('dig',{tok:A,id,i:'1'})[0]==400,'wish: open, out-of-range or forged tiles refused');
+ let over=r[1].over,i=0;while(!over&&i<25){i++;if(i==3)continue;const x=W('dig',{tok:A,id,i});if(x[0]==200)over=x[1].over;}
+ ok(over&&W('dig',{tok:A,id,i:20})[0]==403,'wish: the board ends at 6 picks or a cave-in, then the id is dead (replay refused)');
+ for(let k=0;k<5;k++){const x=W('dig',{tok:A});if(x[0]!=200)break;let o2=false,j=0;while(!o2&&j<25){const y=W('dig',{tok:A,id:x[1].id,i:j++});if(y[0]==200)o2=y[1].over;}}
+ ok(W('dig',{tok:A})[0]==403,'wish: '+WISH.dig.day+' digs a day');
+ ok(W('state',{tok:A})[1].day.e<=WISH.dayCap,'wish: tokens earned today within the day cap');
+ for(let k=0;k<6;k++){t+=16000;b.sync({tok:B,led:[['raid',100,10]]});}
+ const sB0=W('state',{tok:B})[1];ok(sB0.t==WISH.src.raid&&sB0.day.s.raid==WISH.src.raid,'wish: won raids grant tokens, '+WISH.src.raid+' a day (server-kept counter)');
+ ok(W('shop',{tok:B,id:'__proto__'})[0]==400&&W('shop',{tok:B,id:'constructor'})[0]==400,'wish: prototype keys refused in the shop');
+ ok(W('shop',{tok:B,id:'c_ore'})[0]==400,'wish: materials are not sold for stardust');
+ ok(W('shop',{tok:B,id:'n_prism'})[0]==403,'wish: the shop needs enough stardust');
+ for(let d=0;d<3;d++){t+=86400e3;W('daily',{tok:B});}
+ r=W('pull',{tok:B,n:10});ok(r[0]==200&&r[1].res.length==10&&r[1].res.some(q=>q.tier=='E'||q.tier=='L'),'wish: a 10-pull returns 10 results with an Epic or better');
+ /* a day cap on total tokens: a big wheel day cannot exceed it */
+ const b3=createBank({file:file+'3',now:()=>t,rng:()=>0}),D='d4'.repeat(16);b3.sync({tok:D,led:[]});
+ const wa=b3._wish;const acc=b3.wish('state',{tok:D},IP)[1];let g=0;for(let k=0;k<100;k++)g+=wa.grant(null,'cipher');ok(g==0,'wish: grants need a real account');
+ /* dupes -> stardust and the shop */
+ const b2=createBank({file:file+'2',now:()=>t,rng:(n)=>n==10000?WISH.odds.L+WISH.odds.E:0}),C='d3'.repeat(16);b2.sync({tok:C,led:[]});b2.wish('daily',{tok:C},IP);
+ const p1=b2.wish('pull',{tok:C,n:1},IP)[1].res[0],p2=b2.wish('pull',{tok:C,n:1},IP)[1];
+ ok(p1.tier=='R'&&p1.new&&p2.res[0].dupe&&p2.res[0].got.sd==WISH.dupe.R&&p2.sd==WISH.dupe.R,'wish: a duplicate cosmetic turns into '+WISH.dupe.R+' Stardust');
+ ok(ev.some(e=>e[0]=='wish'),'wish: analytics told about accepted wish actions');
+ let lim=0;for(let k=0;k<130;k++)if(b.wish('state',{tok:A},'203.0.113.1')[0]==429)lim=1;ok(lim,'wish: per-IP rate limit');
+ for(const f2 of [file,file+'2',file+'3'])try{fs.unlinkSync(f2);}catch{}
+}
 /* Cipher gather minigame (src/cipher.js through the bank): gate, games, one-time ids, timing, strikes, caps */
 function cipherTests(){
  const {createBank}=require('./bank.js'),{CIPHER}=require('./cipher.js'),fs=require('fs');let t=5e9;const file=require('path').join(require('os').tmpdir(),'rb-bank-test-cipher-'+process.pid+'.json');
@@ -1411,4 +1462,4 @@ async function benchTests(){
 function saveLoadTests(){{const evil={gold:'1e999',up:{dmg:2,__proto__:{x:1},hack:99},cls:'constructor',tut:-7,lp:-5,lpt:Infinity,bjc:'9',wins:-3,best:1e99,mb:'x'.repeat(500),gd:{name:'G',m:[{c:'toString'},{c:'tank'}]}};
  const st={[T.SAVE_KEY]:JSON.stringify(evil)},c={...ctx,localStorage:{getItem:k=>st[k]||null,setItem:(k,v)=>st[k]=v,removeItem:k=>delete st[k]}};c.window=c;vm.createContext(c);vm.runInContext(SRC+';globalThis.LV=V;',c);const L=c.LV;
  ok(L.gold===0&&Object.keys(L.up).join()=='dmg,vit,spd,cdr'&&L.up.dmg==2&&L.cls===''&&L.tut===0&&L.lp===0&&L.lpt===undefined&&L.bjc===undefined&&L.wins===0&&L.best===1e9&&L.mb.length==10&&L.gd.m.length==1,'save load: own keys only, numbers range-clamped, prototype names refused');}}
-(BENCH_ONLY?Promise.resolve():networkTests().then(signalingTests).then(hostLossTests).then(brainHttpTests).then(reportTests).then(takeoverTests).then(bankTests).then(cipherTests).then(analyticsTests).then(rateLimitTests).then(()=>marketHttpTests()).then(saveLoadTests)).then(benchTests).then(()=>{console.log(f?f+' FAILED':'ALL PASSED');process.exit(f?1:0);}).catch(e=>{console.error(e);process.exit(1);});
+(BENCH_ONLY?Promise.resolve():networkTests().then(signalingTests).then(hostLossTests).then(brainHttpTests).then(reportTests).then(takeoverTests).then(bankTests).then(cipherTests).then(wishTests).then(analyticsTests).then(rateLimitTests).then(()=>marketHttpTests()).then(saveLoadTests)).then(benchTests).then(()=>{console.log(f?f+' FAILED':'ALL PASSED');process.exit(f?1:0);}).catch(e=>{console.error(e);process.exit(1);});

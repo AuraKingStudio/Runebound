@@ -5,6 +5,7 @@
    Identity: a private random token kept in the browser; only its SHA-256 hash is stored. File: bank.json (git-ignored). */
 "use strict";
 const { createCipher } = require("./cipher.js");
+const { createWish } = require("./wish.js");
 
 const fs = require("node:fs");
 const path = require("node:path");
@@ -320,6 +321,7 @@ function createBank(options = {}) {
         a.last[k] = t;
         a.gold += g; a.xp += x + (x > 0 ? petBonus(a, "xp", "fx", x) : 0);
         if (g > 0 || x > 0) earned = true;
+        if (kind == "raid" && g > 0) wish.grant(a, "raid"); /* a Wish Token per won raid (day cap in src/wish.js) */
       } else if (kind == "bj") {
         if (x) { dropped++; continue; }
         if (g < 0) { if (a.gold + g < 0) { dropped++; continue; } a.gold += g; a.bet += -g; }
@@ -336,6 +338,7 @@ function createBank(options = {}) {
         if (!petEntry(a, e[3], e[4], g, x, e[5], t, cr)) dropped++;
       } else if (kind == "garden") {
         if (!gardenEntry(a, e[3], e[4], g, x, e[5], t, cr)) dropped++;
+        else if (e[3] == "harvest") wish.grant(a, "garden");
       } else if (SPENDS.includes(kind)) {
         if (g > 0 || x || a.gold + g < 0) { dropped++; continue; }
         a.gold += g;
@@ -482,9 +485,11 @@ function createBank(options = {}) {
   }
 
   /* Cipher bonus minigame (src/cipher.js): server-made puzzles paying a pack of the gather job's material */
-  const cipher = createCipher({ now, persist: () => persist(), matMax: MAT_MAX, onEntry,
-    acct: (tok) => { if (typeof tok != "string" || !/^[a-f0-9]{32}$/.test(tok)) return null; const id = hash(tok); return accts[id] ? [id, accts[id]] : null; } });
-  return { sync, flush, cipherStart: cipher.start, cipherSolve: cipher.solve, _cipher: cipher, tradeOffer, tradeAccept, tradeCancel, tradeList, TRADE, RULES, MAT_SRC, ASSIST, assistPrice, size: () => Object.keys(accts).length };
+  const acct = (tok) => { if (typeof tok != "string" || !/^[a-f0-9]{32}$/.test(tok)) return null; const id = hash(tok); if (!Object.hasOwn(accts, id)) return null; const a = accts[id]; if (!a.mat) a.mat = {}; return [id, a]; };
+  /* Rune Wishes (src/wish.js): the free gacha shrine and its minigames; tokens also from accepted cipher wins, garden harvests, raid wins */
+  const wish = createWish({ now, persist: () => persist(), matMax: MAT_MAX, onEntry, acct, rng: options.rng });
+  const cipher = createCipher({ now, persist: () => persist(), matMax: MAT_MAX, onEntry, acct, onWin: (a) => wish.grant(a, "cipher") });
+  return { sync, flush, wish: wish.call, _wish: wish, cipherStart: cipher.start, cipherSolve: cipher.solve, _cipher: cipher, tradeOffer, tradeAccept, tradeCancel, tradeList, TRADE, RULES, MAT_SRC, ASSIST, assistPrice, size: () => Object.keys(accts).length };
 }
 
 module.exports = { createBank, PET, GARDEN, RULES, ASSIST, SEEDS_PER_IP, MATS, MAT_SRC, TRADE };

@@ -101,6 +101,7 @@ function createCipher(o) {
     if (randomInt(4) == 0) { const m = CIPHER.bonus[randomInt(CIPHER.bonus.length)]; pack[m] = (pack[m] || 0) + 1; }
     for (const [m, n] of Object.entries(pack)) a.mat[m] = Math.min(o.matMax, (a.mat[m] || 0) + n);
     if (o.onEntry) try { o.onEntry("cipher", 0, 0, c.job); } catch {}
+    if (o.onWin) o.onWin(a); /* a Wish Token (capped per day in src/wish.js) */
     o.persist();
     return [200, { ok: true, pack, mat: { ...a.mat } }];
   }
