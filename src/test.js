@@ -952,9 +952,11 @@ async function bankTests(){
   t+=20*60e3;r=G([E('harvest',0,5),E('harvest',0),E('harvest',0)]);ok(r.dropped==2&&!r.garden[0]&&r.mat.herb==52,'bank garden: a ripe plot harvests once by server time (forged extras and double harvest dropped)');
   r=G([M('ore',-2),E('plant',1,'ore')]);t+=30*60e3+GARDEN.wilt;r=G([E('harvest',1)]);ok(r.mat.ore==48+2,'bank garden: a plot left a day past ripe wilts (half yield)');
   r=G([['mat',0,0,'pet','ore',-15],['mat',0,0,'pet','herb',-10],['pet',0,0,'buy','fox',0],['pet',0,0,'set','fox',0],M('herb',-2),E('plant',2,'herb')]);t+=20*60e3;r=G([E('harvest',2)]);ok(r.pet.on=='fox'&&r.mat.herb==52-10-2+5,'bank garden: the fox adds +1 harvest');
+  r=G([M('herb',-2),E('plant',4,'herb')]);t+=601e3;G([['pet',0,0,'set','',0]]);t+=20*60e3;{const h0=G([]).mat.herb;r=G([E('harvest',4)]);ok(r.mat.herb==h0+5,'bank garden: the pet perk is locked at planting (switching pets before harvest changes nothing)');}
   t=Math.ceil(t/86400e3)*86400e3+1000;let n=0;for(let i=0;i<30;i++){r=G([M('herb',-2),E('plant',3,'herb')]);t+=20*60e3;r=G([E('harvest',3)]);if(!r.dropped)n++;}ok(n==GARDEN.day,'bank garden: plants and harvests have a day cap');
   {const k2='8d'.repeat(16),G2=(led)=>{t+=2500;return bg.sync({tok:k2,led})[1]},S=()=>E('streak',0),D=86400e3,day=(n)=>{t=t0+n*D;};
-   G2([]);const t0=(Math.ceil(t/D/7)*7+7)*D+1000;day(0);let r=G2([S(),S()]),m0=r.mat;ok(r.dropped==1&&r.streak.n==1&&r.streak.ago==0&&(m0.herb||0)==2,'bank streak: one claim per server day (the double is dropped), paid from the table');
+   G2([]);let rl=G2([S()]);ok(rl.dropped==1&&rl.streak.lk==1,'bank streak: a fresh account cannot claim (no alt-account farming)');for(let i=0;i<5;i++){t+=6*60e3;G2([['quest',0,10]]);}ok(G2([]).streak.lk==0,'bank streak: it opens after 5 real play syncs');
+   const t0=(Math.ceil(t/D/7)*7+7)*D+1000;day(0);let r=G2([S(),S()]),m0=r.mat;ok(r.dropped==1&&r.streak.n==1&&r.streak.ago==0&&(m0.herb||0)==2,'bank streak: one claim per server day (the double is dropped), paid from the table');
    day(1);r=G2([['garden',0,0,'streak',0,'herb'],['garden',5,0,'streak',0,0],['garden',0,9,'streak',0,0],['garden',0,0,'streak',2,0],S()]);ok(r.dropped==4&&r.streak.n==2&&(r.mat.ore||0)==2,'bank streak: forged amounts and fields are refused, the next day climbs');
    day(3);r=G2([S()]);ok(!r.dropped&&r.streak.n==3&&r.streak.gu==1,'bank streak: one missed day a week is forgiven (grace used)');
    day(5);r=G2([S()]);ok(!r.dropped&&r.streak.n==1,'bank streak: a second missed day in the same week resets the ladder');

@@ -2529,16 +2529,18 @@
       }
       function gsAdopt(r) {
         if (!r || !Number.isInteger(r.n) || !Number.isInteger(r.ago) || r.n < 0) return;
+        V.gsLk = r.lk ? 1 : 0; /* online: the streak opens after a few real play syncs (the bank decides) */
         const day = Math.floor(Date.now() / 86400e3);
         V.gs = r.ago < 0 ? null : { d: day - r.ago, n: r.n, gw: r.gu ? Math.floor(day / 7) : -1 };
       }
       function streakHTML() {
         const v = gsView(), done = v.can ? v.n % 7 : ((v.n - 1) % 7) + 1;
+        if (V.gsLk && bankUrl()) v.can = false;
         const tiles = GARDEN.streak.map((p, i) => {
           const cl = i < done ? "ok" : i == done && v.can ? "now" : "";
           return `<div class="gs ${cl} ${i == 6 ? "big" : ""}" title="Day ${i + 1}"><b>${i < done ? "✓" : "D" + (i + 1)}</b>${Object.entries(p).map(([m, q]) => MATS[m].e + q).join("")}</div>`;
         }).join("");
-        return `<div class="gsr">${tiles}</div><div style="display:flex;gap:6px;flex-wrap:wrap;align-items:center"><button class="claim" style="min-height:44px" ${v.can ? "" : "disabled"} onclick="gardenStreak()">${v.can ? "🌸 Claim day " + (done + 1) : "✓ Back tomorrow"}</button>
+        return `<div class="gsr">${tiles}</div><div style="display:flex;gap:6px;flex-wrap:wrap;align-items:center"><button class="claim" style="min-height:44px" ${v.can ? "" : "disabled"} onclick="gardenStreak()" title="${V.gsLk && bankUrl() ? 'Online, the streak opens after a little real play (anti-farming)' : ''}">${V.gsLk && bankUrl() ? '🔒 Play a bit more' : v.can ? "🌸 Claim day " + (done + 1) : "✓ Back tomorrow"}</button>
           <button style="min-height:44px" onclick="tradeOpen()" title="Trade produce with friends">🤝 Trade produce</button><span class="sm">${v.n ? v.n + " day" + (v.n > 1 ? "s" : "") + " in a row · " : ""}${v.graceLeft ? "1 grace day left this week" : "grace day used this week"}</span></div>`;
       }
       /* ---------- the zen scene: one canvas behind the plots. Raked sand with ripples around stones, a koi pond, lanterns,

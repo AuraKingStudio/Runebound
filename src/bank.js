@@ -69,6 +69,7 @@ const GARDEN = {
   seeds: { herb: { cost: { herb: 2 }, grow: 20 * 60e3, y: { herb: 4 } }, ore: { cost: { ore: 2 }, grow: 30 * 60e3, y: { ore: 5 } }, echo: { cost: { herb: 2, ore: 2 }, grow: 40 * 60e3, y: { echo: 2 } } },
   /* daily streak: ["garden", 0, 0, "streak", 0, 0], one claim per server UTC day; consecutive days climb a 7-step ladder (then it loops),
      one missed day per UTC week (day / 7) is forgiven; materials only, paid from this table (never from the entry). */
+  streakSyncs: 5, /* real earning syncs before the streak opens (Sybil guard, like trading) */
   streak: [{ herb: 2 }, { ore: 2 }, { herb: 3 }, { ore: 3 }, { herb: 3, ore: 3 }, { herb: 3, echo: 1 }, { herb: 5, ore: 5, echo: 3 }],
 };
 /* gsView(gs, t): the streak as of server time t. Out: { n: claims in the live streak, can: claim open today, gap, wk, graceLeft } */
@@ -244,12 +245,12 @@ function createBank(options = {}) {
       const sd = typeof s == "string" && Object.hasOwn(GARDEN.seeds, s) && GARDEN.seeds[s];
       if (!sd || p[i] || Object.entries(sd.cost).some(([m, q]) => (cr.gd[m] || 0) < q) || !dayOk(a, "garden:plant", 1, GARDEN.day, t)) return false;
       for (const [m, q] of Object.entries(sd.cost)) cr.gd[m] -= q;
-      p[i] = { s, at: t, d: Math.round(sd.grow * (pk == "owl" ? GARDEN.owl : 1)) };
+      p[i] = { s, at: t, d: Math.round(sd.grow * (pk == "owl" ? GARDEN.owl : 1)), pk }; /* the perk is locked at planting: switching pets before harvest changes nothing */
       return true;
     }
     if (op == "streak") {
       const v = gsView(a.gd.gs, t);
-      if (i || s || !v.can) return false; /* once per server day; nothing in the entry decides the payout */
+      if (i || s || !v.can || (a.ns || 0) < GARDEN.streakSyncs) return false; /* once per server day; established accounts only (no fresh-alt farming); nothing in the entry decides the payout */
       const n = v.n + 1, gw = v.gap == 2 && v.alive ? v.wk : a.gd.gs ? a.gd.gs.gw : -1;
       a.gd.gs = { d: v.day, n, gw };
       for (const [m, q] of Object.entries(GARDEN.streak[(n - 1) % 7])) a.mat[m] = Math.min(MAT_MAX, (a.mat[m] || 0) + q);
@@ -258,6 +259,7 @@ function createBank(options = {}) {
     if (op == "harvest") {
       const c = p[i];
       if (s || !c || t - c.at < c.d || !dayOk(a, "garden:harvest", 1, GARDEN.day, t)) return false;
+      const pk = typeof c.pk == "string" ? c.pk : ""; /* the pet active at planting (older plots: no perk) */
       const wilt = pk != "wolf" && t - c.at - c.d >= GARDEN.wilt;
       for (const [m, q] of Object.entries(GARDEN.seeds[c.s].y)) {
         const n = wilt ? Math.max(1, Math.floor(q / 2)) : q + (pk == "fox" ? 1 : 0);
@@ -272,9 +274,10 @@ function createBank(options = {}) {
   /* gsOut(a, t): the streak for the client, relative to server days (no clock skew): { n, ago: days since the last claim (-1 none), gu: grace used this week } */
   function gsOut(a, t) {
     const gs = a.gd && a.gd.gs;
-    if (!gs) return { n: 0, ago: -1, gu: 0 };
+    const lk = (a.ns || 0) < GARDEN.streakSyncs ? 1 : 0;
+    if (!gs) return { n: 0, ago: -1, gu: 0, lk };
     const v = gsView(gs, t);
-    return { n: gs.n, ago: v.gap, gu: v.graceLeft ? 0 : 1 };
+    return { n: gs.n, ago: v.gap, gu: v.graceLeft ? 0 : 1, lk };
   }
   /* sync({ tok, led, seed }, ip): In: token, new ledger entries, offline balance (first sync only). Out: [status, { gold, xp, dropped }] */
   const seeded = new Map(); /* ip -> times a new account got a seed (in memory, last SEED_WINDOW_MS) */
