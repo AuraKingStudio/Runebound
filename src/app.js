@@ -51,7 +51,7 @@ function createDirectoryServer(options = {}) {
   const adminFails = new Map(); /* ip -> failed admin key tries (last 10 minutes), hard-capped */
   let globalFails = [], adminLockUntil = 0; /* 100 wrong keys from anyone in 10 minutes lock the admin read for everyone for 10 minutes */
   const adminHash = String(adminKey).length >= 32 ? createHash("sha256").update(String(adminKey)).digest() : null; /* short key: admin disabled */
-  const bank = options.bank === true ? createBank({ file: options.bankFile, onEntry: analytics ? analytics.bank : null }) : null; /* online mode: the server owns gold and XP */
+  const bank = options.bank === true ? createBank({ file: options.bankFile, store: options.bankStore, onEntry: analytics ? analytics.bank : null }) : null; /* online mode: the server owns gold and XP */
   const tradeHits = new Map(); /* ip -> trade call times (last minute) */
   /* local playtests: any page served from this network (192.168.x.x, 10.x.x.x, 172.16-31.x.x) may use the service */
   const lanOrigin = (o) => options.allowLan !== false && /^http:\/\/(192\.168\.\d+\.\d+|10\.\d+\.\d+\.\d+|172\.(1[6-9]|2\d|3[01])\.\d+\.\d+)(:\d+)?$/.test(o);
@@ -358,10 +358,17 @@ if (require.main === module) {
   /* modes: local (this PC), --lan (players on your Wi-Fi), --cf (behind a Cloudflare tunnel: home PC or VPS).
      Behind the tunnel only this machine may connect (127.0.0.1); Cloudflare filters floods before they arrive. */
   const cf = process.env.TRUST_CLOUDFLARE === "1" || process.argv.includes("--cf"), lan = process.argv.includes("--lan");
-  const { server } = createDirectoryServer({ allowedOrigins, trustCloudflare: cf, allowLan: !cf, bank: cf, analyticsFile: require("path").join(__dirname, "..", "analytics.json"),
-    requestsPerMinute: Number(process.env.RATE_PER_MIN) || (cf ? 600 : 3000) });
-  const bind = cf ? "127.0.0.1" : lan ? "0.0.0.0" : "127.0.0.1";
-  server.listen(port, bind, () => console.log(`Runebound signaling directory (${cf ? "online" : lan ? "LAN" : "local"}) listening on ${bind}:${port}`));
+  /* online + DATABASE_URL: the bank lives in PostgreSQL (src/db.js); otherwise the bank.json file */
+  (async () => {
+    const db = cf && process.env.DATABASE_URL ? await require("./db.js").openDb(process.env.DATABASE_URL) : null;
+    const { server, bank } = createDirectoryServer({ allowedOrigins, trustCloudflare: cf, allowLan: !cf, bank: cf, bankStore: db, analyticsFile: require("path").join(__dirname, "..", "analytics.json"),
+      requestsPerMinute: Number(process.env.RATE_PER_MIN) || (cf ? 600 : 3000) });
+    const bind = cf ? "127.0.0.1" : lan ? "0.0.0.0" : "127.0.0.1";
+    server.listen(port, bind, () => console.log(`Runebound signaling directory (${cf ? "online" : lan ? "LAN" : "local"}) listening on ${bind}:${port}${db ? " · bank: PostgreSQL" : ""}`));
+    let down = false; /* stop: finish the last bank save before exiting */
+    const stop = async () => { if (down) return; down = true; server.close(); try { if (bank) await bank.flush(); if (db) await db.close(); } finally { process.exit(0); } };
+    process.on("SIGINT", stop); process.on("SIGTERM", stop);
+  })().catch((e) => { console.error("startup failed:", e.message); process.exit(1); });
 }
 
 module.exports = { createDirectoryServer };

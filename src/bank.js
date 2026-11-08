@@ -108,8 +108,10 @@ function createBank(options = {}) {
   const now = options.now || Date.now;
   const onEntry = typeof options.onEntry == "function" ? options.onEntry : null; /* analytics: told about every ACCEPTED entry */
   /* one file, written atomically: { v: 2, accts, trades, migrated } (older files held only the accounts) */
+  const store = options.store || null; /* PostgreSQL (src/db.js): { initial, save(state) }; no store = the bank.json file */
   let accts = {}, trades = {}, migrated = false;
-  try {
+  if (store) ({ accts, trades, migrated } = store.initial);
+  else try {
     const j = JSON.parse(fs.readFileSync(file, "utf8")) || {};
     if (j.v === 2) { accts = j.accts || {}; trades = j.trades || {}; migrated = j.migrated === true; } else accts = j;
   } catch {}
@@ -117,7 +119,7 @@ function createBank(options = {}) {
   /* migration: an older build kept trades in <bank>-trades.json. Refund its open escrow once: the refunds and the
      migrated flag land in the same atomic write, so a failed rename or a crash can never pay them twice. */
   const oldTrades = file.replace(/\.json$/, "") + "-trades.json";
-  if (!migrated) try {
+  if (!migrated && !store) try {
     const old = JSON.parse(fs.readFileSync(oldTrades, "utf8")) || {};
     for (const tr of Object.values(old)) if (tr && tr.st == "open" && accts[tr.from] && tr.give) {
       const a = accts[tr.from];
@@ -135,9 +137,11 @@ function createBank(options = {}) {
   for (const id of Object.keys(accts)) byCode.set(codeOf(id), id);
   let dirty = false, timer = null;
   /* flush(): write now (shutdown, tests); persist() batches writes to at most one every 500 ms */
+  const snap = () => ({ accts, trades, migrated });
   function flush() {
     if (timer) { clearTimeout(timer); timer = null; }
     dirty = false;
+    if (store) return store.save(snap());
     try { fs.writeFileSync(file + ".tmp", state()); fs.renameSync(file + ".tmp", file); }
     catch (e) { console.error("bank: save failed", e.message); }
   }
@@ -148,6 +152,7 @@ function createBank(options = {}) {
       timer = null;
       if (!dirty) return;
       dirty = false;
+      if (store) { store.save(snap()); return; }
       try {
         fs.writeFileSync(file + ".tmp", state()); fs.renameSync(file + ".tmp", file);
       }
