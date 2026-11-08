@@ -993,7 +993,7 @@
       input.nm { background: var(--wood3); border-color: var(--seam); color: var(--parch); }
       input.nm:focus { border-color: var(--gild); outline: none; }
       /* gender pills (name dialog + Settings) and the tinted name field: pale-to-tint text with a soft glow, a snappy pop on pick */
-      /* raid skill loadout picker (Class window + Choose Raid): 3 chips, 2 lit, 44 px taps */
+      /* raid skill loadout picker (Class Master): 3 chips, 2 lit, 44 px taps */
       .ldp { margin: 6px 0; }
       .ldr { display: flex; gap: 6px; }
       .pn .ldr .ldc { flex: 1 1 0; min-width: 0; width: auto; margin: 0; min-height: 44px; padding: 4px 6px; display: flex; align-items: center; gap: 5px; border-radius: 8px;
@@ -1955,7 +1955,7 @@
     <div id="chat" hidden><div id="chlog"></div><div id="chrow"><input id="chin" maxlength="80" autocomplete="off" placeholder="Press Enter to chat" /><div id="emo"></div><button id="chping" type="button" title="Ping the boss for your party" aria-label="Ping boss" onclick="pingBoss()" hidden>⚑</button></div></div>
     <div id="btns">
       <button id="bd" class="sk"></button><button id="bu" class="sk"></button><button id="b0"></button><button id="b1"></button><button id="b2"></button
-      ><button id="bi" hidden>Enter arena</button><button id="bil" class="bic" hidden onclick="invCycle(-1)">◀</button><button id="bir" class="bic" hidden onclick="invCycle(1)">▶</button><div id="tlbar"><span id="gp"><i class="coin"></i><b id="gn">0</b></span></div><div id="mlbar"><button id="bt" data-ic="🎖️">🎖️ Titles</button><button id="bfb" data-ic="💬" onclick="fbOpen()" title="Tell us what you think, or report a bug">💬 Feedback</button><button id="blk" data-ic="🔗" class="hb" title="Copy the lobby link: friends who open it join you" hidden>🔗 Copy ID</button></div><div id="topc"><button id="bq" data-ic="📜" data-lb="Quests" class="hb" title="Quests">📜 Quests</button><button id="bg" data-ic="🛡" data-lb="Guild" class="hb">🛡 Guild</button><button id="bs" data-ic="✨" data-lb="Shop" class="hb" title="Shop">✨ Shop</button><button id="bp" data-ic="👥" data-lb="Party" class="hb" title="Party">👥 Party</button><button id="bcls" data-ic="⚔️" data-lb="Class" class="hb" onclick="classOpen()" title="Class">⚔️ Class</button><button id="btt" data-ic="🎖️" data-lb="Titles" class="hb" onclick="titlesOpen()" title="Titles">🎖️ Titles</button><button id="bgd" data-ic="🌸" data-lb="Garden" class="hb" onclick="gardenOpen()" title="Zen Garden: grows while you play">🌸 Garden<b class="bdg"></b></button><button id="bgm" data-ic="🎁" data-lb="Daily" class="hb" onclick="gamesOpen()" title="Daily Rewards (G)">🎁 Daily<b class="bdg"></b></button><button id="binv" data-ic="🧰" data-lb="Inventory" class="hb" onclick="invOpen()" title="Inventory">🧰 Inventory</button><button id="bset" data-ic="⚙️" data-lb="Settings" class="hb" onclick="setOpen()" title="Settings">⚙️ Settings</button></div><div id="netBadge" role="status" aria-live="polite"></div><div id="ptl" hidden></div>
+      ><button id="bi" hidden>Enter arena</button><button id="bil" class="bic" hidden onclick="invCycle(-1)">◀</button><button id="bir" class="bic" hidden onclick="invCycle(1)">▶</button><div id="tlbar"><span id="gp"><i class="coin"></i><b id="gn">0</b></span></div><div id="mlbar"><button id="bt" data-ic="🎖️">🎖️ Titles</button><button id="bfb" data-ic="💬" onclick="fbOpen()" title="Tell us what you think, or report a bug">💬 Feedback</button><button id="blk" data-ic="🔗" class="hb" title="Copy the lobby link: friends who open it join you" hidden>🔗 Copy ID</button></div><div id="topc"><button id="bg" data-ic="🛡" data-lb="Guild" class="hb">🛡 Guild</button><button id="bp" data-ic="👥" data-lb="Party" class="hb" title="Party">👥 Party</button><button id="btt" data-ic="🎖️" data-lb="Titles" class="hb" onclick="titlesOpen()" title="Titles">🎖️ Titles</button><button id="bgd" data-ic="🌸" data-lb="Garden" class="hb" onclick="gardenOpen()" title="Zen Garden: grows while you play">🌸 Garden<b class="bdg"></b></button><button id="binv" data-ic="🧰" data-lb="Inventory" class="hb" onclick="invOpen()" title="Inventory">🧰 Inventory</button><button id="bset" data-ic="⚙️" data-lb="Settings" class="hb" onclick="setOpen()" title="Settings">⚙️ Settings</button></div><div id="netBadge" role="status" aria-live="polite"></div><div id="ptl" hidden></div>
     </div>
     <script>
       /* Browser networking block: inputs are hub leases, SDP and game messages; outputs are peer events.
@@ -2542,9 +2542,9 @@
           g: "M-9-13h18a3 3 0 0 1 0 6h-1v13h1a3 3 0 0 1 0 6h-18a3 3 0 0 1 0-6h1v-13h-1a3 3 0 0 1 0-6zM-4.5-4h9v1.8h-9zM-4.5 0h7v1.8h-7z" },
         /* the 4 NPCs standing where the old torches were */
         /* Class Master (green): the three class emblems */
-        /* the Class Master no longer stands in the hub (class change = top-bar Class button); kept as data for the class
-           window, the unlock flag in old saves and the tutorial step */
-        CLASSN = { lk: "class", tu: 1, x: 662, y: 476, ic: "⚔", nm: "The Class Master", col: "#5dff8a" },
+        /* the Class Master stands by the Rune Crossing: class change and the 2 raid skills you bring (tutorial step 1) */
+        CLASSN = { lk: "class", tu: 1, x: 530, y: 240, ic: "⚔", nm: "The Class Master", col: "#5dff8a",
+          g: "M-1.6-14h3.2v16h-3.2zM-8 2h16v3h-16zM-1.6 5h3.2v6h-3.2zM-3 11h6v3h-6z" }, /* a sword */
         /* The Maiden (rose): a rose bloom */
         MAIDEN = { lk: "maiden", fx: "roses", x: 662, y: 476, /* the trader took the Class Master's spot; 450,528 is free for the pet NPC */ ic: "🌹", nm: "The Maiden", col: "#ff8fc8",
           g: "M0-11c5 0 8 4 6 8 4 0 5 5 1 7-1 4-6 5-7 2-1 3-6 2-7-2-4-2-3-7 1-7-2-4 1-8 6-8z" },
@@ -2985,7 +2985,7 @@
         const g = gamesList(), done = g.filter((x) => !x[6]).length, ms = 864e5 - (Date.now() % 864e5), hh = Math.floor(ms / 36e5), mm = Math.floor((ms % 36e5) / 6e4);
         const cards = g.map(([k, ic, nm, ds, bd, lk, rd]) => `<button class="dcard${rd ? " rdy" : ""}${lk ? " lk" : ""}" onclick="gameGo('${k}')" title="${lk || "Open " + nm}"><span class="gmi" aria-hidden="true">${ic}</span><span class="nm">${nm}</span><span class="sm">${lk || ds}</span><span class="dpill">${lk ? "🔒" : bd}</span></button>`).join("");
         $("dp").className = "pn";
-        $("dp").innerHTML = `<h2>🎁 Daily Rewards</h2><div class="dprog"><div class="dbar"><i style="width:${(done / g.length) * 100}%"></i></div><span class="sm">${done} of ${g.length} done today · new rewards in ${hh}h ${mm}m</span></div><div class="dgrid">${cards}</div><p class="sm">All free. Blackjack is at the Barkeep's table.</p><button class="alt x" onclick="closeDlg()" title="Close">Close</button>`;
+        $("dp").innerHTML = `<h2>🎁 Daily Rewards</h2><div class="dprog"><div class="dbar"><i style="width:${(done / g.length) * 100}%"></i></div><span class="sm">${done} of ${g.length} done today · new rewards in ${hh}h ${mm}m</span></div><div class="dgrid">${cards}</div><p class="sm">All free, from the Barkeep.</p><button class="alt" onclick="openDlg('barkeep')">◀ Barkeep</button><button class="alt x" onclick="closeDlg()" title="Close">Close</button>`;
         wiFresh();
       }
       /* gameGo(k): open one daily game (locked ones say why) */
@@ -2998,6 +2998,8 @@
         ({ wish: () => wishUI("wish"), wheel: wheelUI, reels: reelsUI, dig: digUI })[k]();
         return true;
       }
+      /* dailyBtn(): the Daily Rewards entry at the Barkeep (open even before his table unlocks) */
+      const dailyBtn = () => (tut() >= TUT_DONE ? `<div class="row" style="border:0;justify-content:center"><button class="claim" onclick="gamesUI()">🎁 Daily Rewards${dailyReady() ? ` (${dailyReady()})` : ""}</button></div>` : "");
       function gamesOpen() { if (P && !dlgOpen() && S.sc == "hub" && tut() >= TUT_DONE) { openDlg("games"); sfx("ui"); } }
       function gamesBack() { closeDlg(); gamesOpen(); }
       function gardenOpen() { if (!P || dlgOpen() || S.sc != "hub" || tut() < TUT_DONE) return; if (!isUnl("pet")) { toast(`The Zen Garden opens when you meet the Beastkeeper (level ${PET_LV}).`); return; } openDlg("garden"); sfx("ui"); }
@@ -3148,8 +3150,8 @@
       }, true);
       /* ---------- What's new: a small corner card once per build (BUILD), a soft chime at the player's volume ----------
          Brand-new players (tutorial not done) skip it: everything is new to them. Dismiss with x, or it fades after 14 s. */
-      const BUILD = "2026.11.08.17"; /* shop spells + 2-skill raid loadout */
-      const NEWS = ["✨ New spells at the Merchant: Stone Ward (Tank), Rune Mine (DPS), Renewal (Healer). Pick the 2 skills you bring to a raid in the Class window or on the Choose Raid screen", "🧙 The Elder gives side quests: keep one next to your main quest (8 new quests, progress bars, both tracked on screen)", "📱 Cleaner top bar: icon tiles with labels, a 🎖️ Titles button, red badges when rewards wait. Contracts show the courier countdown instead of a dead button", "🎁 Daily Rewards (top bar or G): the Wish Shrine gift, Fortune Wheel, Rune Reels and Treasure Dig on one board with today's progress and a red badge when rewards wait. 🌸 The Zen Garden has its own button and badges when beds are ripe", "✨ Wish cosmetics glow brighter: new trails (Leaf Drift, Starlit Steps, Comet Tail), emote bubbles (Heart Puff, Rune Glyph) and the Legendary Runic Nova aura. Preview your look in the Collection; changes show to everyone at once", "🌠 Rune Wishes: the Wish Shrine! Make free wishes for auras, pet hats, name effects and titles (odds and pity shown, dupes become Stardust). Earn 🎟 at the Fortune Wheel, Rune Reels and Treasure Dig, plus Cipher wins, garden harvests and raids. All free, always", "🔮 Cipher: every few gathers a quick rune game pops up (strike the vein, the moonleaf pattern, the crystal echo); win a bonus pack of 5. Gathering combos and a shinier channel too", "🌸 The Zen Garden: rake the sand, water your plants, harvest materials, claim a 7-day streak bonus and trade your produce with friends", "🐾 Pets: reach level 6 to meet the Beastkeeper. Adopt a Fox, Owl, Wolf or Sprite with materials, feed it for a bigger bonus, and tap it to play", "⛏️ Gathering: Iron Ore, Moonleaf and Skycrystal nodes on the island; mastery raises your yield", "📜 Contract Board: 3 material orders a day on the Quest Board", "🌹 The Maiden's Exchange: barter materials at rates that drift each day"];
+      const BUILD = "2026.11.08.18"; /* UI cleanup: Quests/Shop/Class/Daily moved to NPCs */
+      const NEWS = ["🧹 Cleaner top bar: daily quests at the 🧙 Elder, the ✨ Shop at the 💰 Merchant, class and raid skills at the ⚔ Class Master (by the Rune Crossing), 🎁 Daily Rewards at the 🍺 Barkeep (marker when ready)", "✨ New spells at the Merchant: Stone Ward (Tank), Rune Mine (DPS), Renewal (Healer). Pick the 2 skills you bring to a raid in the Class window or on the Choose Raid screen", "🧙 The Elder gives side quests: keep one next to your main quest (8 new quests, progress bars, both tracked on screen)", "📱 Cleaner top bar: icon tiles with labels, a 🎖️ Titles button, red badges when rewards wait. Contracts show the courier countdown instead of a dead button", "🎁 Daily Rewards (top bar or G): the Wish Shrine gift, Fortune Wheel, Rune Reels and Treasure Dig on one board with today's progress and a red badge when rewards wait. 🌸 The Zen Garden has its own button and badges when beds are ripe", "✨ Wish cosmetics glow brighter: new trails (Leaf Drift, Starlit Steps, Comet Tail), emote bubbles (Heart Puff, Rune Glyph) and the Legendary Runic Nova aura. Preview your look in the Collection; changes show to everyone at once", "🌠 Rune Wishes: the Wish Shrine! Make free wishes for auras, pet hats, name effects and titles (odds and pity shown, dupes become Stardust). Earn 🎟 at the Fortune Wheel, Rune Reels and Treasure Dig, plus Cipher wins, garden harvests and raids. All free, always", "🔮 Cipher: every few gathers a quick rune game pops up (strike the vein, the moonleaf pattern, the crystal echo); win a bonus pack of 5. Gathering combos and a shinier channel too", "🌸 The Zen Garden: rake the sand, water your plants, harvest materials, claim a 7-day streak bonus and trade your produce with friends", "🐾 Pets: reach level 6 to meet the Beastkeeper. Adopt a Fox, Owl, Wolf or Sprite with materials, feed it for a bigger bonus, and tap it to play", "⛏️ Gathering: Iron Ore, Moonleaf and Skycrystal nodes on the island; mastery raises your yield", "📜 Contract Board: 3 material orders a day on the Quest Board", "🌹 The Maiden's Exchange: barter materials at rates that drift each day"];
       let NEWS_T = 0;
       function newsShow() {
         let seen = "";
@@ -6460,8 +6462,9 @@
         shopMsg = "";
       const eur = (n) => n.toFixed(2).replace(".", ",") + " €";
       function cosShopUI() {
+        SHOP_TAB = "cos";
         const tabs = [["pass", "Rune Pass"], ["ring", "Borders"], ["badge", "Frames"], ["emote", "Emotes"]],
-          head = `<div class="shead"><h2>Shop</h2><span class="purse2">💰 ${V.gold}</span></div>
+          head = `<div class="shead"><h2>💰 The Merchant</h2><span class="purse2">💰 ${V.gold}</span></div>${merchTabs("cos")}
             <div class="ctabs">${tabs.map(([k, n]) => `<button class="${shopTab == k ? "on" : ""}" onclick="shopTab='${k}';shopMsg='';cosShopUI()">${n}</button>`).join("")}</div>`;
         let body = "";
         if (shopTab == "pass") {
@@ -7351,7 +7354,7 @@
             <button class="claim" onclick="enterRaid('${k}')" ${lead && !t.err ? "" : "disabled"}>${lead ? "⚔ ENTER" : "Leader starts"}</button></div></div>`;
         };
         $("dp").innerHTML = `<h2>⚔ Choose a raid</h2><div class="raids">${["small", "large", "epic"].map(card).join("")}</div>
-          ${ldUI()}<p class="sm rtip">Keep the party alive until your DPS outscales the boss. Tank: Taunt and Shield Bash its weak moments. Healer: heal, dodge, and clear the Doom.</p>
+          <p class="sm">⚔ Raid skills are picked at the Class Master.</p><p class="sm rtip">Keep the party alive until your DPS outscales the boss. Tank: Taunt and Shield Bash its weak moments. Healer: heal, dodge, and clear the Doom.</p>
           <button class="alt x" onclick="closeDlg()" title="Close">Close</button>`;
       }
       let RAID_TRIAL = 0;
@@ -8512,7 +8515,7 @@
          0 move -> Elder, 1 talk to Elder -> Merchant, 2 open shop -> Archivist, 3 listen -> portal, 4 done */
       const tut = () => (V.tut == null ? 0 : V.tut);
       const TUT_DONE = 5;
-      const TUT_TXT = ["Move with WASD, the joystick or the stick", "Choose your class (⚔️ Class at the top)", "Talk to the Elder", "Visit the Merchant", "Listen to the Archivist", ""];
+      const TUT_TXT = ["Move with WASD, the joystick or the stick", "Talk to the Class Master and choose your class", "Talk to the Elder", "Visit the Merchant", "Listen to the Archivist", ""];
       /* tutMigrate(): saves from the old 4-step tutorial (move, Elder, Merchant, Archivist) map onto the new steps */
       function tutMigrate() {
         if (V.tv == 3) return;
@@ -8528,7 +8531,7 @@
         V.tut = from + 1;
         save();
         if (from == 0) (V.ul = V.ul || {}), (V.ul.class = true); /* the Class Master is there from the start of the tutorial */
-        const n = [P, ELDER, SHOP, LORE, PORTAL][from] || P; /* step 1 is the Class button now: the flourish plays on you */
+        const n = [CLASSN, ELDER, SHOP, LORE, PORTAL][from] || P; /* each step reveals the next NPC (step 0 -> the Class Master) */
         if (n !== P) n._rv = S.tm; /* slow fade-in */
         burst(n.x, n.y, n.col || "#5af0dc", 40, 220);
         RINGS.push({ x: n.x, y: n.y, col: n.col || "#5af0dc", t: 0 });
@@ -8599,6 +8602,7 @@
         if (tut() >= TUT_DONE && bridgeAt(P)) cand.push(["raid", 0]); /* on the Rune Crossing: choose a raid */
         for (const n of [
           ["elder", ELDER],
+          ["class", CLASSN],
           ["shop", SHOP],
           ["lore", LORE],
           ["maiden", MAIDEN],
@@ -8934,7 +8938,7 @@
         if (ms) goldAdd(ms[0], "lore");
         const rw = rare ? loreReward(bonus) : "";
         /* Class Master: pure luck, 1 in 100 per tale (guaranteed by tale 300 so nobody is stuck) */
-        const cm = !isUnl("class") && classRoll() ? unlockNpc("class") : "";
+        const cm = SECRET_NPC && !isUnl(SECRET_NPC) && secretRoll() ? unlockNpc(SECRET_NPC) : "";
         save();
         sfx(rare || ms ? "win" : "ui", rare ? 1.3 : 1);
         $("dp").innerHTML = `<h2>📜 The Archivist</h2>
@@ -8982,8 +8986,12 @@
         };
         if (wait > 0) DC_T = setTimeout(done, wait * 1000); else done();
       }
-      /* classRoll(): Class Master luck. At most one 1-in-100 roll per 30 minutes (V.cr = last roll time); guaranteed by tale 300. */
-      function classRoll() {
+      /* SECRET_NPC: the NPC key the Archivist's tales reveal by pure luck. It was the Class Master; he now stands in the hub
+         from tutorial step 1, so it is empty until a new secret NPC exists. To add one: give it { lk: "<key>" }, add the key to
+         unlockNpc / openDlg / lockedUI / UNLOCK_AT, draw it in the hub, then set SECRET_NPC = "<key>". */
+      const SECRET_NPC = "";
+      /* secretRoll(): secret-NPC luck. At most one 1-in-100 roll per 30 minutes (V.cr = last roll time); guaranteed by tale 300. */
+      function secretRoll() {
         if ((V.lt || 0) >= 300) return true;
         if (Date.now() - (V.cr || 0) < 30 * 60e3) return false;
         V.cr = Date.now();
@@ -8995,7 +9003,7 @@
         if (k == "barkeep") {
           $("dp").innerHTML = `<h2>🍺 The Barkeep</h2><p>"Card table's for regulars, friend. Come say hi in the tavern hall first."</p>
             <p class="sm">Copy the Runebound Discord link to unlock the Barkeep and his blackjack table.</p>
-            <div class="row" style="border:0;justify-content:center"><button id="dcb" onclick="discordUnlock()">🔒 Copy Discord link</button></div><button class="alt x" onclick="closeDlg()" title="Farewell">Farewell</button>`;
+            <div class="row" style="border:0;justify-content:center"><button id="dcb" onclick="discordUnlock()">🔒 Copy Discord link</button></div>${dailyBtn()}<button class="alt x" onclick="closeDlg()" title="Farewell">Farewell</button>`;
           return;
         }
         if (k == "tut") { $("dp").innerHTML = `<h2>❓ ???</h2><p>A figure waits in the mist.</p><p class="sm">Follow the tutorial at the top of the screen.</p><button class="alt x" onclick="closeDlg()" title="Farewell">Farewell</button>`; return; }
@@ -9019,8 +9027,6 @@
         heal: ["Keep your party alive and help them deal more damage.", "Heal the lowest-health ally; your circle gives allies inside +25% damage. Dodge boss spells and, when marked by Doom, touch all 3 runes within 12 s."],
       };
       /* classUI(): three class cards with stats and a CHOOSE button. */
-      /* classOpen(): the class window from the top bar (it used to be the Class Master NPC) */
-      function classOpen() { if (P && !dlgOpen() && S.sc == "hub") { CUR_DLG = "class"; $("dlg").hidden = false; classUI(); sfx("ui"); } }
       function classUI() {
         const ms = classWait(),
           locked = tut() >= TUT_DONE && ms > 0,
@@ -9379,7 +9385,7 @@
       }
       function contractRows() {
         const ct = contractDay(), wt = CONTRACT_GAP - (Date.now() - (V.ctAt || 0));
-        if (wt > 0 && ct.ids.some((i) => !ct.done[i])) { clearTimeout(contractRows.t); contractRows.t = setTimeout(() => { if (CUR_DLG == "qboard" && $("dlg") && !$("dlg").hidden) questBoardUI(); }, 1000); }
+        if (wt > 0 && ct.ids.some((i) => !ct.done[i])) { clearTimeout(contractRows.t); contractRows.t = setTimeout(() => { if (CUR_DLG == "elder" && $("dlg") && !$("dlg").hidden) questBoardUI(); }, 1000); }
         return ct.ids.map((id) => {
           const c = CONTRACTS.find((o) => o.id == id), dn = ct.done[id], ok = contractHave(c);
           const need = Object.entries(c.need).map(([k, n]) => { const h = (V.mat || {})[k] || 0; return `<span style="color:${h >= n ? "#7dff9a" : "#f3e6c8"}" title="${MATS[k].n}">${MATS[k].e}${Math.min(h, n)}/${n}</span>`; }).join(" ");
@@ -9388,20 +9394,18 @@
             <button ${ok && !dn && wt <= 0 ? "" : "disabled"} onclick="contractDeliver('${id}')" title="${wt > 0 && !dn ? "The courier is on the road" : ""}">${dn ? "DONE" : wt > 0 && ok ? `⏳ ${Math.ceil(wt / 1000)}s` : "DELIVER"}</button></div>`;
         }).join("");
       }
-      function questBoardUI() {
-        const bo = bountyDay(), q = QUESTS[V.q];
+      /* questBoardUI(): the daily quests live at the Elder now: redraw him */
+      function questBoardUI() { CUR_DLG = "elder"; elderUI(); }
+      function questDailyHTML() {
+        const bo = bountyDay();
         const rows = bo.ids.map((id) => {
           const b = BOUNTIES.find((x) => x.id == id), pr = bo.prog[id] || 0, ok = pr >= b.n, dn = bo.done[id];
           return `<div class="up ${ok && !dn ? "can" : ""}" style="--uc:${dn ? "#7dff9a" : "#ffd84a"}"><div style="min-width:0;flex:1"><span class="nm">${dn ? "✔ " : ""}${b.t}</span>
             <div class="mbar"><i style="width:${(pr / b.n) * 100}%"></i></div><div class="sm">${pr}/${b.n} · <span class="gold">${b.g} gold</span> · ${b.x} XP</div></div>
             <button ${ok && !dn ? "" : "disabled"} onclick="bountyClaim('${id}')">${dn ? "DONE" : "CLAIM"}</button></div>`;
         }).join("");
-        const sy = $("dp").scrollTop;
-        $("dp").innerHTML = `<h2>📜 Quest Board</h2>
-          ${q ? `<div class="qo">Main quest: <b>${q.n}</b> · ${V.qs == 0 ? "ask the Elder" : V.qs == 2 ? "return to the Elder" : q.o}</div>` : ""}${sideCur() ? `<div class="qo">Side quest: <b>${sideCur().q}</b> · ${V.sq.st == 2 ? "return to the Elder" : `${sideCur().o} (${sideProg()}/${sideCur().n})`}</div>` : ""}
-          <p class="sm">Daily bounties · new ones every dawn</p>${rows}
-          <p class="sm" style="margin-top:10px">📦 Contracts · gather on the island, deliver here · new orders every dawn</p>${contractRows()}<button class="alt x" onclick="closeDlg()" title="Close">Close</button>`;
-        $("dp").scrollTop = sy;
+        return `<div class="mast"><span class="sm">📜 Daily bounties · new ones every dawn</span></div>${rows}
+          <div class="mast"><span class="sm">📦 Contracts · gather on the island, deliver here · new orders every dawn</span></div>${contractRows()}`;
       }
       function bountyClaim(id) {
         const bo = bountyDay(), b = BOUNTIES.find((x) => x.id == id);
@@ -10208,7 +10212,7 @@
           const rent = bjChartOn() ? `<div class="bjtip bjend">🔮 Assist${bjClock()}</div>` : "";
           $("dp").innerHTML = `<h2>🍺 The Barkeep</h2><p class="sm">"Fancy a hand of blackjack? Beat my cards, double your coin."</p>${last}${rent}
             <div class="purse"><span class="coin"></span><b>${V.gold}</b></div>
-            <div class="row">${[10, 50, 100].map((b) => `<button ${V.gold < b ? "disabled" : ""} onclick="bjDeal(${b})"><span class="coin"></span>${b}</button>`).join("")}</div>
+            <div class="row">${[10, 50, 100].map((b) => `<button ${V.gold < b ? "disabled" : ""} onclick="bjDeal(${b})"><span class="coin"></span>${b}</button>`).join("")}</div>${dailyBtn()}
             <button class="alt x" onclick="closeDlg()" title="Farewell">Farewell</button>`;
           return;
         }
@@ -10319,6 +10323,7 @@
         `<div class="qh"><span class="qm ${st}"><b>${QM[st].g}</b></span><div><div class="qtag">${tag}</div><div class="qn">${q.n}</div></div></div>`;
       /* elderMark(): the Elder's head marker across both quest slots (ready > new > active) */
       function elderMark() {
+        if (tut() >= TUT_DONE && bountyReady()) return "ready"; /* a daily bounty to claim */
         const m = V.q < QUESTS.length ? ["new", "active", "ready"][V.qs] : "", sm = V.sq ? (V.sq.st == 2 ? "ready" : "active") : sideNext() ? "new" : "";
         return [m, sm].includes("ready") ? "ready" : [m, sm].includes("new") ? "new" : m || sm;
       }
@@ -10337,7 +10342,10 @@
           h += `<div class="qcard side${dn ? " rdy" : ""}">${qHead(dn ? "ready" : "active", nq, dn ? "Side quest · complete" : "Side quest · in progress")}<div class="qo${dn ? " done" : ""}">${dn ? "☑" : "☐"} ${sx.o} · ${p}/${sx.n}</div><div class="mbar"><i style="width:${(p / sx.n) * 100}%"></i></div><div class="qrw">Reward: ${gold(sx.r)}${dn ? `<button class="claim" onclick="sideAct(2)">CLAIM</button>` : `<button class="alt" onclick="sideAct(0)" title="Drop this side quest (you can take it again later)">Drop</button>`}</div></div>`;
         } else if (sn) h += `<div class="qcard side">${qHead("new", { n: sn.q }, "Side quest · new")}<p>${sn.t}</p><div class="qo">${sn.o}</div><div class="qrw">Reward: ${gold(sn.r)}<button class="claim" onclick="sideAct(1)">ACCEPT</button></div></div>`;
         else h += `<div class="qcard side"><div class="qtag">Side quest</div><p class="sm">No more side quests for now. Come back as the hub grows.</p></div>`;
+        if (tut() >= TUT_DONE) h += questDailyHTML(); /* daily bounties + contracts (the old Quest Board) */
+        const sy = $("dp").scrollTop;
         $("dp").innerHTML = h + `<button class="alt x" onclick="closeDlg()" title="Close">Close</button>`;
+        $("dp").scrollTop = sy;
       }
       function qAct(a) {
         const q = QUESTS[V.q];
@@ -10439,11 +10447,11 @@
         SHOP_TAB = "mk";
         if (MARKET_RELEASE_DISABLED) {
           $("dp").className = "pn wide";
-          $("dp").innerHTML = `<h2>💰 The Merchant</h2><div class="row"><button class="alt" onclick="shopUI('up')">Upgrades</button><button class="claim" onclick="shopUI('mk')">Market</button><button class="alt" onclick="shopUI('eq')">Equipment</button></div><p>The player market is temporarily closed. Items and gold remain in your save until trades can be validated server-side.</p><button class="alt x" onclick="closeDlg()" title="Close">Close</button>`;
+          $("dp").innerHTML = `<h2>💰 The Merchant</h2>${merchTabs("mk")}<p>The player market is temporarily closed. Items and gold remain in your save until trades can be validated server-side.</p><button class="alt x" onclick="closeDlg()" title="Close">Close</button>`;
           return;
         }
         if (!noFetch) mktRefresh();
-        const tabs = `<div class="row"><button class="alt" onclick="shopUI('up')">Upgrades</button><button class="claim" onclick="shopUI('mk')">Market</button><button class="alt" onclick="shopUI('eq')">Equipment</button></div>`;
+        const tabs = `${merchTabs("mk")}`;
         const F = MKT.filter, list = MKT.list.filter((L) => F == "all" || (F == "mat" ? L.item.k == "mat" : L.item.k == "gear"));
         const pill = (k, lab) => `<span onclick="MKT.filter='${k}';marketUI(true)" style="cursor:pointer;padding:3px 9px;border-radius:6px;border:1px solid ${F == k ? "#ffe08a" : "var(--ln)"};color:${F == k ? "#ffe08a" : "#f3e6c8"};background:rgba(0,0,0,.25);font:bold 12px Georgia">${lab}</span>`;
         let h = `<h2>💰 The Merchant</h2><div class="purse"><span class="coin"></span><b>${V.gold}</b></div>${tabs}`;
@@ -10467,11 +10475,14 @@
       /* shop screen. In: V.gold, V.up. justBought = key of the card to flash after a purchase. */
       let justBought = "";
       let SHOP_TAB = "up";
+      /* merchTabs(tab): the Merchant's tabs; "cos" = the cosmetics / Rune Pass shop (was the top-bar Shop button) */
+      const merchTabs = (tab) => `<div class="row">${[["up", "Upgrades"], ["eq", "Equipment"], ["cos", "✨ Shop"], ["mk", "Market"]].map(([k, n]) => `<button class="${tab == k ? "claim" : "alt"}" onclick="shopUI('${k}')">${n}</button>`).join("")}</div>`;
       function shopUI(tab = SHOP_TAB) {
         tutNext(3);
         SHOP_TAB = tab;
         if (tab == "mk") return marketUI();
-        const tabs = `<div class="row"><button class="${tab == "up" ? "claim" : "alt"}" onclick="shopUI('up')">Upgrades</button><button class="alt" onclick="shopUI('mk')">Market</button><button class="${tab == "eq" ? "claim" : "alt"}" onclick="shopUI('eq')">Equipment</button></div>`;
+        if (tab == "cos") return cosShopUI();
+        const tabs = merchTabs(tab);
         if (tab == "eq") {
           const n = Math.floor((V.rc || 0) / 2), own = V.eq?.bag || [];
           V.eqs = V.eqs || 1 + Math.floor(Math.random() * 1e6);
@@ -10507,7 +10518,7 @@
           const lv = (V.sk[cls] || [])[a] || 0, cost = 80 * (lv + 1), mx = lv >= 5, sp = a == 3;
           return `<div class="up" style="--uc:${SKC[cls]}"><div style="min-width:0;flex:1"><span class="nm">${sp ? "✨ " + SP.n : SK[cls][a]}</span><span class="pips">${[...Array(5)].map((_, i) => `<i class="${i < lv ? "on" : ""}"></i>`).join("")}</span>${sp ? `<div class="sm">${SP.d}. Each level: ${SP.l}</div>` : ""}</div><button ${mx || V.gold < cost ? "disabled" : ""} onclick="skBuy(${a})">${mx ? "MAX" : `<span class="coin"></span>${cost}`}</button></div>`;
         }).join("");
-        if (!spOwn(cls)) h += `<div class="up" style="--uc:${SKC[cls]}"><div style="min-width:0;flex:1"><span class="nm">✨ New spell: ${SP.n}</span><div class="sm">${SP.d}. Then pick it as one of your 2 raid skills in the Class window or before a raid.</div>${V.gold < SPELL.cost ? `<div class="sm need">Need ${SPELL.cost - V.gold} more gold</div>` : ""}</div><button ${V.gold < SPELL.cost ? "disabled" : ""} onclick="spBuy()"><span class="coin"></span>${SPELL.cost}</button></div>`;
+        if (!spOwn(cls)) h += `<div class="up" style="--uc:${SKC[cls]}"><div style="min-width:0;flex:1"><span class="nm">✨ New spell: ${SP.n}</span><div class="sm">${SP.d}. Then pick it as one of your 2 raid skills at the Class Master.</div>${V.gold < SPELL.cost ? `<div class="sm need">Need ${SPELL.cost - V.gold} more gold</div>` : ""}</div><button ${V.gold < SPELL.cost ? "disabled" : ""} onclick="spBuy()"><span class="coin"></span>${SPELL.cost}</button></div>`;
         $("dp").innerHTML = h + `<button class="alt x" onclick="closeDlg()" title="Close">Close</button>`;
         justBought = "";
       }
@@ -10531,7 +10542,7 @@
         save();
         if (P) burst(P.x, P.y, SKC[cls], 30, 200);
         sfx("win", 1.1);
-        toast(`✨ ${SPELL[cls].n} learned! Pick your 2 raid skills in the Class window.`);
+        toast(`✨ ${SPELL[cls].n} learned! Pick your 2 raid skills at the Class Master.`);
         shopUI();
       }
       function buy(k) {
@@ -10952,7 +10963,7 @@
         inter();
       });
       /* Quests / Guild HUD buttons open the same menus the boards used to */
-      for (const [id, w] of [["bq", "qboard"], ["bg", "gboard"]])
+      for (const [id, w] of [["bg", "gboard"]])
         $(id).addEventListener("pointerdown", (e) => {
           e.preventDefault();
           if (P && !dlgOpen()) { openDlg(w); sfx("ui"); }
@@ -10964,10 +10975,6 @@
       $("bp").addEventListener("pointerdown", (e) => {
         e.preventDefault();
         if (P && !dlgOpen()) { partyUI(); sfx("ui"); }
-      });
-      $("bs").addEventListener("pointerdown", (e) => {
-        e.preventDefault();
-        if (P && !dlgOpen()) { $("dlg").hidden = false; cosShopUI(); sfx("ui"); }
       });
       /* lobby link: the room invite in room mode, else this page's link (keeps ?hub= for a test hub) */
       function lobbyLink() {
@@ -11131,19 +11138,17 @@
         const chatPlaceholder = S.sc == "arena" ? "Raid party chat · Enter to send" : "Press Enter to chat";
         if ($("chin").placeholder != chatPlaceholder) $("chin").placeholder = chatPlaceholder;
         $("bt").hidden = true; /* Titles, Feedback and Copy ID moved into Settings (cleaner HUD) */
-        $("binv").hidden = $("bgm").hidden = tut() < TUT_DONE || S.sc != "hub";
-        $("bgd").hidden = $("bgm").hidden || !isUnl("pet");
-        $("btt").hidden = $("bgm").hidden;
-        if (!$("bgm").hidden) { const dn = String(dailyReady() || ""), gn = String(($("bgd").hidden ? 0 : gardenReady()) || ""), b1 = $("bgm").lastChild, b2 = $("bgd").lastChild; if (b1.textContent !== dn) b1.textContent = dn; if (b2.textContent !== gn) b2.textContent = gn; }
-        $("bcls").hidden = tut() < 1 || S.sc != "hub"; /* class change (the Class Master left the hub): from tutorial step 2 on */
+        $("binv").hidden = tut() < TUT_DONE || S.sc != "hub"; /* Quests = Elder, Shop = Merchant, Class = Class Master, Daily = Barkeep */
+        $("bgd").hidden = $("binv").hidden || !isUnl("pet");
+        $("btt").hidden = $("binv").hidden;
+        if (!$("bgd").hidden) { const gn = String(gardenReady() || ""), b2 = $("bgd").lastChild; if (b2.textContent !== gn) b2.textContent = gn; }
         $("bset").hidden = !P;
         $("bfb").hidden = true;
         $("blk").hidden = true;
         $("tlbar").hidden = !P || S.sc == "lobby";
         goldHud();
-        $("bq").hidden = $("bs").hidden = $("bp").hidden = tut() < TUT_DONE || S.sc != "hub";
+        $("bp").hidden = tut() < TUT_DONE || S.sc != "hub";
         $("bg").hidden = true; /* UNUSED: the Guild is disabled for now (button always hidden; guildUI and the guild save data are kept) */
-        $("bq").classList.toggle("hot", bountyReady()); /* glows when a bounty can be claimed */
         partyFrame();
         loreBonusTick();
         const m = P;
@@ -16509,9 +16514,10 @@
         if (S.sc == "hub") {
           npc(ELDER, elderMark());
           npc(SHOP, "");
+          npc(CLASSN, "");
           npc(MAIDEN, V.mb != dayKey(new Date()) ? "bonus" : ""); /* pink marker = free daily blessing ready */
           npc(SMITH, "");
-          npc(BARKEEP, "");
+          npc(BARKEEP, dailyReady() ? "bonus" : ""); /* marker = daily rewards waiting (the old Daily button badge) */
           npc(SERAPH, V.bl ? "" : "bonus"); /* marker while no blessing is carried */
           npc(PETS, isUnl("pet") && !Object.keys(V.pets || {}).length ? "new" : ""); /* the Beastkeeper (level 6): marker until your first pet */
           npc(LORE, V.lbx > Date.now() ? "bonus" : V.lt ? "" : "new");
@@ -16783,7 +16789,7 @@
             const tx = "TUTORIAL " + (tut() + 1) + "/" + TUT_DONE + " · " + TUT_TXT[tut()];
             c.strokeText(tx, 450, 24);
             c.fillText(tx, 450, 24);
-            const tg = [null, null, ELDER, SHOP, LORE][tut()]; /* step 1: the Class button (no arrow on the map) */
+            const tg = [null, CLASSN, ELDER, SHOP, LORE][tut()]; /* step 1: the Class Master */
             if (tg) {
               /* arrow position converted from world to screen-fixed units (HUD transform is active here) */
               const ax = (tg.x - CAM.x),
