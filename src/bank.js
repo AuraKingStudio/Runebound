@@ -110,7 +110,12 @@ function createBank(options = {}) {
   /* one file, written atomically: { v: 2, accts, trades, migrated } (older files held only the accounts) */
   const store = options.store || null; /* PostgreSQL (src/db.js): { initial, save(state) }; no store = the bank.json file */
   let accts = {}, trades = {}, migrated = false;
-  if (store) ({ accts, trades, migrated } = store.initial);
+  let touched = new Set(), rawAccts = null; /* PostgreSQL: the account ids read or written since the last save (only those are compared) */
+  if (store) {
+    ({ accts, trades, migrated } = store.initial);
+    const raw = (rawAccts = accts), mark = (p) => { if (typeof p == "string") touched.add(p); };
+    accts = new Proxy(raw, { get(t, p) { if (Object.hasOwn(t, p)) mark(p); return t[p]; }, set(t, p, v) { mark(p); t[p] = v; return true; }, deleteProperty(t, p) { mark(p); return delete t[p]; } });
+  }
   else try {
     const j = JSON.parse(fs.readFileSync(file, "utf8")) || {};
     if (j.v === 2) { accts = j.accts || {}; trades = j.trades || {}; migrated = j.migrated === true; } else accts = j;
@@ -138,10 +143,11 @@ function createBank(options = {}) {
   let dirty = false, timer = null;
   /* flush(): write now (shutdown, tests); persist() batches writes to at most one every 500 ms */
   const snap = () => ({ accts, trades, migrated });
+  const toStore = () => { const ids = touched; touched = new Set(); return store.save({ accts: rawAccts, trades, migrated }, ids); }; /* the raw object: the save itself does not mark ids */
   function flush() {
     if (timer) { clearTimeout(timer); timer = null; }
     dirty = false;
-    if (store) return store.save(snap());
+    if (store) return toStore();
     try { fs.writeFileSync(file + ".tmp", state()); fs.renameSync(file + ".tmp", file); }
     catch (e) { console.error("bank: save failed", e.message); }
   }
@@ -152,7 +158,7 @@ function createBank(options = {}) {
       timer = null;
       if (!dirty) return;
       dirty = false;
-      if (store) { store.save(snap()); return; }
+      if (store) { toStore(); return; }
       try {
         fs.writeFileSync(file + ".tmp", state()); fs.renameSync(file + ".tmp", file);
       }

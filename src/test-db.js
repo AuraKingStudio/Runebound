@@ -7,7 +7,8 @@ let fails = 0;
 const ok = (c, m) => { console.log((c ? "PASS " : "FAIL ") + m); if (!c) fails++; };
 (async () => {
   if (!url) { console.log("SKIP db tests: TEST_DATABASE_URL is not set"); return; }
-  if (!/_test\b/.test(url)) throw new Error("refusing: TEST_DATABASE_URL must name a *_test database (its tables are dropped)");
+  let dbName = ""; try { dbName = decodeURIComponent(new URL(url).pathname.slice(1)); } catch {}
+  if (!/_test$/.test(dbName) || url === process.env.DATABASE_URL) throw new Error("refusing: TEST_DATABASE_URL must name a database ending in _test, different from DATABASE_URL (its tables are dropped)");
   const { Pool } = require("pg"), p = new Pool({ connectionString: url });
   await p.query("DROP TABLE IF EXISTS accounts, trades, meta"); await p.end();
 
@@ -39,5 +40,20 @@ const ok = (c, m) => { console.log((c ? "PASS " : "FAIL ") + m); if (!c) fails++
   await b2.flush();
   const after = (await db2.pool.query("SELECT updated_at FROM accounts")).rows[0].updated_at;
   ok(+before === +after, "db: an unchanged account is not rewritten");
-  await db2.close();
-})().then(() => { console.log(fails ? fails + " FAILED" : "ALL PASSED"); process.exit(fails ? 1 : 0); }, (e) => { console.error(e); process.exit(1); });
+  const id = ids[0], raw = db2.initial.accts[id];
+  /* Hawk HIGH 2: a refused save (negative gold) is retried, and lands once the state is fixed */
+  raw.gold = -5; const p1 = db2.save({ accts: db2.initial.accts, trades: {}, migrated: false }, [id]);
+  await new Promise((r) => setTimeout(r, 300));
+  ok(db2.status().fails >= 1 && db2.status().pending, "db: a refused save stays queued for retry (not dropped)");
+  raw.gold = 777; await p1;
+  ok(+(await db2.pool.query("SELECT gold FROM accounts WHERE id = $1", [id])).rows[0].gold === 777 && !db2.status().pending, "db: the retry lands the fixed state");
+  /* Hawk HIGH 1: a save queued while another runs is not lost at shutdown */
+  raw.gold = 778; db2.save({ accts: db2.initial.accts, trades: {}, migrated: false }, [id]);
+  raw.gold = 779; db2.save({ accts: db2.initial.accts, trades: {}, migrated: false }, [id]);
+  ok((await db2.close(10000)) === true, "db: close waits for every queued save");
+  const db3 = await openDb(url);
+  ok(db3.initial.accts[id].gold === 779, "db: the last queued save survived shutdown");
+  let big = false; try { await db3.pool.query("INSERT INTO accounts (id, gold, data) VALUES ($1, 0, $2::jsonb)", ["c".repeat(64), JSON.stringify({ x: "y".repeat(70000) })]); } catch (e) { big = true; }
+  ok(big, "db: oversized account data is refused");
+  await db3.close();
+})().then(() => { console.log(fails ? fails + " FAILED" : "ALL PASSED"); process.exit(fails ? 1 : 0); }, (e) => { console.error("db tests crashed:", e.message); process.exit(1); });

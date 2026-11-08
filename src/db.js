@@ -1,21 +1,22 @@
 "use strict";
 /* PostgreSQL storage for the bank (step 1: one game server).
-   The bank still works in memory; this module loads it at start and saves only the accounts and trades that changed
-   (compared as JSON), all in one transaction, at most one save running at a time. Gold also sits in its own column with
-   CHECK (gold >= 0), so the database itself refuses a negative balance even if a bug slips through.
-   Secrets: the connection string comes from DATABASE_URL (a .env on the server), never from git. */
+   The bank still works in memory; this module loads it at start and saves the accounts the bank touched (and the trades)
+   when they changed, all in one transaction. Saves run one at a time; a save asked for during a save runs right after it.
+   A failed save is retried with backoff (1 s, 2 s, 4 s ... 30 s) until it lands; drain() waits until nothing is left.
+   Gold also sits in its own column with CHECK (gold >= 0): a negative or broken balance rolls the whole save back.
+   Secrets: the connection string comes from DATABASE_URL (a .env on the server), never from git, never logged. */
 const { Pool } = require("pg");
 
 const SCHEMA = `
 CREATE TABLE IF NOT EXISTS accounts (
   id text PRIMARY KEY CHECK (id ~ '^[a-f0-9]{64}$'),
   gold bigint NOT NULL CHECK (gold >= 0),
-  data jsonb NOT NULL,
+  data jsonb NOT NULL CHECK (octet_length(data::text) < 65536),
   updated_at timestamptz NOT NULL DEFAULT now()
 );
 CREATE TABLE IF NOT EXISTS trades (
   id text PRIMARY KEY CHECK (length(id) BETWEEN 1 AND 64),
-  data jsonb NOT NULL,
+  data jsonb NOT NULL CHECK (octet_length(data::text) < 16384),
   updated_at timestamptz NOT NULL DEFAULT now()
 );
 CREATE TABLE IF NOT EXISTS meta (k text PRIMARY KEY, v jsonb NOT NULL);
@@ -24,51 +25,82 @@ CREATE TABLE IF NOT EXISTS meta (k text PRIMARY KEY, v jsonb NOT NULL);
 async function openDb(url, options = {}) {
   if (!url) throw new Error("db: DATABASE_URL is not set");
   const pool = new Pool({ connectionString: url, max: options.max || 4, idleTimeoutMillis: 30000, connectionTimeoutMillis: 5000 });
-  pool.on("error", (e) => console.error("db: idle client error", e.message));
+  pool.on("error", (e) => console.error("db: idle client error:", e.message));
   await pool.query(SCHEMA);
   const accts = {}, trades = {}, seen = { a: new Map(), t: new Map() };
   for (const r of (await pool.query("SELECT id, data FROM accounts")).rows) { accts[r.id] = r.data; seen.a.set(r.id, JSON.stringify(r.data)); }
   for (const r of (await pool.query("SELECT id, data FROM trades")).rows) { trades[r.id] = r.data; seen.t.set(r.id, JSON.stringify(r.data)); }
   const m = (await pool.query("SELECT v FROM meta WHERE k = 'migrated'")).rows[0];
   const initial = { accts, trades, migrated: m ? m.v === true : false };
+  let savedMigrated = initial.migrated;
 
-  let running = null, again = null;
-  /* save(state): write what changed since the last save. Calls during a save are merged into one follow-up save. */
-  function save(state) {
-    if (running) { again = state; return running; }
-    running = write(state).catch((e) => console.error("db: save failed", e.message)).finally(() => {
-      running = null;
-      if (again) { const s = again; again = null; save(s); }
-    });
-    return running;
+  /* queue: `want` = the newest state still to write (+ the ids it touched); one write at a time; failures retry */
+  let want = null, touched = new Set(), running = null, retryT = null, fails = 0, lastError = "", waiters = [];
+  const settle = () => { if (!want && !running && !retryT) { const w = waiters; waiters = []; w.forEach((f) => f()); } };
+  function save(state, ids) {
+    want = state;
+    if (ids && touched) for (const id of ids) touched.add(id); else touched = null; /* no ids: compare every account */
+    if (!running && !retryT) pump();
+    return drain();
   }
-  async function write(state) {
+  function pump() {
+    if (!want) return settle();
+    const st = want, ids = touched;
+    want = null; touched = new Set();
+    running = write(st, ids).then(() => { fails = 0; lastError = ""; running = null; pump(); }, (e) => {
+      running = null; fails++; lastError = e.message;
+      console.error(`db: save failed (try ${fails}), retrying:`, e.message);
+      if (!want) want = st; /* keep what failed (a newer state already includes it) */
+      touched = ids && touched ? new Set([...ids, ...touched]) : null;
+      retryT = setTimeout(() => { retryT = null; pump(); }, Math.min(30000, 1000 * 2 ** (fails - 1)));
+    });
+  }
+  /* drain(): resolves once every asked-for save has landed */
+  const drain = () => new Promise((res) => { waiters.push(res); settle(); });
+  async function write(state, ids) {
     const ch = { a: [], t: [] };
-    for (const [id, a] of Object.entries(state.accts)) { const j = JSON.stringify(a); if (seen.a.get(id) !== j) ch.a.push([id, a, j]); }
+    const list = ids ? [...ids].filter((id) => Object.hasOwn(state.accts, id)) : Object.keys(state.accts);
+    for (const id of list) {
+      const a = state.accts[id], j = JSON.stringify(a);
+      if (seen.a.get(id) === j) continue;
+      if (!Number.isSafeInteger(a.gold)) throw new Error("account gold is not a whole number");
+      ch.a.push([id, a.gold, j]); /* sent as is: CHECK (gold >= 0) refuses a negative balance and rolls back */
+    }
     for (const [id, tr] of Object.entries(state.trades)) { const j = JSON.stringify(tr); if (seen.t.get(id) !== j) ch.t.push([id, j]); }
     const gone = [...seen.t.keys()].filter((id) => !Object.hasOwn(state.trades, id));
-    if (!ch.a.length && !ch.t.length && !gone.length && state.migrated === initial.migrated) return;
+    const mig = state.migrated === true;
+    if (!ch.a.length && !ch.t.length && !gone.length && mig === savedMigrated) return;
     const c = await pool.connect();
     try {
       await c.query("BEGIN");
-      for (const [id, a, j] of ch.a)
-        await c.query("INSERT INTO accounts (id, gold, data, updated_at) VALUES ($1, $2, $3::jsonb, now()) ON CONFLICT (id) DO UPDATE SET gold = EXCLUDED.gold, data = EXCLUDED.data, updated_at = now()", [id, Math.max(0, Math.trunc(+a.gold || 0)), j]);
+      for (const [id, g, j] of ch.a)
+        await c.query("INSERT INTO accounts (id, gold, data, updated_at) VALUES ($1, $2, $3::jsonb, now()) ON CONFLICT (id) DO UPDATE SET gold = EXCLUDED.gold, data = EXCLUDED.data, updated_at = now()", [id, g, j]);
       for (const [id, j] of ch.t)
         await c.query("INSERT INTO trades (id, data, updated_at) VALUES ($1, $2::jsonb, now()) ON CONFLICT (id) DO UPDATE SET data = EXCLUDED.data, updated_at = now()", [id, j]);
       if (gone.length) await c.query("DELETE FROM trades WHERE id = ANY($1)", [gone]);
-      await c.query("INSERT INTO meta (k, v) VALUES ('migrated', $1::jsonb) ON CONFLICT (k) DO UPDATE SET v = EXCLUDED.v", [JSON.stringify(state.migrated === true)]);
+      await c.query("INSERT INTO meta (k, v) VALUES ('migrated', $1::jsonb) ON CONFLICT (k) DO UPDATE SET v = EXCLUDED.v", [JSON.stringify(mig)]);
       await c.query("COMMIT");
-      for (const [id, , j] of ch.a) seen.a.set(id, j); /* only after the commit: a failed save is retried next time */
+      for (const [id, , j] of ch.a) seen.a.set(id, j); /* only after the commit: a failed save is written again */
       for (const [id, j] of ch.t) seen.t.set(id, j);
       for (const id of gone) seen.t.delete(id);
-      initial.migrated = state.migrated === true;
+      savedMigrated = mig;
     } catch (e) {
       await c.query("ROLLBACK").catch(() => {});
       throw e;
     } finally { c.release(); }
   }
-  async function close() { if (running) await running; await pool.end(); }
-  return { initial, save, close, pool };
+  /* saveNow(state): one direct write of every account that throws on failure (the import script) */
+  const saveNow = (state) => write(state, null);
+  /* close(ms): wait for the queue (retries included) up to ms; true when everything landed */
+  async function close(ms = 20000) {
+    let tm;
+    const done = await Promise.race([drain().then(() => true), new Promise((r) => (tm = setTimeout(() => r(false), ms)))]);
+    clearTimeout(tm); clearTimeout(retryT); retryT = null;
+    await pool.end().catch(() => {});
+    return done;
+  }
+  const status = () => ({ fails, lastError, pending: !!(want || running || retryT) });
+  return { initial, save, saveNow, drain, close, status, pool };
 }
 
 module.exports = { openDb, SCHEMA };

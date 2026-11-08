@@ -360,14 +360,23 @@ if (require.main === module) {
   const cf = process.env.TRUST_CLOUDFLARE === "1" || process.argv.includes("--cf"), lan = process.argv.includes("--lan");
   /* online + DATABASE_URL: the bank lives in PostgreSQL (src/db.js); otherwise the bank.json file */
   (async () => {
+    /* online: PostgreSQL is required (a missing .env must not start a second economy on an empty bank.json); BANK_FILE=1 opts into the file */
+    if (cf && !process.env.DATABASE_URL && process.env.BANK_FILE !== "1") throw new Error("online mode needs DATABASE_URL (or BANK_FILE=1 to use bank.json)");
     const db = cf && process.env.DATABASE_URL ? await require("./db.js").openDb(process.env.DATABASE_URL) : null;
     const { server, bank } = createDirectoryServer({ allowedOrigins, trustCloudflare: cf, allowLan: !cf, bank: cf, bankStore: db, analyticsFile: require("path").join(__dirname, "..", "analytics.json"),
       requestsPerMinute: Number(process.env.RATE_PER_MIN) || (cf ? 600 : 3000) });
     const bind = cf ? "127.0.0.1" : lan ? "0.0.0.0" : "127.0.0.1";
     server.listen(port, bind, () => console.log(`Runebound signaling directory (${cf ? "online" : lan ? "LAN" : "local"}) listening on ${bind}:${port}${db ? " · bank: PostgreSQL" : ""}`));
     let down = false; /* stop: finish the last bank save before exiting */
-    const stop = async () => { if (down) return; down = true; server.close(); try { if (bank) await bank.flush(); if (db) await db.close(); } finally { process.exit(0); } };
-    process.on("SIGINT", stop); process.on("SIGTERM", stop);
+    const stop = async (code = 0) => {
+      if (down) return; down = true; server.close();
+      let ok = true;
+      try { if (bank) await Promise.race([bank.flush(), new Promise((r) => setTimeout(r, 20000))]); if (db) ok = await db.close(20000); } catch (e) { ok = false; console.error("stop: final save failed:", e.message); }
+      if (!ok) console.error("stop: some bank changes could not be saved to PostgreSQL");
+      process.exit(ok ? code : 1);
+    };
+    process.on("SIGINT", () => stop(0)); process.on("SIGTERM", () => stop(0));
+    process.on("uncaughtException", (e) => { console.error("crash:", e && e.message); stop(1); }); /* save what we can, then exit non-zero */
   })().catch((e) => { console.error("startup failed:", e.message); process.exit(1); });
 }
 
