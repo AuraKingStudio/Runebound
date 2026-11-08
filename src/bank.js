@@ -18,7 +18,7 @@ const RULES = {
   lore: { g: 1000, x: 150, gap: 700 },
   bounty: { g: 80, x: 60, gap: 1000 },
   quest: { g: 350, x: 100, gap: 2000 },
-  contract: { g: 400, x: 300, gap: 30000 },
+  contract: { g: 400, x: 300, gap: 0 }, /* no wait: the material spend proof + 3 a day (contractOk) guard it */
 };
 /* materials: the server owns each account's counts. A ledger entry ["mat", 0, 0, src, mat, n] adds n (n < 0 spends).
    MAT_SRC[src] = { m: { mat: biggest n per entry }, gap: ms between two entries of that src+mat, day: most per mat per day (a number, or per mat) }.

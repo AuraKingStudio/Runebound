@@ -1238,14 +1238,14 @@
       .dprog { display: flex; flex-direction: column; gap: 4px; align-items: center; } .dbar { width: 100%; height: 10px; border-radius: 6px; background: #0007; overflow: hidden; } .dbar i { display: block; height: 100%; background: linear-gradient(90deg, #8a7dff, #ffd86a); transition: width .4s; }
       .bdg { position: absolute; top: -5px; right: -5px; min-width: 18px; height: 18px; padding: 0 4px; border-radius: 9px; background: #e0453a; color: #fff; font: bold 11px/18px sans-serif !important; text-align: center; pointer-events: none; box-shadow: 0 0 0 2px #100d0a; z-index: 2; } .bdg:empty { display: none; }
       /* hub top bar: mobile-game icon tiles (big icon, small label underneath) */
-      body.hub:not(.tut-on) #topc { gap: 8px; }
+      body.hub:not(.tut-on) #topc { gap: 12px; } body.hub:not(.tut-on) #btns #topc button { flex: none; margin: 0 !important; }
       body.hub:not(.tut-on) #btns #topc button { position: relative; width: 58px !important; height: 58px !important; padding: 0 !important; font-size: 0 !important; border-radius: 14px !important; overflow: visible; }
       body.hub:not(.tut-on) #btns #topc button::after { content: attr(data-ic); position: absolute; left: 0; right: 0; top: 6px; font-size: 24px; line-height: 28px; text-align: center; }
       body.hub:not(.tut-on) #btns #topc button::before { content: attr(data-lb); position: absolute; left: -4px; right: -4px; top: auto; bottom: 5px; width: auto; height: auto; margin: 0; transform: none; background: none; border: 0; box-shadow: none; font: bold 10px/12px Georgia, serif; letter-spacing: 0; color: #f3e6c8; text-align: center; text-transform: none; display: block; }
       body.ph.hub:not(.tut-on) #btns #topc button { width: 46px !important; height: 46px !important; }
       body.ph.hub:not(.tut-on) #btns #topc button::after { top: 3px; font-size: 19px; line-height: 24px; }
       body.ph.hub:not(.tut-on) #btns #topc button::before { font-size: 8px; bottom: 3px; }
-      body.ph.hub:not(.tut-on) #topc { gap: 5px; }
+      body.ph.hub:not(.tut-on) #topc { gap: 6px; }
       @media (max-width: 360px) { .dgrid { grid-template-columns: 1fr; } .dcard { min-height: 0; } }
       .gmi { font-size: 26px; line-height: 44px; width: 36px; text-align: center; flex: none; }
       .gmbk { display: flex; gap: 8px; justify-content: center; margin-top: 10px; } .gmbk button { min-height: 44px; }
@@ -3090,7 +3090,7 @@
       }, true);
       /* ---------- What's new: a small corner card once per build (BUILD), a soft chime at the player's volume ----------
          Brand-new players (tutorial not done) skip it: everything is new to them. Dismiss with x, or it fades after 14 s. */
-      const BUILD = "2026.11.08.6"; /* pop-up banners sit under the top bar and stack */
+      const BUILD = "2026.11.08.7"; /* pop-up banners sit under the top bar and stack */
       const NEWS = ["📱 Cleaner top bar: icon tiles with labels, a 🎖️ Titles button, red badges when rewards wait. Contracts show the courier countdown instead of a dead button", "🎁 Daily Rewards (top bar or G): the Wish Shrine gift, Fortune Wheel, Rune Reels and Treasure Dig on one board with today's progress and a red badge when rewards wait. 🌸 The Zen Garden has its own button and badges when beds are ripe", "✨ Wish cosmetics glow brighter: new trails (Leaf Drift, Starlit Steps, Comet Tail), emote bubbles (Heart Puff, Rune Glyph) and the Legendary Runic Nova aura. Preview your look in the Collection; changes show to everyone at once", "🌠 Rune Wishes: the Wish Shrine! Make free wishes for auras, pet hats, name effects and titles (odds and pity shown, dupes become Stardust). Earn 🎟 at the Fortune Wheel, Rune Reels and Treasure Dig, plus Cipher wins, garden harvests and raids. All free, always", "🔮 Cipher: every few gathers a quick rune game pops up (strike the vein, the moonleaf pattern, the crystal echo); win a bonus pack of 5. Gathering combos and a shinier channel too", "🌸 The Zen Garden: rake the sand, water your plants, harvest materials, claim a 7-day streak bonus and trade your produce with friends", "🐾 Pets: reach level 6 to meet the Beastkeeper. Adopt a Fox, Owl, Wolf or Sprite with materials, feed it for a bigger bonus, and tap it to play", "⛏️ Gathering: Iron Ore, Moonleaf and Skycrystal nodes on the island; mastery raises your yield", "📜 Contract Board: 3 material orders a day on the Quest Board", "🌹 The Maiden's Exchange: barter materials at rates that drift each day"];
       let NEWS_T = 0;
       function newsShow() {
@@ -3554,7 +3554,7 @@
       setTimeout(() => track("session"), 3000);
       (function anBeat() { setTimeout(() => { if (!document.hidden && navigator.onLine !== false) track("hb"); anBeat(); }, 60000); })(); /* one per minute the game is on screen: time connected */
       if (typeof addEventListener == "function") addEventListener("pagehide", anFlush); /* send what's left when the tab closes */
-      setTimeout(newsShow, 2500); /* after the first frames, so it never competes with the load */
+      /* the What's new box no longer pops up on load (owner: clutter); NEWS stays for the README/handoff */
       setTimeout(bankSoon, 0); /* once at load (after the script, when NET_CONFIG exists): an imported or edited save shows the server's gold and XP right away */
       async function bankSync() {
         BANK_T = 0;
@@ -5263,7 +5263,7 @@
           lore: { g: Math.max(150, ...Object.values(TALE_MS).map((m) => m[0])), x: 150, gap: 700 },
           bounty: { g: Math.max(...BOUNTIES.map((b) => b.g)), x: Math.max(...BOUNTIES.map((b) => b.x)), gap: 1000 },
           quest: { g: Math.max(...QUESTS.map((q) => q.r)), x: 100, gap: 2000 },
-          contract: { g: 400, x: 300, gap: 30000 }, /* Contract Board payouts (same as RULES.contract in src/bank.js) */
+          contract: { g: 400, x: 300, gap: 0 }, /* Contract Board payouts (same as RULES.contract in src/bank.js) */
           market: { g: 950000, x: 0, gap: 0 }, /* sale payouts (server escrow, capped by the market's max price minus tax) */
         };
       }
@@ -9167,7 +9167,7 @@
         { id: "palisade", t: "Thornbark for the palisade", need: { bark: 4, ore: 8 }, g: 260, x: 200, m: 2 },
         { id: "rare", t: "A rare commission", need: { eye: 1, heart: 1, echo: 4 }, g: 400, x: 300, m: 3 },
       ];
-      const CONTRACT_GAP = 30000;
+      const CONTRACT_GAP = 0; /* deliver all 3 at once if you have the materials */
       /* contractDay(): today's 3 orders (picked from the date, so every player sees the same board), V.ct = { day, ids, done } */
       function contractDay() {
         const day = dayKey(new Date());

@@ -533,8 +533,7 @@ const c=T.CONTRACTS.find(o=>o.id==d.ids[0]);V.mat={};ok(T.contractDeliver(c.id)=
 V.mat=Object.assign({},c.need);const L=T.LEDGER(),gb=V.gold;ok(T.contractDeliver(c.id)===true&&Object.keys(c.need).every(k=>V.mat[k]===(k=='echo'?c.m:0))&&V.gold==gb+c.g&&V.mat.echo==c.m,'contracts: delivery spends the order and pays gold, XP and Echo Shards');
 const new_=L.slice(-(Object.keys(c.need).length+3)),sp=new_.findIndex(e=>e[0]=='mat'&&e[3]=='contract'&&e[5]<0),gd=new_.findIndex(e=>e[0]=='contract'&&e[1]>0);ok(sp>=0&&gd>sp,'contracts: the spend is logged before the payout');
 ok(T.contractDeliver(c.id)===false,'contracts: each order pays once a day');
-const c2=T.CONTRACTS.find(o=>o.id==d.ids[1]);V.mat=Object.assign({},c2.need);ok(T.contractDeliver(c2.id)===false&&V.mat[Object.keys(c2.need)[0]]>0,'contracts: 30 s between deliveries (the bank gap)');
-V.ctAt=Date.now()-31000;ok(T.contractDeliver(c2.id)===true,'contracts: the next order after the gap');
+const c2=T.CONTRACTS.find(o=>o.id==d.ids[1]);V.mat=Object.assign({},c2.need);ok(T.contractDeliver(c2.id)===true,'contracts: the next order right away (no wait)');
 V.mat=JSON.parse(m0);V.gold=g0;V.xp=xp0;V.ct=ct0;V.ctAt=at0;randomState=rs0;} /* keep the seeded dice where the later raid sims expect them */
 /* ---------- maiden's exchange ---------- */
 {const rs0=randomState,V=T.V(),m0=JSON.stringify(V.mat||{}),mx0=V.mx;V.mx=null;
