@@ -3090,7 +3090,7 @@
       }, true);
       /* ---------- What's new: a small corner card once per build (BUILD), a soft chime at the player's volume ----------
          Brand-new players (tutorial not done) skip it: everything is new to them. Dismiss with x, or it fades after 14 s. */
-      const BUILD = "2026.11.08.5"; /* pop-up banners sit under the top bar and stack */
+      const BUILD = "2026.11.08.6"; /* pop-up banners sit under the top bar and stack */
       const NEWS = ["📱 Cleaner top bar: icon tiles with labels, a 🎖️ Titles button, red badges when rewards wait. Contracts show the courier countdown instead of a dead button", "🎁 Daily Rewards (top bar or G): the Wish Shrine gift, Fortune Wheel, Rune Reels and Treasure Dig on one board with today's progress and a red badge when rewards wait. 🌸 The Zen Garden has its own button and badges when beds are ripe", "✨ Wish cosmetics glow brighter: new trails (Leaf Drift, Starlit Steps, Comet Tail), emote bubbles (Heart Puff, Rune Glyph) and the Legendary Runic Nova aura. Preview your look in the Collection; changes show to everyone at once", "🌠 Rune Wishes: the Wish Shrine! Make free wishes for auras, pet hats, name effects and titles (odds and pity shown, dupes become Stardust). Earn 🎟 at the Fortune Wheel, Rune Reels and Treasure Dig, plus Cipher wins, garden harvests and raids. All free, always", "🔮 Cipher: every few gathers a quick rune game pops up (strike the vein, the moonleaf pattern, the crystal echo); win a bonus pack of 5. Gathering combos and a shinier channel too", "🌸 The Zen Garden: rake the sand, water your plants, harvest materials, claim a 7-day streak bonus and trade your produce with friends", "🐾 Pets: reach level 6 to meet the Beastkeeper. Adopt a Fox, Owl, Wolf or Sprite with materials, feed it for a bigger bonus, and tap it to play", "⛏️ Gathering: Iron Ore, Moonleaf and Skycrystal nodes on the island; mastery raises your yield", "📜 Contract Board: 3 material orders a day on the Quest Board", "🌹 The Maiden's Exchange: barter materials at rates that drift each day"];
       let NEWS_T = 0;
       function newsShow() {
@@ -10589,7 +10589,7 @@
       function popMsg(t, z = 1, ms = 2000) {
         const d = document.createElement("div");
         d.textContent = t;
-        const tb = $("topc") && $("topc").getBoundingClientRect(), top0 = tb && tb.height && tb.bottom < innerHeight / 3 ? tb.bottom + 10 : 14, n = document.querySelectorAll(".popm").length;
+        const te = $("topc"), tb = te && te.getBoundingClientRect ? te.getBoundingClientRect() : null, top0 = tb && tb.height && tb.bottom < innerHeight / 3 ? tb.bottom + 10 : 14, n = document.querySelectorAll(".popm").length;
         d.className = "popm";
         d.style.cssText = "position:fixed;top:" + (top0 + n * 44 * z) + "px;left:50%;max-width:92vw;text-overflow:ellipsis;overflow:hidden;z-index:50;transform:translateX(-50%);padding:" + 8 * z + "px " + 18 * z + "px;border-radius:" + 20 * z + "px;white-space:nowrap;" +
           "background:linear-gradient(180deg,#1d7f78,#125a55);color:#fff;font:bold " + 14 * z + "px Georgia;border:1px solid #3fd6c6;" +
