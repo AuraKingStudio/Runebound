@@ -3150,7 +3150,7 @@
       }, true);
       /* ---------- What's new: a small corner card once per build (BUILD), a soft chime at the player's volume ----------
          Brand-new players (tutorial not done) skip it: everything is new to them. Dismiss with x, or it fades after 14 s. */
-      const BUILD = "2026.11.08.18"; /* UI cleanup: Quests/Shop/Class/Daily moved to NPCs */
+      const BUILD = "2026.11.08.19"; /* seamless hub loops, Beastkeeper unlock kept on reload, bot wall failsafe */
       const NEWS = ["🧹 Cleaner top bar: daily quests at the 🧙 Elder, the ✨ Shop at the 💰 Merchant, class and raid skills at the ⚔ Class Master (by the Rune Crossing), 🎁 Daily Rewards at the 🍺 Barkeep (marker when ready)", "✨ New spells at the Merchant: Stone Ward (Tank), Rune Mine (DPS), Renewal (Healer). Pick the 2 skills you bring to a raid in the Class window or on the Choose Raid screen", "🧙 The Elder gives side quests: keep one next to your main quest (8 new quests, progress bars, both tracked on screen)", "📱 Cleaner top bar: icon tiles with labels, a 🎖️ Titles button, red badges when rewards wait. Contracts show the courier countdown instead of a dead button", "🎁 Daily Rewards (top bar or G): the Wish Shrine gift, Fortune Wheel, Rune Reels and Treasure Dig on one board with today's progress and a red badge when rewards wait. 🌸 The Zen Garden has its own button and badges when beds are ripe", "✨ Wish cosmetics glow brighter: new trails (Leaf Drift, Starlit Steps, Comet Tail), emote bubbles (Heart Puff, Rune Glyph) and the Legendary Runic Nova aura. Preview your look in the Collection; changes show to everyone at once", "🌠 Rune Wishes: the Wish Shrine! Make free wishes for auras, pet hats, name effects and titles (odds and pity shown, dupes become Stardust). Earn 🎟 at the Fortune Wheel, Rune Reels and Treasure Dig, plus Cipher wins, garden harvests and raids. All free, always", "🔮 Cipher: every few gathers a quick rune game pops up (strike the vein, the moonleaf pattern, the crystal echo); win a bonus pack of 5. Gathering combos and a shinier channel too", "🌸 The Zen Garden: rake the sand, water your plants, harvest materials, claim a 7-day streak bonus and trade your produce with friends", "🐾 Pets: reach level 6 to meet the Beastkeeper. Adopt a Fox, Owl, Wolf or Sprite with materials, feed it for a bigger bonus, and tap it to play", "⛏️ Gathering: Iron Ore, Moonleaf and Skycrystal nodes on the island; mastery raises your yield", "📜 Contract Board: 3 material orders a day on the Quest Board", "🌹 The Maiden's Exchange: barter materials at rates that drift each day"];
       let NEWS_T = 0;
       function newsShow() {
@@ -3407,7 +3407,7 @@
           if (s.ct && typeof s.ct.day == "string" && Array.isArray(s.ct.ids)) V.ct = { day: s.ct.day.slice(0, 10), ids: s.ct.ids.filter((i) => typeof i == "string" && i.length < 12).slice(0, 3), done: Object.fromEntries(Object.keys(s.ct.done || {}).filter((i) => s.ct.ids.includes(i)).map((i) => [i, 1])) }; /* Contract Board */
           V.ctAt = Number.isFinite(s.ctAt) ? cl(s.ctAt, 0, Date.now()) : 0;
           if (s.mx && typeof s.mx.d == "string" && Number.isFinite(s.mx.n)) { V.mx = { d: s.mx.d.slice(0, 10), n: cl(Math.trunc(s.mx.n), 0, 99), s: {} }; for (const k of ["ore", "herb", "echo"]) if (Number.isFinite((s.mx.s || {})[k])) V.mx.s[k] = cl(Math.trunc(s.mx.s[k]), 0, 99); } /* Maiden's Exchange today */
-          V.ul = s.ul && typeof s.ul == "object" ? { class: !!s.ul.class, maiden: !!s.ul.maiden, smith: !!s.ul.smith, herald: !!s.ul.herald, barkeep: !!s.ul.barkeep, seraph: !!s.ul.seraph } : {};
+          V.ul = s.ul && typeof s.ul == "object" ? { class: !!s.ul.class, maiden: !!s.ul.maiden, smith: !!s.ul.smith, herald: !!s.ul.herald, barkeep: !!s.ul.barkeep, seraph: !!s.ul.seraph, pet: !!s.ul.pet } /* every unlockNpc key must be kept here, or it unlocks again on each reload */ : {};
           for (const k of ["wins", "loss", "best"]) if (Number.isFinite(s[k])) V[k] = cl(Math.trunc(s[k]), 0, 1e9);
           if (s.bjs && typeof s.bjs == "object") { V.bjs = {}; for (const k of ["h", "w", "l", "p", "n", "s", "b", "g"]) V.bjs[k] = Math.max(k == "g" ? -1e9 : 0, Math.min(1e9, Math.trunc(+s.bjs[k] || 0))); for (const k of ["w", "l", "p", "n", "b"]) V.bjs[k] = Math.min(V.bjs[k], V.bjs.h); } /* blackjack stats (display only); no part exceeds the hands played */
           if (s.trial && typeof s.trial == "object") { V.trial = {}; for (const k in s.trial) if (/^[a-z]{2,10}$/.test(k)) V.trial[k] = Math.max(0, Math.min(50, s.trial[k] | 0)); /* (RAIDS / TRIAL are defined later) */ }
@@ -6910,10 +6910,21 @@
               v.via.unshift({ x: v.x + nx * 34 + tx * sg * 50, y: v.y + ny * 34 + ty * sg * 50 });
             }
           }
-          if (v.st > 2.5) {
+          /* failsafe: running along a wall still moves a little, so also watch progress toward the current target:
+             no 8 px closer in 4 s = stuck. Back off the obstacle (away from the target), then plan something else. */
+          const tg = v.via[0] || v.goal;
+          if (tg) {
+            const dg = Math.hypot(tg.x - v.x, tg.y - v.y);
+            if (v.tg !== tg) { v.tg = tg; v.bd = dg; v.bt = 0; }
+            else if (dg < v.bd - 8) { v.bd = dg; v.bt = 0; }
+            else v.bt = (v.bt || 0) + 0.1;
+          }
+          if (v.st > 2.5 || v.bt > 4) {
             BOT_STUCK++;
+            const back = v.bt > 4 && tg, ax = back ? v.x - tg.x : 0, ay = back ? v.y - tg.y : 0, al = Math.hypot(ax, ay) || 1;
+            v.bt = 0; v.tg = null; v.npc = null; v.via = [];
+            if (back) { v.goal = { x: v.x + (ax / al) * 50 + rnd(-20, 20), y: v.y + (ay / al) * 50 + rnd(-20, 20) }; v.plan = "stroll"; v.st = 0; return; } /* step away, then a fresh plan */
             v.goal = null;
-            v.npc = null;
             v.wait = rnd(4, 10);
             return;
           }
