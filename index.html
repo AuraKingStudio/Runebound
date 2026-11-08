@@ -1228,6 +1228,16 @@
       .pn .row { padding: 10px 2px; gap: 12px; }
       .pn .up { padding: 10px 14px; margin: 8px 0; gap: 14px; }
       .gmr { --uc: #8a7dff; align-items: center; } .gmr .nm { display: block; } .gmr .sm { line-height: 1.3; } .gmr button { min-height: 44px; min-width: 44px; max-width: 46%; padding: 6px 12px; font-size: 14px; letter-spacing: 0; text-transform: none; white-space: normal; line-height: 1.15; } .gmr button.rdy { box-shadow: 0 0 10px #ffd86a88; border-color: #fff3c4; } body.ph .gmr { flex-wrap: wrap; } body.ph .gmr button { max-width: none; flex: 1 1 100%; } .gmr.lk { opacity: .55; filter: grayscale(.7); }
+      .dgrid { display: grid; grid-template-columns: 1fr 1fr; gap: 10px; margin: 10px 0; }
+      .dcard { --uc: #8a7dff; display: flex; flex-direction: column; align-items: center; gap: 4px; padding: 12px 8px; min-height: 140px; border-radius: 14px; border: 1px solid var(--ln) !important; background: linear-gradient(180deg, color-mix(in srgb, var(--uc) 22%, #1a110a), #1a110acc) !important; color: #f3e6c8 !important; text-shadow: none !important; font: 13px Georgia, serif !important; letter-spacing: 0; text-transform: none; cursor: pointer; text-align: center; box-shadow: none !important; }
+      .dcard .nm { font: bold 15px "Cinzel", Georgia, serif; color: #c9b8ff; } .dcard .sm { flex: 1; line-height: 1.3; }
+      .dcard .gmi { font-size: 34px; line-height: 40px; width: auto; }
+      .dpill { padding: 4px 12px; border-radius: 999px; background: #0006; font-weight: bold; font-size: 13px; }
+      .dcard.rdy { border-color: #ffd86a !important; box-shadow: 0 0 12px #ffd86a55 !important; } .dcard.rdy .dpill { background: linear-gradient(180deg, #ffe680, #e09a00); color: #2a1a00; }
+      .dcard.lk { opacity: .55; filter: grayscale(.7); }
+      .dprog { display: flex; flex-direction: column; gap: 4px; align-items: center; } .dbar { width: 100%; height: 10px; border-radius: 6px; background: #0007; overflow: hidden; } .dbar i { display: block; height: 100%; background: linear-gradient(90deg, #8a7dff, #ffd86a); transition: width .4s; }
+      #bgm, #bgd { position: relative; } #bgm:not([data-n=""])[data-n]::after, #bgd:not([data-n=""])[data-n]::after { content: attr(data-n); position: absolute; top: -6px; right: -6px; min-width: 18px; height: 18px; padding: 0 4px; border-radius: 9px; background: #e0453a; color: #fff; font: bold 11px/18px sans-serif; text-align: center; pointer-events: none; }
+      @media (max-width: 360px) { .dgrid { grid-template-columns: 1fr; } .dcard { min-height: 0; } }
       .gmi { font-size: 26px; line-height: 44px; width: 36px; text-align: center; flex: none; }
       .gmbk { display: flex; gap: 8px; justify-content: center; margin-top: 10px; } .gmbk button { min-height: 44px; }
       .pn .tt { padding: 10px 6px; }
@@ -1918,7 +1928,7 @@
     <div id="chat" hidden><div id="chlog"></div><div id="chrow"><input id="chin" maxlength="80" autocomplete="off" placeholder="Press Enter to chat" /><div id="emo"></div><button id="chping" type="button" title="Ping the boss for your party" aria-label="Ping boss" onclick="pingBoss()" hidden>⚑</button></div></div>
     <div id="btns">
       <button id="bd" class="sk"></button><button id="bu" class="sk"></button><button id="b0"></button><button id="b1"></button><button id="b2"></button
-      ><button id="bi" hidden>Enter arena</button><button id="bil" class="bic" hidden onclick="invCycle(-1)">◀</button><button id="bir" class="bic" hidden onclick="invCycle(1)">▶</button><div id="tlbar"><span id="gp"><i class="coin"></i><b id="gn">0</b></span></div><div id="mlbar"><button id="bt" data-ic="🎖️">🎖️ Titles</button><button id="bfb" data-ic="💬" onclick="fbOpen()" title="Tell us what you think, or report a bug">💬 Feedback</button><button id="blk" data-ic="🔗" class="hb" title="Copy the lobby link: friends who open it join you" hidden>🔗 Copy ID</button></div><div id="topc"><button id="bq" data-ic="📜" class="hb">📜 Quests</button><button id="bg" class="hb">🛡 Guild</button><button id="bs" data-ic="✨" class="hb">✨ Shop</button><button id="bp" data-ic="👥" class="hb">👥 Party</button><button id="bcls" data-ic="⚔️" class="hb" onclick="classOpen()">⚔️ Class</button><button id="bgm" data-ic="🎮" class="hb" onclick="gamesOpen()" title="Games (G)">🎮 Games</button><button id="binv" data-ic="🎒" class="hb" onclick="invOpen()">🎒 Inventory</button><button id="bset" data-ic="⚙️" class="hb" onclick="setOpen()" title="Settings">⚙️ Settings</button></div><div id="netBadge" role="status" aria-live="polite"></div><div id="ptl" hidden></div>
+      ><button id="bi" hidden>Enter arena</button><button id="bil" class="bic" hidden onclick="invCycle(-1)">◀</button><button id="bir" class="bic" hidden onclick="invCycle(1)">▶</button><div id="tlbar"><span id="gp"><i class="coin"></i><b id="gn">0</b></span></div><div id="mlbar"><button id="bt" data-ic="🎖️">🎖️ Titles</button><button id="bfb" data-ic="💬" onclick="fbOpen()" title="Tell us what you think, or report a bug">💬 Feedback</button><button id="blk" data-ic="🔗" class="hb" title="Copy the lobby link: friends who open it join you" hidden>🔗 Copy ID</button></div><div id="topc"><button id="bq" data-ic="📜" class="hb">📜 Quests</button><button id="bg" class="hb">🛡 Guild</button><button id="bs" data-ic="✨" class="hb">✨ Shop</button><button id="bp" data-ic="👥" class="hb">👥 Party</button><button id="bcls" data-ic="⚔️" class="hb" onclick="classOpen()">⚔️ Class</button><button id="bgd" data-ic="🌸" class="hb" onclick="gardenOpen()" title="Zen Garden: grows while you play">🌸 Garden</button><button id="bgm" data-ic="🎁" class="hb" onclick="gamesOpen()" title="Daily Rewards (G)">🎁 Daily</button><button id="binv" data-ic="🎒" class="hb" onclick="invOpen()">🎒 Inventory</button><button id="bset" data-ic="⚙️" class="hb" onclick="setOpen()" title="Settings">⚙️ Settings</button></div><div id="netBadge" role="status" aria-live="polite"></div><div id="ptl" hidden></div>
     </div>
     <script>
       /* Browser networking block: inputs are hub leases, SDP and game messages; outputs are peer events.
@@ -2483,7 +2493,7 @@
         /* the 8th spot: the future Pet NPC (keeper of companions). Shown as a locked ghost until the feature exists. */
         PETS = { lk: "pet", x: 450, y: 528, ic: "🐾", nm: "The Beastkeeper", col: "#ffcf9a",
           g: "M0 2.5c4 0 7 3 7 6.2 0 2.2-2 2.8-3.6 2.3C2.2 10.6 1.1 10.3 0 10.3s-2.2.3-3.4.7C-5 11.5-7 10.9-7 8.7c0-3.2 3-6.2 7-6.2zM-7.4-3.2a2.4 3 0 1 0 0.01 0zM7.4-3.2a2.4 3 0 1 0 0.01 0zM-3-8.4a2.4 3.2 0 1 0 0.01 0zM3-8.4a2.4 3.2 0 1 0 0.01 0z" };
-      /* Rune Wishes: the Shrine, Wheel, Reels and Dig live in the 🎮 Games menu (no hub spots) */
+      /* Rune Wishes: the Shrine, Wheel, Reels and Dig live in 🎁 Daily Rewards (no hub spots) */
       /* ---------- Pets (the Beastkeeper, unlocked at level PET_LV): one companion follows you, one small bonus each ----------
          V.pets = { kind: level 1-5 }, V.pet = the active kind ("" = none). Bought and fed with materials only (src "pet", a sink).
          Online the bank owns ownership, level, the active pet and the gather/XP/refine bonus (RULES.pet): the client logs
@@ -2871,55 +2881,59 @@
         $("dp").className = "pn";
         $("dp").innerHTML = `<h2>🐾 The Beastkeeper</h2><p>"Every raider needs a friend. Pick one, feed it well, and it will pull its weight."</p>
           <p class="sm">One pet follows you at a time and gives its bonus. Feed it to raise its level (max ${PET_MAX}: double bonus). You can switch pets once every 10 minutes. Tap your pet to play with it.${bankUrl() ? " Online, the server keeps your pets and pays the bonus." : ""}</p>${rows}
-          <p class="sm">Your 🌸 Zen Garden is in the 🎮 Games menu (G).</p><button class="alt x" onclick="closeDlg()" title="Farewell">Farewell</button>`;
+          <p class="sm">Your 🌸 Zen Garden has its own button in the top bar.</p><button class="alt x" onclick="closeDlg()" title="Farewell">Farewell</button>`;
         PET_RE = 1;
       }
       let PET_RE = 0;
-      /* gardenUI(): the Zen Garden window (from the 🎮 Games menu; needs the Beastkeeper) */
+      /* gardenUI(): the Zen Garden window (its own 🌸 HUD button; needs the Beastkeeper) */
       function gardenUI() {
         const old = $("zen"), re = !!old && ZEN.re; /* a rebuild of an open garden: keep the canvas node (and its particles) */
         CUR_DLG = "garden";
         $("dp").className = "pn";
-        $("dp").innerHTML = `<h2>🌸 Zen Garden</h2>${gardenHTML()}<div class="gmbk"><button onclick="gamesBack()" title="Back to the games">🎮 Games</button><button class="alt" onclick="closeDlg()" title="Close">Close</button></div>`;
+        $("dp").innerHTML = `<h2>🌸 Zen Garden</h2>${gardenHTML()}<div class="gmbk"><button class="alt" onclick="closeDlg()" title="Close">Close</button></div>`;
         ZEN.re = 1;
         if (re) { const n = $("zen"); if (n && n !== old) n.replaceWith(old); }
         gardenTimer();
         zenStart();
       }
-      /* ---------- the 🎮 Games menu: every minigame but blackjack (the Barkeep keeps his table) ---------- */
-      /* gamesList(): [key, icon, name, plain description, badge, locked reason] */
+      /* ---------- 🎁 Daily Rewards: the 4 daily reward games (Shrine gift, Wheel, Reels, Dig). Zen Garden has its own 🌸 button; blackjack stays at the Barkeep ---------- */
+      /* gamesList(): [key, icon, name, plain description, badge, locked reason, ready?] */
       function gamesList() {
-        const w = wiSt(), tl = tut() < TUT_DONE ? "Finish the tutorial first." : "", gl = !isUnl("pet") ? `Meet the Beastkeeper first: reach level ${PET_LV} (you are level ${lvlInfo().L}).` : "";
-        const left = (k) => Math.max(0, WISH[k].day - wcn(w.dy.s[k], 99)), now = Date.now();
-        const ripe = gdPlots().filter((c) => gdStage(c, now) >= 3).length, gv = gsView();
-        const day = (k, u) => (left(k) ? `${left(k)} ${u} left today` : "Done for today");
+        const w = wiSt(), tl = tut() < TUT_DONE ? "Finish the tutorial first." : "";
+        const left = (k) => Math.max(0, WISH[k].day - wcn(w.dy.s[k], 99));
+        const day = (k, u) => (left(k) ? `${left(k)} ${u} left` : "✓ Done");
         return [
-          ["garden", "🌸", "Zen Garden", "Grow herbs and ore while you play; claim a daily streak.", gl ? "" : ripe ? `${ripe} ready to harvest` : gv.can && !(V.gsLk && bankUrl()) ? "Streak ready" : "Growing", gl || tl],
-          ["wish", "🌠", "Wish Shrine", "Spend Wish Tokens for free cosmetics.", !w.dy.s.daily ? "Daily gift ready" : `🎟 ${w.t}`, tl],
-          ["wheel", "🎡", "Fortune Wheel", "Spin for tokens, Stardust and materials.", day("wheel", "spins"), tl],
-          ["reels", "🎰", "Rune Reels", "Pull the lever and match runes.", day("reels", "spins"), tl],
-          ["dig", "⛏️", "Treasure Dig", "Pick tiles to find hidden treasure.", day("dig", "digs"), tl],
+          ["wish", "🌠", "Wish Shrine", "Free daily gift, then wish for cosmetics.", !w.dy.s.daily ? "Gift ready" : `🎟 ${w.t} tokens`, tl, !w.dy.s.daily],
+          ["wheel", "🎡", "Fortune Wheel", "Spin for tokens, Stardust and materials.", day("wheel", "spins"), tl, left("wheel") > 0],
+          ["reels", "🎰", "Rune Reels", "Pull the lever and match runes.", day("reels", "spins"), tl, left("reels") > 0],
+          ["dig", "⛏️", "Treasure Dig", "Pick tiles to find hidden treasure.", day("dig", "digs"), tl, left("dig") > 0],
         ];
       }
+      /* dailyReady(): how many daily rewards are still waiting (HUD badge) */
+      function dailyReady() { try { return tut() < TUT_DONE ? 0 : gamesList().filter((g) => g[6]).length; } catch (e) { return 0; } }
+      /* gardenReady(): ripe beds or an unclaimed streak (HUD badge) */
+      function gardenReady() { try { if (!isUnl("pet")) return 0; const now = Date.now(), gv = gsView(); return gdPlots().filter((c) => gdStage(c, now) >= 3).length + (gv.can && !(V.gsLk && bankUrl()) ? 1 : 0); } catch (e) { return 0; } }
       function gamesUI() {
         CUR_DLG = "games";
-        const rows = gamesList().map(([k, ic, nm, ds, bd, lk]) => `<div class="up gmr${lk ? " lk" : ""}"><span class="gmi" aria-hidden="true">${ic}</span><div style="min-width:0;flex:1"><span class="nm">${nm}</span><div class="sm">${lk || ds}</div></div>${lk ? `<button disabled title="${lk}">🔒</button>` : `<button class="${/ready|left/.test(bd) ? "rdy" : ""}" onclick="gameGo('${k}')" title="Open ${nm}">${bd}</button>`}</div>`).join("");
+        const g = gamesList(), done = g.filter((x) => !x[6]).length, ms = 864e5 - (Date.now() % 864e5), hh = Math.floor(ms / 36e5), mm = Math.floor((ms % 36e5) / 6e4);
+        const cards = g.map(([k, ic, nm, ds, bd, lk, rd]) => `<button class="dcard${rd ? " rdy" : ""}${lk ? " lk" : ""}" onclick="gameGo('${k}')" title="${lk || "Open " + nm}"><span class="gmi" aria-hidden="true">${ic}</span><span class="nm">${nm}</span><span class="sm">${lk || ds}</span><span class="dpill">${lk ? "🔒" : bd}</span></button>`).join("");
         $("dp").className = "pn";
-        $("dp").innerHTML = `<h2>🎮 Games</h2><p class="sm">Free minigames. Blackjack is at the Barkeep's table.</p>${rows}<button class="alt x" onclick="closeDlg()" title="Close">Close</button>`;
+        $("dp").innerHTML = `<h2>🎁 Daily Rewards</h2><div class="dprog"><div class="dbar"><i style="width:${(done / g.length) * 100}%"></i></div><span class="sm">${done} of ${g.length} done today · new rewards in ${hh}h ${mm}m</span></div><div class="dgrid">${cards}</div><p class="sm">All free. Blackjack is at the Barkeep's table.</p><button class="alt x" onclick="closeDlg()" title="Close">Close</button>`;
         wiFresh();
       }
-      /* gameGo(k): open one game from the menu (locked ones say why) */
+      /* gameGo(k): open one daily game (locked ones say why) */
       function gameGo(k) {
         const g = gamesList().find((x) => x[0] == k);
         if (!g) return false;
         if (g[5]) { toast(g[5]); return false; }
         sfx("ui");
         CUR_DLG = k;
-        ({ garden: gardenUI, wish: () => wishUI("wish"), wheel: wheelUI, reels: reelsUI, dig: digUI })[k]();
+        ({ wish: () => wishUI("wish"), wheel: wheelUI, reels: reelsUI, dig: digUI })[k]();
         return true;
       }
       function gamesOpen() { if (P && !dlgOpen() && S.sc == "hub" && tut() >= TUT_DONE) { openDlg("games"); sfx("ui"); } }
       function gamesBack() { closeDlg(); gamesOpen(); }
+      function gardenOpen() { if (!P || dlgOpen() || S.sc != "hub" || tut() < TUT_DONE) return; if (!isUnl("pet")) { toast(`The Zen Garden opens when you meet the Beastkeeper (level ${PET_LV}).`); return; } openDlg("garden"); sfx("ui"); }
       function gardenTimer() { clearTimeout(GD_T); GD_T = setTimeout(gardenTick, 15000); } /* growth timers tick while the window is open */
       /* gardenTick(): update bed labels/classes and the streak row in place (no rebuild: focus, canvas and particles stay) */
       function gardenTick() {
@@ -3067,8 +3081,8 @@
       }, true);
       /* ---------- What's new: a small corner card once per build (BUILD), a soft chime at the player's volume ----------
          Brand-new players (tutorial not done) skip it: everything is new to them. Dismiss with x, or it fades after 14 s. */
-      const BUILD = "2026.11.08.2"; /* the 🎮 Games menu: garden, shrine, wheel, reels, dig */
-      const NEWS = ["🎮 All minigames now in the 🎮 Games menu (top bar or G): Zen Garden, Wish Shrine, Fortune Wheel, Rune Reels and Treasure Dig, with what is ready today. Blackjack stays at the Barkeep", "✨ Wish cosmetics glow brighter: new trails (Leaf Drift, Starlit Steps, Comet Tail), emote bubbles (Heart Puff, Rune Glyph) and the Legendary Runic Nova aura. Preview your look in the Collection; changes show to everyone at once", "🌠 Rune Wishes: the Wish Shrine! Make free wishes for auras, pet hats, name effects and titles (odds and pity shown, dupes become Stardust). Earn 🎟 at the Fortune Wheel, Rune Reels and Treasure Dig, plus Cipher wins, garden harvests and raids. All free, always", "🔮 Cipher: every few gathers a quick rune game pops up (strike the vein, the moonleaf pattern, the crystal echo); win a bonus pack of 5. Gathering combos and a shinier channel too", "🌸 The Zen Garden: rake the sand, water your plants, harvest materials, claim a 7-day streak bonus and trade your produce with friends", "🐾 Pets: reach level 6 to meet the Beastkeeper. Adopt a Fox, Owl, Wolf or Sprite with materials, feed it for a bigger bonus, and tap it to play", "⛏️ Gathering: Iron Ore, Moonleaf and Skycrystal nodes on the island; mastery raises your yield", "📜 Contract Board: 3 material orders a day on the Quest Board", "🌹 The Maiden's Exchange: barter materials at rates that drift each day"];
+      const BUILD = "2026.11.08.3"; /* 🎁 Daily Rewards board + 🌸 Garden button */
+      const NEWS = ["🎁 Daily Rewards (top bar or G): the Wish Shrine gift, Fortune Wheel, Rune Reels and Treasure Dig on one board with today's progress and a red badge when rewards wait. 🌸 The Zen Garden has its own button and badges when beds are ripe", "✨ Wish cosmetics glow brighter: new trails (Leaf Drift, Starlit Steps, Comet Tail), emote bubbles (Heart Puff, Rune Glyph) and the Legendary Runic Nova aura. Preview your look in the Collection; changes show to everyone at once", "🌠 Rune Wishes: the Wish Shrine! Make free wishes for auras, pet hats, name effects and titles (odds and pity shown, dupes become Stardust). Earn 🎟 at the Fortune Wheel, Rune Reels and Treasure Dig, plus Cipher wins, garden harvests and raids. All free, always", "🔮 Cipher: every few gathers a quick rune game pops up (strike the vein, the moonleaf pattern, the crystal echo); win a bonus pack of 5. Gathering combos and a shinier channel too", "🌸 The Zen Garden: rake the sand, water your plants, harvest materials, claim a 7-day streak bonus and trade your produce with friends", "🐾 Pets: reach level 6 to meet the Beastkeeper. Adopt a Fox, Owl, Wolf or Sprite with materials, feed it for a bigger bonus, and tap it to play", "⛏️ Gathering: Iron Ore, Moonleaf and Skycrystal nodes on the island; mastery raises your yield", "📜 Contract Board: 3 material orders a day on the Quest Board", "🌹 The Maiden's Exchange: barter materials at rates that drift each day"];
       let NEWS_T = 0;
       function newsShow() {
         let seen = "";
@@ -4160,7 +4174,7 @@
       }
       const wiFresh = () => { if (bankUrl() && Date.now() - WI.synced > 8000) { WI.synced = Date.now(); const w0 = CUR_DLG; wiCall("state").then(() => { if (CUR_DLG == w0 && !$("dlg").hidden && !WI.rev && !WI.spin) ({ wish: wishUI, wheel: wheelUI, reels: reelsUI, dig: digUI, games: gamesUI }[w0] || (() => {}))(); }); } };
       const wiPurse = () => { const w = wiSt(); return `<div class="wpurse"><span title="Wish Tokens">🎟 <b>${w.t}</b></span><span title="Stardust">✨ <b>${w.sd}</b></span><span class="sm">today ${w.dy.e}/${WISH.dayCap} 🎟</span></div>`; };
-      const wiNav = (cur) => `<div class="wtabs"><button onclick="gamesBack()" title="Back to the games">🎮</button>${[["wish", "🌠 Shrine"], ["wheel", "🎡 Wheel"], ["reels", "🎰 Reels"], ["dig", "⛏️ Dig"]].map(([k, n]) => `<button class="${k == cur ? "on" : ""}" onclick="CUR_DLG='${k}';${{ wish: "wishUI", wheel: "wheelUI", reels: "reelsUI", dig: "digUI" }[k]}()">${n}</button>`).join("")}</div>`;
+      const wiNav = (cur) => `<div class="wtabs"><button onclick="gamesBack()" title="Back to Daily Rewards">🎁</button>${[["wish", "🌠 Shrine"], ["wheel", "🎡 Wheel"], ["reels", "🎰 Reels"], ["dig", "⛏️ Dig"]].map(([k, n]) => `<button class="${k == cur ? "on" : ""}" onclick="CUR_DLG='${k}';${{ wish: "wishUI", wheel: "wheelUI", reels: "reelsUI", dig: "digUI" }[k]}()">${n}</button>`).join("")}</div>`;
       const wGot = (g) => { const p = []; if (g && g.tok) p.push(`+${g.tok} 🎟`); if (g && g.sd) p.push(`+${g.sd} ✨`); if (g && g.mat) for (const [m, n] of Object.entries(g.mat)) if (MATS[m]) p.push(`+${n} ${MATS[m].e}`); return p.join(" ") || "nothing"; };
       const wHow = (k, txt) => (V.wtu && V.wtu[k] ? "" : `<div class="whow"><b>How to play</b> ${txt}</div>`);
       const wLearn = (k) => { V.wtu = V.wtu && typeof V.wtu == "object" ? V.wtu : {}; V.wtu[k] = 1; };
@@ -10887,6 +10901,8 @@
         if ($("chin").placeholder != chatPlaceholder) $("chin").placeholder = chatPlaceholder;
         $("bt").hidden = true; /* Titles, Feedback and Copy ID moved into Settings (cleaner HUD) */
         $("binv").hidden = $("bgm").hidden = tut() < TUT_DONE || S.sc != "hub";
+        $("bgd").hidden = $("bgm").hidden || !isUnl("pet");
+        if (!$("bgm").hidden) { const dn = String(dailyReady() || ""), gn = String(($("bgd").hidden ? 0 : gardenReady()) || ""); if ($("bgm").dataset.n !== dn) $("bgm").dataset.n = dn; if ($("bgd").dataset.n !== gn) $("bgd").dataset.n = gn; }
         $("bcls").hidden = tut() < 1 || S.sc != "hub"; /* class change (the Class Master left the hub): from tutorial step 2 on */
         $("bset").hidden = !P;
         $("bfb").hidden = true;
