@@ -728,6 +728,12 @@ function raidSim(key,cls,setup,pre){
  const cdBefore=mem.cd[0];T.raidNet('player-mem1',{type:'ra',a:0,s:4});ok(mem.cd[0]==cdBefore,'raid net: a skill on cooldown is refused by the leader');
  const st=T.raidState();ok(st.type=='rs'&&st.b.length==11&&st.p.length==3&&JSON.stringify(st).length<1200,`raid net: the leader snapshot is small (${JSON.stringify(st).length} B)`);
  ok(st.ev&&st.ev.some(e=>e[0]=='fx'&&e[1]==1),'raid net: members see each other\'s skills (fx events)');
+ {const z0=S.zo.length;mem.cd=[0,0,0];mem.ld=null;T.raidNet('player-mem1',{type:'ra',a:1,s:10,ld:[2,4]});ok(mem.ld&&mem.ld.join()=='2,4'&&S.zo.length==z0+1,'raid net: a member\'s loadout maps its slot (slot 1 = Circle)');
+ mem.cd=[0,0,0];T.raidNet('player-mem1',{type:'ra',a:2,s:11,ld:[1,2]});ok(mem.ld.join()=='2,4'&&S.ps.some(p=>p.rn>0),'raid net: the loadout is fixed for the raid; slot 2 = Renewal');
+ const ev=T.raidState().ev||[];ok(ev.some(e=>e[0]=='fx'&&e[1]==mem.id&&e[2]==4),'raid net: guests see the right spell (fx carries the skill id)');
+ const m2=S.ps.find(p=>p.cls=='dps');m2.remote='player-x';m2.heard=netClock;m2.seq=0;m2.cd=[0,0,0];T.raidNet('player-x',{type:'ra',a:2,s:1,ld:[4,4]});ok(m2.ld.join()=='1,2','raid net: a malformed loadout falls back to the default');
+ m2.cd=[0,0,0];T.raidNet('player-x',{type:'ra',a:7,s:2});ok(m2.cd.every(v=>v==0),'raid net: a bad slot is ignored');
+ m2.remote=null;}
  fakePeers=[];S.res=0.01;T.step(0.02);
  /* member: mirrors the leader's snapshot */
  T.devHub();T.P().cls='heal';
@@ -1525,8 +1531,53 @@ async function benchTests(){
 }
 {T.V().mat={};T.setRaid('large');const d=T.raidDrops(true);ok(T.V().mat.dust>=3&&T.V().mat.bark>=1&&d.some(x=>x[0]=='bark'),'materials: a large raid win drops Rune Dust and Thornbark');const l=T.raidDrops(false);ok(l.length==1&&l[0][0]=='dust','materials: a loss still gives a little dust');
  T.V().eq={bag:[{id:'a1',t:'tank',k:'dr',r:1},{id:'a2',t:'tank',k:'dr',r:2}],on:{tank:'a1'}};T.invWear('a2');ok(T.V().eq.on.tank=='a2','inventory: wearing an item swaps it into its slot');T.invWear('a2');ok(!T.V().eq.on.tank,'inventory: clicking a worn item takes it off');T.invUI();ok(ctx.document.getElementById('dp').innerHTML.includes('Thornbark'),'inventory: shows materials');}
+/* shop spells + raid skill loadout */
+vm.runInContext('T.sp={SPELL,SPELL_ID,spBuy,skBuy,ldTap,ldGet,ldOk,ldOf,skId,spellBal,spellTick,wardMul,ldUI,classUI,mkAlly};',ctx);
+{const X=T.sp,V=T.V(),P=T.P();
+ T.devHub();P.auto=false;const cls0=P.cls;P.cls='dps';P.cd=[0,0,0];
+ ok(X.ldGet('dps').join()=='1,2'&&X.skId(P,1)==1&&X.skId(P,2)==2,'loadout: the default is the 2 old skills');
+ V.ld={dps:[1,4]};ok(X.ldGet('dps').join()=='1,2','loadout: a locked spell in the loadout falls back to the default');
+ V.gold=599;X.spBuy();ok(!V.sp.dps&&V.gold==599,'spell: cannot unlock without 600 gold');
+ V.gold=1000;const led0=(T.LEDGER()||[]).length;X.spBuy();ok(V.sp.dps===1&&V.gold==400,'spell: unlocking costs 600 gold');
+
+ X.spBuy();ok(V.gold==400,'spell: unlocks once per class');
+ X.skBuy(3);ok(V.sk.dps[3]==1&&V.gold==320,'spell: levels up like the other skills (80 gold first level)');
+ ok(X.ldGet('dps').join()=='1,4','loadout: an unlocked spell in the save is used');
+ V.ld={};X.ldTap(4);ok(X.ldGet('dps').join()=='1,4','loadout: tapping the spell puts it in slot 2');
+ X.ldTap(1);ok(X.ldGet('dps').join()=='2,4','loadout: tapping a lit skill leaves it home (the unlit one takes its slot)');
+ ok(!X.ldOk('dps',[4,4],true)&&!X.ldOk('dps',[1,3],true)&&!X.ldOk('dps',[1],true)&&!X.ldOk('dps','12',true)&&X.ldOk('dps',[4,1],true),'loadout: only 2 different skills from 1, 2 and the spell');
+ ok(X.ldUI().includes('Rune Mine')&&X.ldUI().includes('aria-pressed'),'loadout: the picker lists the spell');
+ V.ld={dps:[1,4]};T.toArena('small',[{me:1,cls:'dps'}]);const S=T.S(),b=S.b;P.cd=[0,0,0];
+ ok(!X.ldUI().includes('onclick="ldTap(1)"')||X.ldUI().includes('disabled'),'loadout: locked during a raid');
+ X.ldTap(2);ok(X.ldGet('dps').join()=='1,4','loadout: tapping in a raid changes nothing');
+ T.act(P,2);ok(S.mn.length==1&&P.cd[2]>0,'act: slot 2 runs the mapped skill (Rune Mine armed, slot cooldown started)');
+ const hp0=b.hp;X.spellTick(1.3);ok(b.hp<hp0&&b.exp>0,'Rune Mine: bursts after the fuse and Exposes the boss');
+ const h1=b.hp;T.hitB(10,P);const d1=h1-b.hp;b.exp=0;const h2=b.hp;T.hitB(10,P);const d2=h2-b.hp;ok(Math.abs(d1/d2-1.15)<0.02,'Rune Mine: Expose = +15% damage taken');
+ b.exp=5;b.brk=8;const h3=b.hp;T.hitB(10,P);ok(Math.abs((h3-b.hp)/d2-1.5)<0.02,'Rune Mine: Expose does not stack with Poise Broken');b.brk=0;b.exp=0;
+ S.mn.push({id:P.id,t:0,d:10,k:1});X.spellTick(0.01);ok(!(b.exp>0),'Rune Mine: Expose at most once per 13 s');
+ /* tank: Stone Ward */
+ V.sp.tank=1;V.ld.tank=[1,4];P.cls='tank';T.toArena('small',[{me:1,cls:'tank'},{cls:'dps',name:'B',lv:1,filler:1}]);const S2=T.S(),al=S2.ps.find(p=>p!==P);P.cd=[0,0,0];
+ T.act(P,2);ok(P.ward>=5,'Stone Ward: the tank is warded for 5 s');
+ al.x=P.x+50;al.y=P.y;ok(X.wardMul(P)==0.5&&Math.abs(X.wardMul(al)-0.7)<1e-9,'Stone Ward: tank takes 50% less, nearby allies 30% less');
+ al.x=P.x+300;ok(X.wardMul(al)==1,'Stone Ward: far allies get nothing');
+ X.spellTick(6);ok(X.wardMul(P)==1,'Stone Ward: ends after its duration');
+ /* healer: Renewal */
+ V.sp.heal=1;V.ld.heal=[4,2];P.cls='heal';T.toArena('small',[{me:1,cls:'heal'},{cls:'tank',name:'B',lv:1,filler:1}]);const S3=T.S(),t3=S3.ps.find(p=>p!==P);P.cd=[0,0,0];
+ t3.x=P.x+40;t3.y=P.y;t3.hp=50;T.act(P,1);ok(t3.rn>0&&P.cd[1]>0,'Renewal: slot 1 mapped to Renewal marks nearby allies');
+ X.spellTick(1.01);ok(t3.hp>50,'Renewal: heals over time');
+ if(process.env.BAL)for(const lv of [0,5])for(const [e,pd] of [[1,20],[3,60]])console.log('BAL',lv,e,JSON.stringify(X.spellBal(lv,e,pd)));
+ const ban=(lv)=>{const B=X.spellBal(lv,1,20),B3=X.spellBal(lv,3,60);return ['dps','tank','heal'].every(c=>[B,B3].every(R=>{const o=R[c].old,lo=Math.min(...o),hi=Math.max(...o);return R[c].nw>=lo*0.9&&R[c].nw<hi;}));};
+ ok(ban(0)&&ban(5),'balance: each spell sits between its class\'s 2 old skills (within 10% of the weaker, below the stronger) at level 0 and 5');
+ /* bots keep the default loadout */
+ const bot=X.mkAlly({cls:'tank',name:'Bot',lv:3},7);ok(X.ldOf(bot).join()=='1,2'&&X.skId(bot,2)==2,'bots: default loadout (Taunt stays)');
+ T.devHub();P.cls=cls0;V.ld={};V.sp={};V.sk.dps[3]=0;
+}
 /* save load in a fresh copy of the game (runs late: a second game instance shares the fake document) */
 function saveLoadTests(){{const evil={gold:'1e999',up:{dmg:2,__proto__:{x:1},hack:99},cls:'constructor',tut:-7,lp:-5,lpt:Infinity,bjc:'9',wins:-3,best:1e99,mb:'x'.repeat(500),gd:{name:'G',m:[{c:'toString'},{c:'tank'}]}};
  const st={[T.SAVE_KEY]:JSON.stringify(evil)},c={...ctx,localStorage:{getItem:k=>st[k]||null,setItem:(k,v)=>st[k]=v,removeItem:k=>delete st[k]}};c.window=c;vm.createContext(c);vm.runInContext(SRC+';globalThis.LV=V;',c);const L=c.LV;
- ok(L.gold===0&&Object.keys(L.up).join()=='dmg,vit,spd,cdr'&&L.up.dmg==2&&L.cls===''&&L.tut===0&&L.lp===0&&L.lpt===undefined&&L.bjc===undefined&&L.wins===0&&L.best===1e9&&L.mb.length==10&&L.gd.m.length==1,'save load: own keys only, numbers range-clamped, prototype names refused');}}
+ ok(L.gold===0&&Object.keys(L.up).join()=='dmg,vit,spd,cdr'&&L.up.dmg==2&&L.cls===''&&L.tut===0&&L.lp===0&&L.lpt===undefined&&L.bjc===undefined&&L.wins===0&&L.best===1e9&&L.mb.length==10&&L.gd.m.length==1,'save load: own keys only, numbers range-clamped, prototype names refused');}
+ {const mk=(sv)=>{const st={[T.SAVE_KEY]:JSON.stringify(sv)},c={...ctx,localStorage:{getItem:k=>st[k]||null,setItem:(k,v)=>st[k]=v,removeItem:k=>delete st[k]}};c.window=c;vm.createContext(c);vm.runInContext(SRC+';globalThis.LV=V;',c);return c.LV;};
+ const O=mk({gold:50,sk:{tank:[1,2,3],dps:[0,5,0],heal:[0,0,0]}});ok(O.sk.tank.join()=='1,2,3,0'&&O.sk.dps.join()=='0,5,0,0'&&!O.sp.tank&&!O.ld.tank,'save load: an old save keeps its skill levels; no spell, default loadout');
+ const B=mk({gold:50,sk:{tank:[0,0,0,5]},sp:{tank:'1',dps:1},ld:{tank:[4,1],dps:[4,4],heal:[1,2,3]}});ok(!B.sp.tank&&B.sk.tank[3]==0&&!B.ld.tank&&B.sp.dps===1&&!B.ld.dps&&!B.ld.heal,'save load: bad spell flags / loadouts fall back to the default');
+ const G=mk({gold:50,sp:{dps:1},ld:{dps:[4,2]}});ok(G.ld.dps.join()=='4,2','save load: a valid loadout is kept');}}
 (BENCH_ONLY?Promise.resolve():networkTests().then(signalingTests).then(hostLossTests).then(brainHttpTests).then(reportTests).then(takeoverTests).then(bankTests).then(cipherTests).then(wishTests).then(analyticsTests).then(rateLimitTests).then(()=>marketHttpTests()).then(saveLoadTests)).then(benchTests).then(()=>{console.log(f?f+' FAILED':'ALL PASSED');process.exit(f?1:0);}).catch(e=>{console.error(e);process.exit(1);});

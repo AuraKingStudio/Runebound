@@ -46,15 +46,16 @@ Before handing work to another agent, update this section with enough detail for
 ### Current handoff
 
 - **Updated:** 2026-11-08 (Happy, for PM Bob)
-- **Task and goal:** owner: move the Zen Garden and every minigame except blackjack into one UI menu; declutter the hub.
-- **Status:** committed locally on `main` on top of 4644e0e, **not pushed**. `node src/test.js` ALL PASSED. BUILD 2026.11.08.1.
+- **Task and goal:** owner: one new shop spell per class + players pick the 2 non-ultimate skills they bring to a raid; balanced.
+- **Status:** committed in Happy's worktree, **not pushed**. `node src/test.js` and `--bench` ALL PASSED. BUILD 2026.11.08.11.
 - **Changes:**
-  - New 🎮 Games HUD button (`#bgm`, after the tutorial, hub only) and **G** key (skipped if G is bound to an action). `gamesUI()` lists Zen Garden, Wish Shrine, Fortune Wheel, Rune Reels, Treasure Dig: icon, name, plain line, badge (ready / uses left today). `gameGo(k)` opens the existing UI; each game has a 🎮 back button (`gamesBack()`).
-  - Zen Garden is its own window (`gardenUI`, dialog `garden`, gated by the Beastkeeper unlock like before; locked row greyed with the level reason). The Beastkeeper keeps pet adopt/feed/switch and points to the menu.
-  - Hub spots for the Shrine, Wheel, Reels and Dig removed (constants, drawing, light pillar, interact list). No bot visits or collision existed for them. Server routes and bank logic unchanged.
-  - NEWS bullet "All minigames now in the 🎮 Games menu".
-- **Not tested:** real browsers/devices (768x1024, 1024x768, 844x390 layouts are by CSS only), online bank with the menu.
-- **Next step:** Zulu/Hawk review, owner test of the fresh build, then Bob pushes.
+  - `SPELL` table (near `SK`): Stone Ward (tank), Rune Mine (DPS), Renewal (healer); skill id 4 (3 = ultimate). Unlock 600 gold once per class (`spBuy`, "skill" spend), levels in `V.sk[cls][3]`.
+  - Loadout `V.ld[cls] = [id, id]` (`ldGet/ldOk/skId`); save load pads `V.sk` to 4 and drops bad spell flags / loadouts. `act()` maps slot -> skill id; cooldowns stay per slot.
+  - Picker `ldUI()` in the Class window and on Choose Raid (locked in a raid); HUD buttons show the equipped skill; tank without Taunt gets a warning.
+  - Net: `ra` carries `ld`; the leader keeps the first valid one per member (else [1,2]); `fx` events carry the skill id. Bots unchanged.
+  - Balance model `spellBal()` + test band; Expose once per 13 s and not on top of Poise Broken.
+- **Not tested:** real browsers/devices for the picker layout; leader cannot verify a member really bought the spell (peer-hosted, same as skill levels).
+- **Next step:** Zulu review, owner test of the fresh build, then Bob pushes.
 
 ## Player market (paused for release)
 

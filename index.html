@@ -993,6 +993,17 @@
       input.nm { background: var(--wood3); border-color: var(--seam); color: var(--parch); }
       input.nm:focus { border-color: var(--gild); outline: none; }
       /* gender pills (name dialog + Settings) and the tinted name field: pale-to-tint text with a soft glow, a snappy pop on pick */
+      /* raid skill loadout picker (Class window + Choose Raid): 3 chips, 2 lit, 44 px taps */
+      .ldp { margin: 6px 0; }
+      .ldr { display: flex; gap: 6px; }
+      .pn .ldr .ldc { flex: 1 1 0; min-width: 0; width: auto; margin: 0; min-height: 44px; padding: 4px 6px; display: flex; align-items: center; gap: 5px; border-radius: 8px;
+        background: rgba(0,0,0,.28) !important; border: 1px solid var(--ln) !important; color: #b9a888 !important; box-shadow: none !important; font: bold 12px Georgia, serif; text-shadow: none; }
+      .pn .ldr .ldc.on { border-color: var(--uc) !important; color: #f3e6c8 !important; box-shadow: inset 0 0 0 1px var(--uc) !important; }
+      .ldc svg { width: 22px; height: 22px; flex: none; fill: currentColor; stroke: currentColor; }
+      .ldc.on svg { color: var(--uc); }
+      .ldc span { overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+      .ldc b { font-size: 10px; color: var(--uc); flex: none; }
+      .pn .ldr .ldc.lk { opacity: 0.6; flex-direction: column; justify-content: center; gap: 0; }
       .gdrow { display: flex; gap: 6px; justify-content: center; flex-wrap: wrap; }
       .pn .gdrow .gdp { width: auto; margin: 0; min-height: 36px; padding: 5px 14px; border-radius: 999px; font: bold 13px Georgia, serif; letter-spacing: 0.5px;
         background: rgba(0,0,0,.28) !important; border: 1px solid var(--ln) !important; color: #f3e6c8 !important; box-shadow: none !important;
@@ -2476,6 +2487,46 @@
         dps: ["Shot", "Heavy Shot", "Rapid Fire"],
         heal: ["Bolt", "Empower", "Circle"],
       };
+      /* ---------- shop spells: one extra skill per class (skill id 4; id 3 is the ultimate) ----------
+         Unlocked once per class at the Merchant (SPELL.cost gold, a "skill" spend); levels 1-5 like the other skills.
+         Players bring 2 of their 3 skills (2 old + this one) into slots 1 and 2: the loadout V.ld[cls] = [id, id]. */
+      const SPELL_ID = 4;
+      let RMQ = null; /* RMOT(): prefers-reduced-motion (cheap spell visuals) */
+      const RMOT = () => { try { RMQ = RMQ || (typeof matchMedia == "function" ? matchMedia("(prefers-reduced-motion: reduce)") : 0); return !!(RMQ && RMQ.matches); } catch (e) { return false; } };
+      const SPELL = {
+        cost: 600, /* unlock price per class */
+        tank: { n: "Stone Ward", cd: 12, t: 5, self: 0.5, ally: 0.3, r: 110, lv: 0.6, /* t s: the tank takes self less damage, allies within r px take ally less; +lv s per level */
+          d: "5 s: you take 50% less damage, allies near you 30% less", l: "+0.6 s per level" },
+        dps: { n: "Rune Mine", cd: 13, fuse: 1.2, dmg: 38, exp: 0.15, et: 5, icd: 13, /* bursts after fuse s for dmg x Engine; Exposes the boss: +exp damage taken from everyone
+          for et s, at most once per icd s (the Engine shortens the cooldown, not the Expose) and not on top of Poise Broken; levels +15% burst damage */
+          d: "A rune at the boss bursts after 1.2 s (38 x Engine) and Exposes it: +15% damage from everyone for 5 s", l: "+15% burst damage per level" },
+        heal: { n: "Renewal", cd: 12, r: 140, ps: 0.05, t: 5, lv: 0.05, /* every living ally within r px heals ps x max HP each second for t s; +lv healing per level */
+          d: "Allies near you heal 5% of their max HP each second for 5 s", l: "+5% healing per level" },
+      };
+      /* spellBal(lv, e, pd): balance model, value per second of each class's 2 old skills and its spell at skill level lv.
+         dps: damage/s at Engine e (cooldowns shrink with the Engine), pd = the rest of the party's damage/s (for Expose).
+         tank: share of the boss's damage/s prevented (tank takes 60% of hits; Bash stuns 2 s per cooldown; Taunt prevents 0, it holds threat).
+         heal: HP/s restored over a 4-player party (mean max HP 140; Circle covers 3 allies, Empower one 70 shield / 55 heal). */
+      function spellBal(lv = 0, e = 1, pd = 20) {
+        const m = 1 + 0.15 * lv, T = SPELL.tank, D = SPELL.dps, H = SPELL.heal;
+        return {
+          dps: { old: [(45 * e * m * e) / CL.dps.cd[1], (30 * e * m * e) / CL.dps.cd[2]], nw: (D.dmg * e * m * e) / D.cd + D.exp * pd * e * (D.et / Math.max(D.icd, D.cd / e)) },
+          tank: { old: [2 / CL.tank.cd[1], 0], nw: ((T.t + T.lv * lv) / T.cd) * (0.6 * T.self + 0.4 * T.ally) },
+          heal: { old: [EMP.sh / CL.heal.cd[1], (12 * 5 * 3) / CL.heal.cd[2]], nw: (140 * H.ps * H.t * 4 * (1 + H.lv * lv)) / H.cd },
+        };
+      }
+      /* skill helpers. k = skill id: 0 basic, 1-2 old skills, 3 ultimate, 4 the shop spell */
+      const skN = (cls, k) => (k == SPELL_ID ? SPELL[cls].n : SK[cls][k]);
+      const skCd = (cls, k) => (k == SPELL_ID ? SPELL[cls].cd : CL[cls].cd[k]);
+      const skLvI = (k) => (k == SPELL_ID ? 3 : k); /* index in V.sk[cls] */
+      const spOwn = (cls) => !!(V.sp && V.sp[cls]);
+      /* ldOk(cls, l, unl): a loadout is 2 different skills from 1, 2 and (unlocked) the spell */
+      const ldOk = (cls, l, unl = spOwn(cls)) => Array.isArray(l) && l.length == 2 && l[0] !== l[1] && l.every((k) => k === 1 || k === 2 || (k === SPELL_ID && unl));
+      const ldGet = (cls) => { const l = (V.ld || {})[cls]; return ldOk(cls, l) ? l : [1, 2]; };
+      /* ldOf(p): your loadout from the save; remote members: the one the leader accepted; bots: the default */
+      const ldOf = (p) => (p === P ? ldGet(p.cls) : p.ld || [1, 2]);
+      /* skId(p, a): the skill in slot a (0 basic, 1-2 loadout, 3 ultimate) */
+      const skId = (p, a) => (a == 1 || a == 2 ? ldOf(p)[a - 1] : a);
       /* hub plaza: ellipse center + radii. Sized for ~10 players, 3 NPC daises and the portal arch at the top. */
       const HUB = { x: 450, y: 350, rx: 380, ry: 244 };
       const PORTAL = { x: 450, y: 352 } /* hub center: where the tutorial's final burst plays (raids start from the RAID button) */,
@@ -3097,8 +3148,8 @@
       }, true);
       /* ---------- What's new: a small corner card once per build (BUILD), a soft chime at the player's volume ----------
          Brand-new players (tutorial not done) skip it: everything is new to them. Dismiss with x, or it fades after 14 s. */
-      const BUILD = "2026.11.08.10"; /* Elder side quests: 2 quests at once */
-      const NEWS = ["🧙 The Elder gives side quests: keep one next to your main quest (8 new quests, progress bars, both tracked on screen)", "📱 Cleaner top bar: icon tiles with labels, a 🎖️ Titles button, red badges when rewards wait. Contracts show the courier countdown instead of a dead button", "🎁 Daily Rewards (top bar or G): the Wish Shrine gift, Fortune Wheel, Rune Reels and Treasure Dig on one board with today's progress and a red badge when rewards wait. 🌸 The Zen Garden has its own button and badges when beds are ripe", "✨ Wish cosmetics glow brighter: new trails (Leaf Drift, Starlit Steps, Comet Tail), emote bubbles (Heart Puff, Rune Glyph) and the Legendary Runic Nova aura. Preview your look in the Collection; changes show to everyone at once", "🌠 Rune Wishes: the Wish Shrine! Make free wishes for auras, pet hats, name effects and titles (odds and pity shown, dupes become Stardust). Earn 🎟 at the Fortune Wheel, Rune Reels and Treasure Dig, plus Cipher wins, garden harvests and raids. All free, always", "🔮 Cipher: every few gathers a quick rune game pops up (strike the vein, the moonleaf pattern, the crystal echo); win a bonus pack of 5. Gathering combos and a shinier channel too", "🌸 The Zen Garden: rake the sand, water your plants, harvest materials, claim a 7-day streak bonus and trade your produce with friends", "🐾 Pets: reach level 6 to meet the Beastkeeper. Adopt a Fox, Owl, Wolf or Sprite with materials, feed it for a bigger bonus, and tap it to play", "⛏️ Gathering: Iron Ore, Moonleaf and Skycrystal nodes on the island; mastery raises your yield", "📜 Contract Board: 3 material orders a day on the Quest Board", "🌹 The Maiden's Exchange: barter materials at rates that drift each day"];
+      const BUILD = "2026.11.08.11"; /* shop spells + 2-skill raid loadout */
+      const NEWS = ["✨ New spells at the Merchant: Stone Ward (Tank), Rune Mine (DPS), Renewal (Healer). Pick the 2 skills you bring to a raid in the Class window or on the Choose Raid screen", "🧙 The Elder gives side quests: keep one next to your main quest (8 new quests, progress bars, both tracked on screen)", "📱 Cleaner top bar: icon tiles with labels, a 🎖️ Titles button, red badges when rewards wait. Contracts show the courier countdown instead of a dead button", "🎁 Daily Rewards (top bar or G): the Wish Shrine gift, Fortune Wheel, Rune Reels and Treasure Dig on one board with today's progress and a red badge when rewards wait. 🌸 The Zen Garden has its own button and badges when beds are ripe", "✨ Wish cosmetics glow brighter: new trails (Leaf Drift, Starlit Steps, Comet Tail), emote bubbles (Heart Puff, Rune Glyph) and the Legendary Runic Nova aura. Preview your look in the Collection; changes show to everyone at once", "🌠 Rune Wishes: the Wish Shrine! Make free wishes for auras, pet hats, name effects and titles (odds and pity shown, dupes become Stardust). Earn 🎟 at the Fortune Wheel, Rune Reels and Treasure Dig, plus Cipher wins, garden harvests and raids. All free, always", "🔮 Cipher: every few gathers a quick rune game pops up (strike the vein, the moonleaf pattern, the crystal echo); win a bonus pack of 5. Gathering combos and a shinier channel too", "🌸 The Zen Garden: rake the sand, water your plants, harvest materials, claim a 7-day streak bonus and trade your produce with friends", "🐾 Pets: reach level 6 to meet the Beastkeeper. Adopt a Fox, Owl, Wolf or Sprite with materials, feed it for a bigger bonus, and tap it to play", "⛏️ Gathering: Iron Ore, Moonleaf and Skycrystal nodes on the island; mastery raises your yield", "📜 Contract Board: 3 material orders a day on the Quest Board", "🌹 The Maiden's Exchange: barter materials at rates that drift each day"];
       let NEWS_T = 0;
       function newsShow() {
         let seen = "";
@@ -3302,7 +3353,7 @@
       const sideCur = () => (V.sq ? SIDE.find((x) => x.id == V.sq.id) : null);
       const sideNext = () => SIDE.find((x) => !(V.sd || []).includes(x.id) && (!x.req || x.req())) || null;
       const sideProg = () => { const x = sideCur(); return x ? Math.max(0, Math.min(x.n, x.v() - V.sq.b)) : 0; };
-      let V = { gold: 200, up: { dmg: 0, vit: 0, spd: 0, cdr: 0 }, q: 0, qs: 0, sk: { tank: [0, 0, 0], dps: [0, 0, 0], heal: [0, 0, 0] } };
+      let V = { gold: 200, up: { dmg: 0, vit: 0, spd: 0, cdr: 0 }, q: 0, qs: 0, sk: { tank: [0, 0, 0, 0], dps: [0, 0, 0, 0], heal: [0, 0, 0, 0] }, sp: {}, ld: {} };
       try {
         const s = JSON.parse(localStorage.getItem(SAVE_KEY) || "null");
         if (s && typeof s === "object") {
@@ -3335,7 +3386,14 @@
           V.gfr = Number.isFinite(s.gfr) ? cl(s.gfr, 0, 0.999) : 0;
           V.ton = s.ton ? 1 : 0;
           V.af = s.af ? 1 : 0;
-          if (s.sk) for (const k of Object.keys(V.sk)) if (Array.isArray(s.sk[k])) V.sk[k] = s.sk[k].slice(0, 3).map((x) => cl(+x | 0, 0, 5)); /* skill levels 0-5 */
+          if (s.sk) for (const k of Object.keys(V.sk)) if (Array.isArray(s.sk[k])) V.sk[k] = [0, 1, 2, 3].map((i) => cl(+s.sk[k][i] | 0, 0, 5)); /* skill levels 0-5 (index 3: the shop spell; old saves have 3) */
+          V.sp = {}; V.ld = {};
+          for (const k of Object.keys(CL)) {
+            if (s.sp && s.sp[k] === 1) V.sp[k] = 1; /* shop spell unlocked */
+            if (!V.sp[k]) V.sk[k][3] = 0;
+            const l = s.ld && s.ld[k];
+            if (ldOk(k, l, !!V.sp[k])) V.ld[k] = [l[0], l[1]]; /* loadout: 2 different unlocked skills, else the default [1, 2] */
+          }
           /* new NPCs: class choice, Maiden day, raid records */
           V.cls = typeof s.cls == "string" && Object.hasOwn(CL, s.cls) ? s.cls : "";
           V.mb = typeof s.mb == "string" ? s.mb.slice(0, 10) : "";
@@ -7056,8 +7114,9 @@
         S.ao = [];
         S.zo = [];
         S.rq = [];
+        S.mn = [];
         place(1);
-        P.eng = 1; P.life = 0; P.ucd = bless("dawn") ? 0 : ULT.start; P.rev = 0; P.sh = P.sht = 0; /* Dawn: ultimate ready at once */
+        P.ward = P.rn = 0; P.eng = 1; P.life = 0; P.ucd = bless("dawn") ? 0 : ULT.start; P.rev = 0; P.sh = P.sht = 0; /* Dawn: ultimate ready at once */
         /* ids follow the team order, so every screen in a networked raid agrees on who is who */
         S.ps = (team || raidTeam(S.raid).team || [{ me: 1 }]).map((m, i) => {
           if (m.me) { P.id = i; return P; }
@@ -7073,6 +7132,7 @@
         S.b = { def: D, x: 450, y: 220, tx: 450, ty: 220, r: D.r, hp: D.hp * (1 + TRIAL.hp * (S.trial || 0)), mh: D.hp * (1 + TRIAL.hp * (S.trial || 0)), ph: 1, stun: 0, tt: 0, tg: -1, cur: -1, fl: 0, cd: 2.5, n: 0, hf: 0, atk: D.atkT, thr: {},
           wk: 0, weak: 0, brk: 0, enr: 0, doom: null, doomed: false };
         popMsg(`⚔ ${RAIDS[S.raid].n}: ${D.n}`, 1.2, 2500);
+        if (P.cls == "tank" && !ldOf(P).includes(2)) setTimeout(() => toast("Without Taunt the boss may ignore you"), 2600);
       }
       /* ---------- party (hub) ----------
          PARTY.lead = "me" or the leader's key; PARTY.m = keys of the other members (bots: their hub id; real players: their
@@ -7291,7 +7351,7 @@
             <button class="claim" onclick="enterRaid('${k}')" ${lead && !t.err ? "" : "disabled"}>${lead ? "⚔ ENTER" : "Leader starts"}</button></div></div>`;
         };
         $("dp").innerHTML = `<h2>⚔ Choose a raid</h2><div class="raids">${["small", "large", "epic"].map(card).join("")}</div>
-          <p class="sm rtip">Keep the party alive until your DPS outscales the boss. Tank: Taunt and Shield Bash its weak moments. Healer: heal, dodge, and clear the Doom.</p>
+          ${ldUI()}<p class="sm rtip">Keep the party alive until your DPS outscales the boss. Tank: Taunt and Shield Bash its weak moments. Healer: heal, dodge, and clear the Doom.</p>
           <button class="alt x" onclick="closeDlg()" title="Close">Close</button>`;
       }
       let RAID_TRIAL = 0;
@@ -7390,6 +7450,7 @@
         if (p.hp <= 0) return;
         if (p.inv > 0) { ftxt(p.x, p.y - 24, "DODGE", "#ff9f43"); return; }
         if (p.ar > 0) d *= 0.5;
+        d *= wardMul(p); /* Stone Ward */
         if (p === P) d *= (1 - eqSt("dr") - wp("dr") - (p.cls == "tank" ? clb(p) : 0)) * (bless("aegis") ? 0.8 : 1);
         if (p.sh > 0) {
           const s = Math.min(p.sh, d);
@@ -7452,7 +7513,7 @@
         const b = S.b;
         if (!b || S.end) return;
         const z = S.zo && S.zo.some((o) => dist(src, o) < o.r) ? ZONE_DMG : 1; /* standing in a healer's Circle: hits harder */
-        const v = Math.min(b.hp, d * aDm(src) * z * (b.brk > 0 ? 1.5 : 1) * (full ? 1 : CLASS_DMG[src.cls] || 1)); /* broken poise: everyone hits 50% harder */
+        const v = Math.min(b.hp, d * aDm(src) * z * (b.brk > 0 ? 1.5 : 1) * (b.exp > 0 && !(b.brk > 0) ? 1 + SPELL.dps.exp : 1) * (full ? 1 : CLASS_DMG[src.cls] || 1)); /* Rune Mine Expose; broken poise: everyone hits 50% harder */
         b.hp -= v;
         b.dmg = b.dmg || {}; b.dmg[src.cls] = (b.dmg[src.cls] || 0) + v; /* damage share per class (balance checks) */
         b.hf = 0.08;
@@ -7584,6 +7645,7 @@
         const b = S.b, col = SKC[p.cls];
         if (!b) return;
         const ang = Math.atan2(b.y - p.y, b.x - p.x);
+        if (a == SPELL_ID) return spellFx(p);
         if (p.cls == "tank") {
           if (a == 0) { /* cleave: a wide arc in front of the tank */
             const [fx0, fy0] = DIRV[p.f || "d"], fa = Math.atan2(fy0, fx0);
@@ -7600,6 +7662,26 @@
         } else {
           VX.push({ k: "flash", x: p.x + Math.cos(ang) * 14, y: p.y + Math.sin(ang) * 14, r: a == 1 ? 40 : 22, col, l: a == 1 ? 0.3 : 0.15, m: a == 1 ? 0.3 : 0.15 });
           if (a == 1) sparks(p.x, p.y, col, 10, 140);
+        }
+      }
+      /* spellFx(p): the shop spell's look (cheap: a few VX rings; fewer sparks on low spec) */
+      function spellFx(p) {
+        const b = S.b, lo = SET.low || document.body.classList?.contains("lo") || RMOT();
+        if (p.cls == "tank") {
+          VX.push({ k: "dome", x: p.x, y: p.y, r: SPELL.tank.r, col: "#c9b48a", l: 0.6, m: 0.6 });
+          VX.push({ k: "nova", x: p.x, y: p.y, r0: 14, r1: SPELL.tank.r, w: 6, col: "#e8d6a8", l: 0.45, m: 0.45 });
+          if (!lo) sparks(p.x, p.y, "#e8d6a8", 10, 110, 1);
+          sfx("slam", 1.3);
+        } else if (p.cls == "dps") {
+          if (b) {
+            VX.push({ k: "nova", x: b.x, y: b.y, r0: b.r * 1.3, r1: b.r * 0.4, w: 4, col: "#ff9f43", l: SPELL.dps.fuse, m: SPELL.dps.fuse });
+            if (!lo) VX.push({ k: "flash", x: b.x, y: b.y, r: b.r, col: "#ffcf6a", l: 0.25, m: 0.25 });
+          }
+          sfx("shot", 1.4);
+        } else {
+          VX.push({ k: "nova", x: p.x, y: p.y, r0: 10, r1: SPELL.heal.r, w: 6, col: "#9dffb8", l: 0.6, m: 0.6 });
+          if (!lo) for (const a of (S.ps || [])) if (a.hp > 0 && dist(a, p) < SPELL.heal.r) sparks(a.x, a.y, "#c8ffd4", 6, 70, 1);
+          sfx("heal");
         }
       }
       /* hubSkill(p, a): practice move in the hub. Plays skill a's effect (no damage) and starts its cooldown. */
@@ -7707,53 +7789,102 @@
             /* skill 3: signature burst + floating skill name */
             () => { VX.push({ k: "pillar", x: p.x, y: p.y, w: 30, h: 160, col, l: 0.7, m: 0.7 }); VX.push({ k: "nova", x: p.x, y: p.y, r0: 10, r1: 120, w: 6, col: "#fff", l: 0.6, m: 0.6 }); sparks(p.x, p.y, col, 22, 200, 1); ftxt(p.x, p.y - 30, SK[p.cls][2], col, 12); sfx("heal"); },
           ];
-        fx[a]();
-        if (!DEV.nocd) p.cd[a] = CL[p.cls].cd[a] * cdm();
+        const k = skId(p, a);
+        if (k == SPELL_ID) { /* the shop spell: a harmless look-alike ring (no boss in the hub) */
+          VX.push({ k: "nova", x: p.x, y: p.y, r0: 10, r1: 110, w: 6, col, l: 0.5, m: 0.5 });
+          ftxt(p.x, p.y - 30, skN(p.cls, k), col, 12); sfx("heal");
+        } else fx[k]();
+        if (!DEV.nocd) p.cd[a] = skCd(p.cls, k) * cdm();
       }
       /* SKM: damage multiplier from the skill level (+15% per level). Set at the start of act(), 1 in the arena loop. */
       let SKM = 1;
+      /* act(p, a): press slot a (0 basic, 1-2 loadout skills, 3 ultimate). Cooldowns live per slot; k = the skill in that slot. */
       function act(p, a) {
         if (a == 3) return ult(p);
-        SKM = p === P ? 1 + 0.15 * ((V.sk[p.cls] || [])[a] || 0) : 1;
-        if (p === P && p.cls == "heal" && a == 1 && S.sc == "arena") p.aim = mouseAlly(); /* Empower goes to the ally nearest the cursor */
-        if (p === P && p.cls == "heal" && a == 2 && S.sc == "arena") p.aimPt = mousePoint(p); /* Circle lands at the cursor */
+        const k = skId(p, a);
+        SKM = p === P ? 1 + 0.15 * ((V.sk[p.cls] || [])[skLvI(k)] || 0) : 1;
+        if (p === P && p.cls == "heal" && k == 1 && S.sc == "arena") p.aim = mouseAlly(); /* Empower goes to the ally nearest the cursor */
+        if (p === P && p.cls == "heal" && k == 2 && S.sc == "arena") p.aimPt = mousePoint(p); /* Circle lands at the cursor */
         if (p === P && p.cd[a] <= 0 && p.hp > 0) bountyAdd("skill");
         if (S.sc == "hub" && p.hp > 0 && p.cd[a] <= 0) return hubSkill(p, a);
         if (S.sc != "arena" || S.end || p.hp <= 0 || p.cd[a] > 0 || !S.b) return;
+        const cdOf = () => Math.max(ENGINE.minCd, skCd(p.cls, k) * aCdm(p) * cdMul(p, k) * wpCd(p, k));
         if (S.net && S.net.role == "member") {
           /* a member shows its own press at once; the leader decides what it does */
           if (p !== P) return;
-          p.cd[a] = Math.max(ENGINE.minCd, CL[p.cls].cd[a] * aCdm(p) * cdMul(p, a) * wpCd(p, a));
-          raidFx(p, a);
-          const ra = { type: "ra", a, s: ++S.net.seq };
-          if (a == 1 && p.aim != null) ra.t = p.aim;
-          if (a == 2 && p.aimPt) ra.p = [Math.round(p.aimPt.x), Math.round(p.aimPt.y)];
+          p.cd[a] = cdOf();
+          raidFx(p, k);
+          const ra = { type: "ra", a, s: ++S.net.seq, ld: ldOf(p) }; /* ld: our loadout; the leader keeps the first valid one */
+          if (k == 1 && p.aim != null) ra.t = p.aim;
+          if (k == 2 && p.aimPt) ra.p = [Math.round(p.aimPt.x), Math.round(p.aimPt.y)];
           return netParty(S.net.lead, ra);
         }
-        raidEvent(["fx", p.id, a]);
-        skillFx(p, a, p.cls == "heal" && a > 0 ? (a == 1 ? buffTarget(p) : p.aimPt || healTarget(p) || p) : null);
+        raidEvent(["fx", p.id, k]);
+        skillFx(p, k, p.cls == "heal" && k > 0 ? (k == 1 ? buffTarget(p) : k == 2 ? p.aimPt || healTarget(p) || p : p) : null);
         const b = S.b,
           d = dist(p, b),
           eng = p.cls == "dps" ? p.eng || 1 : 1; /* DPS skills scale with the Engine */
         let ok = 1;
-        if (p.cls == "tank") {
+        if (k == SPELL_ID) spellCast(p);
+        else if (p.cls == "tank") {
           if (a == 0) {
             if (p === P ? P.auto : !p.remote) { const dx = b.x - p.x, dy = b.y - p.y; p.f = Math.abs(dx) > Math.abs(dy) ? (dx > 0 ? "r" : "l") : dy > 0 ? "d" : "u"; } /* bots turn to the boss */
             if (cleaveHits(p, b)) hitB(12, p);
           } /* Strike is a cleave: swings in front even with nothing there */
-          else if (a == 1) {
+          else if (k == 1) {
             if (d < b.r + 60) { hitB(25, p); bash(p); } else ok = 0;
           } else taunt(p);
         } else if (p.cls == "dps") {
           if (a == 0) shoot(p, 8);
-          else if (a == 1) shoot(p, 45 * eng);
+          else if (k == 1) shoot(p, 45 * eng);
           else S.rq.push({ id: p.id, n: 5, t: 0, d: 6 * eng, eg: ENGINE.volley });
         } else {
           if (a == 0) shoot(p, 7);
-          else if (a == 1) { empower(p, buffTarget(p)); p.aim = null; }
+          else if (k == 1) { empower(p, buffTarget(p)); p.aim = null; }
           else { const t = p.aimPt || healTarget(p) || p; p.aimPt = null; S.zo.push({ x: t.x, y: t.y, r: 90, l: 5 * (p === P ? 1 + eqSt("bd") + wp("zl") : 1), t: 0, src: p.id }); } /* circle lands on the most hurt ally */
         }
-        if (ok && !DEV.nocd) p.cd[a] = Math.max(ENGINE.minCd, CL[p.cls].cd[a] * aCdm(p) * cdMul(p, a) * wpCd(p, a));
+        if (ok && !DEV.nocd) p.cd[a] = cdOf();
+      }
+      /* spellCast(p): the shop spell's effect (screen running the fight). Levels only count for your own hero, like SKM. */
+      function spellCast(p) {
+        const lv = p === P ? (V.sk[p.cls] || [])[3] || 0 : 0;
+        if (p.cls == "tank") {
+          const T = SPELL.tank;
+          p.ward = T.t + T.lv * lv;
+          ftxt(p.x, p.y - 30, T.n, SKC.tank, 11);
+        } else if (p.cls == "dps") {
+          (S.mn = S.mn || []).push({ id: p.id, t: SPELL.dps.fuse, d: SPELL.dps.dmg * (p.eng || 1), k: SKM });
+        } else {
+          const H = SPELL.heal, m = 1 + H.lv * lv;
+          for (const a of raidAlive()) if (dist(a, p) < H.r) { a.rn = H.t; a.rnT = 1; a.rnH = a.mh * H.ps * m; a.rnS = p.id; }
+        }
+      }
+      /* spellTick(dt): ward / mine / renewal / expose timers (screen running the fight) */
+      function spellTick(dt) {
+        const b = S.b;
+        if (b && b.exp > 0) b.exp -= dt;
+        if (b && b.expCd > 0) b.expCd -= dt;
+        for (const p of S.ps) {
+          if (p.ward > 0) p.ward -= dt;
+          if (p.rn > 0) {
+            p.rn -= dt; p.rnT -= dt;
+            if (p.rnT <= 0) { p.rnT += 1; if (p.hp > 0) heal(p, p.rnH, actor(p.rnS) || P); }
+          }
+        }
+        if (S.mn && S.mn.length) {
+          for (const m of S.mn) if ((m.t -= dt) <= 0) {
+            const o = actor(m.id) || P, k0 = SKM;
+            SKM = m.k; hitB(m.d, o); SKM = k0;
+            if (b && !(b.expCd > 0)) { b.exp = SPELL.dps.et; b.expCd = SPELL.dps.icd; ftxt(b.x, b.y - b.r - 18, "EXPOSED", SKC.dps, 12); VX.push({ k: "flash", x: b.x, y: b.y, r: b.r * 1.6, col: "#ff9f43", l: 0.35, m: 0.35 }); }
+          }
+          S.mn = S.mn.filter((m) => m.t > 0);
+        }
+      }
+      /* wardMul(p): Stone Ward damage cut for p (the warding tank: SPELL.tank.self, allies nearby: .ally) */
+      function wardMul(p) {
+        let m = 1;
+        if (S.sc == "arena") for (const o of S.ps) if (o.ward > 0 && o.hp > 0) m = Math.min(m, o === p ? 1 - SPELL.tank.self : dist(o, p) < SPELL.tank.r ? 1 - SPELL.tank.ally : 1);
+        return m;
       }
       /* bash(p): Shield Bash stuns 2 s; during a poise window it breaks the boss: stunned 4 s and +50% damage for 8 s */
       function bash(p) {
@@ -7865,7 +7996,9 @@
           a.seq = m.s;
           a.heard = performance.now(); /* even a fallen member is still there: it keeps getting the fight to watch */
           if (a.hp <= 0) return;
-          if (m.type == "ra") { if (Number.isInteger(m.a) && m.a >= 0 && m.a <= 3) { a.aim = Number.isInteger(m.t) ? m.t : null; a.aimPt = Array.isArray(m.p) && m.p.length == 2 && m.p.every(Number.isFinite) ? mouseClamp(a, { x: m.p[0], y: m.p[1] }) : null; act(a, m.a); } return; }
+          if (m.type == "ra") {
+            if (!a.ld) a.ld = ldOk(a.cls, m.ld, true) ? [m.ld[0], m.ld[1]] : [1, 2]; /* the first press fixes this member's 2 skills for the raid */
+            if (Number.isInteger(m.a) && m.a >= 0 && m.a <= 3) { a.aim = Number.isInteger(m.t) ? m.t : null; a.aimPt = Array.isArray(m.p) && m.p.length == 2 && m.p.every(Number.isFinite) ? mouseClamp(a, { x: m.p[0], y: m.p[1] }) : null; act(a, m.a); } return; }
           if (!Number.isFinite(m.x) || !Number.isFinite(m.y) || !NET_F[m.f]) return;
           /* same refilling budget as the hub: 1.3x class speed, 0.5 s of slack, plus a dash when off cooldown */
           const now = performance.now(), rate = CL[a.cls].sp * RAID_SPEED * 1.3, cap = rate * 0.5 + 24, D = DASH[a.cls];
@@ -7938,7 +8071,7 @@
         for (const a of m.ao || []) S.ao.push(a[0] ? { ln: 1, x: a[1], y: a[2], a: a[3] / 1000, len: a[4], w: a[5], t: a[6] / 10, m: a[7] / 10 } : { x: a[1], y: a[2], r: a[3], t: a[4] / 10, m: a[5] / 10 });
         for (const z of m.zo || []) S.zo.push({ x: z[0], y: z[1], r: 90, l: 5, t: 0 });
         for (const e of m.ev || []) {
-          if (e[0] == "fx") { const a = S.ps.find((o) => o.id == e[1]); if (a && a !== P) raidFx(a, e[2], e[3], e[4]); else if (a && e[2] == 3 && a.cls == "dps") ultFx(a, null, e[4] / 10); }
+          if (e[0] == "fx") { const a = S.ps.find((o) => o.id == e[1]); if (![0, 1, 2, 3, SPELL_ID].includes(e[2])) continue; if (a && a !== P) raidFx(a, e[2], e[3], e[4]); else if (a && e[2] == 3 && a.cls == "dps") ultFx(a, null, e[4] / 10); }
           else if (e[0] == "msg") popMsg(String(e[1]).slice(0, 80), 1.1, 2500);
           else if (e[0] == "chat" && typeof e[1] == "string" && e[1].length <= 56 && typeof e[2] == "string" && e[2].length <= 16 && CL[e[3]] && typeof e[4] == "string" && e[4].length <= 80) {
             if (e[1] != netMyId()) raidChatLine(e[2], e[3], e[4]);
@@ -7951,6 +8084,7 @@
       function raidFx(a, k, t, n) {
         const b = S.b;
         if (k == 3) { if (a.cls == "heal") a.rev = 1; return ultFx(a, S.ps.find((o) => o.id == t), n ? n / 10 : a.eng); }
+        if (k == SPELL_ID) return spellFx(a);
         skillFx(a, k, a.cls == "heal" && k > 0 ? (S.ps.filter((o) => o.hp > 0 && o.hp < o.mh).sort((x, y) => x.hp / x.mh - y.hp / y.mh)[0] || a) : null);
         if (a.cls == "dps" || (a.cls == "heal" && k == 0)) {
           /* projectiles to watch (no damage here); Rapid Fire = a stream of 5 */
@@ -8167,6 +8301,7 @@
           }
         }
         S.zo = S.zo.filter((z) => z.l > 0);
+        spellTick(dt);
         const f = (b.ph == 2 ? 1.25 : 1) * (b.enr > 0 ? 1.3 : 1) * (1 + TRIAL.dmg * (S.trial || 0));
         for (const p of S.ps) { /* measured velocity (px/s, smoothed) for predictive aims */
           if (p.lx != null && dt > 0) { const k = Math.min(1, dt * 8); p.vx = (p.vx || 0) * (1 - k) + ((p.x - p.lx) / dt) * k; p.vy = (p.vy || 0) * (1 - k) + ((p.y - p.ly) / dt) * k; }
@@ -8897,7 +9032,25 @@
             <button ${on || locked ? "disabled" : ""} onclick="pickClass('${k}')">${on ? "YOURS" : locked ? "🔒 " + wait : "CHOOSE"}</button></div>`;
         }).join("");
         const intro = tut() == 1 ? "Choose your starting class. You can change it here later." : "Every raid needs a shield, a blade and a blessing. Which are you?";
-        $("dp").innerHTML = `<h2>⚔ The Class Master</h2><p class="sm">"${intro}"</p>${locked ? `<p class="sm">Your training holds a while: you can change class again in <b>${wait}</b>.</p>` : ""}${cards}<button class="alt x" onclick="closeDlg()" title="Farewell">Farewell</button>`;
+        $("dp").innerHTML = `<h2>⚔ The Class Master</h2><p class="sm">"${intro}"</p>${locked ? `<p class="sm">Your training holds a while: you can change class again in <b>${wait}</b>.</p>` : ""}${cards}${ldUI()}<button class="alt x" onclick="closeDlg()" title="Farewell">Farewell</button>`;
+      }
+      /* ldUI(): the raid skill picker: your class's 2 old skills + the shop spell (locked chip until bought); 2 are lit */
+      function ldUI() {
+        if (!P) return "";
+        const cls = P.cls, l = ldGet(cls), inRaid = S.sc == "arena";
+        const chip = (k) => { const i = l.indexOf(k); return `<button class="ldc${i >= 0 ? " on" : ""}" style="--uc:${SKC[cls]}" aria-pressed="${i >= 0}" ${inRaid ? "disabled" : ""} onclick="ldTap(${k})"><svg viewBox="-20 -20 40 40" stroke-linecap="round" stroke-linejoin="round">${SKI[cls][skLvI(k)]}</svg><span>${skN(cls, k)}</span>${i >= 0 ? `<b>${KEYHINT.kb[i + 1] || i + 1}</b>` : ""}</button>`; };
+        return `<div class="ldp"><div class="sm">Raid skills · bring 2${inRaid ? " · locked during a raid" : " · tap to swap"}</div><div class="ldr">${chip(1)}${chip(2)}${spOwn(cls) ? chip(SPELL_ID) : `<span class="ldc lk"><span>🔒 ${SPELL[cls].n}</span><span class="sm">at the Merchant</span></span>`}</div>${cls == "tank" && !l.includes(2) ? `<div class="sm need">Without Taunt the boss may ignore you</div>` : ""}</div>`;
+      }
+      /* ldTap(k): a lit skill is left home (the unlit one takes its slot); an unlit one takes slot 2 */
+      function ldTap(k) {
+        if (!P || S.sc == "arena") return;
+        const cls = P.cls, l = ldGet(cls).slice(), all = spOwn(cls) ? [1, 2, SPELL_ID] : [1, 2], out = all.find((x) => !l.includes(x));
+        if (!all.includes(k) || out == null) return;
+        const i = l.indexOf(k);
+        if (i >= 0) l[i] = out; else l[1] = k;
+        V.ld = V.ld || {}; V.ld[cls] = l;
+        save(); sfx("shot", 0.6);
+        CUR_DLG == "raid" ? raidUI() : classUI();
       }
       /* pickClass(k): switches the player to class k (saved for next time). */
       const CLASS_LOCK = 5 * 60e3; /* a class change holds for 5 minutes */
@@ -10349,22 +10502,36 @@
             <button ${can ? "" : "disabled"} onclick="buy('${u.k}')">${mx ? "MAX" : '<span class="coin"></span>' + cost}</button></div>`;
         }
         const cls = P ? P.cls : "tank";
-        h += `<div class="mast"><span class="sm">Your skills · max 5</span></div>` + [0, 1, 2].map((a) => {
-          const lv = (V.sk[cls] || [])[a] || 0, cost = 80 * (lv + 1), mx = lv >= 5;
-          return `<div class="up" style="--uc:${SKC[cls]}"><div style="min-width:0;flex:1"><span class="nm">${SK[cls][a]}</span><span class="pips">${[...Array(5)].map((_, i) => `<i class="${i < lv ? "on" : ""}"></i>`).join("")}</span></div><button ${mx || V.gold < cost ? "disabled" : ""} onclick="skBuy(${a})">${mx ? "MAX" : `<span class="coin"></span>${cost}`}</button></div>`;
+        const SP = SPELL[cls];
+        h += `<div class="mast"><span class="sm">Your skills · max 5</span></div>` + [0, 1, 2].concat(spOwn(cls) ? [3] : []).map((a) => {
+          const lv = (V.sk[cls] || [])[a] || 0, cost = 80 * (lv + 1), mx = lv >= 5, sp = a == 3;
+          return `<div class="up" style="--uc:${SKC[cls]}"><div style="min-width:0;flex:1"><span class="nm">${sp ? "✨ " + SP.n : SK[cls][a]}</span><span class="pips">${[...Array(5)].map((_, i) => `<i class="${i < lv ? "on" : ""}"></i>`).join("")}</span>${sp ? `<div class="sm">${SP.d}. Each level: ${SP.l}</div>` : ""}</div><button ${mx || V.gold < cost ? "disabled" : ""} onclick="skBuy(${a})">${mx ? "MAX" : `<span class="coin"></span>${cost}`}</button></div>`;
         }).join("");
+        if (!spOwn(cls)) h += `<div class="up" style="--uc:${SKC[cls]}"><div style="min-width:0;flex:1"><span class="nm">✨ New spell: ${SP.n}</span><div class="sm">${SP.d}. Then pick it as one of your 2 raid skills in the Class window or before a raid.</div>${V.gold < SPELL.cost ? `<div class="sm need">Need ${SPELL.cost - V.gold} more gold</div>` : ""}</div><button ${V.gold < SPELL.cost ? "disabled" : ""} onclick="spBuy()"><span class="coin"></span>${SPELL.cost}</button></div>`;
         $("dp").innerHTML = h + `<button class="alt x" onclick="closeDlg()" title="Close">Close</button>`;
         justBought = "";
       }
       /* skBuy(a): spends gold to raise your skill a by one level (max 5). Cost = 80 x next level. */
       function skBuy(a) {
         const cls = P ? P.cls : "tank", lv = (V.sk[cls] || [])[a] || 0, cost = 80 * (lv + 1);
-        if (lv >= 5 || V.gold < cost) return;
+        if (!(a >= 0 && a <= 3) || (a == 3 && !spOwn(cls)) || lv >= 5 || V.gold < cost) return;
         goldAdd(-cost, "skill");
         V.sk[cls][a] = lv + 1;
         save();
         if (P) burst(P.x, P.y, SKC[cls], 22, 170);
         sfx("win", 1.1);
+        shopUI();
+      }
+      /* spBuy(): unlocks your class's shop spell once (SPELL.cost gold, a "skill" spend) */
+      function spBuy() {
+        const cls = P ? P.cls : "tank";
+        if (spOwn(cls) || V.gold < SPELL.cost) return;
+        goldAdd(-SPELL.cost, "skill");
+        V.sp = V.sp || {}; V.sp[cls] = 1;
+        save();
+        if (P) burst(P.x, P.y, SKC[cls], 30, 200);
+        sfx("win", 1.1);
+        toast(`✨ ${SPELL[cls].n} learned! Pick your 2 raid skills in the Class window.`);
         shopUI();
       }
       function buy(k) {
@@ -10938,16 +11105,19 @@
           '<path d="M-11 11 9-9" stroke-width="4" fill="none"/><path d="M9-9l3-3M4-9l5 5" stroke-width="3" fill="none"/><path d="M-9 4l5 5" stroke-width="4" fill="none"/>',
           '<path d="M0-13l11 4v7c0 8-6 12-11 15-5-3-11-7-11-15v-7z"/>',
           '<path d="M-3-12h6l-1 15h-4zM0 7a3 3 0 1 1 0 6 3 3 0 1 1 0-6z"/><path d="M-12-6l-4-3M12-6l4-3M-13 2h-5M13 2h5" stroke-width="2.5" fill="none"/>',
+          '<path d="M-14 8a14 14 0 0 1 28 0z" fill="none" stroke-width="3"/><path d="M-9 8l3-9h12l3 9z"/><path d="M0-14v6" stroke-width="2.5"/>',
         ],
         dps: [
           '<path d="M-12 12 10-10" stroke-width="3" fill="none"/><path d="M12-12 2-9 9-2z"/><path d="M-12 12v-6M-12 12h6" stroke-width="2.5" fill="none"/>',
           '<path d="M-13 13 8-8" stroke-width="5" fill="none"/><path d="M13-13-1-10 10 1z"/><path d="M-13 13v-8M-13 13h8" stroke-width="3" fill="none"/>',
           '<path d="M-12 4 4-12M-6 10 10-6M0 16 16 0" stroke-width="2.5" fill="none"/><path d="M6-14 0-12 4-8zM12-8 6-6 10-2zM18-2 12 0 16 4z"/>',
+          '<path d="M0-14 12 0 0 14-12 0z" fill="none" stroke-width="3"/><path d="M0-6v12M-6 0h12" stroke-width="2.5"/>',
         ],
         heal: [
           '<path d="M3-14-7 2h6l-3 12 11-17h-6z"/>',
           '<path d="M-4-13h8v9h9v8h-9v9h-8v-9h-9v-8h9z"/>',
           '<circle r="12" fill="none" stroke-width="3"/><circle r="5" fill="none" stroke-width="2" opacity=".7"/><path d="M0-17v4M0 13v4M-17 0h4M13 0h4" stroke-width="2.5"/>',
+          '<path d="M-10 12C-14-4 2-14 13-13 14-2 4 12-10 12z" fill="none" stroke-width="3"/><path d="M-10 12 6-4" stroke-width="2.5"/>',
         ],
       };
       function uiUpd() {
@@ -10981,13 +11151,15 @@
         for (let a = 0; a < 3; a++) {
           const b = $("b" + a),
             cd = m.cd[a],
-            mx = Math.max(ENGINE.minCd, CL[m.cls].cd[a] * cdm() * cdMul(m, a));
-          /* rebuild the button only when the class changes; per frame we only touch the cooldown */
-          if (b.dataset.cls != m.cls) {
-            b.dataset.cls = m.cls;
+            k = skId(m, a),
+            mx = Math.max(ENGINE.minCd, skCd(m.cls, k) * cdm() * cdMul(m, k)),
+            key = m.cls + k;
+          /* rebuild the button only when the class or the equipped skill changes; per frame we only touch the cooldown */
+          if (b.dataset.cls != key) {
+            b.dataset.cls = key;
             b.className = "sk";
             b.style.setProperty("--sc", SKC[m.cls]);
-            b.innerHTML = `<svg viewBox="-20 -20 40 40" fill="currentColor" stroke="currentColor" stroke-linecap="round" stroke-linejoin="round">${SKI[m.cls][a]}</svg><span class="cdv"></span><span class="cdn"></span><span class="sn">${SK[m.cls][a]}</span><span class="kh k${a}"></span>`;
+            b.innerHTML = `<svg viewBox="-20 -20 40 40" fill="currentColor" stroke="currentColor" stroke-linecap="round" stroke-linejoin="round">${SKI[m.cls][skLvI(k)]}</svg><span class="cdv"></span><span class="cdn"></span><span class="sn">${skN(m.cls, k)}</span><span class="kh k${a}"></span>`;
           }
           /* key hint badge follows the active input device */
           const kh = b.querySelector(".kh"), ht = KEYHINT[INMODE][a];
@@ -10995,7 +11167,7 @@
           const on = cd > 0.05;
           if (b._on && !on) { b.classList.remove("rd"); void b.offsetWidth; b.classList.add("rd"); } /* ready flash */
           b._on = on;
-          const sn = b.querySelector(".sn"), lvN = (V.sk[m.cls] || [])[a] || 0, snT = SK[m.cls][a] + (lvN ? " Lv" + lvN : "");
+          const sn = b.querySelector(".sn"), lvN = (V.sk[m.cls] || [])[skLvI(k)] || 0, snT = skN(m.cls, k) + (lvN ? " Lv" + lvN : "");
           if (sn && sn.textContent != snT) sn.textContent = snT; /* button shows its level */
           b.classList.toggle("cd", on);
           b.style.setProperty("--p", on ? (cd / mx) * 100 + "%" : "0%");
@@ -16365,10 +16537,10 @@
           if (SET.fx && Math.random() < 0.35) { const a = rnd(0, 6.3), d = rnd(0, z.r); FX.push({ x: z.x + Math.cos(a) * d, y: z.y + Math.sin(a) * d, vx: 0, vy: -rnd(25, 60), l: 0.9, m: 0.9, col: "#9dffb8", r: rnd(1, 2), g: 1 }); }
         }
         /* Empower target: a turning dashed ring with 4 ticks on the ally nearest the cursor (bright when ready and in range) */
-        if (ar && P && P.cls == "heal" && P.hp > 0 && !S.end) {
+        if (ar && P && P.cls == "heal" && P.hp > 0 && !S.end && ldOf(P).includes(1)) {
           const id = mouseAlly(), t = id != null && actor(id);
           if (t) {
-            const ok = dist(t, P) < EMP.r, rd = P.cd[1] <= 0, r = PR + 10, spin = S.tm * 1.6;
+            const ok = dist(t, P) < EMP.r, rd = P.cd[ldOf(P).indexOf(1) + 1] <= 0, r = PR + 10, spin = S.tm * 1.6;
             c.save();
             c.globalAlpha = ok ? (rd ? 0.95 : 0.5) : 0.25;
             c.strokeStyle = ok ? "#ffd84a" : "#aaa";
