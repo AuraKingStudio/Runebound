@@ -2953,6 +2953,7 @@
           <div style="display:flex;flex-wrap:wrap;gap:6px">${seeds}</div><div class="gdn" onpointerdown="zenDown(event)" onpointermove="zenMove(event)" onpointerup="zenUp()" onpointerleave="zenUp()" onpointercancel="zenUp()"><canvas id="zen" aria-hidden="true"></canvas>${plots}</div><div id="gsw">${streakHTML()}</div>`;
       }
       function petUI() {
+        tutXNext(1);
         const re = CUR_DLG == "pet" && PET_RE; /* a rebuild of the open dialog: no entrance animation */
         const own = V.pets || {}, m = V.mat || {}, wms = petWait(), wt = wms ? Math.ceil(wms / 60000) + " min" : "";
         const cost = (c) => Object.entries(c).map(([k, q]) => `<span style="color:${(m[k] || 0) >= q ? "inherit" : "#ff8a8a"}">${MATS[k].e}${q}</span>`).join(" ");
@@ -3170,8 +3171,8 @@
       }, true);
       /* ---------- What's new: a small corner card once per build (BUILD), a soft chime at the player's volume ----------
          Brand-new players (tutorial not done) skip it: everything is new to them. Dismiss with x, or it fades after 14 s. */
-      const BUILD = "2026.11.08.23"; /* UI cleanup: Quests/Shop/Class/Daily moved to NPCs */
-      const NEWS = ["📖 Easier tutorial: big step card, what to press, arrows on every NPC, and it ends by starting your first raid from the middle", "⚔ Choose a raid fits small screens: every ENTER is visible, tap a whole card to go", "🧹 Cleaner top bar: daily quests at the 🧙 Elder, the ✨ Shop at the 💰 Merchant, class and raid skills at the ⚔ Class Master, 🎁 Daily Rewards at the 🍺 Barkeep (marker when ready)", "✨ New spells at the Merchant: Stone Ward (Tank), Rune Mine (DPS), Renewal (Healer). Pick the 2 skills you bring to a raid in the Class window or on the Choose Raid screen", "🧙 The Elder gives side quests: keep one next to your main quest (8 new quests, progress bars, both tracked on screen)", "📱 Cleaner top bar: icon tiles with labels, a 🎖️ Titles button, red badges when rewards wait. Contracts show the courier countdown instead of a dead button", "🎁 Daily Rewards (top bar or G): the Wish Shrine gift, Fortune Wheel, Rune Reels and Treasure Dig on one board with today's progress and a red badge when rewards wait. 🌸 The Zen Garden has its own button and badges when beds are ripe", "✨ Wish cosmetics glow brighter: new trails (Leaf Drift, Starlit Steps, Comet Tail), emote bubbles (Heart Puff, Rune Glyph) and the Legendary Runic Nova aura. Preview your look in the Collection; changes show to everyone at once", "🌠 Rune Wishes: the Wish Shrine! Make free wishes for auras, pet hats, name effects and titles (odds and pity shown, dupes become Stardust). Earn 🎟 at the Fortune Wheel, Rune Reels and Treasure Dig, plus Cipher wins, garden harvests and raids. All free, always", "🔮 Cipher: every few gathers a quick rune game pops up (strike the vein, the moonleaf pattern, the crystal echo); win a bonus pack of 5. Gathering combos and a shinier channel too", "🌸 The Zen Garden: rake the sand, water your plants, harvest materials, claim a 7-day streak bonus and trade your produce with friends", "🐾 Pets: reach level 6 to meet the Beastkeeper. Adopt a Fox, Owl, Wolf or Sprite with materials, feed it for a bigger bonus, and tap it to play", "⛏️ Gathering: Iron Ore, Moonleaf and Skycrystal nodes on the island; mastery raises your yield", "📜 Contract Board: 3 material orders a day on the Quest Board", "🌹 The Maiden's Exchange: barter materials at rates that drift each day"];
+      const BUILD = "2026.11.08.24"; /* UI cleanup: Quests/Shop/Class/Daily moved to NPCs */
+      const NEWS = ["🔨🐾 New players meet the Smith and the Beastkeeper in the tutorial", "📖 Easier tutorial: big step card, what to press, arrows on every NPC, and it ends by starting your first raid from the middle", "⚔ Choose a raid fits small screens: every ENTER is visible, tap a whole card to go", "🧹 Cleaner top bar: daily quests at the 🧙 Elder, the ✨ Shop at the 💰 Merchant, class and raid skills at the ⚔ Class Master, 🎁 Daily Rewards at the 🍺 Barkeep (marker when ready)", "✨ New spells at the Merchant: Stone Ward (Tank), Rune Mine (DPS), Renewal (Healer). Pick the 2 skills you bring to a raid in the Class window or on the Choose Raid screen", "🧙 The Elder gives side quests: keep one next to your main quest (8 new quests, progress bars, both tracked on screen)", "📱 Cleaner top bar: icon tiles with labels, a 🎖️ Titles button, red badges when rewards wait. Contracts show the courier countdown instead of a dead button", "🎁 Daily Rewards (top bar or G): the Wish Shrine gift, Fortune Wheel, Rune Reels and Treasure Dig on one board with today's progress and a red badge when rewards wait. 🌸 The Zen Garden has its own button and badges when beds are ripe", "✨ Wish cosmetics glow brighter: new trails (Leaf Drift, Starlit Steps, Comet Tail), emote bubbles (Heart Puff, Rune Glyph) and the Legendary Runic Nova aura. Preview your look in the Collection; changes show to everyone at once", "🌠 Rune Wishes: the Wish Shrine! Make free wishes for auras, pet hats, name effects and titles (odds and pity shown, dupes become Stardust). Earn 🎟 at the Fortune Wheel, Rune Reels and Treasure Dig, plus Cipher wins, garden harvests and raids. All free, always", "🔮 Cipher: every few gathers a quick rune game pops up (strike the vein, the moonleaf pattern, the crystal echo); win a bonus pack of 5. Gathering combos and a shinier channel too", "🌸 The Zen Garden: rake the sand, water your plants, harvest materials, claim a 7-day streak bonus and trade your produce with friends", "🐾 Pets: reach level 6 to meet the Beastkeeper. Adopt a Fox, Owl, Wolf or Sprite with materials, feed it for a bigger bonus, and tap it to play", "⛏️ Gathering: Iron Ore, Moonleaf and Skycrystal nodes on the island; mastery raises your yield", "📜 Contract Board: 3 material orders a day on the Quest Board", "🌹 The Maiden's Exchange: barter materials at rates that drift each day"];
       let NEWS_T = 0;
       function newsShow() {
         let seen = "";
@@ -3420,7 +3421,7 @@
           V.cls = typeof s.cls == "string" && Object.hasOwn(CL, s.cls) ? s.cls : "";
           V.mb = typeof s.mb == "string" ? s.mb.slice(0, 10) : "";
           /* tutorial step 0-4 (4 = done). Old saves with progress skip it. */
-          V.tut = Number.isFinite(s.tut) ? cl(Math.trunc(s.tut), 0, 4) : s.xp || s.q || s.lt ? 4 : 0;
+          V.tut = Number.isFinite(s.tut) ? cl(Math.trunc(s.tut), 0, s.tv == 3 ? 5 /* TUT_DONE (defined later) */ : 4) : s.xp || s.q || s.lt ? 4 : 0; V.tv = s.tv == 3 ? 3 : s.tv == 2 ? 2 : undefined; /* tv kept: a reload must not re-run tutMigrate (it skipped a step) */ V.tx = Number.isInteger(s.tx) ? Math.max(0, Math.min(3, s.tx)) : undefined; V.tr = s.tr ? 1 : 0; /* tutorial extra steps */
           /* guild + daily bounties */
           V.gd = s.gd && typeof s.gd.name == "string" ? { name: s.gd.name.slice(0, 20), m: Array.isArray(s.gd.m) ? s.gd.m.filter((r) => r && typeof r.c == "string" && Object.hasOwn(CL, r.c)).slice(0, 10) : [] } : null;
           V.bo = s.bo && typeof s.bo.day == "string" && Array.isArray(s.bo.ids) ? { day: s.bo.day, ids: s.bo.ids, prog: s.bo.prog || {}, done: s.bo.done || {} } : null;
@@ -8548,7 +8549,7 @@
          0 move -> Elder, 1 talk to Elder -> Merchant, 2 open shop -> Archivist, 3 listen -> portal, 4 done */
       const tut = () => (V.tut == null ? 0 : V.tut);
       const TUT_DONE = 5;
-      const TUT_TXT = ["Learn to walk", "Meet the Class Master", "Meet the Elder", "Visit the Merchant", "Listen to the Archivist", "Start your first raid"];
+      const TUT_TXT = ["Learn to walk", "Meet the Class Master", "Meet the Elder", "Visit the Merchant", "Listen to the Archivist", "Visit the Smith", "Meet the Beastkeeper", "Start your first raid"];
       /* tutHow(i): the plain "what do I press" line under each tutorial step (keyboard, touch or controller wording) */
       function tutHow(i) {
         const kb = INMODE == "kb", tc = INMODE == "touch", act = tc ? "tap the Talk button" : kb ? `press ${keyLabel(SET.bind.int)}` : "press A";
@@ -8558,11 +8559,29 @@
           `Follow the arrow to the purple 🧙 Elder and ${act}`,
           `Follow the arrow to the gold 💰 Merchant and ${act}`,
           `Follow the arrow to the blue 📜 Archivist and ${act} to hear a tale`,
+          `Follow the arrow to the orange 🔨 Smith and ${act}`,
+          `Follow the arrow to the 🐾 Beastkeeper and ${act}`,
           `Walk onto the glowing circle in the middle, ${act}, pick a raid`,
         ][i] || "";
       }
-      /* tutRaid(): the last tutorial step (after TUT_DONE, so every unlock still opens at TUT_DONE): until your first raid starts */
-      const tutRaid = () => tut() >= TUT_DONE && !V.tr && !(V.wins || V.loss);
+      /* TUT_X: the last tutorial steps, after TUT_DONE (so everything that opens at TUT_DONE still does): 0 Smith, 1 Beastkeeper,
+         2 start a raid. V.tx = next one; finishing the Archivist step sets it to 0 and opens the Smith and the Beastkeeper for
+         new players. Saves without V.tx (finished before this) only get the raid step. Ends when a raid starts or was played.
+         tutX(): the current extra step, or -1. tutXNext(i): step i done. */
+      const TUT_X = 3;
+      const tutX = () => (tut() >= TUT_DONE && !V.tr && !(V.wins || V.loss) ? Math.min(V.tx ?? 2, 2) : -1);
+      function tutXNext(i) {
+        if (tutX() != i) return;
+        V.tx = i + 1;
+        save();
+        const n = [PETS, PORTAL][i];
+        if (n && n !== PORTAL) n._rv = S.tm;
+        if (n) { burst(n.x, n.y, n.col || "#5af0dc", 40, 220); RINGS.push({ x: n.x, y: n.y, col: n.col || "#5af0dc", t: 0 }); }
+        sfx("win", 1.1);
+        popMsg("✨ " + TUT_TXT[TUT_DONE + i + 1], 1.1, 3500);
+      }
+      /* tutRaid(): on the "start a raid" step (kept for older callers) */
+      const tutRaid = () => tutX() == 2;
       /* tutMigrate(): saves from the old 4-step tutorial (move, Elder, Merchant, Archivist) map onto the new steps */
       function tutMigrate() {
         if (V.tv == 3) return;
@@ -8578,12 +8597,13 @@
         V.tut = from + 1;
         save();
         if (from == 0) (V.ul = V.ul || {}), (V.ul.class = true); /* the Class Master is there from the start of the tutorial */
-        const n = [CLASSN, ELDER, SHOP, LORE, PORTAL][from] || P; /* each step reveals the next NPC (step 0 -> the Class Master) */
+        if (V.tut == TUT_DONE) { V.ul = V.ul || {}; V.ul.smith = V.ul.pet = true; V.tx = 0; save(); } /* new players meet the Smith and the Beastkeeper in the tutorial */
+        const n = [CLASSN, ELDER, SHOP, LORE, SMITH][from] || P; /* each step reveals the next NPC (step 0 -> the Class Master) */
         if (n !== P) n._rv = S.tm; /* slow fade-in */
         burst(n.x, n.y, n.col || "#5af0dc", 40, 220);
         RINGS.push({ x: n.x, y: n.y, col: n.col || "#5af0dc", t: 0 });
         sfx("win", 1.1);
-        popMsg(V.tut >= TUT_DONE ? "⚔ Last step: walk onto the glowing circle in the middle and start a raid!" : "✨ " + TUT_TXT[V.tut], 1.1, 3500);
+        popMsg("✨ " + TUT_TXT[V.tut], 1.1, 3500);
       }
       /* step(dt): advance the whole game by dt seconds. In: dt (s). Out: mutates S, P. */
       const TP_TIME = 1.6;
@@ -8592,7 +8612,7 @@
         track("raid_go", key);
         if (S.tp || S.sc != "hub") return;
         S.next = { key, team, net };
-        if (!V.tr) { V.tr = 1; save(); } /* the tutorial's last step (start a raid) is done */
+        if (!V.tr) { V.tr = 1; V.tx = TUT_X; save(); } /* the tutorial's last step (start a raid) is done */
         S.tp = S.tm || 1e-6; /* never 0, so "is teleporting" stays true */
         sfx("phase", 1.6);
         setTimeout(() => sfx("win", 1.4), 700);
@@ -9328,6 +9348,7 @@
       }
       /* smithUI(): the Forge (crafting gear from raid drops). Blessings moved to the Seraph. */
       function smithUI() {
+        tutXNext(0);
         $("dp").innerHTML = `<h2>🔨 The Smith</h2><div class="purse"><span class="coin"></span><b>${V.gold}</b></div><p class="sm">"Bring me what the bosses leave behind. I'll make it worth carrying."</p>${forgeUI()}<button class="alt x" onclick="closeDlg()" title="Close">Close</button>`;
       }
       /* ---------- The Seraph: one-raid blessings for gold (one at a time, spent when the raid ends) ---------- */
@@ -16832,8 +16853,8 @@
         if (P && S.sc != "lobby") {
           /* no HP readout up here: your health bar floats over your character. Gold lives in the HTML bar (#gp). */
           /* tutorial: step text at the top + bouncing arrow over the next target */
-          if (S.sc == "hub" && (tut() < TUT_DONE || tutRaid()) && !S.tp) {
-            const st = tutRaid() ? TUT_DONE : tut(), N = TUT_DONE + 1, y0 = st >= TUT_DONE ? 84 : 8, how = tutHow(st), cx = 450; /* last step: under the top button bar (the quest tracker moves down) */
+          if (S.sc == "hub" && (tut() < TUT_DONE || tutX() >= 0) && !S.tp) {
+            const st = tut() < TUT_DONE ? tut() : TUT_DONE + tutX(), N = TUT_DONE + TUT_X, y0 = st >= TUT_DONE ? 84 : 8, how = tutHow(st), cx = 450; /* last step: under the top button bar (the quest tracker moves down) */
             c.save();
             c.textAlign = "center";
             c.textBaseline = "middle";
@@ -16860,7 +16881,7 @@
             c.font = fs + "px Georgia";
             c.fillStyle = "#f3e6c8";
             c.fillText(how, cx, y0 + 51);
-            const tg = [null, CLASSN, ELDER, SHOP, LORE, PORTAL][st]; /* step 6: the Rune Crossing in the middle */
+            const tg = [null, CLASSN, ELDER, SHOP, LORE, SMITH, PETS, PORTAL][st]; /* last step: the Rune Crossing in the middle */
             if (tg) {
               /* arrow + ring converted from world to screen-fixed units (HUD transform is active here) */
               const isX = tg === PORTAL, cf = isX ? crossFrame() : null, gx = (isX ? cf.q.x : tg.x) - CAM.x, gy = (isX ? cf.q.y : tg.y) - CAM.y, pu = (S.tm * 1.2) % 1;
@@ -16898,7 +16919,7 @@
             c.fillText(BL[0] + " blessing", 14, 62);
             c.restore();
           }
-          if (tut() >= TUT_DONE) qTrack((ar ? 62 : document.body.classList && document.body.classList.contains("ph") ? 112 : 100) + (!ar && tutRaid() ? 72 : 0)); /* below the tutorial card on its last step */ /* below the top button bar */
+          if (tut() >= TUT_DONE) qTrack((ar ? 62 : document.body.classList && document.body.classList.contains("ph") ? 112 : 100) + (!ar && tutX() >= 0 ? 72 : 0)); /* below the tutorial card on its last step */ /* below the top button bar */
         }
         if (ar && b) {
           const D = b.def || BOSSES.seer;
