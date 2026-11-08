@@ -35,7 +35,7 @@ A co-op raid game that runs in the browser: a floating hub island, NPCs, and bos
 - `src/app.js`: the hub service: hub directory (WebRTC setup) and opt-in market routes (`npm run signaling`; market disabled by default).
 - `src/market.js`: the player market (server escrow) and its JSON store.
 - `src/playtest.js`: LAN playtest: serves the game and the hub service together (`npm run playtest`).
-- `src/test.js`: game, network, market and directory tests (`npm test`); `npm run bench` runs the raid and network benchmarks.
+- `src/test.js`: game, network, market and directory tests; `src/test-db.js`: PostgreSQL bank tests (run when `TEST_DATABASE_URL` points at a database whose name ends in `_test`, otherwise they print SKIP). `npm test` runs both; `npm run bench` runs the raid and network benchmarks.
 - `assets/icon.png`: tab icon.
 - `AgentInstruction.md`: working notes and rules for contributors and coding agents.
 
