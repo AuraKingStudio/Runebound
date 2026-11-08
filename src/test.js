@@ -486,7 +486,7 @@ V.gm=1e6;ok(T.gLv()===10,'gathering: mastery caps at level 10');V.gn={};V.gday.n
  R('WI.dig=null');r=R('wiLocal("dig",{})');ok(r[0]==200&&r[1].id=='local','wish: offline dig opens a board');
  R('WI.dig={id:"local",local:WI.dig.local,open:[],picks:6,sum:{}}');r=R('wiLocal("dig",{id:"local",i:0})');ok(r[0]==200&&typeof r[1].k=='string'&&R('wiLocal("dig",{id:"local",i:0})')[0]==400,'wish: offline dig reveals a tile once');
  ok(R('wiLocal("shop",{id:"__proto__"})')[0]==400&&R('wiLocal("shop",{id:"c_ore"})')[0]==400,'wish: offline shop refuses prototype keys and materials');
- R('V.wi.sd=1000');ok(R('wiLocal("shop",{id:"n_star"})')[0]==200&&R('wishOwn("n_star")'),'wish: offline Stardust shop sells a chosen cosmetic');
+ R('V.wi.sd=1000');const sid=R('["n_star","n_prism","a_aether","a_nova","w_comet"].find(k=>!wishOwn(k))||"n_star"');ok(R('wiLocal("shop",{id:"'+sid+'"})')[0]==200&&R('wishOwn("'+sid+'")'),'wish: offline Stardust shop sells a chosen cosmetic');
  R('wiAdopt({t:7,sd:3,p10:2,p60:5,n:9,own:["a_ember","__proto__","bogus","constructor"],day:{e:4,s:{wheel:1,x:9}},mat:{ore:3,heart:"9"}})');
  ok(V0.wi.t===7&&V0.wi.sd===3&&V0.wi.p60===5&&Object.keys(V0.wi.own).join()=='a_ember'&&V0.wi.dy.s.wheel===1&&!('x'in V0.wi.dy.s)&&V0.mat.ore>=3&&!V0.mat.heart,'wish: adopts the bank\'s answer (only catalogue items, only known counters)');
  R('wiAdopt({t:"999",sd:-5})');ok(V0.wi.t===7,'wish: a malformed answer is ignored');
@@ -512,7 +512,8 @@ V.gm=1e6;ok(T.gLv()===10,'gathering: mastery caps at level 10');V.gn={};V.gday.n
  th=0;try{R('V.wi.own.a_nova=1;V.wq={a:"a_nova"};CUR_DLG="wish";wishUI("coll");wqMannequin();wishWear("a_nova",null);wishWear("a_nova",null)');}catch(e){th=e;}ok(!th&&dp.innerHTML.includes('id="wmq"'),'wish: the Collection shows the outfit preview and wearing works'+(th?' '+th:''));
  ok(R('!nearby.toString().includes("WISHN")&&typeof WISHN=="undefined"&&typeof WHEELN=="undefined"&&typeof REELN=="undefined"&&typeof DIGN=="undefined"'),'games: the shrine and 3 game spots are gone from the hub');
  ok(R('nearby.toString().includes("BARKEEP")&&BARKEEP.x==750&&BARKEEP.y==350'),'games: blackjack still stands at the Barkeep in the hub');
- {R('closeDlg();globalThis.__sv=JSON.stringify({q:V.q,qs:V.qs,sq:V.sq,sd:V.sd,gm:V.gm,gold:V.gold});V.q=0;V.qs=0;V.sq=null;V.sd=[];V.gm=0');
+ {const rr=R('GNODES.map(n=>Math.hypot(n.x-PORTAL.x,(n.y-PORTAL.y)*HUB.rx/HUB.ry))'),m=rr.reduce((a,b)=>a+b)/rr.length;ok(rr.every(r=>Math.abs(r-m)<m*0.15),'gathering: every node sits on the same ring around the hub centre');ok(R('GNODES.every(n=>{const v=riverNear(n.x,n.y);return v.d>v.bw+12&&!bridgeAt(n)})'),'gathering: no node on the river or the crossing');}
+{R('closeDlg();globalThis.__sv=JSON.stringify({q:V.q,qs:V.qs,sq:V.sq,sd:V.sd,gm:V.gm,gold:V.gold});V.q=0;V.qs=0;V.sq=null;V.sd=[];V.gm=0');
   R('openDlg("elder")');let h=dp.innerHTML;ok(/Main quest/.test(h)&&/Side quest · new/.test(h)&&h.includes('Hands in the Soil')&&(h.match(/class="qcard/g)||[]).length==2,'elder: main and side quest cards side by side');
   ok(R('sideAct(1)')===true&&R('V.sq.id')=='soil'&&R('sideAct(1)')===false,'elder: one side quest at a time (max 2 quests)');
   R('qAct(1)');ok(R('V.qs')==1&&R('V.sq.st')==1,'elder: main and side quest active together');

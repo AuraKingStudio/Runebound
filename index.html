@@ -1779,6 +1779,11 @@
       #emo button:hover { border-color: #3fd6c6; }
       #btns #bi { color: #f6f0dc; text-shadow: 0 0 8px #3fd6c6aa; background: linear-gradient(180deg, #b8fff6, #3fd6c6 50%, #1a7f77); }
       #btns #bi::before { background: radial-gradient(ellipse at 50% 30%, #24384f, #0f1824 70%); }
+      /* action banner text by kind: NPCs and the shop gold, inviting a player blue, gathering green, raids ember */
+      #btns #bi[data-k="npc"] { color: #ffe08a; text-shadow: 0 0 8px #f0b84a99; }
+      #btns #bi[data-k="pl"] { color: #a9e4ff; text-shadow: 0 0 8px #5ab8ffaa; }
+      #btns #bi[data-k="gn"] { color: #b8f5a0; text-shadow: 0 0 8px #6fd65a99; }
+      #btns #bi[data-k="raid"] { color: #ffc28a; text-shadow: 0 0 8px #ff8a4a99; }
       body.lo #btns .hb, body.lo #btns #bt, body.lo #btns #mlbar button, body.lo #btns #bi { text-shadow: 0 1px 0 #000; }
 
       /* ---------- Dusk Aether dialogs: twilight rows tinted by their accent (--uc), teal runestone buttons, glass raid cards ---------- */
@@ -3150,7 +3155,7 @@
       }, true);
       /* ---------- What's new: a small corner card once per build (BUILD), a soft chime at the player's volume ----------
          Brand-new players (tutorial not done) skip it: everything is new to them. Dismiss with x, or it fades after 14 s. */
-      const BUILD = "2026.11.08.19"; /* seamless hub loops, Beastkeeper unlock kept on reload, bot wall failsafe */
+      const BUILD = "2026.11.08.21"; /* seamless hub loops, Beastkeeper unlock kept on reload, bot wall failsafe */
       const NEWS = ["🧹 Cleaner top bar: daily quests at the 🧙 Elder, the ✨ Shop at the 💰 Merchant, class and raid skills at the ⚔ Class Master (by the Rune Crossing), 🎁 Daily Rewards at the 🍺 Barkeep (marker when ready)", "✨ New spells at the Merchant: Stone Ward (Tank), Rune Mine (DPS), Renewal (Healer). Pick the 2 skills you bring to a raid in the Class window or on the Choose Raid screen", "🧙 The Elder gives side quests: keep one next to your main quest (8 new quests, progress bars, both tracked on screen)", "📱 Cleaner top bar: icon tiles with labels, a 🎖️ Titles button, red badges when rewards wait. Contracts show the courier countdown instead of a dead button", "🎁 Daily Rewards (top bar or G): the Wish Shrine gift, Fortune Wheel, Rune Reels and Treasure Dig on one board with today's progress and a red badge when rewards wait. 🌸 The Zen Garden has its own button and badges when beds are ripe", "✨ Wish cosmetics glow brighter: new trails (Leaf Drift, Starlit Steps, Comet Tail), emote bubbles (Heart Puff, Rune Glyph) and the Legendary Runic Nova aura. Preview your look in the Collection; changes show to everyone at once", "🌠 Rune Wishes: the Wish Shrine! Make free wishes for auras, pet hats, name effects and titles (odds and pity shown, dupes become Stardust). Earn 🎟 at the Fortune Wheel, Rune Reels and Treasure Dig, plus Cipher wins, garden harvests and raids. All free, always", "🔮 Cipher: every few gathers a quick rune game pops up (strike the vein, the moonleaf pattern, the crystal echo); win a bonus pack of 5. Gathering combos and a shinier channel too", "🌸 The Zen Garden: rake the sand, water your plants, harvest materials, claim a 7-day streak bonus and trade your produce with friends", "🐾 Pets: reach level 6 to meet the Beastkeeper. Adopt a Fox, Owl, Wolf or Sprite with materials, feed it for a bigger bonus, and tap it to play", "⛏️ Gathering: Iron Ore, Moonleaf and Skycrystal nodes on the island; mastery raises your yield", "📜 Contract Board: 3 material orders a day on the Quest Board", "🌹 The Maiden's Exchange: barter materials at rates that drift each day"];
       let NEWS_T = 0;
       function newsShow() {
@@ -3839,7 +3844,7 @@
          then half up to 80, then a fifth: steady play keeps full yield, a bot running all day gets little. Mastery V.gm = gathers done,
          level 1-10 (+4% yield per level). Gains go through matAdd(k, n, "gather") so the server bank can cap them. */
       const GATHER = { cd: 60000, ch: 1.2, r: 48, full: 40, half: 80, per: 0.04, max: 10 };
-      const GNODES = [{ x: 365, y: 250, k: "ore" }, { x: 545, y: 258, k: "herb" }, { x: 280, y: 360, k: "echo" }, { x: 620, y: 345, k: "ore" }, { x: 335, y: 520, k: "herb" }, { x: 585, y: 405, k: "echo" }]; /* off the river, bridges and NPCs */
+      const GNODES = [{ x: 365, y: 250, k: "ore" }, { x: 545, y: 258, k: "herb" }, { x: 280, y: 360, k: "echo" }, { x: 620, y: 345, k: "ore" }, { x: 380, y: 452, k: "herb" }, { x: 585, y: 405, k: "echo" }]; /* off the river, bridges and NPCs */
       const GBASE = { ore: 2, herb: 2, echo: 1 };
       let GCH = null; /* the channel in progress: { i, t, x, y } */
       let GPOP = null; const GCOMBO = { n: 0, t: 0 }; /* success ring { i, t } and the gather combo */
@@ -11239,6 +11244,8 @@
           const lb = n == "raid" ? "CHOOSE RAID" : n.startsWith("gn:") ? (gReady(+n.slice(3)) ? "GATHER · " + MATS[GNODES[+n.slice(3)].k].n.toUpperCase() : "REGROWING") : n.startsWith("player:") ? "INVITE · " + (HUBV.find((o) => "player:" + o.id == n)?.name || "") + "" : n == "elder" ? "TALK" : n == "lore" ? "LISTEN" : n == "barkeep" && !isUnl(n) ? "JOIN DISCORD TO UNLOCK!" : ["class", "maiden", "smith", "herald"].includes(n) && !isUnl(n) ? "???" : n == "class" ? "CLASS" : n == "maiden" ? "PRAY" : n == "smith" ? "FORGE" : n == "herald" ? "RECORDS" : n == "barkeep" ? "BLACKJACK" : n == "qboard" ? "QUESTS" : n == "gboard" ? "GUILD" : n == "wish" ? "MAKE A WISH" : n == "wheel" ? "SPIN THE WHEEL" : n == "reels" ? "RUNE REELS" : n == "dig" ? "TREASURE DIG" : "SHOP",
             ht = KEYHINT[INMODE][3],
             h = lb + (NEAR_PL.length > 1 ? ` <small>${(INV_I % NEAR_PL.length) + 1}/${NEAR_PL.length}</small>` : "") + (ht ? ` <span class="kh k3">${ht}</span>` : "");
+          const kd = n.startsWith("player:") ? "pl" : n.startsWith("gn:") ? "gn" : n == "raid" ? "raid" : "npc"; /* banner colour by kind: players blue, NPCs/shop gold */
+          if ($("bi").dataset.k != kd) $("bi").dataset.k = kd;
           if ($("bi")._h != h) { $("bi")._h = h; $("bi").innerHTML = h; $("bi").classList.add("small"); } /* only touch the DOM when it changes */
         }
       }
