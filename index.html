@@ -1248,6 +1248,12 @@
       body.ph.hub:not(.tut-on) #btns #topc button::before { font-size: 8px; bottom: 3px; }
       body.ph.hub:not(.tut-on) #topc { gap: 6px; }
       @media (max-width: 360px) { .dgrid { grid-template-columns: 1fr; } .dcard { min-height: 0; } }
+      .qcard { border: 1px solid var(--ln); border-left: 3px solid #ffd84a; border-radius: 10px; padding: 8px 10px; margin: 8px 0; background: #0006; }
+      .qcard.side { border-left-color: #7fdcff; } .qcard.rdy { border-color: #7dff9a; box-shadow: 0 0 10px #7dff9a33; }
+      .qcard p { margin: 6px 0; } .qcard .qo { margin: 6px 0; } .qcard .mbar { margin: 4px 0 6px; }
+      .qrw { display: flex; align-items: center; justify-content: space-between; gap: 10px; flex-wrap: wrap; font-size: 13px; }
+      .qrw button.claim { display: inline-block; width: auto; margin: 0; padding: 8px 18px; font-size: 15px; letter-spacing: 1px; min-height: 44px; }
+      .qrw button.alt { min-height: 44px; padding: 6px 14px; }
       .gmi { font-size: 26px; line-height: 44px; width: 36px; text-align: center; flex: none; }
       .gmbk { display: flex; gap: 8px; justify-content: center; margin-top: 10px; } .gmbk button { min-height: 44px; }
       .pn .tt { padding: 10px 6px; }
@@ -3091,8 +3097,8 @@
       }, true);
       /* ---------- What's new: a small corner card once per build (BUILD), a soft chime at the player's volume ----------
          Brand-new players (tutorial not done) skip it: everything is new to them. Dismiss with x, or it fades after 14 s. */
-      const BUILD = "2026.11.08.9"; /* pop-up banners sit under the top bar and stack */
-      const NEWS = ["📱 Cleaner top bar: icon tiles with labels, a 🎖️ Titles button, red badges when rewards wait. Contracts show the courier countdown instead of a dead button", "🎁 Daily Rewards (top bar or G): the Wish Shrine gift, Fortune Wheel, Rune Reels and Treasure Dig on one board with today's progress and a red badge when rewards wait. 🌸 The Zen Garden has its own button and badges when beds are ripe", "✨ Wish cosmetics glow brighter: new trails (Leaf Drift, Starlit Steps, Comet Tail), emote bubbles (Heart Puff, Rune Glyph) and the Legendary Runic Nova aura. Preview your look in the Collection; changes show to everyone at once", "🌠 Rune Wishes: the Wish Shrine! Make free wishes for auras, pet hats, name effects and titles (odds and pity shown, dupes become Stardust). Earn 🎟 at the Fortune Wheel, Rune Reels and Treasure Dig, plus Cipher wins, garden harvests and raids. All free, always", "🔮 Cipher: every few gathers a quick rune game pops up (strike the vein, the moonleaf pattern, the crystal echo); win a bonus pack of 5. Gathering combos and a shinier channel too", "🌸 The Zen Garden: rake the sand, water your plants, harvest materials, claim a 7-day streak bonus and trade your produce with friends", "🐾 Pets: reach level 6 to meet the Beastkeeper. Adopt a Fox, Owl, Wolf or Sprite with materials, feed it for a bigger bonus, and tap it to play", "⛏️ Gathering: Iron Ore, Moonleaf and Skycrystal nodes on the island; mastery raises your yield", "📜 Contract Board: 3 material orders a day on the Quest Board", "🌹 The Maiden's Exchange: barter materials at rates that drift each day"];
+      const BUILD = "2026.11.08.10"; /* Elder side quests: 2 quests at once */
+      const NEWS = ["🧙 The Elder gives side quests: keep one next to your main quest (8 new quests, progress bars, both tracked on screen)", "📱 Cleaner top bar: icon tiles with labels, a 🎖️ Titles button, red badges when rewards wait. Contracts show the courier countdown instead of a dead button", "🎁 Daily Rewards (top bar or G): the Wish Shrine gift, Fortune Wheel, Rune Reels and Treasure Dig on one board with today's progress and a red badge when rewards wait. 🌸 The Zen Garden has its own button and badges when beds are ripe", "✨ Wish cosmetics glow brighter: new trails (Leaf Drift, Starlit Steps, Comet Tail), emote bubbles (Heart Puff, Rune Glyph) and the Legendary Runic Nova aura. Preview your look in the Collection; changes show to everyone at once", "🌠 Rune Wishes: the Wish Shrine! Make free wishes for auras, pet hats, name effects and titles (odds and pity shown, dupes become Stardust). Earn 🎟 at the Fortune Wheel, Rune Reels and Treasure Dig, plus Cipher wins, garden harvests and raids. All free, always", "🔮 Cipher: every few gathers a quick rune game pops up (strike the vein, the moonleaf pattern, the crystal echo); win a bonus pack of 5. Gathering combos and a shinier channel too", "🌸 The Zen Garden: rake the sand, water your plants, harvest materials, claim a 7-day streak bonus and trade your produce with friends", "🐾 Pets: reach level 6 to meet the Beastkeeper. Adopt a Fox, Owl, Wolf or Sprite with materials, feed it for a bigger bonus, and tap it to play", "⛏️ Gathering: Iron Ore, Moonleaf and Skycrystal nodes on the island; mastery raises your yield", "📜 Contract Board: 3 material orders a day on the Quest Board", "🌹 The Maiden's Exchange: barter materials at rates that drift each day"];
       let NEWS_T = 0;
       function newsShow() {
         let seen = "";
@@ -3281,6 +3287,21 @@
           ok: () => MARKET_RELEASE_DISABLED || (V.mk || 0) >= 1,
         },
       ];
+      /* SIDE: the Elder's side quests, one at a time next to the main quest (so at most 2 quests). Progress = counter now - counter at accept.
+         v(): the counter, n: goal, r: gold (<= the bank's quest cap), req(): offered only when true. Done in order; V.sq = { id, b, st }, V.sd = done ids. */
+      const SIDE = [
+        { id: "soil", n: 15, r: 120, q: "Hands in the Soil", t: "The island feeds those who tend it. Gather from its nodes and learn their rhythm.", o: "Gather 15 times", v: () => V.gm || 0 },
+        { id: "lore", n: 3, r: 100, q: "Stories by Firelight", t: "The Archivist remembers what the rest of us forgot. Sit and listen a while.", o: "Hear 3 Archivist tales", v: () => V.lt || 0 },
+        { id: "line", n: 3, r: 200, q: "Hold the Line", t: "The Seer tests every wall we build. Win three more raids with your party.", o: "Win 3 raids", v: () => V.wins || 0 },
+        { id: "march", n: 5, r: 160, q: "Boots on the Crossing", t: "Win or lose, every raid teaches. Step onto the Rune Crossing five times.", o: "Play 5 raids", v: () => V.rc || 0 },
+        { id: "anvil", n: 2, r: 220, q: "The Smith's Apprentice", t: "The Smith needs steady hands. Forge two pieces of gear from raid remains.", o: "Forge 2 gear", v: () => V.fg || 0, req: () => isUnl("smith") },
+        { id: "provider", n: 40, r: 260, q: "Island Provider", t: "The hub grows hungry. Bring the island's riches home, again and again.", o: "Gather 40 times", v: () => V.gm || 0 },
+        { id: "keeper", n: 8, r: 220, q: "Keeper of Lore", t: "Every tale is a key. Collect enough of them and the old doors open.", o: "Hear 8 Archivist tales", v: () => V.lt || 0 },
+        { id: "bane", n: 10, r: 350, q: "Seer's Bane", t: "Ten victories. Make the Hollow Seer fear the sound of your party's footsteps.", o: "Win 10 raids", v: () => V.wins || 0 },
+      ];
+      const sideCur = () => (V.sq ? SIDE.find((x) => x.id == V.sq.id) : null);
+      const sideNext = () => SIDE.find((x) => !(V.sd || []).includes(x.id) && (!x.req || x.req())) || null;
+      const sideProg = () => { const x = sideCur(); return x ? Math.max(0, Math.min(x.n, x.v() - V.sq.b)) : 0; };
       let V = { gold: 200, up: { dmg: 0, vit: 0, spd: 0, cdr: 0 }, q: 0, qs: 0, sk: { tank: [0, 0, 0], dps: [0, 0, 0], heal: [0, 0, 0] } };
       try {
         const s = JSON.parse(localStorage.getItem(SAVE_KEY) || "null");
@@ -3288,6 +3309,8 @@
           V.gold = Number.isFinite(+s.gold) ? cl(Math.trunc(+s.gold), 0, 1e9) : 0;
           V.q = cl(+s.q || 0, 0, QUESTS.length);
           V.qs = cl(+s.qs || 0, 0, 2);
+          V.sd = Array.isArray(s.sd) ? s.sd.filter((i) => SIDE.some((x) => x.id == i)).slice(0, SIDE.length) : [];
+          V.sq = s.sq && typeof s.sq == "object" && SIDE.some((x) => x.id == s.sq.id) && !V.sd.includes(s.sq.id) ? { id: s.sq.id, b: Math.max(0, Math.trunc(+s.sq.b) || 0), st: s.sq.st == 2 ? 2 : 1 } : null;
           V.up = { dmg: 0, vit: 0, spd: 0, cdr: 0 }; /* only the known upgrade keys (clamped to 0..MAXL below) */
           if (s.up && typeof s.up == "object") for (const k in V.up) if (Object.hasOwn(s.up, k)) V.up[k] = +s.up[k] || 0;
           V.lt = Math.max(0, +s.lt | 0); /* times talked to the Archivist */
@@ -3451,6 +3474,8 @@
         if (SAVE_LOCK) return;
         const q = QUESTS[V.q]; /* quests with a goal check (ok) become ready as soon as it is met */
         if (q && q.ok && V.qs == 1 && q.ok()) V.qs = 2;
+        const sx = sideCur(); /* a side quest is ready once its counter moved n since accepting */
+        if (sx && V.sq.st == 1 && sideProg() >= sx.n) { V.sq.st = 2; if (typeof toast == "function") toast("Side quest done! Return to the Elder."); }
         try {
           localStorage.setItem(SAVE_KEY, JSON.stringify(V));
           SAVE_WRITE_FAILED = false;
@@ -9220,7 +9245,7 @@
         }).join("");
         const sy = $("dp").scrollTop;
         $("dp").innerHTML = `<h2>📜 Quest Board</h2>
-          ${q ? `<div class="qo">Main quest: <b>${q.n}</b> · ${V.qs == 0 ? "ask the Elder" : V.qs == 2 ? "return to the Elder" : q.o}</div>` : ""}
+          ${q ? `<div class="qo">Main quest: <b>${q.n}</b> · ${V.qs == 0 ? "ask the Elder" : V.qs == 2 ? "return to the Elder" : q.o}</div>` : ""}${sideCur() ? `<div class="qo">Side quest: <b>${sideCur().q}</b> · ${V.sq.st == 2 ? "return to the Elder" : `${sideCur().o} (${sideProg()}/${sideCur().n})`}</div>` : ""}
           <p class="sm">Daily bounties · new ones every dawn</p>${rows}
           <p class="sm" style="margin-top:10px">📦 Contracts · gather on the island, deliver here · new orders every dawn</p>${contractRows()}<button class="alt x" onclick="closeDlg()" title="Close">Close</button>`;
         $("dp").scrollTop = sy;
@@ -10139,30 +10164,34 @@
 
       const qHead = (st, q, tag) =>
         `<div class="qh"><span class="qm ${st}"><b>${QM[st].g}</b></span><div><div class="qtag">${tag}</div><div class="qn">${q.n}</div></div></div>`;
+      /* elderMark(): the Elder's head marker across both quest slots (ready > new > active) */
+      function elderMark() {
+        const m = V.q < QUESTS.length ? ["new", "active", "ready"][V.qs] : "", sm = V.sq ? (V.sq.st == 2 ? "ready" : "active") : sideNext() ? "new" : "";
+        return [m, sm].includes("ready") ? "ready" : [m, sm].includes("new") ? "new" : m || sm;
+      }
       function elderUI() {
         tutNext(2);
-        const q = QUESTS[V.q];
-        let h = `<h2>🧙 The Elder</h2>`;
-        if (!q)
-          h += `<p>You have completed every quest I had. The hub is safe, hero. Keep raiding the Seer and the Colossus for gold.</p>`;
-        else if (V.qs == 0)
-          h +=
-            qHead("new", q, "New quest") +
-            `<p>${q.t}</p><div class="qo">${q.o}</div><p class="sm">Reward: <span class="gold"><span class="coin"></span>${q.r}</span></p><button class="claim" onclick="qAct(1)">ACCEPT QUEST</button>`;
-        else if (V.qs == 1)
-          h +=
-            qHead("active", q, "In progress") +
-            `<p>${q.t}</p><div class="qo">☐ ${q.o}</div><p class="sm">Return when it is done.</p>`;
-        else
-          h +=
-            qHead("ready", q, "Complete") +
-            `<p>Well done! The runes sing your name.</p><div class="qo done">☑ ${q.o}</div><p class="sm">Reward: <span class="gold"><span class="coin"></span>${q.r}</span></p><button class="claim" onclick="qAct(2)">CLAIM REWARD</button>`;
+        const q = QUESTS[V.q], sx = sideCur(), sn = !sx && sideNext(), gold = (n) => `<span class="gold"><span class="coin"></span>${n}</span>`;
+        let h = `<h2>🧙 The Elder</h2><p class="sm">Up to 2 quests at once: your main quest and one side quest.</p>`;
+        /* main quest card */
+        if (!q) h += `<div class="qcard"><div class="qtag">Main quest</div><p>You have completed every quest I had. The hub is safe, hero.</p></div>`;
+        else if (V.qs == 0) h += `<div class="qcard">${qHead("new", q, "Main quest · new")}<p>${q.t}</p><div class="qo">${q.o}</div><div class="qrw">Reward: ${gold(q.r)}<button class="claim" onclick="qAct(1)">ACCEPT</button></div></div>`;
+        else if (V.qs == 1) h += `<div class="qcard">${qHead("active", q, "Main quest · in progress")}<div class="qo">☐ ${q.o}</div><div class="qrw">Reward: ${gold(q.r)}</div></div>`;
+        else h += `<div class="qcard rdy">${qHead("ready", q, "Main quest · complete")}<div class="qo done">☑ ${q.o}</div><div class="qrw">Reward: ${gold(q.r)}<button class="claim" onclick="qAct(2)">CLAIM</button></div></div>`;
+        /* side quest card */
+        if (sx) {
+          const p = sideProg(), dn = V.sq.st == 2, nq = { n: sx.q };
+          h += `<div class="qcard side${dn ? " rdy" : ""}">${qHead(dn ? "ready" : "active", nq, dn ? "Side quest · complete" : "Side quest · in progress")}<div class="qo${dn ? " done" : ""}">${dn ? "☑" : "☐"} ${sx.o} · ${p}/${sx.n}</div><div class="mbar"><i style="width:${(p / sx.n) * 100}%"></i></div><div class="qrw">Reward: ${gold(sx.r)}${dn ? `<button class="claim" onclick="sideAct(2)">CLAIM</button>` : `<button class="alt" onclick="sideAct(0)" title="Drop this side quest (you can take it again later)">Drop</button>`}</div></div>`;
+        } else if (sn) h += `<div class="qcard side">${qHead("new", { n: sn.q }, "Side quest · new")}<p>${sn.t}</p><div class="qo">${sn.o}</div><div class="qrw">Reward: ${gold(sn.r)}<button class="claim" onclick="sideAct(1)">ACCEPT</button></div></div>`;
+        else h += `<div class="qcard side"><div class="qtag">Side quest</div><p class="sm">No more side quests for now. Come back as the hub grows.</p></div>`;
         $("dp").innerHTML = h + `<button class="alt x" onclick="closeDlg()" title="Close">Close</button>`;
       }
       function qAct(a) {
         const q = QUESTS[V.q];
-        if (a == 1) V.qs = 1;
+        if (!q) return;
+        if (a == 1) { if (V.qs != 0) return; V.qs = 1; }
         else {
+          if (V.qs != 2) return;
           goldAdd(q.r, "quest");
           gainXP(100, "quest");
           toast("Quest complete! +" + q.r + " gold");
@@ -10172,6 +10201,22 @@
         }
         save();
         elderUI();
+      }
+      /* sideAct(a): 1 accept the next side quest, 2 claim a finished one, 0 drop the current one */
+      function sideAct(a) {
+        const sx = sideCur();
+        if (a == 1) { const sn = !sx && sideNext(); if (!sn) return false; V.sq = { id: sn.id, b: sn.v(), st: 1 }; sfx("ui"); }
+        else if (a == 2) {
+          if (!sx || V.sq.st != 2) return false;
+          goldAdd(sx.r, "quest");
+          gainXP(60, "quest");
+          toast("Side quest complete! +" + sx.r + " gold");
+          V.sd = [...(V.sd || []), sx.id];
+          V.sq = null;
+        } else { if (!sx) return false; V.sq = null; }
+        save();
+        if (CUR_DLG == "elder" && $("dlg") && !$("dlg").hidden) elderUI();
+        return true;
       }
       /* ---------- player market (Merchant > Market): trade materials and gear for gold, server escrow ----------
          Selling hands the item to the server (removed from your save once the server accepts it). Buying pays gold and the item
@@ -10518,7 +10563,7 @@
         } else b.hp = Math.max(1, b.mh * f);
       }
       function devResetQ() {
-        V.q = 0;
+        V.q = 0; V.sq = null; V.sd = [];
         V.qs = 0;
         toast("Quests reset");
         devS();
@@ -10527,7 +10572,7 @@
         ledger("dev", 100 - V.gold, 0);
         V.gold = 100;
         V.up = { dmg: 0, vit: 0, spd: 0, cdr: 0 };
-        V.q = 0;
+        V.q = 0; V.sq = null; V.sd = [];
         V.qs = 0;
         try {
           localStorage.removeItem(SAVE_KEY);
@@ -11060,13 +11105,16 @@
         c.restore();
       }
       function qTrack(y) {
-        const q = QUESTS[V.q];
-        if (!q) return;
-        const st = ["new", "active", "ready"][V.qs],
-          k = QM[st],
+        const q = QUESTS[V.q], sx = sideCur();
+        if (q) qCard(y, q.n, q.r, ["new", "active", "ready"][V.qs], V.qs == 0 ? "Talk to the Elder" : V.qs == 2 ? "Return to the Elder" : q.o);
+        if (sx) qCard(q ? y + 58 : y, sx.q, sx.r, V.sq.st == 2 ? "ready" : "active", V.sq.st == 2 ? "Return to the Elder" : `${sx.o} · ${sideProg()}/${sx.n}`, 1);
+      }
+      /* qCard: one tracker card (main: gold stripe colour by state; side: blue name) */
+      function qCard(y, name, gold, st, line, side) {
+        const k = QM[st],
           w = 270,
           x = W - w - 12,
-          dn = V.qs == 2;
+          dn = st == "ready";
         c.save();
         c.fillStyle = "#0b1218d9";
         c.strokeStyle = "#2c3b48";
@@ -11081,12 +11129,12 @@
         c.textAlign = "left";
         c.textBaseline = "alphabetic";
         c.font = "bold 13px Georgia";
-        c.fillStyle = "#ffd84a";
-        c.fillText(q.n, x + 42, y + 21);
+        c.fillStyle = side ? "#7fdcff" : "#ffd84a";
+        c.fillText((side ? "◆ " : "") + name, x + 42, y + 21);
         c.textAlign = "right";
         c.font = "11px Georgia";
         c.fillStyle = "#d9a400";
-        c.fillText(q.r + " gold", x + w - 10, y + 21);
+        c.fillText(gold + " gold", x + w - 10, y + 21);
         c.strokeStyle = dn ? "#7dff9a" : "#9aa6b2";
         c.lineWidth = 1.5;
         c.strokeRect(x + 42, y + 31, 10, 10);
@@ -11100,7 +11148,7 @@
         c.textAlign = "left";
         c.font = "12px Georgia";
         c.fillStyle = dn ? "#7dff9a" : "#cfe";
-        c.fillText(V.qs == 0 ? "Talk to the Elder" : dn ? "Return to the Elder" : q.o, x + 58, y + 40);
+        c.fillText(line, x + 58, y + 40);
         c.restore();
       }
       /* locked NPCs (Class Master, Maiden, Smith, Herald): grey "???" with a padlock until the Archivist reveals them */
@@ -16286,7 +16334,7 @@
           c.fillRect(0, 0, W, H);
         }
         if (S.sc == "hub") {
-          npc(ELDER, V.q >= QUESTS.length ? "" : ["new", "active", "ready"][V.qs]);
+          npc(ELDER, elderMark());
           npc(SHOP, "");
           npc(MAIDEN, V.mb != dayKey(new Date()) ? "bonus" : ""); /* pink marker = free daily blessing ready */
           npc(SMITH, "");
