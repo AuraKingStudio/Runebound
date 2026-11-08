@@ -3171,7 +3171,7 @@
       }, true);
       /* ---------- What's new: a small corner card once per build (BUILD), a soft chime at the player's volume ----------
          Brand-new players (tutorial not done) skip it: everything is new to them. Dismiss with x, or it fades after 14 s. */
-      const BUILD = "2026.11.08.24"; /* UI cleanup: Quests/Shop/Class/Daily moved to NPCs */
+      const BUILD = "2026.11.08.25"; /* UI cleanup: Quests/Shop/Class/Daily moved to NPCs */
       const NEWS = ["🔨🐾 New players meet the Smith and the Beastkeeper in the tutorial", "📖 Easier tutorial: big step card, what to press, arrows on every NPC, and it ends by starting your first raid from the middle", "⚔ Choose a raid fits small screens: every ENTER is visible, tap a whole card to go", "🧹 Cleaner top bar: daily quests at the 🧙 Elder, the ✨ Shop at the 💰 Merchant, class and raid skills at the ⚔ Class Master, 🎁 Daily Rewards at the 🍺 Barkeep (marker when ready)", "✨ New spells at the Merchant: Stone Ward (Tank), Rune Mine (DPS), Renewal (Healer). Pick the 2 skills you bring to a raid in the Class window or on the Choose Raid screen", "🧙 The Elder gives side quests: keep one next to your main quest (8 new quests, progress bars, both tracked on screen)", "📱 Cleaner top bar: icon tiles with labels, a 🎖️ Titles button, red badges when rewards wait. Contracts show the courier countdown instead of a dead button", "🎁 Daily Rewards (top bar or G): the Wish Shrine gift, Fortune Wheel, Rune Reels and Treasure Dig on one board with today's progress and a red badge when rewards wait. 🌸 The Zen Garden has its own button and badges when beds are ripe", "✨ Wish cosmetics glow brighter: new trails (Leaf Drift, Starlit Steps, Comet Tail), emote bubbles (Heart Puff, Rune Glyph) and the Legendary Runic Nova aura. Preview your look in the Collection; changes show to everyone at once", "🌠 Rune Wishes: the Wish Shrine! Make free wishes for auras, pet hats, name effects and titles (odds and pity shown, dupes become Stardust). Earn 🎟 at the Fortune Wheel, Rune Reels and Treasure Dig, plus Cipher wins, garden harvests and raids. All free, always", "🔮 Cipher: every few gathers a quick rune game pops up (strike the vein, the moonleaf pattern, the crystal echo); win a bonus pack of 5. Gathering combos and a shinier channel too", "🌸 The Zen Garden: rake the sand, water your plants, harvest materials, claim a 7-day streak bonus and trade your produce with friends", "🐾 Pets: reach level 6 to meet the Beastkeeper. Adopt a Fox, Owl, Wolf or Sprite with materials, feed it for a bigger bonus, and tap it to play", "⛏️ Gathering: Iron Ore, Moonleaf and Skycrystal nodes on the island; mastery raises your yield", "📜 Contract Board: 3 material orders a day on the Quest Board", "🌹 The Maiden's Exchange: barter materials at rates that drift each day"];
       let NEWS_T = 0;
       function newsShow() {
@@ -16593,7 +16593,7 @@
           npc(SMITH, "");
           npc(BARKEEP, dailyReady() ? "bonus" : ""); /* marker = daily rewards waiting (the old Daily button badge) */
           npc(SERAPH, V.bl ? "" : "bonus"); /* marker while no blessing is carried */
-          npc(PETS, isUnl("pet") && !Object.keys(V.pets || {}).length ? "new" : ""); /* the Beastkeeper (level 6): marker until your first pet */
+          npc(PETS, ""); /* the Beastkeeper: no quest marker (he gives no quest) */
           npc(LORE, V.lbx > Date.now() ? "bonus" : V.lt ? "" : "new");
         }
         /* healer Circles: soft green light, a turning rune ring, a pulse every second and rising motes */
