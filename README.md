@@ -26,6 +26,7 @@ A co-op raid game that runs in the browser: a floating hub island, NPCs, and bos
 - **Raids:** The Hollow Seer (3 players) and Thornmaw Colossus (6 players). **Rune Trials** are endless harder versions with bigger rewards.
 - **Gear:** six slots (weapon per class, armor, charm, helmet, gloves, boots), five rarities, and a perk on class weapons at each rarity.
 - **Materials:** about 4 per raid win, used to forge and trade.
+- **🎮 Games menu** (top bar or **G**): Zen Garden, Wish Shrine, Fortune Wheel, Rune Reels and Treasure Dig, with what is ready today; locked games show why. Blackjack stays at the Barkeep.
 - **Rune Wishes:** free Wish Shrine with auras, trails, emote bubbles, pet hats, name effects and titles; outfits show to everyone live (bank-confirmed online).
 
 ## Files
@@ -44,17 +45,16 @@ Before handing work to another agent, update this section with enough detail for
 
 ### Current handoff
 
-- **Updated:** 2026-11-06 (Happy, for PM Bob; security rules by Hawk)
-- **Task and goal:** Rune Wishes cosmetics: live outfit updates, bank ownership proof (Hawk LOW 6), premium code-drawn visuals, new items.
-- **Status:** committed locally on `main` on top of b4932ed, **not pushed**. `node src/test.js` ALL PASSED; `npm run bench` ALL PASSED (rb-cosm worktree).
+- **Updated:** 2026-11-08 (Happy, for PM Bob)
+- **Task and goal:** owner: move the Zen Garden and every minigame except blackjack into one UI menu; declutter the hub.
+- **Status:** committed locally on `main` on top of 4644e0e, **not pushed**. `node src/test.js` ALL PASSED. BUILD 2026.11.08.1.
 - **Changes:**
-  - Ownership proof (design): online the bank is the only authority. `POST /api/wish/wear {tok,on}` stores your outfit (owned items only, one per slot: aura, pet hat, name effect, trail, bubble). `POST /api/wish/worn {codes}` (public, read-only, ≤12 trade codes, IP-limited) returns each player's bank-confirmed outfit, re-checked against ownership. Clients draw other players' cosmetics only from that answer (batched, ≤1 call/s, 60 s cache); the relayed list is only a hint to look again. No secret in the browser. Offline/LAN: the whitelisted relay is trusted as before.
-  - Live updates: `wq` relay `{q, tc}` (guest → host → others as `e:[slot,q,tc]`), own slot only, ≤1/0.5 s, catalogue whitelist (`wqOk`); online it is sent only after the bank accepts the outfit. The roster (`r`/`j`) now carries `[wq, tc]` too, so late joiners see outfits.
-  - New catalogue items (server + client copy, test keeps them equal): Leaf Drift trail (Rare), Starlit Steps trail, Heart Puff and Rune Glyph bubbles (Epic), Runic Nova aura and Comet Tail trail (Legendary).
-  - Visuals: cached glow sprite per aura colour, Legendary inner ring + soft twinkles, Runic Nova rune circle, fixed 8-point trail buffers, emote bubble skins, hat highlights, slower Starfire shimmer (no strobe), Collection preview mannequin, wear burst. Low spec: rings only, no trails/glows; reduced motion: still.
-- **Not tested:** real browsers/devices, two real online clients against a hosted bank.
-- **Risks:** a player can relay another real player's public trade code and copy that player's (owned) look; titles from wishes are still local-trust over the network. `worn` is unauthenticated read of public outfit data.
-- **Next step:** Hawk review, then Bob pushes.
+  - New 🎮 Games HUD button (`#bgm`, after the tutorial, hub only) and **G** key (skipped if G is bound to an action). `gamesUI()` lists Zen Garden, Wish Shrine, Fortune Wheel, Rune Reels, Treasure Dig: icon, name, plain line, badge (ready / uses left today). `gameGo(k)` opens the existing UI; each game has a 🎮 back button (`gamesBack()`).
+  - Zen Garden is its own window (`gardenUI`, dialog `garden`, gated by the Beastkeeper unlock like before; locked row greyed with the level reason). The Beastkeeper keeps pet adopt/feed/switch and points to the menu.
+  - Hub spots for the Shrine, Wheel, Reels and Dig removed (constants, drawing, light pillar, interact list). No bot visits or collision existed for them. Server routes and bank logic unchanged.
+  - NEWS bullet "All minigames now in the 🎮 Games menu".
+- **Not tested:** real browsers/devices (768x1024, 1024x768, 844x390 layouts are by CSS only), online bank with the menu.
+- **Next step:** Zulu/Hawk review, owner test of the fresh build, then Bob pushes.
 
 ## Player market (paused for release)
 

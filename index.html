@@ -1227,6 +1227,9 @@
       .pn h2 { margin-bottom: 10px; }
       .pn .row { padding: 10px 2px; gap: 12px; }
       .pn .up { padding: 10px 14px; margin: 8px 0; gap: 14px; }
+      .gmr { --uc: #8a7dff; align-items: center; } .gmr button { min-height: 44px; min-width: 44px; white-space: nowrap; } .gmr.lk { opacity: .55; filter: grayscale(.7); }
+      .gmi { font-size: 26px; line-height: 44px; width: 36px; text-align: center; flex: none; }
+      .gmbk { display: flex; gap: 8px; justify-content: center; margin-top: 10px; } .gmbk button { min-height: 44px; }
       .pn .tt { padding: 10px 6px; }
       .pn .qo { padding: 9px 14px; margin: 10px 0; }
       .pn .rcard { padding: 14px 16px; }
@@ -1915,7 +1918,7 @@
     <div id="chat" hidden><div id="chlog"></div><div id="chrow"><input id="chin" maxlength="80" autocomplete="off" placeholder="Press Enter to chat" /><div id="emo"></div><button id="chping" type="button" title="Ping the boss for your party" aria-label="Ping boss" onclick="pingBoss()" hidden>⚑</button></div></div>
     <div id="btns">
       <button id="bd" class="sk"></button><button id="bu" class="sk"></button><button id="b0"></button><button id="b1"></button><button id="b2"></button
-      ><button id="bi" hidden>Enter arena</button><button id="bil" class="bic" hidden onclick="invCycle(-1)">◀</button><button id="bir" class="bic" hidden onclick="invCycle(1)">▶</button><div id="tlbar"><span id="gp"><i class="coin"></i><b id="gn">0</b></span></div><div id="mlbar"><button id="bt" data-ic="🎖️">🎖️ Titles</button><button id="bfb" data-ic="💬" onclick="fbOpen()" title="Tell us what you think, or report a bug">💬 Feedback</button><button id="blk" data-ic="🔗" class="hb" title="Copy the lobby link: friends who open it join you" hidden>🔗 Copy ID</button></div><div id="topc"><button id="bq" data-ic="📜" class="hb">📜 Quests</button><button id="bg" class="hb">🛡 Guild</button><button id="bs" data-ic="✨" class="hb">✨ Shop</button><button id="bp" data-ic="👥" class="hb">👥 Party</button><button id="bcls" data-ic="⚔️" class="hb" onclick="classOpen()">⚔️ Class</button><button id="binv" data-ic="🎒" class="hb" onclick="invOpen()">🎒 Inventory</button><button id="bset" data-ic="⚙️" class="hb" onclick="setOpen()" title="Settings">⚙️ Settings</button></div><div id="netBadge" role="status" aria-live="polite"></div><div id="ptl" hidden></div>
+      ><button id="bi" hidden>Enter arena</button><button id="bil" class="bic" hidden onclick="invCycle(-1)">◀</button><button id="bir" class="bic" hidden onclick="invCycle(1)">▶</button><div id="tlbar"><span id="gp"><i class="coin"></i><b id="gn">0</b></span></div><div id="mlbar"><button id="bt" data-ic="🎖️">🎖️ Titles</button><button id="bfb" data-ic="💬" onclick="fbOpen()" title="Tell us what you think, or report a bug">💬 Feedback</button><button id="blk" data-ic="🔗" class="hb" title="Copy the lobby link: friends who open it join you" hidden>🔗 Copy ID</button></div><div id="topc"><button id="bq" data-ic="📜" class="hb">📜 Quests</button><button id="bg" class="hb">🛡 Guild</button><button id="bs" data-ic="✨" class="hb">✨ Shop</button><button id="bp" data-ic="👥" class="hb">👥 Party</button><button id="bcls" data-ic="⚔️" class="hb" onclick="classOpen()">⚔️ Class</button><button id="bgm" data-ic="🎮" class="hb" onclick="gamesOpen()" title="Games (G)">🎮 Games</button><button id="binv" data-ic="🎒" class="hb" onclick="invOpen()">🎒 Inventory</button><button id="bset" data-ic="⚙️" class="hb" onclick="setOpen()" title="Settings">⚙️ Settings</button></div><div id="netBadge" role="status" aria-live="polite"></div><div id="ptl" hidden></div>
     </div>
     <script>
       /* Browser networking block: inputs are hub leases, SDP and game messages; outputs are peer events.
@@ -2480,11 +2483,7 @@
         /* the 8th spot: the future Pet NPC (keeper of companions). Shown as a locked ghost until the feature exists. */
         PETS = { lk: "pet", x: 450, y: 528, ic: "🐾", nm: "The Beastkeeper", col: "#ffcf9a",
           g: "M0 2.5c4 0 7 3 7 6.2 0 2.2-2 2.8-3.6 2.3C2.2 10.6 1.1 10.3 0 10.3s-2.2.3-3.4.7C-5 11.5-7 10.9-7 8.7c0-3.2 3-6.2 7-6.2zM-7.4-3.2a2.4 3 0 1 0 0.01 0zM7.4-3.2a2.4 3 0 1 0 0.01 0zM-3-8.4a2.4 3.2 0 1 0 0.01 0zM3-8.4a2.4 3.2 0 1 0 0.01 0z" };
-      /* Rune Wishes in the hub: the Wish Shrine (east, the centrepiece: a light pillar over it) and its three game spots */
-      const WISHN = { tu: 5, x: 770, y: 250, ic: "🌠", nm: "Wish Shrine", col: "#c9a2ff", g: "M0-13L3.5-4.5L13-4L5.5 2L8 12L0 6.5L-8 12L-5.5 2L-13-4L-3.5-4.5Z" },
-        WHEELN = { tu: 5, x: 345, y: 150, ic: "🎡", nm: "Fortune Wheel", col: "#ffcf4d", g: "M0 0L0-12A12 12 0 0 1 12 0ZM0 0L0 12A12 12 0 0 1-12 0ZM-2-15h4l-2 4z" },
-        REELN = { tu: 5, x: 770, y: 452, ic: "🎰", nm: "Rune Reels", col: "#ff8a3a", g: "M-12-9h7v18h-7zM-3.5-9h7v18h-7zM5-9h7v18h-7z" },
-        DIGN = { tu: 5, x: 555, y: 150, ic: "⛏️", nm: "Treasure Dig", col: "#7dff9a", g: "M-1-13h2v13h-2zM-6 0h12l-2 9q-4 3-8 0z" };
+      /* Rune Wishes: the Shrine, Wheel, Reels and Dig live in the 🎮 Games menu (no hub spots) */
       /* ---------- Pets (the Beastkeeper, unlocked at level PET_LV): one companion follows you, one small bonus each ----------
          V.pets = { kind: level 1-5 }, V.pet = the active kind ("" = none). Bought and fed with materials only (src "pet", a sink).
          Online the bank owns ownership, level, the active pet and the gather/XP/refine bonus (RULES.pet): the client logs
@@ -2604,7 +2603,7 @@
         save();
         sfx("ui", 0.9);
         if (zenStill()) popMsg("Planted " + sd.n); /* no seed drop on Low spec / reduced motion: say it */
-        if (CUR_DLG == "pet") petUI();
+        if (CUR_DLG == "garden") gardenUI();
         zenAt(i, (x, y) => { zenP(7, x, y - 40, 0, 40, 0.5, sd.col); for (let k = 0; k < 8; k++) zenP(7, x, y, (Math.random() - 0.5) * 70, -30 - Math.random() * 40, 0.6, "#8a6a48"); }); /* seed drop + soil puff */
         return true;
       }
@@ -2620,7 +2619,7 @@
         save();
         sfx("win", 1.6);
         if (P || zenStill()) popMsg("Harvest " + got.join(" ")); /* Low spec / reduced motion: no floating +N, the toast shows the yield */
-        if (CUR_DLG == "pet") petUI();
+        if (CUR_DLG == "garden") gardenUI();
         sfx("pop", 1);
         zenAt(i, (x, y) => { for (let k = 0; k < 14; k++) zenP(k % 2 ? 2 : 4, x, y - 20, (Math.random() - 0.5) * 140, -40 - Math.random() * 80, 1.2, k % 2 ? GARDEN.seeds[c.s].col : "#ffe08a"); got.forEach((t, k) => zenP(5, x, y - 36 - k * 14, 0, -18, 1.6, "#fff3c4", "+" + t)); });
         return true;
@@ -2634,7 +2633,7 @@
         zenAt(i, (x, y) => { for (let k = 0; k < 10; k++) zenP(1, x + (Math.random() - 0.5) * 22, y - 30, (Math.random() - 0.5) * 20, 30 + Math.random() * 40, 0.8, "#9fd8ff"); zenP(3, x, y - 6, 0, 0, 0.9, "#bfefff"); });
         return true;
       }
-      function gardenSeed(s) { if (Object.hasOwn(GARDEN.seeds, s)) { GD_SEL = s; if (CUR_DLG == "pet") petUI(); } }
+      function gardenSeed(s) { if (Object.hasOwn(GARDEN.seeds, s)) { GD_SEL = s; if (CUR_DLG == "garden") gardenUI(); } }
       /* gardenAdopt(list): the bank's plots ({ s, age, d } | null; age in server ms, so no clock skew) */
       function gardenAdopt(r, sc) {
         if (Number.isInteger(sc) && sc >= 0) V.gdsc = sc; /* the bank's sprite every-3rd counter: no drift */
@@ -2663,7 +2662,7 @@
         sfx("win", (n - 1) % 7 == 6 ? 2 : 1.4);
         if (P) popMsg("Day " + (((n - 1) % 7) + 1) + " streak " + got.join(" "));
         ZEN.burst = 1;
-        if (CUR_DLG == "pet") petUI();
+        if (CUR_DLG == "garden") gardenUI();
         return true;
       }
       function gsAdopt(r) {
@@ -2754,14 +2753,14 @@
       }
       function zenFrame(ts) {
         ZEN.raf = 0;
-        if (CUR_DLG != "pet" || !ZEN.cv || !ZEN.cv.isConnected || document.hidden || zenStill()) return; /* closed, hidden: stop */
+        if (CUR_DLG != "garden" || !ZEN.cv || !ZEN.cv.isConnected || document.hidden || zenStill()) return; /* closed, hidden: stop */
         const dt = Math.min(0.05, (ts - ZEN.last) / 1000 || 0);
         ZEN.last = ts;
         zenDraw(dt);
         ZEN.raf = requestAnimationFrame(zenFrame);
       }
-      addEventListener("visibilitychange", () => { if (!document.hidden && CUR_DLG == "pet") zenStart(); });
-      addEventListener("resize", () => { if (CUR_DLG == "pet") zenStart(); }); /* rotate / resize: re-fit the canvas (no stretched scene) */
+      addEventListener("visibilitychange", () => { if (!document.hidden && CUR_DLG == "garden") zenStart(); });
+      addEventListener("resize", () => { if (CUR_DLG == "garden") zenStart(); }); /* rotate / resize: re-fit the canvas (no stretched scene) */
       /* zenSpot(j, on): where pet j hops next: the last tapped plot (active pet), a random plot or the pond's edge */
       function zenSpot(j, on) {
         const s = { x: ZEN.W * 0.36 + zenPond(ZEN.W) * 0.74 + (j % 2) * 16, y: 46 + (j >> 1) * 6 };
@@ -2857,7 +2856,7 @@
           <div style="display:flex;flex-wrap:wrap;gap:6px">${seeds}</div><div class="gdn" onpointerdown="zenDown(event)" onpointermove="zenMove(event)" onpointerup="zenUp()" onpointerleave="zenUp()" onpointercancel="zenUp()"><canvas id="zen" aria-hidden="true"></canvas>${plots}</div><div id="gsw">${streakHTML()}</div>`;
       }
       function petUI() {
-        const old = $("zen"), re = !!old && ZEN.re; /* a rebuild of an open dialog: keep the canvas node (and its particles), no entrance animation */
+        const re = CUR_DLG == "pet" && PET_RE; /* a rebuild of the open dialog: no entrance animation */
         const own = V.pets || {}, m = V.mat || {}, wms = petWait(), wt = wms ? Math.ceil(wms / 60000) + " min" : "";
         const cost = (c) => Object.entries(c).map(([k, q]) => `<span style="color:${(m[k] || 0) >= q ? "inherit" : "#ff8a8a"}">${MATS[k].e}${q}</span>`).join(" ");
         const rows = Object.entries(PET).map(([k, d], q) => {
@@ -2870,21 +2869,64 @@
             <div class="sm">${bonus}${next}${L ? "" : " · " + cost(d.price)}</div></div>${btn}</div>`;
         }).join("");
         $("dp").className = "pn";
-        $("dp").innerHTML = `<h2>🐾 The Beastkeeper</h2><p>"Every raider needs a friend. Pick one, feed it well, and it will pull its weight."</p>${gardenHTML()}
+        $("dp").innerHTML = `<h2>🐾 The Beastkeeper</h2><p>"Every raider needs a friend. Pick one, feed it well, and it will pull its weight."</p>
           <p class="sm">One pet follows you at a time and gives its bonus. Feed it to raise its level (max ${PET_MAX}: double bonus). You can switch pets once every 10 minutes. Tap your pet to play with it.${bankUrl() ? " Online, the server keeps your pets and pays the bonus." : ""}</p>${rows}
-          <button class="alt x" onclick="closeDlg()" title="Farewell">Farewell</button>`;
+          <p class="sm">Your 🌸 Zen Garden is in the 🎮 Games menu (G).</p><button class="alt x" onclick="closeDlg()" title="Farewell">Farewell</button>`;
+        PET_RE = 1;
+      }
+      let PET_RE = 0;
+      /* gardenUI(): the Zen Garden window (from the 🎮 Games menu; needs the Beastkeeper) */
+      function gardenUI() {
+        const old = $("zen"), re = !!old && ZEN.re; /* a rebuild of an open garden: keep the canvas node (and its particles) */
+        CUR_DLG = "garden";
+        $("dp").className = "pn";
+        $("dp").innerHTML = `<h2>🌸 Zen Garden</h2>${gardenHTML()}<div class="gmbk"><button onclick="gamesBack()" title="Back to the games">🎮 Games</button><button class="alt" onclick="closeDlg()" title="Close">Close</button></div>`;
         ZEN.re = 1;
         if (re) { const n = $("zen"); if (n && n !== old) n.replaceWith(old); }
         gardenTimer();
         zenStart();
       }
+      /* ---------- the 🎮 Games menu: every minigame but blackjack (the Barkeep keeps his table) ---------- */
+      /* gamesList(): [key, icon, name, plain description, badge, locked reason] */
+      function gamesList() {
+        const w = wiSt(), tl = tut() < TUT_DONE ? "Finish the tutorial first." : "", gl = !isUnl("pet") ? `Meet the Beastkeeper first: reach level ${PET_LV} (you are level ${lvlInfo().L}).` : "";
+        const left = (k) => Math.max(0, WISH[k].day - wcn(w.dy.s[k], 99)), now = Date.now();
+        const ripe = gdPlots().filter((c) => gdStage(c, now) >= 3).length, gv = gsView();
+        const day = (k, u) => (left(k) ? `${left(k)} ${u} left today` : "Done for today");
+        return [
+          ["garden", "🌸", "Zen Garden", "Grow herbs and ore while you play; claim a daily streak.", gl ? "" : ripe ? `${ripe} ready to harvest` : gv.can && !(V.gsLk && bankUrl()) ? "Streak ready" : "Growing", gl || tl],
+          ["wish", "🌠", "Wish Shrine", "Spend Wish Tokens for free cosmetics.", !w.dy.s.daily ? "Daily gift ready" : `🎟 ${w.t}`, tl],
+          ["wheel", "🎡", "Fortune Wheel", "Spin for tokens, Stardust and materials.", day("wheel", "spins"), tl],
+          ["reels", "🎰", "Rune Reels", "Pull the lever and match runes.", day("reels", "spins"), tl],
+          ["dig", "⛏️", "Treasure Dig", "Pick tiles to find hidden treasure.", day("dig", "digs"), tl],
+        ];
+      }
+      function gamesUI() {
+        CUR_DLG = "games";
+        const rows = gamesList().map(([k, ic, nm, ds, bd, lk]) => `<div class="up gmr${lk ? " lk" : ""}"><span class="gmi" aria-hidden="true">${ic}</span><div style="min-width:0;flex:1"><span class="nm">${nm}</span><div class="sm">${lk || ds}</div></div>${lk ? `<button disabled title="${lk}">🔒</button>` : `<button class="${/ready|left/.test(bd) ? "claim" : ""}" onclick="gameGo('${k}')" title="Open ${nm}">${bd}</button>`}</div>`).join("");
+        $("dp").className = "pn";
+        $("dp").innerHTML = `<h2>🎮 Games</h2><p class="sm">Free minigames. Blackjack is at the Barkeep's table.</p>${rows}<button class="alt x" onclick="closeDlg()" title="Close">Close</button>`;
+        wiFresh();
+      }
+      /* gameGo(k): open one game from the menu (locked ones say why) */
+      function gameGo(k) {
+        const g = gamesList().find((x) => x[0] == k);
+        if (!g) return false;
+        if (g[5]) { toast(g[5]); return false; }
+        sfx("ui");
+        CUR_DLG = k;
+        ({ garden: gardenUI, wish: () => wishUI("wish"), wheel: wheelUI, reels: reelsUI, dig: digUI })[k]();
+        return true;
+      }
+      function gamesOpen() { if (P && !dlgOpen() && S.sc == "hub" && tut() >= TUT_DONE) { openDlg("games"); sfx("ui"); } }
+      function gamesBack() { closeDlg(); gamesOpen(); }
       function gardenTimer() { clearTimeout(GD_T); GD_T = setTimeout(gardenTick, 15000); } /* growth timers tick while the window is open */
       /* gardenTick(): update bed labels/classes and the streak row in place (no rebuild: focus, canvas and particles stay) */
       function gardenTick() {
         GD_T = 0;
-        if (CUR_DLG != "pet") return;
+        if (CUR_DLG != "garden") return;
         const gd = document.querySelector(".gdn"), w = $("gsw");
-        if (!gd || !w) return petUI();
+        if (!gd || !w) return gardenUI();
         const t = document.createElement("div");
         t.innerHTML = gardenHTML();
         const nb = t.querySelectorAll(".gp"), ob = gd.querySelectorAll(".gp");
@@ -3025,8 +3067,8 @@
       }, true);
       /* ---------- What's new: a small corner card once per build (BUILD), a soft chime at the player's volume ----------
          Brand-new players (tutorial not done) skip it: everything is new to them. Dismiss with x, or it fades after 14 s. */
-      const BUILD = "2026.11.06.5"; /* Rune Wishes cosmetics: trails, bubbles, Runic Nova, live + bank-checked */
-      const NEWS = ["✨ Wish cosmetics glow brighter: new trails (Leaf Drift, Starlit Steps, Comet Tail), emote bubbles (Heart Puff, Rune Glyph) and the Legendary Runic Nova aura. Preview your look in the Collection; changes show to everyone at once", "🌠 Rune Wishes: a Wish Shrine in the hub! Make free wishes for auras, pet hats, name effects and titles (odds and pity shown, dupes become Stardust). Earn 🎟 at the new Fortune Wheel, Rune Reels and Treasure Dig, plus Cipher wins, garden harvests and raids. All free, always", "🔮 Cipher: every few gathers a quick rune game pops up (strike the vein, the moonleaf pattern, the crystal echo); win a bonus pack of 5. Gathering combos and a shinier channel too", "🌸 The Zen Garden: rake the sand, water your plants, harvest materials, claim a 7-day streak bonus and trade your produce with friends", "🐾 Pets: reach level 6 to meet the Beastkeeper. Adopt a Fox, Owl, Wolf or Sprite with materials, feed it for a bigger bonus, and tap it to play", "⛏️ Gathering: Iron Ore, Moonleaf and Skycrystal nodes on the island; mastery raises your yield", "📜 Contract Board: 3 material orders a day on the Quest Board", "🌹 The Maiden's Exchange: barter materials at rates that drift each day"];
+      const BUILD = "2026.11.08.1"; /* the 🎮 Games menu: garden, shrine, wheel, reels, dig */
+      const NEWS = ["🎮 All minigames now in the 🎮 Games menu (top bar or G): Zen Garden, Wish Shrine, Fortune Wheel, Rune Reels and Treasure Dig, with what is ready today. Blackjack stays at the Barkeep", "✨ Wish cosmetics glow brighter: new trails (Leaf Drift, Starlit Steps, Comet Tail), emote bubbles (Heart Puff, Rune Glyph) and the Legendary Runic Nova aura. Preview your look in the Collection; changes show to everyone at once", "🌠 Rune Wishes: the Wish Shrine! Make free wishes for auras, pet hats, name effects and titles (odds and pity shown, dupes become Stardust). Earn 🎟 at the Fortune Wheel, Rune Reels and Treasure Dig, plus Cipher wins, garden harvests and raids. All free, always", "🔮 Cipher: every few gathers a quick rune game pops up (strike the vein, the moonleaf pattern, the crystal echo); win a bonus pack of 5. Gathering combos and a shinier channel too", "🌸 The Zen Garden: rake the sand, water your plants, harvest materials, claim a 7-day streak bonus and trade your produce with friends", "🐾 Pets: reach level 6 to meet the Beastkeeper. Adopt a Fox, Owl, Wolf or Sprite with materials, feed it for a bigger bonus, and tap it to play", "⛏️ Gathering: Iron Ore, Moonleaf and Skycrystal nodes on the island; mastery raises your yield", "📜 Contract Board: 3 material orders a day on the Quest Board", "🌹 The Maiden's Exchange: barter materials at rates that drift each day"];
       let NEWS_T = 0;
       function newsShow() {
         let seen = "";
@@ -4116,9 +4158,9 @@
           return [r.status, j];
         } catch (e) { return [0, { error: "The shrine is out of reach. Try again." }]; }
       }
-      const wiFresh = () => { if (bankUrl() && Date.now() - WI.synced > 8000) { WI.synced = Date.now(); const w0 = CUR_DLG; wiCall("state").then(() => { if (CUR_DLG == w0 && !$("dlg").hidden && !WI.rev && !WI.spin) ({ wish: wishUI, wheel: wheelUI, reels: reelsUI, dig: digUI }[w0] || (() => {}))(); }); } };
+      const wiFresh = () => { if (bankUrl() && Date.now() - WI.synced > 8000) { WI.synced = Date.now(); const w0 = CUR_DLG; wiCall("state").then(() => { if (CUR_DLG == w0 && !$("dlg").hidden && !WI.rev && !WI.spin) ({ wish: wishUI, wheel: wheelUI, reels: reelsUI, dig: digUI, games: gamesUI }[w0] || (() => {}))(); }); } };
       const wiPurse = () => { const w = wiSt(); return `<div class="wpurse"><span title="Wish Tokens">🎟 <b>${w.t}</b></span><span title="Stardust">✨ <b>${w.sd}</b></span><span class="sm">today ${w.dy.e}/${WISH.dayCap} 🎟</span></div>`; };
-      const wiNav = (cur) => `<div class="wtabs">${[["wish", "🌠 Shrine"], ["wheel", "🎡 Wheel"], ["reels", "🎰 Reels"], ["dig", "⛏️ Dig"]].map(([k, n]) => `<button class="${k == cur ? "on" : ""}" onclick="CUR_DLG='${k}';${{ wish: "wishUI", wheel: "wheelUI", reels: "reelsUI", dig: "digUI" }[k]}()">${n}</button>`).join("")}</div>`;
+      const wiNav = (cur) => `<div class="wtabs"><button onclick="gamesBack()" title="Back to the games">🎮</button>${[["wish", "🌠 Shrine"], ["wheel", "🎡 Wheel"], ["reels", "🎰 Reels"], ["dig", "⛏️ Dig"]].map(([k, n]) => `<button class="${k == cur ? "on" : ""}" onclick="CUR_DLG='${k}';${{ wish: "wishUI", wheel: "wheelUI", reels: "reelsUI", dig: "digUI" }[k]}()">${n}</button>`).join("")}</div>`;
       const wGot = (g) => { const p = []; if (g && g.tok) p.push(`+${g.tok} 🎟`); if (g && g.sd) p.push(`+${g.sd} ✨`); if (g && g.mat) for (const [m, n] of Object.entries(g.mat)) if (MATS[m]) p.push(`+${n} ${MATS[m].e}`); return p.join(" ") || "nothing"; };
       const wHow = (k, txt) => (V.wtu && V.wtu[k] ? "" : `<div class="whow"><b>How to play</b> ${txt}</div>`);
       const wLearn = (k) => { V.wtu = V.wtu && typeof V.wtu == "object" ? V.wtu : {}; V.wtu[k] = 1; };
@@ -8380,10 +8422,6 @@
           ["seraph", SERAPH], /* the Herald is retired from the hub (8 spots); heraldUI is kept */
           ["pet", PETS],
           ["barkeep", BARKEEP],
-          ["wish", WISHN],
-          ["wheel", WHEELN],
-          ["reels", REELN],
-          ["dig", DIGN],
         ])
           if (!npcHidden(n[1])) {
             const d = dist(P, n[1]);
@@ -8429,7 +8467,7 @@
         CUR_DLG = "";
         clearTimeout(GD_T); GD_T = 0; /* the garden refresh */
         if (ZEN.raf) { cancelAnimationFrame(ZEN.raf); ZEN.raf = 0; } /* the zen scene */
-        ZEN.re = 0; /* the next open is fresh (entrance animation) */
+        ZEN.re = 0; PET_RE = 0; /* the next open is fresh (entrance animation) */
         $("dlg").hidden = true;
         $("dp").className = "pn"; /* the shop widens the panel */
       }
@@ -8440,9 +8478,9 @@
         $("dlg").hidden = false;
         const tn = { elder: ELDER, shop: SHOP, lore: LORE }[w];
         if (tn && tut() < tn.tu) return lockedUI("tut");
-        const ln = { class: CLASSN, maiden: MAIDEN, smith: SMITH, herald: HERALD, barkeep: BARKEEP, seraph: SERAPH, pet: PETS }[w];
+        const ln = { class: CLASSN, maiden: MAIDEN, smith: SMITH, herald: HERALD, barkeep: BARKEEP, seraph: SERAPH, pet: PETS, garden: PETS }[w];
         if (ln && !isUnl(ln.lk)) return lockedUI(ln.lk);
-        ({ elder: elderUI, lore: loreUI, shop: shopUI, class: classUI, maiden: maidenUI, smith: smithUI, seraph: seraphUI, herald: heraldUI, barkeep: bjUI, pet: petUI, qboard: questBoardUI, gboard: guildUI, wish: () => wishUI("wish"), wheel: wheelUI, reels: reelsUI, dig: digUI }[w] || shopUI)();
+        ({ elder: elderUI, lore: loreUI, shop: shopUI, class: classUI, maiden: maidenUI, smith: smithUI, seraph: seraphUI, herald: heraldUI, barkeep: bjUI, pet: petUI, qboard: questBoardUI, gboard: guildUI, wish: () => wishUI("wish"), wheel: wheelUI, reels: reelsUI, dig: digUI, games: gamesUI, garden: gardenUI }[w] || shopUI)();
       }
       /* ---------- daily login bonus ----------
          7-day cycle; missing a day resets the streak. In: V.dl, V.ds, today's date. Out: gold + dialog. */
@@ -10782,6 +10820,7 @@
         }
         if (k == "escape") { if (dlgOpen()) closeDlg(); else if (P) togglePause(); }
         if (k == "p" && P && !dlgOpen()) togglePause();
+        if (e.code == "KeyG" && S.sc == "hub" && !e.repeat && !Object.values(SET.bind).includes("KeyG")) { if (CUR_DLG == "games" && dlgOpen()) closeDlg(); else gamesOpen(); }
         if (e.code == "KeyI" && S.sc == "hub" && !e.repeat) { if (CUR_DLG == "inv" && dlgOpen()) closeDlg(); else invOpen(); }
         kk[k] = 1;
         kk[e.code] = 1; /* physical key (used for movement binds) */
@@ -10847,7 +10886,7 @@
         const chatPlaceholder = S.sc == "arena" ? "Raid party chat · Enter to send" : "Press Enter to chat";
         if ($("chin").placeholder != chatPlaceholder) $("chin").placeholder = chatPlaceholder;
         $("bt").hidden = true; /* Titles, Feedback and Copy ID moved into Settings (cleaner HUD) */
-        $("binv").hidden = tut() < TUT_DONE || S.sc != "hub";
+        $("binv").hidden = $("bgm").hidden = tut() < TUT_DONE || S.sc != "hub";
         $("bcls").hidden = tut() < 1 || S.sc != "hub"; /* class change (the Class Master left the hub): from tutorial step 2 on */
         $("bset").hidden = !P;
         $("bfb").hidden = true;
@@ -11480,26 +11519,6 @@
         g.scale(0.82, 0.82);
         g.fill(PEMB[k]);
         return (BODY[k] = cv2);
-      }
-      /* wishShrineFx(t): a soft light pillar and a turning rune ring under the Wish Shrine (Low spec: the ring only, still) */
-      function wishShrineFx(t) {
-        const { x, y } = WISHN, still = SET.low || BJ_VFX.reduced();
-        c.save();
-        c.globalCompositeOperation = "lighter";
-        if (!SET.low) {
-          const pu = still ? 0.5 : 0.5 + 0.5 * Math.sin(t * 1.7), g = c.createLinearGradient(0, y - 150, 0, y + 10);
-          g.addColorStop(0, "rgba(200,160,255,0)"); g.addColorStop(0.7, `rgba(200,160,255,${0.1 + 0.08 * pu})`); g.addColorStop(1, "rgba(255,230,160,.22)");
-          c.fillStyle = g;
-          c.fillRect(x - 16 - pu * 3, y - 150, 32 + pu * 6, 160);
-          if (!still) for (let i = 0; i < 6; i++) { const u = (t * 0.35 + i / 6) % 1; c.fillStyle = `rgba(255,240,200,${0.7 * (1 - u)})`; c.fillRect(x - 12 + ((i * 37) % 24), y - u * 140, 2, 2); }
-        }
-        c.strokeStyle = "rgba(201,162,255,.45)";
-        c.lineWidth = 2;
-        c.setLineDash([6, 5]);
-        c.lineDashOffset = still ? 0 : -t * 12;
-        c.beginPath(); c.ellipse(x, y + 18, 40, 13, 0, 0, 6.3); c.stroke();
-        c.setLineDash([]);
-        c.restore();
       }
       /* the wish cosmetics a player wears: "a_x,h_y,n_z" (yours from V.wq + V.wi, others' from their profile, whitelisted) */
       const WQ_K = ["a", "h", "n", "w", "b"]; /* wearable slots: aura, pet hat, name effect, trail, emote bubble */
@@ -16242,14 +16261,6 @@
           npc(SERAPH, V.bl ? "" : "bonus"); /* marker while no blessing is carried */
           npc(PETS, isUnl("pet") && !Object.keys(V.pets || {}).length ? "new" : ""); /* the Beastkeeper (level 6): marker until your first pet */
           npc(LORE, V.lbx > Date.now() ? "bonus" : V.lt ? "" : "new");
-          if (!npcHidden(WISHN)) {
-            const w = wiSt();
-            wishShrineFx(S.tm);
-            npc(WISHN, w.t > 0 || !w.dy.s.daily ? "bonus" : "");
-            npc(WHEELN, wcn(w.dy.s.wheel, 99) < WISH.wheel.day ? "bonus" : "");
-            npc(REELN, wcn(w.dy.s.reels, 99) < WISH.reels.day ? "bonus" : "");
-            npc(DIGN, wcn(w.dy.s.dig, 99) < WISH.dig.day ? "bonus" : "");
-          }
         }
         /* healer Circles: soft green light, a turning rune ring, a pulse every second and rising motes */
         for (const z of S.zo) {
