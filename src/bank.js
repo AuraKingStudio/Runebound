@@ -143,7 +143,8 @@ function createBank(options = {}) {
   let dirty = false, timer = null;
   /* flush(): write now (shutdown, tests); persist() batches writes to at most one every 500 ms */
   const snap = () => ({ accts, trades, migrated });
-  const toStore = () => { const ids = touched; touched = new Set(); return store.save({ accts: rawAccts, trades, migrated }, ids); }; /* the raw object: the save itself does not mark ids */
+  let fullAt = now(); /* safety net: every 5 minutes compare every account, not only the touched ones */
+  const toStore = () => { let ids = touched; touched = new Set(); if (now() - fullAt > 300e3) { fullAt = now(); ids = null; } return store.save({ accts: rawAccts, trades, migrated }, ids); }; /* the raw object: the save itself does not mark ids */
   function flush() {
     if (timer) { clearTimeout(timer); timer = null; }
     dirty = false;

@@ -371,12 +371,14 @@ if (require.main === module) {
     const stop = async (code = 0) => {
       if (down) return; down = true; server.close();
       let ok = true;
-      try { if (bank) await Promise.race([bank.flush(), new Promise((r) => setTimeout(r, 20000))]); if (db) ok = await db.close(20000); } catch (e) { ok = false; console.error("stop: final save failed:", e.message); }
+      const end = Date.now() + 25000; /* one shared deadline for the whole stop (service stop timeout must be above 25 s) */
+      try { if (bank) await Promise.race([bank.flush(), new Promise((r) => setTimeout(r, 20000))]); if (db) ok = await db.close(Math.max(1000, end - Date.now())); } catch (e) { ok = false; console.error("stop: final save failed:", e.message); }
       if (!ok) console.error("stop: some bank changes could not be saved to PostgreSQL");
       process.exit(ok ? code : 1);
     };
     process.on("SIGINT", () => stop(0)); process.on("SIGTERM", () => stop(0));
-    process.on("uncaughtException", (e) => { console.error("crash:", e && e.message); stop(1); }); /* save what we can, then exit non-zero */
+    process.on("uncaughtException", (e) => { console.error("crash:", e && e.message); stop(1); });
+    process.on("unhandledRejection", (e) => { console.error("crash (promise):", e && e.message); stop(1); }); /* save what we can, then exit non-zero */
   })().catch((e) => { console.error("startup failed:", e.message); process.exit(1); });
 }
 

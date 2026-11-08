@@ -35,6 +35,7 @@ async function openDb(url, options = {}) {
   let savedMigrated = initial.migrated;
 
   /* queue: `want` = the newest state still to write (+ the ids it touched); one write at a time; failures retry */
+  const quarantine = new Set(); /* account ids the database refused (alert on status().quarantined > 0) */
   let want = null, touched = new Set(), running = null, retryT = null, fails = 0, lastError = "", waiters = [];
   const settle = () => { if (!want && !running && !retryT) { const w = waiters; waiters = []; w.forEach((f) => f()); } };
   function save(state, ids) {
@@ -63,7 +64,6 @@ async function openDb(url, options = {}) {
     for (const id of list) {
       const a = state.accts[id], j = JSON.stringify(a);
       if (seen.a.get(id) === j) continue;
-      if (!Number.isSafeInteger(a.gold)) throw new Error("account gold is not a whole number");
       ch.a.push([id, a.gold, j]); /* sent as is: CHECK (gold >= 0) refuses a negative balance and rolls back */
     }
     for (const [id, tr] of Object.entries(state.trades)) { const j = JSON.stringify(tr); if (seen.t.get(id) !== j) ch.t.push([id, j]); }
@@ -73,8 +73,21 @@ async function openDb(url, options = {}) {
     const c = await pool.connect();
     try {
       await c.query("BEGIN");
-      for (const [id, g, j] of ch.a)
-        await c.query("INSERT INTO accounts (id, gold, data, updated_at) VALUES ($1, $2, $3::jsonb, now()) ON CONFLICT (id) DO UPDATE SET gold = EXCLUDED.gold, data = EXCLUDED.data, updated_at = now()", [id, g, j]);
+      const ok = [];
+      for (const [id, g, j] of ch.a) {
+        /* one bad row (negative gold, oversized) must not block everyone: SAVEPOINT per row, skip it, keep it quarantined */
+        if (!Number.isSafeInteger(g)) { quarantine.add(id); console.error("db: account skipped (gold not a whole number):", id.slice(0, 12)); continue; }
+        await c.query("SAVEPOINT r");
+        try {
+          await c.query("INSERT INTO accounts (id, gold, data, updated_at) VALUES ($1, $2, $3::jsonb, now()) ON CONFLICT (id) DO UPDATE SET gold = EXCLUDED.gold, data = EXCLUDED.data, updated_at = now()", [id, g, j]);
+          await c.query("RELEASE SAVEPOINT r"); ok.push([id, g, j]); quarantine.delete(id);
+        } catch (e) {
+          if (e.code != "23514") throw e; /* only CHECK violations are row problems; anything else fails the batch (retried) */
+          await c.query("ROLLBACK TO SAVEPOINT r"); quarantine.add(id);
+          console.error("db: account skipped (CHECK refused):", id.slice(0, 12), e.constraint || "");
+        }
+      }
+      ch.a = ok;
       for (const [id, j] of ch.t)
         await c.query("INSERT INTO trades (id, data, updated_at) VALUES ($1, $2::jsonb, now()) ON CONFLICT (id) DO UPDATE SET data = EXCLUDED.data, updated_at = now()", [id, j]);
       if (gone.length) await c.query("DELETE FROM trades WHERE id = ANY($1)", [gone]);
@@ -99,7 +112,7 @@ async function openDb(url, options = {}) {
     await pool.end().catch(() => {});
     return done;
   }
-  const status = () => ({ fails, lastError, pending: !!(want || running || retryT) });
+  const status = () => ({ fails, lastError, pending: !!(want || running || retryT), quarantined: quarantine.size });
   return { initial, save, saveNow, drain, close, status, pool };
 }
 

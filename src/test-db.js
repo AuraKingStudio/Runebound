@@ -42,11 +42,12 @@ const ok = (c, m) => { console.log((c ? "PASS " : "FAIL ") + m); if (!c) fails++
   ok(+before === +after, "db: an unchanged account is not rewritten");
   const id = ids[0], raw = db2.initial.accts[id];
   /* Hawk HIGH 2: a refused save (negative gold) is retried, and lands once the state is fixed */
-  raw.gold = -5; const p1 = db2.save({ accts: db2.initial.accts, trades: {}, migrated: false }, [id]);
-  await new Promise((r) => setTimeout(r, 300));
-  ok(db2.status().fails >= 1 && db2.status().pending, "db: a refused save stays queued for retry (not dropped)");
-  raw.gold = 777; await p1;
-  ok(+(await db2.pool.query("SELECT gold FROM accounts WHERE id = $1", [id])).rows[0].gold === 777 && !db2.status().pending, "db: the retry lands the fixed state");
+  const id2 = "e".repeat(64); db2.initial.accts[id2] = { gold: 42 };
+  raw.gold = -5; await db2.save({ accts: db2.initial.accts, trades: {}, migrated: false }, [id, id2]);
+  const rows2 = (await db2.pool.query("SELECT id, gold FROM accounts")).rows;
+  ok(db2.status().quarantined == 1 && +rows2.find((x) => x.id == id2).gold === 42 && +rows2.find((x) => x.id == id).gold !== -5, "db: one bad account is set aside, everyone else still saves");
+  raw.gold = 777; await db2.save({ accts: db2.initial.accts, trades: {}, migrated: false }, [id]);
+  ok(+(await db2.pool.query("SELECT gold FROM accounts WHERE id = $1", [id])).rows[0].gold === 777 && db2.status().quarantined == 0, "db: once fixed, the account saves again");
   /* Hawk HIGH 1: a save queued while another runs is not lost at shutdown */
   raw.gold = 778; db2.save({ accts: db2.initial.accts, trades: {}, migrated: false }, [id]);
   raw.gold = 779; db2.save({ accts: db2.initial.accts, trades: {}, migrated: false }, [id]);
