@@ -3148,7 +3148,7 @@
       }, true);
       /* ---------- What's new: a small corner card once per build (BUILD), a soft chime at the player's volume ----------
          Brand-new players (tutorial not done) skip it: everything is new to them. Dismiss with x, or it fades after 14 s. */
-      const BUILD = "2026.11.08.13"; /* shop spells + 2-skill raid loadout */
+      const BUILD = "2026.11.08.14"; /* shop spells + 2-skill raid loadout */
       const NEWS = ["✨ New spells at the Merchant: Stone Ward (Tank), Rune Mine (DPS), Renewal (Healer). Pick the 2 skills you bring to a raid in the Class window or on the Choose Raid screen", "🧙 The Elder gives side quests: keep one next to your main quest (8 new quests, progress bars, both tracked on screen)", "📱 Cleaner top bar: icon tiles with labels, a 🎖️ Titles button, red badges when rewards wait. Contracts show the courier countdown instead of a dead button", "🎁 Daily Rewards (top bar or G): the Wish Shrine gift, Fortune Wheel, Rune Reels and Treasure Dig on one board with today's progress and a red badge when rewards wait. 🌸 The Zen Garden has its own button and badges when beds are ripe", "✨ Wish cosmetics glow brighter: new trails (Leaf Drift, Starlit Steps, Comet Tail), emote bubbles (Heart Puff, Rune Glyph) and the Legendary Runic Nova aura. Preview your look in the Collection; changes show to everyone at once", "🌠 Rune Wishes: the Wish Shrine! Make free wishes for auras, pet hats, name effects and titles (odds and pity shown, dupes become Stardust). Earn 🎟 at the Fortune Wheel, Rune Reels and Treasure Dig, plus Cipher wins, garden harvests and raids. All free, always", "🔮 Cipher: every few gathers a quick rune game pops up (strike the vein, the moonleaf pattern, the crystal echo); win a bonus pack of 5. Gathering combos and a shinier channel too", "🌸 The Zen Garden: rake the sand, water your plants, harvest materials, claim a 7-day streak bonus and trade your produce with friends", "🐾 Pets: reach level 6 to meet the Beastkeeper. Adopt a Fox, Owl, Wolf or Sprite with materials, feed it for a bigger bonus, and tap it to play", "⛏️ Gathering: Iron Ore, Moonleaf and Skycrystal nodes on the island; mastery raises your yield", "📜 Contract Board: 3 material orders a day on the Quest Board", "🌹 The Maiden's Exchange: barter materials at rates that drift each day"];
       let NEWS_T = 0;
       function newsShow() {
@@ -12570,7 +12570,7 @@
         const tufts = [];
         /* clumped, not uniform: a noise field decides where grass grows thick, where it thins to open lawn, and how tall it is;
            nothing grows inside a tree's canopy */
-        const TREES = [[46, 400, 34], [88, 498, 50], [160, 590, 44], [760, 556, 44], [858, 372, 30]] /* canopies reach about 1.15 x radius: kept inside the 900 px layer so none is cut straight */;
+        const TREES = [[46, 400, 34], [88, 498, 50], [160, 590, 44], [760, 556, 44], [866, 300, 22]] /* canopies reach about 1.15 x radius: kept inside the 900 px layer so none is cut straight */;
         /* props baked into the ground layer (rim columns, braziers, stones, obelisks): no grass just behind them, or the live grass
            would be painted over them */
         const props = RIM.map(([a]) => rimSpot(a));
@@ -12693,7 +12693,7 @@
         const { x, y, rx, ry } = PLAT,
           out = (px, py, m) => ((px - x) / (rx * m)) ** 2 + ((py - y) / (ry * m)) ** 2 > 1;
         /* trees: round canopies with a shadow and a highlight, only outside the platform */
-        const trees = [[46, 400, 34], [88, 498, 50], [160, 590, 44], [760, 556, 44], [858, 372, 30]] /* canopies reach about 1.15 x radius: kept inside the 900 px layer so none is cut straight */.filter(([, ty]) => ty > PLAT.y + 60 == near);
+        const trees = [[46, 400, 34], [88, 498, 50], [160, 590, 44], [760, 556, 44], [866, 300, 22]] /* canopies reach about 1.15 x radius: kept inside the 900 px layer so none is cut straight */.filter(([, ty]) => ty > PLAT.y + 60 == near);
         trees.sort((p, q) => p[1] - q[1]);
         for (const [tx, ty, tr] of trees) {
           const bloom = r() < 0.18,
