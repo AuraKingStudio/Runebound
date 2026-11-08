@@ -1236,7 +1236,16 @@
       .dcard.rdy { border-color: #ffd86a !important; box-shadow: 0 0 12px #ffd86a55 !important; } .dcard.rdy .dpill { background: linear-gradient(180deg, #ffe680, #e09a00); color: #2a1a00; }
       .dcard.lk { opacity: .55; filter: grayscale(.7); }
       .dprog { display: flex; flex-direction: column; gap: 4px; align-items: center; } .dbar { width: 100%; height: 10px; border-radius: 6px; background: #0007; overflow: hidden; } .dbar i { display: block; height: 100%; background: linear-gradient(90deg, #8a7dff, #ffd86a); transition: width .4s; }
-      #bgm, #bgd { position: relative; } #bgm:not([data-n=""])[data-n]::after, #bgd:not([data-n=""])[data-n]::after { content: attr(data-n); position: absolute; top: -6px; right: -6px; min-width: 18px; height: 18px; padding: 0 4px; border-radius: 9px; background: #e0453a; color: #fff; font: bold 11px/18px sans-serif; text-align: center; pointer-events: none; }
+      .bdg { position: absolute; top: -5px; right: -5px; min-width: 18px; height: 18px; padding: 0 4px; border-radius: 9px; background: #e0453a; color: #fff; font: bold 11px/18px sans-serif !important; text-align: center; pointer-events: none; box-shadow: 0 0 0 2px #100d0a; z-index: 2; } .bdg:empty { display: none; }
+      /* hub top bar: mobile-game icon tiles (big icon, small label underneath) */
+      body.hub:not(.tut-on) #topc { gap: 8px; }
+      body.hub:not(.tut-on) #btns #topc button { position: relative; width: 58px !important; height: 58px !important; padding: 0 !important; font-size: 0 !important; border-radius: 14px !important; overflow: visible; }
+      body.hub:not(.tut-on) #btns #topc button::after { content: attr(data-ic); position: absolute; left: 0; right: 0; top: 6px; font-size: 24px; line-height: 28px; text-align: center; }
+      body.hub:not(.tut-on) #btns #topc button::before { content: attr(data-lb); position: absolute; left: -4px; right: -4px; top: auto; bottom: 5px; width: auto; height: auto; margin: 0; transform: none; background: none; border: 0; box-shadow: none; font: bold 10px/12px Georgia, serif; letter-spacing: 0; color: #f3e6c8; text-align: center; text-transform: none; display: block; }
+      body.ph.hub:not(.tut-on) #btns #topc button { width: 46px !important; height: 46px !important; }
+      body.ph.hub:not(.tut-on) #btns #topc button::after { top: 3px; font-size: 19px; line-height: 24px; }
+      body.ph.hub:not(.tut-on) #btns #topc button::before { font-size: 8px; bottom: 3px; }
+      body.ph.hub:not(.tut-on) #topc { gap: 5px; }
       @media (max-width: 360px) { .dgrid { grid-template-columns: 1fr; } .dcard { min-height: 0; } }
       .gmi { font-size: 26px; line-height: 44px; width: 36px; text-align: center; flex: none; }
       .gmbk { display: flex; gap: 8px; justify-content: center; margin-top: 10px; } .gmbk button { min-height: 44px; }
@@ -1928,7 +1937,7 @@
     <div id="chat" hidden><div id="chlog"></div><div id="chrow"><input id="chin" maxlength="80" autocomplete="off" placeholder="Press Enter to chat" /><div id="emo"></div><button id="chping" type="button" title="Ping the boss for your party" aria-label="Ping boss" onclick="pingBoss()" hidden>⚑</button></div></div>
     <div id="btns">
       <button id="bd" class="sk"></button><button id="bu" class="sk"></button><button id="b0"></button><button id="b1"></button><button id="b2"></button
-      ><button id="bi" hidden>Enter arena</button><button id="bil" class="bic" hidden onclick="invCycle(-1)">◀</button><button id="bir" class="bic" hidden onclick="invCycle(1)">▶</button><div id="tlbar"><span id="gp"><i class="coin"></i><b id="gn">0</b></span></div><div id="mlbar"><button id="bt" data-ic="🎖️">🎖️ Titles</button><button id="bfb" data-ic="💬" onclick="fbOpen()" title="Tell us what you think, or report a bug">💬 Feedback</button><button id="blk" data-ic="🔗" class="hb" title="Copy the lobby link: friends who open it join you" hidden>🔗 Copy ID</button></div><div id="topc"><button id="bq" data-ic="📜" class="hb">📜 Quests</button><button id="bg" class="hb">🛡 Guild</button><button id="bs" data-ic="✨" class="hb">✨ Shop</button><button id="bp" data-ic="👥" class="hb">👥 Party</button><button id="bcls" data-ic="⚔️" class="hb" onclick="classOpen()">⚔️ Class</button><button id="bgd" data-ic="🌸" class="hb" onclick="gardenOpen()" title="Zen Garden: grows while you play">🌸 Garden</button><button id="bgm" data-ic="🎁" class="hb" onclick="gamesOpen()" title="Daily Rewards (G)">🎁 Daily</button><button id="binv" data-ic="🎒" class="hb" onclick="invOpen()">🎒 Inventory</button><button id="bset" data-ic="⚙️" class="hb" onclick="setOpen()" title="Settings">⚙️ Settings</button></div><div id="netBadge" role="status" aria-live="polite"></div><div id="ptl" hidden></div>
+      ><button id="bi" hidden>Enter arena</button><button id="bil" class="bic" hidden onclick="invCycle(-1)">◀</button><button id="bir" class="bic" hidden onclick="invCycle(1)">▶</button><div id="tlbar"><span id="gp"><i class="coin"></i><b id="gn">0</b></span></div><div id="mlbar"><button id="bt" data-ic="🎖️">🎖️ Titles</button><button id="bfb" data-ic="💬" onclick="fbOpen()" title="Tell us what you think, or report a bug">💬 Feedback</button><button id="blk" data-ic="🔗" class="hb" title="Copy the lobby link: friends who open it join you" hidden>🔗 Copy ID</button></div><div id="topc"><button id="bq" data-ic="📜" data-lb="Quests" class="hb" title="Quests">📜 Quests</button><button id="bg" data-ic="🛡" data-lb="Guild" class="hb">🛡 Guild</button><button id="bs" data-ic="✨" data-lb="Shop" class="hb" title="Shop">✨ Shop</button><button id="bp" data-ic="👥" data-lb="Party" class="hb" title="Party">👥 Party</button><button id="bcls" data-ic="⚔️" data-lb="Class" class="hb" onclick="classOpen()" title="Class">⚔️ Class</button><button id="btt" data-ic="🎖️" data-lb="Titles" class="hb" onclick="titlesOpen()" title="Titles">🎖️ Titles</button><button id="bgd" data-ic="🌸" data-lb="Garden" class="hb" onclick="gardenOpen()" title="Zen Garden: grows while you play">🌸 Garden<b class="bdg"></b></button><button id="bgm" data-ic="🎁" data-lb="Daily" class="hb" onclick="gamesOpen()" title="Daily Rewards (G)">🎁 Daily<b class="bdg"></b></button><button id="binv" data-ic="🎒" data-lb="Bag" class="hb" onclick="invOpen()" title="Inventory">🎒 Inventory</button><button id="bset" data-ic="⚙️" data-lb="Settings" class="hb" onclick="setOpen()" title="Settings">⚙️ Settings</button></div><div id="netBadge" role="status" aria-live="polite"></div><div id="ptl" hidden></div>
     </div>
     <script>
       /* Browser networking block: inputs are hub leases, SDP and game messages; outputs are peer events.
@@ -3081,8 +3090,8 @@
       }, true);
       /* ---------- What's new: a small corner card once per build (BUILD), a soft chime at the player's volume ----------
          Brand-new players (tutorial not done) skip it: everything is new to them. Dismiss with x, or it fades after 14 s. */
-      const BUILD = "2026.11.08.3"; /* 🎁 Daily Rewards board + 🌸 Garden button */
-      const NEWS = ["🎁 Daily Rewards (top bar or G): the Wish Shrine gift, Fortune Wheel, Rune Reels and Treasure Dig on one board with today's progress and a red badge when rewards wait. 🌸 The Zen Garden has its own button and badges when beds are ripe", "✨ Wish cosmetics glow brighter: new trails (Leaf Drift, Starlit Steps, Comet Tail), emote bubbles (Heart Puff, Rune Glyph) and the Legendary Runic Nova aura. Preview your look in the Collection; changes show to everyone at once", "🌠 Rune Wishes: the Wish Shrine! Make free wishes for auras, pet hats, name effects and titles (odds and pity shown, dupes become Stardust). Earn 🎟 at the Fortune Wheel, Rune Reels and Treasure Dig, plus Cipher wins, garden harvests and raids. All free, always", "🔮 Cipher: every few gathers a quick rune game pops up (strike the vein, the moonleaf pattern, the crystal echo); win a bonus pack of 5. Gathering combos and a shinier channel too", "🌸 The Zen Garden: rake the sand, water your plants, harvest materials, claim a 7-day streak bonus and trade your produce with friends", "🐾 Pets: reach level 6 to meet the Beastkeeper. Adopt a Fox, Owl, Wolf or Sprite with materials, feed it for a bigger bonus, and tap it to play", "⛏️ Gathering: Iron Ore, Moonleaf and Skycrystal nodes on the island; mastery raises your yield", "📜 Contract Board: 3 material orders a day on the Quest Board", "🌹 The Maiden's Exchange: barter materials at rates that drift each day"];
+      const BUILD = "2026.11.08.4"; /* icon HUD tiles + Titles button + contract courier countdown */
+      const NEWS = ["📱 Cleaner top bar: icon tiles with labels, a 🎖️ Titles button, red badges when rewards wait. Contracts show the courier countdown instead of a dead button", "🎁 Daily Rewards (top bar or G): the Wish Shrine gift, Fortune Wheel, Rune Reels and Treasure Dig on one board with today's progress and a red badge when rewards wait. 🌸 The Zen Garden has its own button and badges when beds are ripe", "✨ Wish cosmetics glow brighter: new trails (Leaf Drift, Starlit Steps, Comet Tail), emote bubbles (Heart Puff, Rune Glyph) and the Legendary Runic Nova aura. Preview your look in the Collection; changes show to everyone at once", "🌠 Rune Wishes: the Wish Shrine! Make free wishes for auras, pet hats, name effects and titles (odds and pity shown, dupes become Stardust). Earn 🎟 at the Fortune Wheel, Rune Reels and Treasure Dig, plus Cipher wins, garden harvests and raids. All free, always", "🔮 Cipher: every few gathers a quick rune game pops up (strike the vein, the moonleaf pattern, the crystal echo); win a bonus pack of 5. Gathering combos and a shinier channel too", "🌸 The Zen Garden: rake the sand, water your plants, harvest materials, claim a 7-day streak bonus and trade your produce with friends", "🐾 Pets: reach level 6 to meet the Beastkeeper. Adopt a Fox, Owl, Wolf or Sprite with materials, feed it for a bigger bonus, and tap it to play", "⛏️ Gathering: Iron Ore, Moonleaf and Skycrystal nodes on the island; mastery raises your yield", "📜 Contract Board: 3 material orders a day on the Quest Board", "🌹 The Maiden's Exchange: barter materials at rates that drift each day"];
       let NEWS_T = 0;
       function newsShow() {
         let seen = "";
@@ -9190,13 +9199,14 @@
         return true;
       }
       function contractRows() {
-        const ct = contractDay();
+        const ct = contractDay(), wt = CONTRACT_GAP - (Date.now() - (V.ctAt || 0));
+        if (wt > 0 && ct.ids.some((i) => !ct.done[i])) { clearTimeout(contractRows.t); contractRows.t = setTimeout(() => { if (CUR_DLG == "qboard" && $("dlg") && !$("dlg").hidden) questBoardUI(); }, 1000); }
         return ct.ids.map((id) => {
           const c = CONTRACTS.find((o) => o.id == id), dn = ct.done[id], ok = contractHave(c);
           const need = Object.entries(c.need).map(([k, n]) => { const h = (V.mat || {})[k] || 0; return `<span style="color:${h >= n ? "#7dff9a" : "#f3e6c8"}" title="${MATS[k].n}">${MATS[k].e}${Math.min(h, n)}/${n}</span>`; }).join(" ");
           return `<div class="up ${ok && !dn ? "can" : ""}" style="--uc:${dn ? "#7dff9a" : "#7fdcff"}"><div style="min-width:0;flex:1"><span class="nm">${dn ? "✔ " : "📦 "}${c.t}</span>
             <div class="sm">${need}</div><div class="sm"><span class="gold">${c.g} gold</span> · ${c.x} XP · ${MATS.echo.e}+${c.m}</div></div>
-            <button ${ok && !dn ? "" : "disabled"} onclick="contractDeliver('${id}')">${dn ? "DONE" : "DELIVER"}</button></div>`;
+            <button ${ok && !dn && wt <= 0 ? "" : "disabled"} onclick="contractDeliver('${id}')" title="${wt > 0 && !dn ? "The courier is on the road" : ""}">${dn ? "DONE" : wt > 0 && ok ? `⏳ ${Math.ceil(wt / 1000)}s` : "DELIVER"}</button></div>`;
         }).join("");
       }
       function questBoardUI() {
@@ -9207,10 +9217,12 @@
             <div class="mbar"><i style="width:${(pr / b.n) * 100}%"></i></div><div class="sm">${pr}/${b.n} · <span class="gold">${b.g} gold</span> · ${b.x} XP</div></div>
             <button ${ok && !dn ? "" : "disabled"} onclick="bountyClaim('${id}')">${dn ? "DONE" : "CLAIM"}</button></div>`;
         }).join("");
+        const sy = $("dp").scrollTop;
         $("dp").innerHTML = `<h2>📜 Quest Board</h2>
           ${q ? `<div class="qo">Main quest: <b>${q.n}</b> · ${V.qs == 0 ? "ask the Elder" : V.qs == 2 ? "return to the Elder" : q.o}</div>` : ""}
           <p class="sm">Daily bounties · new ones every dawn</p>${rows}
           <p class="sm" style="margin-top:10px">📦 Contracts · gather on the island, deliver here · new orders every dawn</p>${contractRows()}<button class="alt x" onclick="closeDlg()" title="Close">Close</button>`;
+        $("dp").scrollTop = sy;
       }
       function bountyClaim(id) {
         const bo = bountyDay(), b = BOUNTIES.find((x) => x.id == id);
@@ -10758,6 +10770,7 @@
         (navigator.clipboard?.writeText(link) || Promise.reject()).then(() => toast("Lobby link copied: send it to friends"), () => chatSys("Lobby link: " + link));
         sfx("ui");
       });
+      function titlesOpen() { if (P && !dlgOpen()) { $("dlg").hidden = false; titleUI(); sfx("ui"); } }
       $("bt").addEventListener("pointerdown", (e) => {
         e.preventDefault();
         if (P && !dlgOpen()) { $("dlg").hidden = false; titleUI(); sfx("ui"); }
@@ -10902,7 +10915,8 @@
         $("bt").hidden = true; /* Titles, Feedback and Copy ID moved into Settings (cleaner HUD) */
         $("binv").hidden = $("bgm").hidden = tut() < TUT_DONE || S.sc != "hub";
         $("bgd").hidden = $("bgm").hidden || !isUnl("pet");
-        if (!$("bgm").hidden) { const dn = String(dailyReady() || ""), gn = String(($("bgd").hidden ? 0 : gardenReady()) || ""); if ($("bgm").dataset.n !== dn) $("bgm").dataset.n = dn; if ($("bgd").dataset.n !== gn) $("bgd").dataset.n = gn; }
+        $("btt").hidden = $("bgm").hidden;
+        if (!$("bgm").hidden) { const dn = String(dailyReady() || ""), gn = String(($("bgd").hidden ? 0 : gardenReady()) || ""), b1 = $("bgm").lastChild, b2 = $("bgd").lastChild; if (b1.textContent !== dn) b1.textContent = dn; if (b2.textContent !== gn) b2.textContent = gn; }
         $("bcls").hidden = tut() < 1 || S.sc != "hub"; /* class change (the Class Master left the hub): from tutorial step 2 on */
         $("bset").hidden = !P;
         $("bfb").hidden = true;
