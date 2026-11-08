@@ -1227,7 +1227,7 @@
       .pn h2 { margin-bottom: 10px; }
       .pn .row { padding: 10px 2px; gap: 12px; }
       .pn .up { padding: 10px 14px; margin: 8px 0; gap: 14px; }
-      .gmr { --uc: #8a7dff; align-items: center; } .gmr button { min-height: 44px; min-width: 44px; white-space: nowrap; } .gmr.lk { opacity: .55; filter: grayscale(.7); }
+      .gmr { --uc: #8a7dff; align-items: center; } .gmr .nm { display: block; } .gmr .sm { line-height: 1.3; } .gmr button { min-height: 44px; min-width: 44px; max-width: 46%; padding: 6px 12px; font-size: 14px; letter-spacing: 0; text-transform: none; white-space: normal; line-height: 1.15; } .gmr button.rdy { box-shadow: 0 0 10px #ffd86a88; border-color: #fff3c4; } body.ph .gmr { flex-wrap: wrap; } body.ph .gmr button { max-width: none; flex: 1 1 100%; } .gmr.lk { opacity: .55; filter: grayscale(.7); }
       .gmi { font-size: 26px; line-height: 44px; width: 36px; text-align: center; flex: none; }
       .gmbk { display: flex; gap: 8px; justify-content: center; margin-top: 10px; } .gmbk button { min-height: 44px; }
       .pn .tt { padding: 10px 6px; }
@@ -2903,7 +2903,7 @@
       }
       function gamesUI() {
         CUR_DLG = "games";
-        const rows = gamesList().map(([k, ic, nm, ds, bd, lk]) => `<div class="up gmr${lk ? " lk" : ""}"><span class="gmi" aria-hidden="true">${ic}</span><div style="min-width:0;flex:1"><span class="nm">${nm}</span><div class="sm">${lk || ds}</div></div>${lk ? `<button disabled title="${lk}">🔒</button>` : `<button class="${/ready|left/.test(bd) ? "claim" : ""}" onclick="gameGo('${k}')" title="Open ${nm}">${bd}</button>`}</div>`).join("");
+        const rows = gamesList().map(([k, ic, nm, ds, bd, lk]) => `<div class="up gmr${lk ? " lk" : ""}"><span class="gmi" aria-hidden="true">${ic}</span><div style="min-width:0;flex:1"><span class="nm">${nm}</span><div class="sm">${lk || ds}</div></div>${lk ? `<button disabled title="${lk}">🔒</button>` : `<button class="${/ready|left/.test(bd) ? "rdy" : ""}" onclick="gameGo('${k}')" title="Open ${nm}">${bd}</button>`}</div>`).join("");
         $("dp").className = "pn";
         $("dp").innerHTML = `<h2>🎮 Games</h2><p class="sm">Free minigames. Blackjack is at the Barkeep's table.</p>${rows}<button class="alt x" onclick="closeDlg()" title="Close">Close</button>`;
         wiFresh();
@@ -3067,7 +3067,7 @@
       }, true);
       /* ---------- What's new: a small corner card once per build (BUILD), a soft chime at the player's volume ----------
          Brand-new players (tutorial not done) skip it: everything is new to them. Dismiss with x, or it fades after 14 s. */
-      const BUILD = "2026.11.08.1"; /* the 🎮 Games menu: garden, shrine, wheel, reels, dig */
+      const BUILD = "2026.11.08.2"; /* the 🎮 Games menu: garden, shrine, wheel, reels, dig */
       const NEWS = ["🎮 All minigames now in the 🎮 Games menu (top bar or G): Zen Garden, Wish Shrine, Fortune Wheel, Rune Reels and Treasure Dig, with what is ready today. Blackjack stays at the Barkeep", "✨ Wish cosmetics glow brighter: new trails (Leaf Drift, Starlit Steps, Comet Tail), emote bubbles (Heart Puff, Rune Glyph) and the Legendary Runic Nova aura. Preview your look in the Collection; changes show to everyone at once", "🌠 Rune Wishes: the Wish Shrine! Make free wishes for auras, pet hats, name effects and titles (odds and pity shown, dupes become Stardust). Earn 🎟 at the Fortune Wheel, Rune Reels and Treasure Dig, plus Cipher wins, garden harvests and raids. All free, always", "🔮 Cipher: every few gathers a quick rune game pops up (strike the vein, the moonleaf pattern, the crystal echo); win a bonus pack of 5. Gathering combos and a shinier channel too", "🌸 The Zen Garden: rake the sand, water your plants, harvest materials, claim a 7-day streak bonus and trade your produce with friends", "🐾 Pets: reach level 6 to meet the Beastkeeper. Adopt a Fox, Owl, Wolf or Sprite with materials, feed it for a bigger bonus, and tap it to play", "⛏️ Gathering: Iron Ore, Moonleaf and Skycrystal nodes on the island; mastery raises your yield", "📜 Contract Board: 3 material orders a day on the Quest Board", "🌹 The Maiden's Exchange: barter materials at rates that drift each day"];
       let NEWS_T = 0;
       function newsShow() {
