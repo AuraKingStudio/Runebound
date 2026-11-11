@@ -10,23 +10,24 @@ A co-op raid game that runs in the browser: a floating hub island, NPCs, and bos
 
 ## What is in the game
 
-- **Hub NPCs** (8 spots, one kept free for a future pet NPC):
+- **Hub NPCs** (8 spots). Every NPC window has one header with a ✕ and, where it has sections, one tab bar:
 
-  | NPC | What they do |
+  | NPC | Tabs / what they do |
   |---|---|
-  | Elder | Quest chain; some quests unlock NPCs |
-  | Merchant | Upgrades and rotating equipment stock; the player **Market** is paused |
+  | Elder | Quests (main + side) · Bounties (daily) · Contracts |
+  | Class Master | Class · Raid skills (pick the 2 skills you bring) |
+  | Merchant | Upgrades · Gear · Shop (Rune Pass, cosmetics) · Market (paused) |
   | Archivist | Tales with gifts and secret pages |
-  | Smith | Forge gear from raid materials, temper, salvage, refine |
+  | Smith | Forge · Temper (and salvage) · Refine |
+  | Beastkeeper | Pets (one follows you); the Zen Garden opens with him |
   | Seraph | One-raid blessings for gold |
-  | Maiden | Rare trader, and a free daily blessing |
-  | Barkeep | Blackjack |
+  | Barkeep | Blackjack · Daily (Wish Shrine, Wheel, Reels, Dig; red count while rewards wait) |
 
-  Class change is the **Class** button in the top bar.
+  The Maiden is off the hub for now (her code is kept for the Archivist secret-NPC rework).
 - **Raids:** The Hollow Seer (3 players) and Thornmaw Colossus (6 players). **Rune Trials** are endless harder versions with bigger rewards.
 - **Gear:** six slots (weapon per class, armor, charm, helmet, gloves, boots), five rarities, and a perk on class weapons at each rarity.
 - **Materials:** about 4 per raid win, used to forge and trade.
-- **🎮 Games menu** (top bar or **G**): Zen Garden, Wish Shrine, Fortune Wheel, Rune Reels and Treasure Dig, with what is ready today; locked games show why. Blackjack stays at the Barkeep.
+- **Daily rewards** live in the Barkeep's Daily tab (or **G**). The Zen Garden has its own 🌸 top-bar button.
 - **Rune Wishes:** free Wish Shrine with auras, trails, emote bubbles, pet hats, name effects and titles; outfits show to everyone live (bank-confirmed online).
 
 ## Files
@@ -45,17 +46,20 @@ Before handing work to another agent, update this section with enough detail for
 
 ### Current handoff
 
-- **Updated:** 2026-11-08 (Happy, for PM Bob)
-- **Task and goal:** owner: one new shop spell per class + players pick the 2 non-ultimate skills they bring to a raid; balanced.
-- **Status:** committed in Happy's worktree, **not pushed**. `node src/test.js` and `--bench` ALL PASSED. BUILD 2026.11.08.11.
+- **Updated:** 2026-11-11 (runebound-05; took over Bob's unfinished UI batch 1 after his session ended)
+- **Goal (owner):** tutorial must work; less text; one clear, consistent UI style; NPC content shown simply; DPS Engine bar; raid popups off the center; hide the hub message; F2 dev menu with Finish tutorial. Push.
+- **Status:** committed on `main` and pushed. BUILD 2026.11.11.1.
 - **Changes:**
-  - `SPELL` table (near `SK`): Stone Ward (tank), Rune Mine (DPS), Renewal (healer); skill id 4 (3 = ultimate). Unlock 600 gold once per class (`spBuy`, "skill" spend), levels in `V.sk[cls][3]`.
-  - Loadout `V.ld[cls] = [id, id]` (`ldGet/ldOk/skId`); save load pads `V.sk` to 4 and drops bad spell flags / loadouts. `act()` maps slot -> skill id; cooldowns stay per slot.
-  - Picker `ldUI()` in the Class window and on Choose Raid (locked in a raid); HUD buttons show the equipped skill; tank without Taunt gets a warning.
-  - Net: `ra` carries `ld`; the leader keeps the first valid one per member (else [1,2]); `fx` events carry the skill id. Bots unchanged.
-  - Balance model `spellBal()` + test band; Expose once per 13 s and not on top of Poise Broken.
-- **Not tested:** real browsers/devices for the picker layout; leader cannot verify a member really bought the spell (peer-hosted, same as skill levels).
-- **Next step:** Zulu review, owner test of the fresh build, then Bob pushes.
+  - One button system (Bob's batch 1): gold primary `.claim`, dark secondary, 44 px icon `.x`; every dialog has `dlgHead()` + one ✕.
+  - `tabsBar(items, cur, js, sub)`: the one tab bar. Merchant, Class Master (Class | Raid skills), Elder (Quests | Bounties | Contracts), Barkeep (Blackjack | Daily), Smith (Forge | Temper | Refine), Shop sub-tabs, Daily games. `sub` = pickers (garden seeds, Smith slot/type/tier).
+  - Row action buttons are one size (116 x 44) and one look. Gold purse row under every header (no header purse hitting the ✕).
+  - Raid skills: big rows with "✔ Bringing" / "Bring" (`ldUI`), off the raid screen.
+  - Raid: `popMsg` in the arena = one small line at 13% height (no stack over the boss); result = compact card under the boss bar; `engineBar()` bottom-left for DPS.
+  - `#netBadge` hidden unless the dev panel is open. F2 always answers: dev tools, or a dev-code prompt (same hash) when the flag is not set. Dev tools: **Finish tutorial** (`devTutDone`).
+  - Tutorial verified headless as a new player: walk → Class Master → Elder → Merchant → Archivist → Smith → Beastkeeper → raid, each step via the real interact key.
+- **Checks:** `npm test` passes (the PostgreSQL bank tests SKIP without TEST_DATABASE_URL). `npm run bench` passes; the phone-CPU checks hover at the 50 ms/s limit and flake under load (untouched `main` flakes the same way).
+- **Not tested:** physical phones/tablets; Firefox/Safari.
+- **Next:** owner playtest of the new windows; README tables stay in sync with `tabsBar` users.
 
 ## Player market (paused for release)
 
