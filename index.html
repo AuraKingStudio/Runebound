@@ -104,6 +104,7 @@
         width: min(440px, 92vw);
         max-height: 90vh;
         overflow: auto;
+        overflow-x: hidden; /* no sideways scrollbar on small windows */
         touch-action: pan-y;
         user-select: text;
       }
@@ -1771,6 +1772,21 @@
       .pn .ntabs.sub { flex-wrap: wrap; gap: 6px; padding: 0; margin: 4px 0 10px; background: transparent; border: 0; }
       .pn .ntabs.sub button.tb { flex: 1 1 auto; min-height: 40px; padding: 6px 10px !important; border: 1px solid #3fd6c644 !important; background: #111c29 !important; color: #e6eef5 !important; }
       .pn .ntabs.sub button.tb.on { background: #ffd84a1f !important; border-color: #ffd84a !important; color: #ffd84a !important; box-shadow: inset 0 0 0 1px #ffd84a !important; }
+      /* .fgrp: one labelled group of controls (label right above its control, the group boxed: proximity + enclosure) */
+      .pn .mgrid { display: grid; grid-template-columns: 1fr 1fr; gap: 8px; }
+      .pn .mgrid button { width: 100%; margin: 0; min-height: 52px; font-size: 16px; }
+      .pn .fgrp { margin: 0 0 12px; padding: 8px 12px 10px; border: 1px solid #3fd6c629; border-radius: 10px; background: #0b141f80; }
+      .pn .fgrp > .flb { display: block; margin: 0 0 6px; font: bold 13px Georgia, serif; letter-spacing: 1px; text-transform: uppercase; color: #e8b84a; }
+      .pn .fgrp > .ntabs.sub { margin: 0; }
+      .pn .fgrp .row { padding: 6px 0; }
+      .pn .fgrp.danger { border-color: #ff6b5b55; }
+      .pn .fgrp.danger > .flb { color: #ff8a7a; }
+      /* a picked option says so with a check mark too, not only with colour */
+      .pn .ntabs.sub button.tb.on::after { content: " ✓"; }
+      /* second-level tab rows (Wish Shrine) use the picker look so the two rows never look alike */
+      .pn .wtabs.sub { background: transparent; border: 0; padding: 0; gap: 6px; margin: 0 0 12px; }
+      .pn .wtabs.sub button { border: 1px solid #3fd6c644 !important; background: #111c29 !important; min-height: 40px; color: #e6eef5 !important; }
+      .pn .wtabs.sub button.on { background: #ffd84a1f !important; border-color: #ffd84a !important; color: #ffd84a !important; box-shadow: inset 0 0 0 1px #ffd84a !important; }
       .pn .ntabs .bdg2 { display: inline-grid; place-items: center; min-width: 18px; height: 18px; margin-left: 5px; padding: 0 5px; border-radius: 9px; background: #e53935; color: #fff; font: bold 11px/18px Georgia, serif; vertical-align: 1px; }
       /* every action button at the end of a card row: one size, one look (no per-colour buttons) */
       .pn .up > button, .pn .qrw > button { flex: none; width: 116px; min-width: 116px; min-height: 44px; margin: 0 0 0 auto !important; padding: 6px 8px !important; font: bold 14px Georgia, serif !important; letter-spacing: 0.3px !important; white-space: nowrap; animation: none !important; }
@@ -3125,8 +3141,8 @@
       }, true);
       /* ---------- What's new: a small corner card once per build (BUILD), a soft chime at the player's volume ----------
          Brand-new players (tutorial not done) skip it: everything is new to them. Dismiss with x, or it fades after 14 s. */
-      const BUILD = "2026.11.11.1"; /* one UI style: NPC tab bars, same-size buttons, less text, Engine bar */
-      const NEWS = ["🧭 Clearer NPC windows: one tab bar each (Merchant, Class Master, Elder, Barkeep, Smith), same-size buttons, less text", "⚔ Raid skills have their own tab at the Class Master", "⚙ DPS: Engine meter bottom-left; raid messages no longer cover the fight", "🔨🐾 New players meet the Smith and the Beastkeeper in the tutorial", "📖 Easier tutorial: big step card, what to press, arrows on every NPC, and it ends by starting your first raid from the middle", "⚔ Choose a raid fits small screens: every ENTER is visible, tap a whole card to go", "🧹 Cleaner top bar: daily quests at the 🧙 Elder, the ✨ Shop at the 💰 Merchant, class and raid skills at the ⚔ Class Master, 🎁 Daily Rewards at the 🍺 Barkeep (marker when ready)", "✨ New spells at the Merchant: Stone Ward (Tank), Rune Mine (DPS), Renewal (Healer). Pick the 2 skills you bring to a raid in the Class window or on the Choose Raid screen", "🧙 The Elder gives side quests: keep one next to your main quest (8 new quests, progress bars, both tracked on screen)", "📱 Cleaner top bar: icon tiles with labels, a 🎖️ Titles button, red badges when rewards wait. Contracts show the courier countdown instead of a dead button", "🎁 Daily Rewards (top bar or G): the Wish Shrine gift, Fortune Wheel, Rune Reels and Treasure Dig on one board with today's progress and a red badge when rewards wait. 🌸 The Zen Garden has its own button and badges when beds are ripe", "✨ Wish cosmetics glow brighter: new trails (Leaf Drift, Starlit Steps, Comet Tail), emote bubbles (Heart Puff, Rune Glyph) and the Legendary Runic Nova aura. Preview your look in the Collection; changes show to everyone at once", "🌠 Rune Wishes: the Wish Shrine! Make free wishes for auras, pet hats, name effects and titles (odds and pity shown, dupes become Stardust). Earn 🎟 at the Fortune Wheel, Rune Reels and Treasure Dig, plus Cipher wins, garden harvests and raids. All free, always", "🔮 Cipher: every few gathers a quick rune game pops up (strike the vein, the moonleaf pattern, the crystal echo); win a bonus pack of 5. Gathering combos and a shinier channel too", "🌸 The Zen Garden: rake the sand, water your plants, harvest materials, claim a 7-day streak bonus and trade your produce with friends", "🐾 Pets: reach level 6 to meet the Beastkeeper. Adopt a Fox, Owl, Wolf or Sprite with materials, feed it for a bigger bonus, and tap it to play", "⛏️ Gathering: Iron Ore, Moonleaf and Skycrystal nodes on the island; mastery raises your yield", "📜 Contract Board: 3 material orders a day on the Quest Board", "🌹 The Maiden's Exchange: barter materials at rates that drift each day"];
+      const BUILD = "2026.11.11.2"; /* UI overhaul 2: Smith slots fixed, labelled groups, Settings tabs, NPC names */
+      const NEWS = ["🔨 Smith: every slot works again; Slot, Item and Rarity are clearly separated", "⚙ Settings in 3 tabs (Game, Keys, More); Save split into Export, Import and Reset", "🏷 Every NPC shows its name in the hub", "🧭 Clearer NPC windows: one tab bar each (Merchant, Class Master, Elder, Barkeep, Smith), same-size buttons, less text", "⚔ Raid skills have their own tab at the Class Master", "⚙ DPS: Engine meter bottom-left; raid messages no longer cover the fight", "🔨🐾 New players meet the Smith and the Beastkeeper in the tutorial", "📖 Easier tutorial: big step card, what to press, arrows on every NPC, and it ends by starting your first raid from the middle", "⚔ Choose a raid fits small screens: every ENTER is visible, tap a whole card to go", "🧹 Cleaner top bar: daily quests at the 🧙 Elder, the ✨ Shop at the 💰 Merchant, class and raid skills at the ⚔ Class Master, 🎁 Daily Rewards at the 🍺 Barkeep (marker when ready)", "✨ New spells at the Merchant: Stone Ward (Tank), Rune Mine (DPS), Renewal (Healer). Pick the 2 skills you bring to a raid in the Class window or on the Choose Raid screen", "🧙 The Elder gives side quests: keep one next to your main quest (8 new quests, progress bars, both tracked on screen)", "📱 Cleaner top bar: icon tiles with labels, a 🎖️ Titles button, red badges when rewards wait. Contracts show the courier countdown instead of a dead button", "🎁 Daily Rewards (top bar or G): the Wish Shrine gift, Fortune Wheel, Rune Reels and Treasure Dig on one board with today's progress and a red badge when rewards wait. 🌸 The Zen Garden has its own button and badges when beds are ripe", "✨ Wish cosmetics glow brighter: new trails (Leaf Drift, Starlit Steps, Comet Tail), emote bubbles (Heart Puff, Rune Glyph) and the Legendary Runic Nova aura. Preview your look in the Collection; changes show to everyone at once", "🌠 Rune Wishes: the Wish Shrine! Make free wishes for auras, pet hats, name effects and titles (odds and pity shown, dupes become Stardust). Earn 🎟 at the Fortune Wheel, Rune Reels and Treasure Dig, plus Cipher wins, garden harvests and raids. All free, always", "🔮 Cipher: every few gathers a quick rune game pops up (strike the vein, the moonleaf pattern, the crystal echo); win a bonus pack of 5. Gathering combos and a shinier channel too", "🌸 The Zen Garden: rake the sand, water your plants, harvest materials, claim a 7-day streak bonus and trade your produce with friends", "🐾 Pets: reach level 6 to meet the Beastkeeper. Adopt a Fox, Owl, Wolf or Sprite with materials, feed it for a bigger bonus, and tap it to play", "⛏️ Gathering: Iron Ore, Moonleaf and Skycrystal nodes on the island; mastery raises your yield", "📜 Contract Board: 3 material orders a day on the Quest Board", "🌹 The Maiden's Exchange: barter materials at rates that drift each day"];
       let NEWS_T = 0;
       function newsShow() {
         let seen = "";
@@ -3561,16 +3577,11 @@
       function saveUI() {
         $("dp").className = "pn";
         $("dp").innerHTML = `${dlgHead("💾", "Save")}
-          <div class="mast"><span class="sm">Export: keep this code to move your progress to another browser</span></div>
-          <textarea id="svx" readonly rows="3" style="width:100%;box-sizing:border-box;font:11px monospace;word-break:break-all" onclick="this.select()">${saveCode()}</textarea>
-          <div class="row"><button onclick="const t=$('svx');t.select();(navigator.clipboard?.writeText(t.value)||Promise.reject()).then(()=>toast('Save code copied'),()=>toast('Select the code and copy it'))">📋 Copy code</button></div>
-          <div class="mast"><span class="sm">Import: replaces this browser's progress</span></div>
-          <textarea id="svi" rows="3" placeholder="Paste a save code (RB1.…)" style="width:100%;box-sizing:border-box;font:11px monospace"></textarea>
-          <div class="row"><button onclick="saveImport($('svi').value)">📥 Load code</button></div>
-          <p class="sm">Online, your gold and XP live on the server: they come back from it, never from a code.</p>
-          <div class="mast"><span class="sm">Reset progress (can't be undone)</span></div>
-          <p class="sm">Reset clears only this browser's save: quests, upgrades, items and name (settings stay). Online, the server bank keeps your gold and XP and restores them right after.</p>
-          <div class="row" style="gap:6px;flex-wrap:wrap"><input id="svr" maxlength="5" placeholder="Type RESET" autocomplete="off" style="width:110px"><button class="alt" style="color:#ff7a6b" onclick="saveReset($('svr').value)">Reset</button></div>
+          ${fgrp("Export", `<p class="sm" style="margin:0 0 6px">Keep this code to move your progress to another browser.</p><textarea id="svx" readonly rows="3" style="width:100%;box-sizing:border-box;font:11px monospace;word-break:break-all" onclick="this.select()">${saveCode()}</textarea>
+          <button onclick="const t=$('svx');t.select();(navigator.clipboard?.writeText(t.value)||Promise.reject()).then(()=>toast('Save code copied'),()=>toast('Select the code and copy it'))">📋 Copy code</button>`)}
+          ${fgrp("Import", `<p class="sm" style="margin:0 0 6px">Replaces this browser's progress. Online, gold and XP always come from the server.</p><textarea id="svi" rows="3" placeholder="Paste a save code (RB1.…)" style="width:100%;box-sizing:border-box;font:11px monospace"></textarea>
+          <button onclick="saveImport($('svi').value)">📥 Load code</button>`)}
+          ${fgrp("Reset progress", `<p class="sm" style="margin:0 0 6px">Clears this browser's save (settings stay). Can't be undone.</p><div class="row" style="gap:8px;flex-wrap:nowrap;padding:0"><input id="svr" maxlength="5" placeholder="Type RESET" autocomplete="off" style="flex:1;min-height:44px"><button style="width:116px;color:#ff8a7a !important;border-color:#ff6b5b !important" onclick="saveReset($('svr').value)">Reset</button></div>`, "danger")}
           <button class="x" onclick="settingsUI()" title="Close" aria-label="Close">✕</button>`;
       }
       /* LEDGER: every gold / XP / upgrade change since the last hub audit, as [kind, gold, xp, upgradeKey?].
@@ -4271,10 +4282,10 @@
           body = `<div class="wban"><canvas id="wpc" width="300" height="110"></canvas><div class="wbt"><b>Rune Wishes</b><span>Always free · earned by playing</span></div></div>
             <div class="wodds">${"LERC".split("").map((k) => `<span style="color:${WTIER[k][1]}">${WTIER[k][0]} <b>${(WISH.odds[k] / 100).toFixed(1)}%</b></span>`).join("")}</div>
             <div class="wpity"><div><span>Epic or better within</span><b>${WISH.epicEvery - w.p10}</b><i style="width:${(w.p10 / WISH.epicEvery) * 100}%"></i></div><div><span>Legendary within</span><b>${WISH.hard - w.p60}</b><i class="lg" style="width:${(w.p60 / WISH.hard) * 100}%"></i></div></div>
-            <p class="sm">Guaranteed Epic or better every ${WISH.epicEvery} wishes · Legendary by wish ${WISH.hard}, its chance rising +${WISH.softAdd / 100}% a wish from wish ${WISH.soft} · a duplicate cosmetic becomes ✨ Stardust (${WISH.dupe.R}/${WISH.dupe.E}/${WISH.dupe.L})</p>
+            <p class="sm">Epic or better every ${WISH.epicEvery} wishes · Legendary by wish ${WISH.hard} · duplicates become ✨ Stardust</p>
             <div class="wbtns"><button class="wbig" onclick="wishPull(1)" ${w.t < 1 ? "disabled" : ""}>Wish ×1<small>🎟 1</small></button><button class="wbig ten" onclick="wishPull(10)" ${w.t < 10 ? "disabled" : ""}>Wish ×10<small>🎟 10</small></button></div>
             ${dl ? `<button class="claim" onclick="wishDaily()">🎁 Daily gift: +${WISH.src.daily} 🎟</button>` : ""}
-            <p class="sm">Earn 🎟 from the daily gift, the Wheel, Reels and Dig, Cipher wins, garden harvests and raid wins (up to ${WISH.dayCap} a day).</p>`;
+            <p class="sm">Earn 🎟 from daily games, the garden and raids (up to ${WISH.dayCap} a day).</p>`;
         } else if (t == "shop") {
           body = `<p class="sm">Pick exactly what you want with ✨ Stardust (from duplicates, the Reels, Wheel and Dig).</p><div class="wlist">${Object.entries(WCAT).filter(([id]) => wCosm(id)).map(([id, [tr, , nm]]) => { const own = wishOwn(id), pr = WISH.shop[tr]; return `<div class="wrow t${tr}">${wIcon(id)}<span><b>${nm}</b><small style="color:${WTIER[tr][1]}">${WTIER[tr][0]}</small></span>${own ? `<em>Owned</em>` : `<button onclick="wishBuy('${id}')" ${w.sd < pr ? "disabled" : ""}>✨ ${pr}</button>`}</div>`; }).join("")}</div>`;
         } else {
@@ -8505,10 +8516,13 @@
       const TUT_DONE = 5;
       /* dlgHead(icon, name): the one dialog header: emoji + 1-2 words (the close ✕ sits top-right in every dialog) */
       function dlgHead(i, n) { return `<h2>${i} ${n}</h2>`; }
+      /* fgrp(label, inner, cls): one labelled group (label right above the controls, boxed) */
+      const fgrp = (lb, inner, cls = "") => `<div class="fgrp${cls ? " " + cls : ""}"><span class="flb">${lb}</span>${inner}</div>`;
       /* tabsBar(items, cur, js, sub): the one tab bar of every NPC window. items = [[key, label, badge?]]; js = onclick code, $K = the key.
          sub = a smaller picker inside a tab (seeds, gear slots, tiers). */
       function tabsBar(items, cur, js, sub) {
-        return `<div class="ntabs${sub ? " sub" : ""}" role="tablist">${items.map(([k, n, b]) => `<button class="tb${k == cur ? " on" : ""}" role="tab" aria-selected="${k == cur}" onclick="${js.split("$K").join(k)}">${n}${b ? `<b class="bdg2">${b}</b>` : ""}</button>`).join("")}</div>`;
+        /* tabs switch sections (tablist); a sub picker chooses a value (radiogroup), so screen readers say which */
+        return `<div class="ntabs${sub ? " sub" : ""}" role="${sub ? "radiogroup" : "tablist"}">${items.map(([k, n, b]) => `<button class="tb${k == cur ? " on" : ""}" role="${sub ? "radio" : "tab"}" ${sub ? "aria-checked" : "aria-selected"}="${k == cur}" onclick="${js.split("$K").join(k)}">${n}${b ? `<b class="bdg2">${b}</b>` : ""}</button>`).join("")}</div>`;
       }
       const TUT_TS = 28, TUT_FS = 21, TUT_CH = 98; /* tutorial card: title / what-to-press font px, card height (tests check the minimum) */
       const TUT_TXT = ["Walk around", "Meet the Class Master", "Meet the Elder", "Visit the Merchant", "Hear the Archivist", "Visit the Smith", "Meet the Beastkeeper", "Start your first raid"];
@@ -9297,11 +9311,10 @@
       function forgeUI() {
         if (!EQ_K[FORGE.t].includes(FORGE.k)) FORGE.k = FORGE.t == "dmg" ? { tank: "wt", dps: "wd", heal: "wh" }[(P && P.cls) || "dps"] : EQ_K[FORGE.t][0];
         const F = FORGE, r = F.k == "dd" ? Math.max(2, F.r) : F.r, c = craftCost(F.t, r), ok = craftHave(c) && craftLvOk(r);
-        const pill = (on, js, lab, col) => `<button class="tb${on ? " on" : ""}" onclick="${js};smithUI()"${on && col ? ` style="color:${col} !important;border-color:${col} !important"` : ""}>${lab}</button>`;
-        let h = `<div class="mast"><span class="sm">Forge new gear</span></div>
-          <div class="ntabs sub">${["dmg", "tank", "helm", "glove", "boots", "util"].map((t) => pill(F.t == t, `FORGE.t='${t}';FORGE.k=`, SLOT_N[t][1] + " " + SLOT_N[t][0])).join("")}</div>`;
-        if (EQ_K[F.t].length > 1) h += `<div class="ntabs sub">${EQ_K[F.t].map((k) => pill(F.k == k, `FORGE.k='${k}'`, EQ_N[k])).join("")}</div>`;
-        h += `<div class="ntabs sub">${TIERS.map((T, i) => pill(r == i, `FORGE.r=${i}`, T[0], T[1])).join("")}</div>`;
+        const pill = (on, js, lab, col) => `<button class="tb${on ? " on" : ""}" role="radio" aria-checked="${on}" onclick="${js};smithUI()"${on && col ? ` style="color:${col} !important;border-color:${col} !important"` : ""}>${lab}</button>`;
+        let h = fgrp("1 · Slot", `<div class="ntabs sub" role="radiogroup">${["dmg", "tank", "helm", "glove", "boots", "util"].map((t) => pill(F.t == t, `FORGE.t='${t}';FORGE.k=''`, SLOT_N[t][1] + " " + SLOT_N[t][0])).join("")}</div>`);
+        if (EQ_K[F.t].length > 1) h += fgrp("2 · Item", `<div class="ntabs sub" role="radiogroup">${EQ_K[F.t].map((k) => pill(F.k == k, `FORGE.k='${k}'`, EQ_N[k])).join("")}</div>`);
+        h += fgrp(EQ_K[F.t].length > 1 ? "3 · Rarity" : "2 · Rarity", `<div class="ntabs sub" role="radiogroup">${TIERS.map((T, i) => pill(r == i, `FORGE.r=${i}`, T[0], T[1])).join("")}</div>`);
         h += eqCard({ t: F.t, k: F.k, r }, `<button ${ok ? "" : "disabled"} onclick="craftMake()">Forge</button>`);
         h += `<div class="sm" style="margin:-2px 0 6px">Cost: ${costHtml(c)}${craftLvOk(r) ? "" : ` · <span style="color:#ff7a6a">Legendary needs level ${EQ_LEG_LV}</span>`}${F.k == "dd" && F.r < 2 ? " · Twin Feather starts at Rare" : ""}</div>`;
         const bag = (V.eq?.bag || []).filter(eqOk), on = Object.values(V.eq?.on || {});
@@ -11081,21 +11094,27 @@
          feedback and (with the dev code) dev tools. Saved in SET (runebound_settings). Rebinding: click a bind, press a key. */
       const BIND_N = { s0: "Main attack", s1: "Skill 2", s2: "Skill 3", ult: "Ultimate", dash: "Dash", int: "Interact", up: "Up", down: "Down", left: "Left", right: "Right", pause: "Pause" };
       function setOpen() { if (P && !dlgOpen()) { CUR_DLG = "set"; $("dlg").hidden = false; settingsUI(); sfx("ui"); } }
-      function settingsUI() {
+      let ST_TAB = "g"; /* Settings tab: "g" game (sound, screen), "k" keys, "m" more */
+      function settingsUI(tab) {
+        if (tab == "g" || tab == "k" || tab == "m") ST_TAB = tab;
+        if (REBIND) ST_TAB = "k";
         $("dp").className = "pn";
         const sl = (k, lab, max, step) => `<label class="row" style="justify-content:space-between;gap:10px"><span>${lab}</span><input type="range" min="0" max="${max}" step="${step}" value="${SET[k]}" style="flex:1;max-width:180px;accent-color:#d9a94a" oninput="SET.${k}=+this.value;saveSet()"></label>`;
         const tg = (k, lab) => `<label class="row" style="justify-content:space-between"><span>${lab}</span><input type="checkbox" style="accent-color:#d9a94a" ${SET[k] ? "checked" : ""} onchange="SET.${k}=this.checked?1:0;saveSet()"></label>`;
         const binds = `<div style="display:grid;grid-template-columns:1fr 1fr;gap:4px 14px">` + Object.keys(BIND_N).map((k) => `<div style="display:flex;align-items:center;justify-content:space-between;gap:6px"><span class="sm">${BIND_N[k]}</span><span ${k == "s0" ? "title='Mouse button'" : `onclick="REBIND='${k}';settingsUI()"`} style="cursor:${k == "s0" ? "default" : "pointer"};min-width:54px;text-align:center;padding:3px 8px;border:1px solid ${REBIND == k ? "#ffe08a" : "var(--ln)"};border-bottom-width:2px;border-radius:6px;font:bold 12px Georgia;color:${REBIND == k ? "#ffe08a" : "#f3e6c8"};background:rgba(0,0,0,.25)">${REBIND == k ? "…" : keyLabel(SET.bind[k])}</span></div>`).join("") + `</div>`;
-        $("dp").innerHTML = `${dlgHead("⚙️", "Settings")}
-          <div class="row" style="justify-content:space-between;flex-wrap:wrap;gap:6px"><span>Name colour</span>${gdPills(V.nc, "gdSet")}</div><div class="mast"><span class="sm">Sound &amp; screen</span></div>${sl("vol", "Volume", 1, 0.05)}${sl("shake", "Screen shake", 1.5, 0.1)}${tg("fx", "Full particle effects")}<label class="row" style="justify-content:space-between"><span>Low spec mode <span class="sm">(older PCs / phones)</span></span><input type="checkbox" style="accent-color:#d9a94a" ${SET.low ? "checked" : ""} onchange="SET.low=this.checked?1:0;saveSet();rs();if(CUR_DLG=='pet')zenStart()"></label>${tg("dmg", "Damage numbers")}${tg("showFps", "Show FPS")}<div class="row" style="justify-content:space-between"><span>Frame rate</span><span style="display:flex;gap:4px">${[30, 60, 144, 0].map((f) => `<span onclick="SET.fps=${f};saveSet();settingsUI()" style="cursor:pointer;padding:3px 9px;border-radius:6px;border:1px solid ${(+SET.fps || 0) == f ? "#ffe08a" : "var(--ln)"};color:${(+SET.fps || 0) == f ? "#ffe08a" : "#f3e6c8"};background:rgba(0,0,0,.25);font:bold 12px Georgia">${f || "Max"}</span>`).join("")}</span></div><div class="row" style="justify-content:space-between"><span>Dash aim <span class="sm">(keyboard)</span></span><span style="display:flex;gap:4px">${[[0, "🖱 Cursor"], [1, "⌨ Movement"]].map(([v, lab]) => `<span onclick="SET.dashMove=${v};saveSet();settingsUI()" style="cursor:pointer;padding:3px 9px;border-radius:6px;border:1px solid ${(+SET.dashMove || 0) == v ? "#ffe08a" : "var(--ln)"};color:${(+SET.dashMove || 0) == v ? "#ffe08a" : "#f3e6c8"};background:rgba(0,0,0,.25);font:bold 12px Georgia">${lab}</span>`).join("")}</span></div>
-          <div class="mast"><span class="sm">Keys (keyboard)</span></div>${binds}<div class="row"><button class="alt" onclick="SET.bind={...BIND_DEF};saveSet();refreshHints();settingsUI()">Reset keys</button></div>
-          <div class="mast"><span class="sm">More</span></div><div class="row" style="flex-wrap:wrap;gap:6px">
+        const game = fgrp("Name colour", gdPills(V.nc, "gdSet"))
+          + fgrp("Sound & screen", `${sl("vol", "Volume", 1, 0.05)}${sl("shake", "Screen shake", 1.5, 0.1)}${tg("fx", "Full particle effects")}<label class="row" style="justify-content:space-between"><span>Low spec mode <span class="sm">(older PCs, phones)</span></span><input type="checkbox" style="accent-color:#d9a94a" ${SET.low ? "checked" : ""} onchange="SET.low=this.checked?1:0;saveSet();rs();if(CUR_DLG=='pet')zenStart()"></label>${tg("dmg", "Damage numbers")}${tg("showFps", "Show FPS")}`)
+          + fgrp("Frame rate", tabsBar([[30, "30"], [60, "60"], [144, "144"], [0, "Max"]], +SET.fps || 0, "SET.fps=$K;saveSet();settingsUI()", 1))
+          + fgrp("Dash aim (keyboard)", tabsBar([[0, "🖱 Cursor"], [1, "⌨ Movement"]], +SET.dashMove || 0, "SET.dashMove=$K;saveSet();settingsUI()", 1));
+        const keys = fgrp("Keys (tap one, then press a key)", binds) + `<button class="alt" onclick="SET.bind={...BIND_DEF};saveSet();refreshHints();settingsUI()">Reset keys</button>`;
+        const more = `<div class="mgrid">
             <button onclick="closeDlg();$('dlg').hidden=false;titleUI()">🎖️ Titles</button>
             <button onclick="setInvite()" title="Copy the invite link">🔗 Invite</button>
             <button onclick="saveUI()">💾 Save</button>
             <button onclick="closeDlg();tradeOpen()" title="Trade gold and materials with a friend (online server only)">🤝 Trade</button>
             <button onclick="closeDlg();fbOpen()">💬 Feedback</button>
-            ${DEV_OK ? `<button onclick="closeDlg();toggleDev()">🛠 Dev tools</button>` : ""}</div>
+            ${DEV_OK ? `<button onclick="closeDlg();toggleDev()">🛠 Dev tools</button>` : ""}</div>`;
+        $("dp").innerHTML = `${dlgHead("⚙️", "Settings")}${tabsBar([["g", "🔊 Game"], ["k", "⌨ Keys"], ["m", "☰ More"]], ST_TAB, "settingsUI('$K')")}${ST_TAB == "k" ? keys : ST_TAB == "m" ? more : game}
           <button class="x" onclick="REBIND=null;closeDlg()" title="Close" aria-label="Close">✕</button>`;
       }
       function setInvite() {
@@ -11808,10 +11827,10 @@
         c.restore();
         c.textAlign = "center";
         /* NPC names: logo font, tinted with the NPC's color (players use plain white Georgia) */
-        /* name only when the player is close (less clutter), small */
-        const near = P && dist(P, n) < 160; /* name shows within 160px */
-        c.globalAlpha = near ? (ghost ? 0.2 : 1) : 0;
-        c.font = 'bold 10px "Cinzel", Georgia';
+        /* names always show (who is who at a glance); brighter when you are close */
+        const near = P && dist(P, n) < 160;
+        c.globalAlpha = ghost ? 0.2 : near ? 1 : 0.8;
+        c.font = 'bold 12px "Cinzel", Georgia';
         c.fillStyle = n.col;
         c.strokeStyle = "#000";
         c.lineWidth = 3;

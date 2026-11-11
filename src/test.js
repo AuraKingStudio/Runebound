@@ -226,6 +226,15 @@ ok(T.rankPool().length>=100,'ranks: top-100 pool is 100 guilds');T.rankRefresh()
  Object.assign(V,o);vm.runInContext('closeDlg();CM_TAB="cls"',ctx);
  ok(!miss.length,'NPC windows: one tab bar, the right number of tabs, exactly one active '+miss.join());
  ok(/Bringing/.test(sk)&&/aria-pressed="true"/.test(sk)&&!/class="ldc/.test(sk),'Class Master: Raid skills is its own tab with one big row per skill');}
+{const D=ctx.document,V=T.V(),o={tut:V.tut,ul:V.ul};V.tut=T.TUT_DONE;V.ul={...(V.ul||{}),smith:true};const bad=[];
+ vm.runInContext('closeDlg();SM_TAB="f";FORGE.t="dmg";openDlg("smith")',ctx);
+ for(const t2 of ['tank','helm','glove','boots','util','dmg']){const h=D.getElementById('dp').innerHTML,m=new RegExp('onclick="(FORGE\\.t=\''+t2+'\'[^"]*)"').exec(h);if(!m){bad.push(t2+' no button');continue}try{vm.runInContext(m[1],ctx);}catch(e){bad.push(t2+' '+e.message);continue}if(vm.runInContext('FORGE.t',ctx)!=t2)bad.push(t2+' not picked');}
+ const sh=D.getElementById('dp').innerHTML;
+ ok(!bad.length,'Smith: every slot picker works (was a syntax error past Weapon) '+bad.join('; '));
+ ok(/class="flb">1 · Slot</.test(sh)&&/class="flb">2 · Item</.test(sh)&&/Rarity</.test(sh)&&/role="radiogroup"/.test(sh)&&/role="radio" aria-checked="true"/.test(sh),'Smith: Slot, Item and Rarity are labelled groups; pickers are radio groups');
+ vm.runInContext('closeDlg();settingsUI("g")',ctx);const g=D.getElementById('dp').innerHTML;vm.runInContext('settingsUI("k")',ctx);const k=D.getElementById('dp').innerHTML;vm.runInContext('settingsUI("m")',ctx);const m2=D.getElementById('dp').innerHTML;vm.runInContext('closeDlg();ST_TAB="g"',ctx);
+ ok(/Volume/.test(g)&&!/Reset keys/.test(g)&&/Reset keys/.test(k)&&!/Volume/.test(k)&&/Feedback/.test(m2)&&!/Volume/.test(m2)&&(g.match(/role="tab"/g)||[]).length==3,'Settings: three tabs (Game, Keys, More) instead of one long scroll');
+ Object.assign(V,o);vm.runInContext('closeDlg()',ctx);}
 ok(vm.runInContext('typeof devTutDone=="function"&&typeof devAsk=="function"&&typeof engineBar=="function"',ctx)&&/k == "f2" \|\| e\.code == "F2"/.test(SCRIPT)&&/#netBadge \{ display: none !important; \}/.test(fs.readFileSync(path.join(__dirname,'..','index.html'),'utf8')),'dev: F2 always answers (code prompt without the dev flag), Finish tutorial; hub badge hidden for players; DPS Engine bar');
 ok(vm.runInContext('TUT_TS>=28&&TUT_FS>=20&&TUT_TXT.every((t)=>t.split(" ").length<=8)&&[0,1,2,3,4,5,6,7].every((i)=>tutHow(i).split(" ").length<=8)',ctx),'tutorial: card title >= 28 px, what-to-press line >= 20 px, every line 8 words max');
 ok(vm.runInContext('(()=>{const t=V.tut;V.tut=1;const a=tutKey();V.tut=t;return a=="class"})()',ctx)&&/body\.tutf/.test(fs.readFileSync(path.join(__dirname,'..','index.html'),'utf8')),'tutorial: focus mode dims the HUD and every action banner but the target');
@@ -431,7 +440,7 @@ V.eq.bag[0].r=4;ok(T.wp('hp')==0.2,'weapon: the Legendary Aegis gives +20% max h
 const st=T.eqRoll(3);ok(st.length==4&&st.filter(i=>i.t=='dmg').length==1&&st[3].k=='wh'&&st.slice(0,3).every(i=>i.t!='dmg'),'shop: 3 armor/charm pieces + 1 weapon for your class');
 P.cls=c0;V.eq={bag:[],on:{}};}
 /* ---------- dash aim setting ---------- */
-ok(SRC.includes('MOUSE.on && !SET.dashMove')&&SRC.includes('SET.dashMove=${v}'),'settings: dash aim can follow the cursor or the movement keys');
+ok(SRC.includes('MOUSE.on && !SET.dashMove')&&SRC.includes('SET.dashMove=$K'),'settings: dash aim can follow the cursor or the movement keys');
 /* ---------- chat and emotes ---------- */
 T.chatSend('hello there');ok(T.P().say&&T.P().say.t=='hello there','chat: your line shows as a bubble');
 T.chatSend('/wave');ok(T.P().emo&&T.P().emo.e=='👋','chat: /wave plays the emote');

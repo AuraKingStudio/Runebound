@@ -46,9 +46,10 @@ Before handing work to another agent, update this section with enough detail for
 
 ### Current handoff
 
-- **Updated:** 2026-11-11 (runebound-05; took over Bob's unfinished UI batch 1 after his session ended)
+- **Updated:** 2026-11-11 (runebound-05), second pass: UI overhaul from web research (NN/g hierarchy and grouping, Xbox XAG labels/contrast, 44-48 px touch targets, tabs vs radio pickers, 8 px spacing)
 - **Goal (owner):** tutorial must work; less text; one clear, consistent UI style; NPC content shown simply; DPS Engine bar; raid popups off the center; hide the hub message; F2 dev menu with Finish tutorial. Push.
-- **Status:** committed on `main` and pushed. BUILD 2026.11.11.1.
+- **Status:** committed on `main` and pushed. BUILD 2026.11.11.2.
+- **Second pass:** Smith slot pickers fixed (`FORGE.k=` was a JS syntax error, so only Weapon worked); `fgrp(label, inner)` = one labelled, boxed control group (Smith 1 Slot / 2 Item / 3 Rarity, Settings, Save); `tabsBar(..., sub)` pickers are `role="radiogroup"` with a ✓ on the picked option; Settings = Game | Keys | More tabs; Save = Export / Import / Reset (danger) groups; Wish Shrine sub-tabs use the picker look and shorter text; hub NPC names always show (12 px).
 - **Changes:**
   - One button system (Bob's batch 1): gold primary `.claim`, dark secondary, 44 px icon `.x`; every dialog has `dlgHead()` + one ✕.
   - `tabsBar(items, cur, js, sub)`: the one tab bar. Merchant, Class Master (Class | Raid skills), Elder (Quests | Bounties | Contracts), Barkeep (Blackjack | Daily), Smith (Forge | Temper | Refine), Shop sub-tabs, Daily games. `sub` = pickers (garden seeds, Smith slot/type/tier).
